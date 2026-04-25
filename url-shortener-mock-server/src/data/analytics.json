@@ -1,0 +1,60 @@
+{
+  "daily": [
+    { "date": "2026-04-01", "clicks": 42 },
+    { "date": "2026-04-02", "clicks": 67 },
+    { "date": "2026-04-03", "clicks": 55 },
+    { "date": "2026-04-04", "clicks": 89 },
+    { "date": "2026-04-05", "clicks": 73 },
+    { "date": "2026-04-06", "clicks": 31 },
+    { "date": "2026-04-07", "clicks": 96 }
+  ],
+  "countries": [
+    { "label": "US", "clicks": 245 },
+    { "label": "UK", "clicks": 98 },
+    { "label": "DE", "clicks": 76 },
+    { "label": "CA", "clicks": 54 },
+    { "label": "UA", "clicks": 41 },
+    { "label": "JP", "clicks": 33 },
+    { "label": "AU", "clicks": 28 },
+    { "label": "BR", "clicks": 19 }
+  ],
+  "continents": [
+    { "label": "North America", "clicks": 312 },
+    { "label": "Europe", "clicks": 248 },
+    { "label": "Asia", "clicks": 89 },
+    { "label": "South America", "clicks": 42 },
+    { "label": "Oceania", "clicks": 31 }
+  ],
+  "devices": [
+    { "label": "Desktop", "clicks": 389 },
+    { "label": "Mobile", "clicks": 333 },
+    { "label": "Other", "clicks": 15 },
+    { "label": "Unknown", "clicks": 7 }
+  ],
+  "os": [
+    { "label": "macOS", "clicks": 198 },
+    { "label": "Windows", "clicks": 172 },
+    { "label": "iOS", "clicks": 156 },
+    { "label": "Android", "clicks": 128 },
+    { "label": "Linux", "clicks": 39 },
+    { "label": "Other", "clicks": 12 },
+    { "label": "Unknown", "clicks": 5 }
+  ],
+  "referrers": [
+    { "label": "X", "clicks": 187, "hostname": "x.com" },
+    { "label": "LinkedIn", "clicks": 142, "hostname": "linkedin.com" },
+    { "label": "Direct", "clicks": 118, "hostname": "(direct)" },
+    { "label": "Google", "clicks": 95, "hostname": "google.com" },
+    { "label": "GitHub", "clicks": 64, "hostname": "github.com" },
+    { "label": "Reddit", "clicks": 48, "hostname": "reddit.com" },
+    { "label": "Hacker News", "clicks": 31, "hostname": "news.ycombinator.com" },
+    { "label": "Slack", "clicks": 27, "hostname": "slack.com" }
+  ],
+  "topLinks": [
+    { "shortLinkId": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80", "clicks": 187 },
+    { "shortLinkId": "a7b8c9d0-e1f2-4a3b-4c5d-6e7f8091a2b3", "clicks": 142 },
+    { "shortLinkId": "f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8091a2", "clicks": 95 },
+    { "shortLinkId": "c9d0e1f2-a3b4-4c5d-6e7f-8091a2b3c4d5", "clicks": 64 },
+    { "shortLinkId": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091", "clicks": 48 }
+  ]
+}

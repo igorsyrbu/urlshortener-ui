@@ -1,0 +1,18 @@
+{
+  "name": "@url-shortener/root",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "url-shortener-ui",
+    "url-shortener-mock-server"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "dev": "npm run dev --workspace=url-shortener-ui & npm run dev --workspace=@url-shortener/url-shortener-mock-server & wait",
+    "dev:ui": "npm run dev --workspace=url-shortener-ui",
+    "dev:mock": "npm run dev --workspace=@url-shortener/url-shortener-mock-server",
+    "build": "npm run build --workspace=url-shortener-ui",
+    "lint": "npm run lint --workspace=url-shortener-ui",
+    "typecheck": "npm run typecheck --workspace=@url-shortener/url-shortener-mock-server"
+  }
+}

@@ -1,0 +1,258 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-mono: var(--font-geist-mono);
+
+    --color-bg-slate: var(--bg-slate);
+    --color-island-bg: var(--island-bg);
+
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-chart-locations: var(--chart-locations);
+    --color-chart-devices: var(--chart-devices);
+    --color-chart-os: var(--chart-os);
+    --color-chart-referrers: var(--chart-referrers);
+    --color-chart-top-links: var(--chart-top-links);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-3xl: calc(var(--radius) + 12px);
+    --radius-4xl: calc(var(--radius) + 16px);
+
+    --shadow-soft: 0 2px 12px -2px rgba(0, 0, 0, 0.04);
+}
+
+:root {
+    --background: #ffffff;
+    /* pure white body */
+    --foreground: #2d2b28;
+    /* dark gray/brown text */
+    --card: #ffffff;
+    --card-foreground: #2d2b28;
+    --popover: #ffffff;
+    --popover-foreground: #2d2b28;
+
+    --primary: #d96a47;
+    /* Claude Terracotta */
+    --primary-foreground: #ffffff;
+
+    --secondary: #e5e1d8;
+    --secondary-foreground: #2d2b28;
+
+    --muted: #f3f1eb;
+    --muted-foreground: #8a8882;
+
+    --accent: #f5f4ef;
+    --accent-foreground: #2d2b28;
+
+    --destructive: #ef4444;
+    /* standard red */
+    --destructive-foreground: #ffffff;
+
+    --border: #d1cabe;
+    --input: #d1cabe;
+    --ring: #d96a47;
+
+    --chart-1: #d96a47;
+    --chart-2: #2563eb;
+    --chart-3: #16a34a;
+    --chart-4: #d946ef;
+    --chart-5: #f59e0b;
+    --chart-clicks: #b35622;
+    --chart-locations: #34d399;
+    --chart-devices: #facc15;
+    --chart-os: #22d3ee;
+    --chart-referrers: #f472b6;
+    --chart-top-links: #818cf8;
+
+    --success: #16a34a;
+    --success-foreground: #ffffff;
+
+    --sidebar: #f5f4ef;
+    /* Claude's signature warm off-white/beige sidebar */
+    --sidebar-foreground: #2d2b28;
+    --sidebar-primary: #d96a47;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e5e1d8;
+    --sidebar-accent-foreground: #2d2b28;
+    --sidebar-border: #d1cabe;
+    --sidebar-ring: #d96a47;
+
+    --header: #f5f4ef;
+    /* header matching sidebar */
+    --header-foreground: #2d2b28;
+    --footer: #f5f4ef;
+    --footer-foreground: #2d2b28;
+
+    --code: #f3f1eb;
+    --code-foreground: #2d2b28;
+    --code-highlight: #e5e1d8;
+    --code-number: #8a8882;
+    --code-selection: #e5e1d8;
+    --code-border: #d1cabe;
+
+    --radius: 0.5rem;
+}
+
+.dark,
+[data-theme="dark"] {
+    --background: #1e1e1e;
+    /* content section background */
+    --foreground: #eae6df;
+    /* light cream text */
+    --card: #1e1e1e;
+    --card-foreground: #eae6df;
+    --popover: #1e1e1e;
+    --popover-foreground: #eae6df;
+
+    --primary: #c95d3c;
+    /* slightly darker Terracotta for dark mode */
+    --primary-foreground: #ffffff;
+
+    --secondary: #3b3a36;
+    --secondary-foreground: #eae6df;
+
+    --muted: #3d3b36;
+    --muted-foreground: #9b978f;
+
+    --accent: #3b3a36;
+    --accent-foreground: #eae6df;
+
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --border: #33322f;
+    /* softer, less vivid border */
+    --input: #33322f;
+    --ring: #c95d3c;
+
+    --chart-1: #c95d3c;
+    --chart-2: #3b82f6;
+    --chart-3: #22c55e;
+    --chart-4: #e879f9;
+    --chart-5: #fbbf24;
+    --chart-clicks: #f97316;
+    --chart-locations: #34d399;
+    --chart-devices: #facc15;
+    --chart-os: #22d3ee;
+    --chart-referrers: #f472b6;
+    --chart-top-links: #818cf8;
+
+    --success: #22c55e;
+    --success-foreground: #ffffff;
+
+    --sidebar: #121212;
+    /* darker background for the app body / sidebar */
+    --sidebar-foreground: #eae6df;
+    --sidebar-primary: #c95d3c;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #3b3a36;
+    --sidebar-accent-foreground: #eae6df;
+    --sidebar-border: #33322f;
+    --sidebar-ring: #c95d3c;
+
+    --header: #121212;
+    --header-foreground: #eae6df;
+    --footer: #121212;
+    --footer-foreground: #eae6df;
+
+    --code: #1a1916;
+    --code-foreground: #eae6df;
+    --code-highlight: #3b3a36;
+    --code-number: #9b978f;
+    --code-selection: #3b3a36;
+    --code-border: #33322f;
+
+    --radius: 0.5rem;
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        @apply bg-background text-foreground font-sans antialiased;
+    }
+}
+
+/* Custom Utilities from Design */
+@layer utilities {
+    .animate-vertical-scroll {
+        animation: vertical-scroll 120s linear infinite;
+    }
+
+    @keyframes vertical-scroll {
+        0% {
+            transform: translateY(0);
+        }
+
+        100% {
+            transform: translateY(-50%);
+        }
+    }
+
+    .hairline-divider {
+        border-bottom: 0.5px solid var(--border);
+    }
+
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+        overflow: hidden;
+        white-space: nowrap;
+        word-wrap: normal;
+        direction: ltr;
+        line-height: 1;
+        /* Keep icon transparent while loading to hide ligature text */
+        color: transparent;
+    }
+
+    /* Wait for JS to confirm the WebFont is physically downloaded and ready */
+    .fonts-loaded .material-symbols-outlined {
+        color: inherit;
+    }
+
+    .icon-fill {
+        font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+}

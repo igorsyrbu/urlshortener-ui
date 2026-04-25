@@ -1,0 +1,9 @@
+{
+  "users": [
+    {
+      "email": "john.doe@test.com",
+      "name": "John Doe",
+      "pictureUrl": "https://api.dicebear.com/9.x/bottts/svg?seed=12"
+    }
+  ]
+}
