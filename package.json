@@ -6,6 +6,9 @@
     "url-shortener-ui",
     "url-shortener-mock-server"
   ],
+  "overrides": {
+    "postcss": "^8.5.10"
+  },
   "scripts": {
     "install:all": "npm install",
     "dev": "npm run dev --workspace=url-shortener-ui & npm run dev --workspace=@url-shortener/url-shortener-mock-server & wait",
