@@ -71,6 +71,7 @@ export function CreateLinkModal({open, onOpenChange}: CreateLinkModalProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
+                aria-describedby={undefined}
                 className="gap-0 overflow-hidden border-border bg-background/95 p-0 backdrop-blur-md sm:max-w-[425px] sm:rounded-2xl">
                 {open ? <CreateLinkModalBody onOpenChange={onOpenChange}/> : null}
             </DialogContent>

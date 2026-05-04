@@ -57,7 +57,8 @@ export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkMod
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-106.25 sm:rounded-2xl backdrop-blur-md bg-background/95 border-border">
+            <DialogContent className="sm:max-w-106.25 sm:rounded-2xl backdrop-blur-md bg-background/95 border-border"
+                           aria-describedby={undefined}>
                 <DialogHeader>
                     <DialogTitle>Edit Link</DialogTitle>
                 </DialogHeader>

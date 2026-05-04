@@ -4,6 +4,7 @@ import {useEffect, useState} from "react";
 import {fetchWithAuth} from "@/lib/api";
 import {EditLinkModal} from "@/components/links/EditLinkModal";
 import {DeleteLinkModal} from "@/components/links/DeleteLinkModal";
+import {QrCodeModal} from "@/components/links/QrCodeModal";
 import {LinkCard} from "@/components/links/LinkCard";
 import {EmptyLinksState} from "@/components/links/EmptyLinksState";
 import {TooltipProvider} from "@/components/ui/tooltip";
@@ -21,6 +22,8 @@ export default function LinksPage() {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [linkToDelete, setLinkToDelete] = useState<LinkItem | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isQrCodeModalOpen, setIsQrCodeModalOpen] = useState(false);
+    const [linkForQrCode, setLinkForQrCode] = useState<LinkItem | null>(null);
 
     useEffect(() => {
         fetchLinks();
@@ -57,6 +60,11 @@ export default function LinksPage() {
         setIsEditModalOpen(true);
     };
 
+    const handleQrCode = (link: LinkItem) => {
+        setLinkForQrCode(link);
+        setIsQrCodeModalOpen(true);
+    };
+
     if (loading && links.length === 0) {
         return <div className="p-8 text-center text-muted-foreground">Loading links...</div>;
     }
@@ -88,12 +96,13 @@ export default function LinksPage() {
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {links.map((link) => (
-                            <LinkCard
-                                key={link.id}
-                                link={link}
-                                onEdit={handleEdit}
-                                onDelete={handleDeleteClick}
-                            />
+                                <LinkCard
+                                    key={link.id}
+                                    link={link}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDeleteClick}
+                                    onQrCode={handleQrCode}
+                                />
                         ))}
                     </div>
                 )}
@@ -111,6 +120,12 @@ export default function LinksPage() {
                     onConfirm={confirmDelete}
                     loading={isDeleting}
                     linkTitle={linkToDelete?.title}
+                />
+
+                <QrCodeModal
+                    open={isQrCodeModalOpen}
+                    onOpenChange={setIsQrCodeModalOpen}
+                    link={linkForQrCode}
                 />
             </PageContainer>
         </TooltipProvider>
