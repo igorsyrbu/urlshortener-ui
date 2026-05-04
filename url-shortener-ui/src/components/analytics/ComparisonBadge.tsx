@@ -1,3 +1,5 @@
+import {TrendingDown, TrendingUp} from "lucide-react";
+
 interface ComparisonBadgeProps {
     period: string;
     totalClicks: number;
@@ -38,9 +40,11 @@ export function ComparisonBadge({
         <div className="flex items-center gap-3">
             <div
                 className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-sm font-semibold border ${badgeClasses}`}>
-                <span className="material-symbols-outlined text-[16px] icon-fill">
-                    {isPositive ? "trending_up" : "trending_down"}
-                </span>
+                {isPositive ? (
+                    <TrendingUp className="size-4" />
+                ) : (
+                    <TrendingDown className="size-4" />
+                )}
                 <span>{formattedPercent}</span>
             </div>
             <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">

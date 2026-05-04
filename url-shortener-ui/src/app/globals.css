@@ -232,27 +232,4 @@
     .hairline-divider {
         border-bottom: 0.5px solid var(--border);
     }
-
-    .material-symbols-outlined {
-        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        display: inline-block;
-        width: 1em;
-        height: 1em;
-        overflow: hidden;
-        white-space: nowrap;
-        word-wrap: normal;
-        direction: ltr;
-        line-height: 1;
-        /* Keep icon transparent while loading to hide ligature text */
-        color: transparent;
-    }
-
-    /* Wait for JS to confirm the WebFont is physically downloaded and ready */
-    .fonts-loaded .material-symbols-outlined {
-        color: inherit;
-    }
-
-    .icon-fill {
-        font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    }
 }

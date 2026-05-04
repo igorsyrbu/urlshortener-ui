@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect} from "react";
-import {PanelLeft} from "lucide-react";
+import {PanelLeft, Search} from "lucide-react";
 import {Kbd, KbdGroup} from "@/components/ui/kbd";
 import {ModeToggle} from "@/components/layout/ThemeToggle";
 import {Button} from "@/components/ui/button";
@@ -48,10 +48,7 @@ export function Header({onCreateClick, onMenuClick}: HeaderProps) {
                 <div className="min-w-0 flex-1 max-w-lg">
                     <div className="group relative w-full">
                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 sm:pl-3">
-                            <span
-                                className="material-symbols-outlined text-[18px] text-muted-foreground sm:text-[20px]">
-                                search
-                            </span>
+                            <Search className="size-[18px] text-muted-foreground sm:size-[20px]" />
                         </div>
                         <input
                             className="block w-full truncate rounded-xl border-none bg-muted py-2 pr-3 text-sm text-foreground shadow-sm transition-all placeholder:text-muted-foreground focus:bg-background focus:ring-0 focus:outline-none sm:py-2.5 sm:pr-12 pl-8 sm:pl-10"

@@ -3,17 +3,18 @@
 import {useEffect, useState} from "react";
 import {useTheme} from "next-themes";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Monitor, Moon, Sun, LucideIcon} from "lucide-react";
 
 interface ThemeOption {
     value: string;
     label: string;
-    icon: string;
+    icon: LucideIcon;
 }
 
 const THEME_OPTIONS: ThemeOption[] = [
-    {value: "light", label: "Light", icon: "light_mode"},
-    {value: "dark", label: "Dark", icon: "dark_mode"},
-    {value: "system", label: "System", icon: "settings_brightness"},
+    {value: "light", label: "Light", icon: Sun},
+    {value: "dark", label: "Dark", icon: Moon},
+    {value: "system", label: "System", icon: Monitor},
 ];
 
 export function AppearanceCard() {
@@ -36,10 +37,10 @@ export function AppearanceCard() {
                         <button
                             key={option.value}
                             onClick={() => setTheme(option.value)}
-                            className={`flex flex-col items-center justify-center p-4 border-[0.5px] rounded-xl hover:bg-muted transition-colors w-32 ${mounted && theme === option.value ? "border-primary ring-1 ring-primary" : "border-border"}`}
+                            className={`flex flex-col items-center justify-center p-3 border-[0.5px] rounded-xl hover:bg-muted transition-colors w-24 sm:w-28 ${mounted && theme === option.value ? "border-primary ring-1 ring-primary" : "border-border"}`}
                         >
-                            <span className="material-symbols-outlined text-3xl mb-2">{option.icon}</span>
-                            <span className="text-sm font-medium">{option.label}</span>
+                            <option.icon className="size-6 mb-1.5 stroke-[1.5]"/>
+                            <span className="text-xs sm:text-sm font-medium">{option.label}</span>
                         </button>
                     ))}
                 </div>

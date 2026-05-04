@@ -3,6 +3,7 @@
 import {AnalyticsGroupedClick} from "@/lib/store/analytics";
 import {BarLabelProps, HorizontalBarChart} from "@/components/analytics/HorizontalBarChart";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
+import {Link2} from "lucide-react";
 import {Spinner} from "@/components/ui/spinner";
 import {CHART_COLORS} from "@/lib/constants";
 
@@ -47,30 +48,20 @@ export function ReferrersTab({referrers, isLoading, totalClicks}: ReferrersTabPr
 
         return (
             <g>
-                {!isValidHostname && (
-                    <g transform={`translate(${x + 10}, ${y + (height - 20) / 2})`}>
-                        <rect width={20} height={20} rx={10} fill="hsl(var(--muted))"/>
-                        <text
-                            x={10}
-                            y={10}
-                            textAnchor="middle"
-                            dominantBaseline="central"
-                            className="material-symbols-outlined fill-primary text-[14px]"
-                        >
-                            {"link"}
-                        </text>
-                    </g>
-                )}
                 <foreignObject x={x + 10} y={y} width="calc(100% - 92px)" height={height}>
                     <div className="w-full h-full flex items-center pr-2 gap-3">
-                        {isValidHostname && (
+                        {isValidHostname ? (
                             <div
                                 className="shrink-0 size-5 flex items-center justify-center rounded-full overflow-hidden bg-muted">
                                 <LinkFavicon longUrl={`https://${item.hostname}`}/>
                             </div>
+                        ) : (
+                            <div className="shrink-0 size-5 flex items-center justify-center rounded-full bg-muted">
+                                <Link2 className="size-3.5 text-black dark:text-white"/>
+                            </div>
                         )}
                         <span
-                            className={`text-[13px] font-medium text-foreground/90 dark:text-foreground truncate ${isValidHostname ? "" : "pl-7"}`}>
+                            className="text-[13px] font-medium text-foreground/90 dark:text-foreground truncate">
                             {value}
                         </span>
                     </div>

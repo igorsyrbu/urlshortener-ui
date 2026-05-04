@@ -31,13 +31,6 @@ function getDeviceIconPath(value: string, isOS: boolean): string {
     return "/icons/unknown.png";
 }
 
-function getMaterialIconName(value: string): string {
-    const name = value.toLowerCase();
-    if (name === "desktop") return "desktop_windows";
-    if (name === "mobile") return "smartphone";
-    return "devices";
-}
-
 export function DeviceTab({deviceTab, data, isLoading, totalClicks}: DeviceTabProps) {
     const isOS = deviceTab === "os";
 
@@ -75,22 +68,14 @@ export function DeviceTab({deviceTab, data, isLoading, totalClicks}: DeviceTabPr
             <g>
                 <foreignObject x={x + 10} y={y} width="calc(100% - 92px)" height={height}>
                     <div className="w-full h-full flex items-center pr-2 gap-3">
-                        {iconHref ? (
-                            <div className="shrink-0 size-5 flex items-center justify-center overflow-hidden">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={iconHref}
-                                    alt={value}
-                                    className="size-full object-contain dark:invert"
-                                />
-                            </div>
-                        ) : (
-                            <div className="shrink-0 size-5 flex items-center justify-center overflow-hidden">
-                                <span className="material-symbols-outlined text-[18px] text-muted-foreground">
-                                    {getMaterialIconName(value)}
-                                </span>
-                            </div>
-                        )}
+                        <div className="shrink-0 size-5 flex items-center justify-center overflow-hidden">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src={iconHref}
+                                alt={value}
+                                className="size-full object-contain dark:invert"
+                            />
+                        </div>
                         <span className="text-[13px] font-medium text-foreground/90 dark:text-foreground truncate">
                             {value}
                         </span>

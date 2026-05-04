@@ -2,6 +2,7 @@
 
 import {useEffect, useState} from "react";
 import {Calendar} from "@/components/ui/calendar";
+import {Calendar as CalendarIcon} from "lucide-react";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {DateRange} from "react-day-picker";
 
@@ -74,7 +75,7 @@ export function PeriodSelector({
                     <button
                         className={`flex-[1.5] sm:flex-none px-2 sm:px-3 py-1.5 justify-center rounded-md transition-colors flex items-center gap-1.5 sm:gap-2 ${period === "custom" ? activeClasses : inactiveClasses}`}
                     >
-                        <span className="material-symbols-outlined text-[15px] sm:text-[16px]">calendar_today</span>
+                        <CalendarIcon className="size-[15px] sm:size-[16px]" />
                         Custom
                     </button>
                 </PopoverTrigger>
