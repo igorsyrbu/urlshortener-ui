@@ -12,7 +12,6 @@ import {CreateLinkUrlField} from "@/components/links/CreateLinkUrlField";
 import {CreateLinkTitleField} from "@/components/links/CreateLinkTitleField";
 import type {GlowState, ShortLinkData} from "@/components/links/create-link-types";
 
-export type {ShortLinkData};
 
 interface CreateLinkFormProps {
     onSubmitSuccess: (data: ShortLinkData) => void;

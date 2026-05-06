@@ -73,7 +73,6 @@ export const DEFAULT_PAGE_SIZE = 20;
 // Analytics
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_ANALYTICS_PERIOD = "P7D";
 export const DEFAULT_PERIOD_DAYS = 30;
 
 // ---------------------------------------------------------------------------

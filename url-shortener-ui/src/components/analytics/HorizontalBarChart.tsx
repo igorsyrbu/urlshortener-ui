@@ -37,7 +37,7 @@ const MIN_CHART_HEIGHT = 50;
 const BAR_SIZE = 36;
 const BAR_RADIUS = 6;
 
-export type {BarChartDataItem, BarLabelProps};
+export type {BarLabelProps};
 
 export function HorizontalBarChart({
                                        data,

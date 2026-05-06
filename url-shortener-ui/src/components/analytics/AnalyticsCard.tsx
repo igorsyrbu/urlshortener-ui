@@ -3,7 +3,7 @@
 import {cn} from "@/lib/utils";
 import React from "react";
 
-export interface AnalyticsCardTabConfig {
+interface AnalyticsCardTabConfig {
     label: string;
     value: string;
     isActive: boolean;

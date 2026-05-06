@@ -3,7 +3,7 @@ import {fetchWithAuth} from "@/lib/api";
 import {LinkItem} from "@/lib/types";
 import {API_ENDPOINTS, DEFAULT_LINK_TITLE, DEFAULT_PAGE_SIZE} from "@/lib/constants";
 
-export interface ShortLinkResponse {
+interface ShortLinkResponse {
     id: string;
     title: string;
     shortUrl: string;

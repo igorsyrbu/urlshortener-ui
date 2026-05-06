@@ -19,7 +19,7 @@ export interface AnalyticsDailyClick {
     clicks: number;
 }
 
-export interface AnalyticsTopLinkClick {
+interface AnalyticsTopLinkClick {
     shortLinkId: string;
     clicks: number;
 }
