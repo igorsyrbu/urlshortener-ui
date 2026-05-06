@@ -6,8 +6,6 @@ export interface ShortLink {
   title: string;
   shortUrl: string;
   longUrl: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface Page<T> {
@@ -96,8 +94,6 @@ export class ShortLinksService {
       title: dto.title?.trim() || ShortLinksService.CONSTANTS.DEFAULT_TITLE,
       shortUrl: dto.shortUrl?.trim() || this.generateAutoShortUrl(dto.title),
       longUrl: dto.longUrl.trim(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
 
     this.inMemoryLinks.unshift(newLink);
@@ -124,7 +120,6 @@ export class ShortLinksService {
       longUrl: dto.longUrl ?? existingLink.longUrl,
       title: dto.title ?? existingLink.title,
       shortUrl: dto.shortUrl ?? existingLink.shortUrl,
-      updatedAt: new Date().toISOString(),
     };
 
     this.inMemoryLinks[index] = updatedLink;

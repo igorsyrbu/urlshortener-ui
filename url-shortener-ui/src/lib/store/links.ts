@@ -8,8 +8,6 @@ interface ShortLinkResponse {
     title: string;
     shortUrl: string;
     longUrl: string;
-    createdAt?: string;
-    updatedAt?: string;
 }
 
 interface PageResponse<T> {
