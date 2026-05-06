@@ -8,10 +8,6 @@ interface ShortLinkResponse {
     title: string;
     shortUrl: string;
     longUrl: string;
-    icon?: string;
-    image?: string;
-    bg?: string;
-    textCol?: string;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -44,10 +40,6 @@ function mapResponseToLinkItem(item: ShortLinkResponse): LinkItem {
         title: item.title || DEFAULT_LINK_TITLE,
         shortUrl: item.shortUrl,
         longUrl: item.longUrl,
-        icon: item.icon,
-        image: item.image,
-        bg: item.bg,
-        textCol: item.textCol,
     };
 }
 
