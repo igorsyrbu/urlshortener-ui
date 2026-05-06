@@ -35,7 +35,7 @@ export function CreateLinkSuccess({shortUrl, onClose}: CreateLinkSuccessProps) {
             className="p-6 text-center"
         >
             <div
-                className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-500 rounded-full flex items-center justify-center mb-4">
+                className="mx-auto w-12 h-12 bg-success/10 text-success rounded-full flex items-center justify-center mb-4">
                 <Check className="h-6 w-6"/>
             </div>
             <h3 className="text-xl font-semibold mb-6">Link Created!</h3>

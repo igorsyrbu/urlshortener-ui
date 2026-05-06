@@ -13,7 +13,7 @@ export function LoginGoogleSignInButton({onClick}: LoginGoogleSignInButtonProps)
             type="button"
             variant="outline"
             onClick={onClick}
-            className="flex h-12 w-full items-center justify-center gap-3 rounded-xl font-semibold hover:bg-muted hover:text-foreground dark:hover:bg-white/10 dark:hover:text-white"
+            className="flex h-12 w-full items-center justify-center gap-3 rounded-xl font-semibold hover:bg-muted hover:text-foreground dark:hover:bg-accent dark:hover:text-accent-foreground"
         >
             <GoogleIcon/>
             Sign in with Google

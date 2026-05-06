@@ -57,7 +57,7 @@ export function ReferrersTab({referrers, isLoading, totalClicks}: ReferrersTabPr
                             </div>
                         ) : (
                             <div className="shrink-0 size-5 flex items-center justify-center rounded-full bg-muted">
-                                <Link2 className="size-3.5 text-black dark:text-white"/>
+                                <Link2 className="size-3.5 text-foreground"/>
                             </div>
                         )}
                         <span
