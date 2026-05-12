@@ -66,6 +66,9 @@ export function Header({onCreateClick, onMenuClick}: HeaderProps) {
                             className="block w-full truncate rounded-xl border-none bg-muted py-2 pr-3 text-sm text-foreground shadow-sm transition-all placeholder:text-muted-foreground focus:bg-background focus:ring-0 focus:outline-none sm:py-2.5 sm:pr-12 pl-8 sm:pl-10"
                             placeholder="Search..."
                             type="text"
+                            onKeyDown={(e) =>
+                                e.key === "Escape" && searchInputRef.current?.blur()
+                            }
                         />
                         <div
                             className="pointer-events-none absolute inset-y-0 right-0 hidden items-center pr-4 sm:flex">
