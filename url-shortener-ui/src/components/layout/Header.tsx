@@ -1,10 +1,11 @@
 "use client";
 
-import {useEffect} from "react";
+import {useEffect, useRef} from "react";
 import {PanelLeft, Search} from "lucide-react";
 import {Kbd, KbdGroup} from "@/components/ui/kbd";
 import {ModeToggle} from "@/components/layout/ThemeToggle";
 import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
 
 interface HeaderProps {
     onCreateClick?: () => void;
@@ -12,15 +13,25 @@ interface HeaderProps {
 }
 
 export function Header({onCreateClick, onMenuClick}: HeaderProps) {
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (
+            const isSearchShortcut = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k";
+            const isCreateShortcut =
                 e.key.toLowerCase() === "c" &&
                 !e.metaKey &&
                 !e.ctrlKey &&
                 !e.altKey &&
-                !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)
-            ) {
+                !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName);
+
+            if (isSearchShortcut) {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+                return;
+            }
+
+            if (isCreateShortcut) {
                 e.preventDefault();
                 onCreateClick?.();
             }
@@ -50,10 +61,14 @@ export function Header({onCreateClick, onMenuClick}: HeaderProps) {
                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 sm:pl-3">
                             <Search className="size-[18px] text-muted-foreground sm:size-[20px]" />
                         </div>
-                        <input
+                        <Input
+                            ref={searchInputRef}
                             className="block w-full truncate rounded-xl border-none bg-muted py-2 pr-3 text-sm text-foreground shadow-sm transition-all placeholder:text-muted-foreground focus:bg-background focus:ring-0 focus:outline-none sm:py-2.5 sm:pr-12 pl-8 sm:pl-10"
                             placeholder="Search..."
                             type="text"
+                            onKeyDown={(e) =>
+                                e.key === "Escape" && searchInputRef.current?.blur()
+                            }
                         />
                         <div
                             className="pointer-events-none absolute inset-y-0 right-0 hidden items-center pr-4 sm:flex">
