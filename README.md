@@ -67,6 +67,18 @@ When running the project with the mock server, the application supports two logi
 To quickly access the dashboard with test user data, simply click **"Sign in with Google"** on the login screen. This will bypass the actual OAuth flow and automatically authenticate you with a pre-configured test profile.
 
 
+### Cleaning Build Cache
+
+To remove the Next.js build cache (`.next/`) and start fresh, run:
+
+```bash
+npm run clean
+```
+
+This helps resolve issues caused by stale cached artifacts or excessive RAM consumption during development.
+
+---
+
 ## Project Structure
 
 This repository is divided into two main npm workspaces:
