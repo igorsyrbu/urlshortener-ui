@@ -1,14 +1,23 @@
 "use client";
 
-import {useCallback, useEffect, useRef, useState} from "react";
-import {Check, Copy, CornerDownRight, MoreHorizontal, PencilLine, QrCode, Trash2} from "lucide-react";
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,} from "@/components/ui/dropdown-menu";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {Check, Copy, CornerDownRight, MoreHorizontal, PencilLine, QrCode, Tag, Trash2} from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {Kbd} from "@/components/ui/kbd";
+import {Badge} from "@/components/ui/badge";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
-import {LinkItem} from "@/lib/types";
+import {TagBadge} from "@/components/tags/TagBadge";
+import {LinkItem, TagItem} from "@/lib/types";
 import {getDomain} from "@/lib/url-utils";
-import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
+import {COPY_FEEDBACK_DURATION_MS, SHORTCUT_KEY_CLASS} from "@/lib/constants";
+import {useTagStoreWithoutCount} from "@/lib/store/tags";
 
 interface LinkCardProps {
     link: LinkItem;
@@ -25,12 +34,63 @@ function getSafeDomain(longUrl: string): string {
     }
 }
 
+function TagsSection({tags}: { tags: TagItem[] }) {
+    const [isHovering, setIsHovering] = useState(false);
+    const first = tags[0];
+    const hidden = tags.slice(1);
+
+    return (
+        <div className="relative inline-flex items-center">
+            {/* Mobile: icon-only badge */}
+            <Badge
+                variant={first.color as never}
+                className="inline-flex items-center justify-center rounded-md px-1.5 py-1.5 sm:hidden"
+            >
+                <Tag className="size-3.5 shrink-0"/>
+            </Badge>
+
+            {/* Desktop */}
+            {tags.length === 1 ? (
+                <div className="hidden sm:block">
+                    <TagBadge tag={first}/>
+                </div>
+            ) : (
+                <div
+                    className="hidden sm:inline-flex"
+                    onMouseEnter={() => setIsHovering(true)}
+                    onMouseLeave={() => setIsHovering(false)}
+                >
+                    <TagBadge tag={first} className="cursor-default min-w-0">
+                        <span className="opacity-50 mx-1 shrink-0">|</span>
+                        <span className="shrink-0">+{hidden.length}</span>
+                    </TagBadge>
+                    {isHovering && (
+                        <div
+                            className="absolute bottom-full right-0 mb-1.5 flex items-center gap-2 z-50 bg-background border-[0.5px] border-border rounded-md px-2 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] whitespace-nowrap">
+                            {hidden.map((tag) => (
+                                <TagBadge key={tag.name} tag={tag}/>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export function LinkCard({link, onEdit, onDelete, onQrCode}: LinkCardProps) {
     const [copied, setCopied] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
+    const storeTags = useTagStoreWithoutCount((state) => state.tags);
 
-    const SHORTCUT_KEY_CLASS = "ml-auto hidden sm:inline-flex min-w-5 max-w-5";
+    const resolvedTags = useMemo(
+        () => (link.tagIds ?? [])
+            .map((id) => storeTags.find((t) => t.id === id))
+            .filter((t): t is TagItem => t != null)
+            .sort((a, b) => a.name.localeCompare(b.name)),
+        [link.tagIds, storeTags],
+    );
 
     const handleCopy = () => {
         navigator.clipboard.writeText(link.shortUrl);
@@ -68,7 +128,7 @@ export function LinkCard({link, onEdit, onDelete, onQrCode}: LinkCardProps) {
         <div
             ref={cardRef}
             tabIndex={0}
-            className="group flex items-center p-4 md:p-5 rounded-xl bg-background border-[0.5px] border-border hover:border-ring/40 has-data-[state=open]:border-ring/40 dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            className="group flex items-center p-4 md:p-5 rounded-xl bg-background border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
             <div
                 className="shrink-0 size-9 rounded-full flex items-center justify-center border-[0.5px] border-border overflow-hidden bg-muted text-foreground">
                 <LinkFavicon longUrl={link.longUrl}/>
@@ -111,6 +171,9 @@ export function LinkCard({link, onEdit, onDelete, onQrCode}: LinkCardProps) {
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
+                {resolvedTags.length > 0 && (
+                    <TagsSection tags={resolvedTags}/>
+                )}
                 <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                     <DropdownMenuTrigger asChild>
                         <button

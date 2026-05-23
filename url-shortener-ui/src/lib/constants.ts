@@ -17,6 +17,7 @@ export const ROUTES = {
 export const API_ENDPOINTS = {
     SHORTLINKS: "/shortlinks",
     SHORTLINKS_BY_IDS: "/shortlinks/byIds",
+    TAGS: "/tags",
     ANALYTICS: "/analytics",
     LONG_URL_TITLE: "/longurl/title",
     USERS_ME: "/users/me",
@@ -74,6 +75,13 @@ export const DEFAULT_PAGE_SIZE = 20;
 // ---------------------------------------------------------------------------
 
 export const DEFAULT_PERIOD_DAYS = 30;
+
+// ---------------------------------------------------------------------------
+// UI helpers
+// ---------------------------------------------------------------------------
+
+/** Shared class for shortcut-keybd indicators inside dropdown menus. */
+export const SHORTCUT_KEY_CLASS = "ml-auto hidden sm:inline-flex min-w-5 max-w-5";
 
 // ---------------------------------------------------------------------------
 // Default / fallback labels

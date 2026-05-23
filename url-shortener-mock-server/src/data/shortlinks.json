@@ -1,52 +1,65 @@
 {
   "links": [
     {
+      "id": "f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8091a2",
+      "title": "Spring Boot",
+      "shortUrl": "https://sho.rt/springboot",
+      "longUrl": "https://spring.io/projects/spring-boot",
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
       "id": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80",
       "title": "Claude by Anthropic",
       "shortUrl": "https://sho.rt/claude",
-      "longUrl": "https://claude.ai"
+      "longUrl": "https://claude.ai",
+      "tagIds": []
     },
     {
       "id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8091",
       "title": "Google Gemini",
       "shortUrl": "https://sho.rt/gemini",
-      "longUrl": "https://gemini.google.com"
-    },
-    {
-      "id": "f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8091a2",
-      "title": "Spring Boot",
-      "shortUrl": "https://sho.rt/springboot",
-      "longUrl": "https://spring.io/projects/spring-boot"
-    },
-    {
-      "id": "a7b8c9d0-e1f2-4a3b-4c5d-6e7f8091a2b3",
-      "title": "Next.js by Vercel",
-      "shortUrl": "https://sho.rt/nextjs",
-      "longUrl": "https://nextjs.org"
-    },
-    {
-      "id": "b8c9d0e1-f2a3-4b4c-5d6e-7f8091a2b3c4",
-      "title": "Warp Terminal",
-      "shortUrl": "https://sho.rt/warp",
-      "longUrl": "https://www.warp.dev"
+      "longUrl": "https://gemini.google.com",
+      "tagIds": []
     },
     {
       "id": "c9d0e1f2-a3b4-4c5d-6e7f-8091a2b3c4d5",
       "title": "IntelliJ IDEA",
       "shortUrl": "https://sho.rt/intellij",
-      "longUrl": "https://www.jetbrains.com/idea/"
+      "longUrl": "https://www.jetbrains.com/idea/",
+      "tagIds": [
+        "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a"
+      ]
+    },
+    {
+      "id": "a7b8c9d0-e1f2-4a3b-4c5d-6e7f8091a2b3",
+      "title": "Next.js by Vercel",
+      "shortUrl": "https://sho.rt/nextjs",
+      "longUrl": "https://nextjs.org",
+      "tagIds": []
+    },
+    {
+      "id": "b8c9d0e1-f2a3-4b4c-5d6e-7f8091a2b3c4",
+      "title": "Warp Terminal",
+      "shortUrl": "https://sho.rt/warp",
+      "longUrl": "https://www.warp.dev",
+      "tagIds": []
     },
     {
       "id": "d0e1f2a3-b4c5-4d6e-7f80-91a2b3c4d5e6",
       "title": "Yaak API Client",
       "shortUrl": "https://sho.rt/yaak",
-      "longUrl": "https://yaak.app"
+      "longUrl": "https://yaak.app",
+      "tagIds": []
     },
     {
       "id": "e1f2a3b4-c5d6-4e7f-8091-a2b3c4d5e6f7",
       "title": "OrbStack",
       "shortUrl": "https://sho.rt/orbstack",
-      "longUrl": "https://orbstack.dev"
+      "longUrl": "https://orbstack.dev",
+      "tagIds": []
     }
   ]
 }

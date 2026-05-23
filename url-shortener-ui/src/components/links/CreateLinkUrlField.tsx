@@ -26,8 +26,7 @@ export function CreateLinkUrlField({inputId, value, urlError, onChange, onBlur}:
                     onBlur={onBlur}
                     className={cn(
                         "col-span-3",
-                        urlError &&
-                        "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/30",
+                        urlError && "border-destructive focus-visible:border-destructive",
                     )}
                     required
                 />

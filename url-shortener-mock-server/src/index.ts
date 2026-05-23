@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth";
 import usersRoutes from "./routes/users";
 import shortLinksRoutes from "./routes/shortlinks";
 import analyticsRoutes from "./routes/analytics";
+import tagsRoutes from "./routes/tags";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "8080", 10);
@@ -21,6 +22,7 @@ app.use(authRoutes);
 app.use(usersRoutes);
 app.use(shortLinksRoutes);
 app.use(analyticsRoutes);
+app.use(tagsRoutes);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });

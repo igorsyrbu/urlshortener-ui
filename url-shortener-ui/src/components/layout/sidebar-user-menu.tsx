@@ -106,7 +106,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={handleLogout}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                variant="destructive"
                             >
                                 Log out
                             </AlertDialogAction>

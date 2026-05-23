@@ -10,6 +10,7 @@ import {EmptyLinksState} from "@/components/links/EmptyLinksState";
 import {TooltipProvider} from "@/components/ui/tooltip";
 import {Button} from "@/components/ui/button";
 import {useLinkStore} from "@/lib/store/links";
+import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {PageHeading} from "@/components/layout/PageHeading";
@@ -17,6 +18,7 @@ import {API_ENDPOINTS} from "@/lib/constants";
 
 export default function LinksPage() {
     const {links, loading, error, fetchLinks, clearError} = useLinkStore();
+    const {fetchTags} = useTagStoreWithoutCount();
     const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -27,7 +29,8 @@ export default function LinksPage() {
 
     useEffect(() => {
         fetchLinks();
-    }, []);
+        fetchTags();
+    }, [fetchLinks, fetchTags]);
 
     const handleDeleteClick = (link: LinkItem) => {
         setLinkToDelete(link);
@@ -73,7 +76,7 @@ export default function LinksPage() {
         <TooltipProvider>
             <PageContainer>
                 <div className="flex items-center justify-between">
-                    <PageHeading>My Links</PageHeading>
+                    <PageHeading>Links</PageHeading>
                 </div>
 
                 {error && (

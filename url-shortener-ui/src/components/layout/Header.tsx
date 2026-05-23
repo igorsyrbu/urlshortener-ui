@@ -10,9 +10,10 @@ import {Input} from "@/components/ui/input";
 interface HeaderProps {
     onCreateClick?: () => void;
     onMenuClick?: () => void;
+    createLabel?: string;
 }
 
-export function Header({onCreateClick, onMenuClick}: HeaderProps) {
+export function Header({onCreateClick, onMenuClick, createLabel = "Create link"}: HeaderProps) {
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -59,11 +60,11 @@ export function Header({onCreateClick, onMenuClick}: HeaderProps) {
                 <div className="min-w-0 flex-1 max-w-lg">
                     <div className="group relative w-full">
                         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5 sm:pl-3">
-                            <Search className="size-[18px] text-muted-foreground sm:size-[20px]" />
+                            <Search className="size-4.5 text-muted-foreground sm:size-5" />
                         </div>
                         <Input
                             ref={searchInputRef}
-                            className="block w-full truncate rounded-xl border-none bg-muted py-2 pr-3 text-sm text-foreground shadow-sm transition-all placeholder:text-muted-foreground focus:bg-background focus:ring-0 focus:outline-none sm:py-2.5 sm:pr-12 pl-8 sm:pl-10"
+                            className="block w-full truncate rounded-xl border-[0.5px] border-border py-2 pr-3 text-sm text-foreground shadow-none transition-all placeholder:text-muted-foreground focus:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-background sm:py-2.5 sm:pr-12 pl-8 sm:pl-10"
                             placeholder="Search..."
                             type="text"
                             onKeyDown={(e) =>
@@ -75,7 +76,7 @@ export function Header({onCreateClick, onMenuClick}: HeaderProps) {
                             <KbdGroup>
                                 <Kbd
                                     className="min-w-5 justify-center border-border bg-transparent px-1 text-muted-foreground">
-                                    ⌘+K
+                                    ⌘K
                                 </Kbd>
                             </KbdGroup>
                         </div>
@@ -89,7 +90,7 @@ export function Header({onCreateClick, onMenuClick}: HeaderProps) {
                         onClick={onCreateClick}
                         className="ml-1 flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-primary-foreground transition-all hover:bg-primary/90 active:scale-95 sm:ml-2 sm:gap-2 sm:px-4"
                     >
-                        <span className="text-xs font-bold tracking-wider uppercase">Create</span>
+                        <span className="text-xs font-bold tracking-wider uppercase">{createLabel}</span>
                         <Kbd
                             className="hidden h-5 min-w-5 justify-center border-primary-foreground/20 bg-primary-foreground/20 px-1.5 text-primary-foreground sm:flex">
                             C

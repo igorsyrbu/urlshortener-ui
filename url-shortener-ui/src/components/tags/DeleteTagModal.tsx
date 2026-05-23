@@ -2,20 +2,20 @@
 
 import {DeleteConfirmationModal} from "@/components/ui/delete-confirmation-modal";
 
-interface DeleteLinkModalProps {
+interface DeleteTagModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onConfirm: () => void;
     loading: boolean;
-    linkTitle?: string;
+    tagName?: string;
 }
 
-export function DeleteLinkModal({linkTitle, ...props}: DeleteLinkModalProps) {
+export function DeleteTagModal({tagName, ...props}: DeleteTagModalProps) {
     return (
         <DeleteConfirmationModal
-            title="Delete Link"
-            confirmLabel="Delete Link"
-            entityName={linkTitle}
+            title="Delete Tag"
+            confirmLabel="Delete Tag"
+            entityName={tagName}
             {...props}
         />
     );

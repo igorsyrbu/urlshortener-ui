@@ -5,4 +5,5 @@ export interface ShortLinkData {
     title: string;
     longUrl: string;
     shortUrl: string;
+    tagIds?: string[];
 }

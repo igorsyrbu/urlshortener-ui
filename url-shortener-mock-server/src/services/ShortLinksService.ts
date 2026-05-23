@@ -1,11 +1,13 @@
 import linksData from "../data/shortlinks.json" with { type: "json" };
 import { randomUUID } from "crypto";
+import { tagsService } from "./TagsService";
 
 export interface ShortLink {
   id: string;
   title: string;
   shortUrl: string;
   longUrl: string;
+  tagIds?: string[];
 }
 
 export interface Page<T> {
@@ -23,12 +25,14 @@ export interface CreateShortLinkDto {
   longUrl: string;
   title?: string;
   shortUrl?: string;
+  tagIds?: string[];
 }
 
 export interface UpdateShortLinkDto {
   longUrl?: string;
   title?: string;
   shortUrl?: string;
+  tagIds?: string[];
 }
 
 export class ShortLinksService {
@@ -42,9 +46,34 @@ export class ShortLinksService {
   private inMemoryLinks: ShortLink[] = this.initializeMockData();
 
   private initializeMockData(): ShortLink[] {
-    return linksData.links.map((link: any) => ({
+    // Load links and initialize tag associations from the data
+    const links = linksData.links.map((link: any) => {
+      const { tagIds, ...rest } = link;
+      return rest;
+    });
+
+    // Set up tag associations from the loaded data
+    linksData.links.forEach((link: any) => {
+      if (link.tagIds && link.tagIds.length > 0) {
+        // Filter to only valid tag IDs
+        const validTagIds = tagsService.validateAndFilterTagIds(link.tagIds);
+        if (validTagIds.length > 0) {
+          tagsService.associateTagsWithLink(link.id, validTagIds);
+        }
+      }
+    });
+
+    return links;
+  }
+
+  /**
+   * Enriches a link with its associated tag IDs.
+   */
+  private enrichLinkWithTags(link: ShortLink): ShortLink {
+    return {
       ...link,
-    }));
+      tagIds: tagsService.getTagIdsForLink(link.id),
+    };
   }
 
   /**
@@ -60,7 +89,7 @@ export class ShortLinksService {
     const totalElements = this.inMemoryLinks.length;
 
     return {
-      content,
+      content: content.map((link) => this.enrichLinkWithTags(link)),
       totalPages: Math.ceil(totalElements / size),
       totalElements,
       size,
@@ -79,7 +108,9 @@ export class ShortLinksService {
    */
   public getLinksByIds(ids: string[]): ShortLink[] {
     const idSet = new Set(ids);
-    return this.inMemoryLinks.filter((link) => idSet.has(link.id));
+    return this.inMemoryLinks
+      .filter((link) => idSet.has(link.id))
+      .map((link) => this.enrichLinkWithTags(link));
   }
 
   /**
@@ -96,8 +127,16 @@ export class ShortLinksService {
       longUrl: dto.longUrl.trim(),
     };
 
+    // Handle tag associations if provided
+    if (dto.tagIds && dto.tagIds.length > 0) {
+      const validTagIds = tagsService.validateAndFilterTagIds(dto.tagIds);
+      if (validTagIds.length > 0) {
+        tagsService.associateTagsWithLink(newLink.id, validTagIds);
+      }
+    }
+
     this.inMemoryLinks.unshift(newLink);
-    return newLink;
+    return this.enrichLinkWithTags(newLink);
   }
 
   /**
@@ -122,12 +161,19 @@ export class ShortLinksService {
       shortUrl: dto.shortUrl ?? existingLink.shortUrl,
     };
 
+    // Handle tag associations if provided
+    if (dto.tagIds !== undefined) {
+      const validTagIds = tagsService.validateAndFilterTagIds(dto.tagIds);
+      tagsService.associateTagsWithLink(id, validTagIds);
+    }
+
     this.inMemoryLinks[index] = updatedLink;
-    return updatedLink;
+    return this.enrichLinkWithTags(updatedLink);
   }
 
   /**
    * Deletes a short link from memory by its ID.
+   * Also removes all tag associations for this link.
    * 
    * @param id - The ShortLink ID to delete
    * @returns true if removed, false if not found
@@ -135,7 +181,14 @@ export class ShortLinksService {
   public deleteLink(id: string): boolean {
     const initialLength = this.inMemoryLinks.length;
     this.inMemoryLinks = this.inMemoryLinks.filter((link) => link.id !== id);
-    return this.inMemoryLinks.length < initialLength;
+    
+    const wasDeleted = this.inMemoryLinks.length < initialLength;
+    if (wasDeleted) {
+      // Clean up tag associations
+      tagsService.removeLinkAssociations(id);
+    }
+    
+    return wasDeleted;
   }
 
   /**

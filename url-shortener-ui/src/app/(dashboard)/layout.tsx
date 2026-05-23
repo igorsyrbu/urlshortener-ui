@@ -4,10 +4,11 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { MobileSidebarDrawer } from "@/components/layout/mobile-sidebar-drawer";
 import { CreateLinkModal } from "@/components/links/CreateLinkModal";
-import { useState, useRef, useEffect } from "react";
+import { CreateTagModal } from "@/components/tags/CreateTagModal";
+import React, { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "@/lib/store/auth";
 import { useUIStore } from "@/lib/store/ui";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import {
@@ -24,12 +25,23 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const router = useRouter();
-    const { isCreateModalOpen, setCreateModalOpen } = useUIStore();
+    const pathname = usePathname();
+    const { isCreateModalOpen, setCreateModalOpen, isCreateTagModalOpen, setCreateTagModalOpen } = useUIStore();
     const [isHeaderHidden, setIsHeaderHidden] = useState(false);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const lastScrollY = useRef(0);
+
+    const isTagsPage = pathname === "/tags" || pathname.startsWith("/tags/");
+    const createLabel = isTagsPage ? "Create tag" : "Create link";
+    const handleCreateClick = () => {
+        if (isTagsPage) {
+            setCreateTagModalOpen(true);
+        } else {
+            setCreateModalOpen(true);
+        }
+    };
 
     useEffect(() => {
         let mounted = true;
@@ -82,7 +94,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     if (isCheckingAuth) {
         return (
-            <div className="h-[100dvh] w-full flex flex-col gap-4 items-center justify-center bg-sidebar text-muted-foreground">
+            <div className="h-dvh w-full flex flex-col gap-4 items-center justify-center bg-sidebar text-muted-foreground">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="text-sm font-medium">Securing session...</p>
             </div>
@@ -90,17 +102,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
 
     return (
-        <div className="bg-sidebar h-[100dvh] w-full overflow-hidden text-foreground transition-colors duration-300">
+        <div className="bg-sidebar h-dvh w-full overflow-hidden text-foreground transition-colors duration-300">
             <div className="flex h-full w-full">
                 <Sidebar />
                 <div className="flex flex-1 flex-col min-w-0 h-full overflow-hidden relative">
                     <div
-                        className={`z-20 shrink-0 border-b bg-sidebar transition-all duration-300 ease-in-out ${isScrolled ? "border-border/50 shadow-sm" : "border-transparent"} ${isHeaderHidden ? "-mt-16 opacity-0 pointer-events-none md:mt-0 md:pointer-events-auto md:opacity-100" : "mt-0 opacity-100"}`}
+                        className={`z-20 shrink-0 border-b bg-sidebar overflow-y-auto [scrollbar-gutter:stable] transition-all duration-300 ease-in-out ${isScrolled ? "border-border/50 shadow-sm" : "border-transparent"} ${isHeaderHidden ? "-mt-16 opacity-0 pointer-events-none md:mt-0 md:pointer-events-auto md:opacity-100" : "mt-0 opacity-100"}`}
                     >
                         <div className={DASHBOARD_CONTENT_SHELL_CLASS}>
                             <Header
-                                onCreateClick={() => setCreateModalOpen(true)}
+                                onCreateClick={handleCreateClick}
                                 onMenuClick={() => setIsMobileSidebarOpen(true)}
+                                createLabel={createLabel}
                             />
                         </div>
                     </div>
@@ -117,6 +130,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
             </div>
             <CreateLinkModal open={isCreateModalOpen} onOpenChange={setCreateModalOpen} />
+            <CreateTagModal open={isCreateTagModalOpen} onOpenChange={setCreateTagModalOpen} />
             <MobileSidebarDrawer open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen} />
         </div>
     );

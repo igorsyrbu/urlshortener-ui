@@ -1,6 +1,6 @@
 import {create} from "zustand";
 import {fetchWithAuth} from "@/lib/api";
-import {DateRange} from "react-day-picker";
+import type {DateRange} from "react-day-picker";
 import {LinkItem} from "@/lib/types";
 import {API_ENDPOINTS, DEFAULT_PERIOD_DAYS} from "@/lib/constants";
 

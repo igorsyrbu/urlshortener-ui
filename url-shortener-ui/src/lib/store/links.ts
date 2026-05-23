@@ -8,6 +8,7 @@ interface ShortLinkResponse {
     title: string;
     shortUrl: string;
     longUrl: string;
+    tagIds?: string[];
 }
 
 interface PageResponse<T> {
@@ -38,6 +39,7 @@ function mapResponseToLinkItem(item: ShortLinkResponse): LinkItem {
         title: item.title || DEFAULT_LINK_TITLE,
         shortUrl: item.shortUrl,
         longUrl: item.longUrl,
+        tagIds: item.tagIds,
     };
 }
 
