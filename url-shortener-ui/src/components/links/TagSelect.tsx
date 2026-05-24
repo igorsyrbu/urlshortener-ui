@@ -145,7 +145,7 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
                 side="bottom"
                 avoidCollisions={false}
                 portalled={false}
-                className="w-full p-0"
+                className="w-(--radix-popover-trigger-width) p-0"
                 sideOffset={4}
                 onKeyDown={handleKeyDown}
             >
@@ -184,7 +184,7 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
                                         }
                                     }}
                                     className={cn(
-                                        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-left transition-colors",
+                                        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-left transition-colors min-w-0",
                                         isActive ? "bg-muted" : "hover:bg-muted/50",
                                     )}
                                 >
@@ -204,7 +204,7 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
                                             iconColorForTag(t.color),
                                         )}
                                     />
-                                    <span className="truncate">{t.name}</span>
+                                    <span className="truncate" title={t.name}>{t.name}</span>
                                 </button>
                             );
                         })
@@ -219,7 +219,7 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
                             onClick={handleCreate}
                             disabled={createLoading}
                             className={cn(
-                                "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-left transition-colors",
+                                "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-left transition-colors min-w-0",
                                 activeIndex === filteredTags.length ? "bg-muted" : "hover:bg-muted/50",
                                 createLoading && "cursor-not-allowed opacity-50",
                             )}
@@ -229,7 +229,7 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
                             ) : (
                                 <Plus className="size-4 text-muted-foreground shrink-0"/>
                             )}
-                            <span>
+                            <span className="truncate" title={search}>
                                 Create <span className="font-medium">&quot;{search}&quot;</span>
                             </span>
                         </button>

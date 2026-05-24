@@ -25,7 +25,7 @@ export function TagBadge({
     return (
         <Badge variant={tag.color as never} className={cn(TAG_BASE_CLASS, className)}>
             {showIcon && <Tag className="size-3 mr-1.5 shrink-0"/>}
-            <span className={cn("shrink-0 -mt-px", children && "truncate max-w-36")}>
+            <span className="shrink-0 -mt-px truncate max-w-36" title={tag.name}>
                 {tag.name}
             </span>
             {children}

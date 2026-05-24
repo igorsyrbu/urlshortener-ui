@@ -110,7 +110,9 @@ export function CreateLinkModal({open, onOpenChange}: CreateLinkModalProps) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 aria-describedby={undefined}
-                className="gap-0 border-border bg-background/95 p-0 backdrop-blur-md sm:max-w-106.25 sm:rounded-2xl">
+                className="gap-0 border-border bg-background/95 p-0 backdrop-blur-md sm:max-w-106.25 sm:rounded-2xl"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+            >
                 {open ? <CreateLinkModalBody onOpenChange={onOpenChange}/> : null}
             </DialogContent>
         </Dialog>

@@ -123,6 +123,8 @@ export default function LinksPage() {
                     onConfirm={confirmDelete}
                     loading={isDeleting}
                     linkTitle={linkToDelete?.title}
+                    shortUrl={linkToDelete?.shortUrl}
+                    longUrl={linkToDelete?.longUrl}
                 />
 
                 <QrCodeModal

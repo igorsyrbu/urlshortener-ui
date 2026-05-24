@@ -112,6 +112,7 @@ export default function TagsPage() {
                 onConfirm={confirmDelete}
                 loading={isDeleting}
                 tagName={tagToDelete?.name}
+                tagColor={tagToDelete?.color}
             />
         </PageContainer>
     );

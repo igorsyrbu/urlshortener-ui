@@ -36,6 +36,7 @@ export function LinkFormModal({
             <DialogContent
                 aria-describedby={undefined}
                 className="sm:max-w-106.25 sm:rounded-2xl backdrop-blur-md bg-background/95 border-border gap-0 p-0"
+                onOpenAutoFocus={(e) => e.preventDefault()}
             >
                 <DialogHeader className="p-6 pb-4">
                     <DialogTitle>{title}</DialogTitle>
