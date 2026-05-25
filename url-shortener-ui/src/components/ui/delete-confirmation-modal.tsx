@@ -7,6 +7,7 @@ import {Input} from "@/components/ui/input";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle
@@ -121,7 +122,7 @@ export function DeleteConfirmationModal({
 
                 <div className="flex flex-col gap-4 -mt-1 w-full min-w-0 overflow-hidden">
                     <div className="flex flex-col gap-2">
-                        <p className="text-sm text-foreground">{description}</p>
+                        <DialogDescription className="text-sm text-foreground">{description}</DialogDescription>
                         {warningText && (
                             <p className="text-sm font-semibold text-foreground">{warningText}</p>
                         )}
