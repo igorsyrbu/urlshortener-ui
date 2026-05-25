@@ -56,7 +56,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <div
-                    className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-sidebar-accent/50">
+                    className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-sidebar-accent/50 focus:outline-none">
                     <Avatar className="size-8 shrink-0 border border-sidebar-border bg-sidebar-accent">
                         <AvatarImage
                             src={user?.pictureUrl || undefined}

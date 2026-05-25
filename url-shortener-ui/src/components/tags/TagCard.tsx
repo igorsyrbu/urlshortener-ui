@@ -61,7 +61,7 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
         <div
             ref={cardRef}
             tabIndex={0}
-            className="group flex items-center p-3 md:p-4 rounded-xl bg-background border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-3 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="group flex items-center p-3 md:p-4 rounded-xl bg-background border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-3 outline-none"
         >
             <div className="flex-1 min-w-0 flex items-center gap-3">
                 <Badge

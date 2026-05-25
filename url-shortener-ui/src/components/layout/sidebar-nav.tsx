@@ -39,7 +39,7 @@ export function SidebarNav({onNavigate}: SidebarNavProps) {
                             href={item.href}
                             onClick={() => onNavigate?.()}
                             className={cn(
-                                "group flex items-center gap-3 rounded-lg px-4 py-1.5 transition-all",
+                                "group flex items-center gap-3 rounded-lg px-4 py-1.5 transition-all focus:outline-none",
                                 isActive
                                     ? "bg-sidebar-accent/80 text-sidebar-accent-foreground"
                                     : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",

@@ -128,7 +128,7 @@ export function LinkCard({link, onEdit, onDelete, onQrCode}: LinkCardProps) {
         <div
             ref={cardRef}
             tabIndex={0}
-            className="group flex items-center p-4 md:p-5 rounded-xl bg-background border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            className="group flex items-center p-4 md:p-5 rounded-xl bg-background border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-4 outline-none">
             <div
                 className="shrink-0 size-9 rounded-full flex items-center justify-center border-[0.5px] border-border overflow-hidden bg-muted text-foreground">
                 <LinkFavicon longUrl={link.longUrl}/>
