@@ -16,6 +16,7 @@ the User Experience (UX), focusing squarely on simplicity, clarity, and ease of 
 ## Features
 
 - **Link Management** — Create, organize, and manage short links from a clean, intuitive interface
+- **Tag Management** — Create, edit, and delete color-coded tags to organize and filter your short links
 - **Analytics Dashboard** — Track link performance with detailed charts, date range presets, and breakdowns by location,
   referrer, and device
 - **Authentication** — Sign in securely via Magic Links or Google OAuth
@@ -158,6 +159,15 @@ curl -H "x-mock-error: true" http://localhost:8080/users/me
 | PUT    | `/shortlinks`             | Update an existing short link |
 | DELETE | `/shortlinks/:id`         | Delete a short link           |
 | GET    | `/longurl/title?url=`     | Extract page title from URL   |
+
+**Tags**
+
+| Method | Path                                 | Description                    |
+|--------|--------------------------------------|--------------------------------|
+| GET    | `/tags?page=&size=&withLinksCount=`  | Paginated list of tags         |
+| POST   | `/tags`                              | Create a new tag               |
+| PUT    | `/tags`                              | Update an existing tag         |
+| DELETE | `/tags/:id`                          | Delete a tag                   |
 
 **Analytics**
 
