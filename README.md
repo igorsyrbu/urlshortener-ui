@@ -26,22 +26,22 @@ the User Experience (UX), focusing squarely on simplicity, clarity, and ease of 
 
 - **Frontend** — [Next.js](https://nextjs.org/)
 - **Mock Server** — [Express](https://expressjs.com/)
-- **Package Management** — npm Workspaces
+- **Package Management** — pnpm Workspaces
 
 ## Prerequisites
 
 - **Node.js** `>= 22.0.0`
-- **npm** `>= 10.0.0`
+- **pnpm** `>= 9.0.0`
 
 ## Getting Started
 
 ### Installation
 
-This project uses npm workspaces, you only need to run the install command once from the root directory. This will
-automatically install the dependencies for both the UI and the mock server:
+This project uses [pnpm workspaces](https://pnpm.io/workspaces). Run the install command once from the root directory
+to install dependencies for both the UI and the mock server:
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### Running the Applications
