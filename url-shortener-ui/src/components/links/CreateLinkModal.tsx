@@ -1,14 +1,16 @@
 "use client";
 
 import {useState} from "react";
-import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/components/ui/drawer";
+import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
 import {useLinkStore} from "@/lib/store/links";
 import {AnimatePresence, motion} from "framer-motion";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
 import {CreateLinkSuccess} from "@/components/links/CreateLinkSuccess";
 import {CreateLinkModalLoading} from "@/components/links/CreateLinkModalLoading";
 import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS, CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD} from "@/lib/constants";
+import {API_ENDPOINTS, CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
 import type {ShortLinkData} from "@/components/links/create-link-types";
 
 type ViewState = "form" | "loading" | "success";
@@ -25,6 +27,7 @@ interface CreateLinkModalBodyProps {
 const CONFETTI_ORIGIN_Y = 0.6;
 
 function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
+    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
     const [viewState, setViewState] = useState<ViewState>("form");
     const [shortLink, setShortLink] = useState<ShortLinkData | null>(null);
     const {fetchLinks} = useLinkStore();
@@ -82,10 +85,13 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
                         transition={{duration: 0.2}}
                         className="p-6"
                     >
-                        <DialogHeader className="mb-4">
-                            <DialogTitle>Create link</DialogTitle>
-                        </DialogHeader>
+                        {isDesktop && (
+                            <DialogHeader className="mb-4">
+                                <h2 className="text-lg font-semibold leading-none">Create link</h2>
+                            </DialogHeader>
+                        )}
                         <LinkFormFields
+                            title="Create link"
                             onSubmit={handleFormSubmit}
                             submitLabel="Create"
                             submittingLabel="Creating..."
@@ -106,15 +112,30 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
 }
 
 export function CreateLinkModal({open, onOpenChange}: CreateLinkModalProps) {
+    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+
+    if (isDesktop) {
+        return (
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent
+                    className="gap-0 border-border bg-background/95 p-0 backdrop-blur-md sm:max-w-106.25 sm:rounded-2xl"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                    <DialogTitle className="sr-only">Create link</DialogTitle>
+                    <DialogDescription className="sr-only">Create a new short link to share</DialogDescription>
+                    {open ? <CreateLinkModalBody onOpenChange={onOpenChange}/> : null}
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
-                aria-describedby={undefined}
-                className="gap-0 border-border bg-background/95 p-0 backdrop-blur-md sm:max-w-106.25 sm:rounded-2xl"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-            >
+        <Drawer open={open} onOpenChange={onOpenChange}>
+            <DrawerContent className="p-0 outline-hidden">
+                <DrawerTitle className="sr-only">Create link</DrawerTitle>
+                <DrawerDescription className="sr-only">Create a new short link to share</DrawerDescription>
                 {open ? <CreateLinkModalBody onOpenChange={onOpenChange}/> : null}
-            </DialogContent>
-        </Dialog>
+            </DrawerContent>
+        </Drawer>
     );
 }

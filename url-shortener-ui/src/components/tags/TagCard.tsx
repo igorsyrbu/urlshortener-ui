@@ -12,7 +12,9 @@ import {
 import {Kbd} from "@/components/ui/kbd";
 import {Badge} from "@/components/ui/badge";
 import {TagItem} from "@/lib/types";
-import {SHORTCUT_KEY_CLASS} from "@/lib/constants";
+import {MOBILE_BREAKPOINT_PX, MORE_ACTIONS_BUTTON_CLASS, SHORTCUT_KEY_CLASS} from "@/lib/constants";
+import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {ActionDrawer} from "@/components/ui/action-drawer";
 
 interface TagCardProps {
     tag: TagItem;
@@ -23,6 +25,7 @@ interface TagCardProps {
 export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
+    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
 
     const linkCount = tag.linkCount ?? 0;
 
@@ -85,31 +88,60 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
                         {linkCount} {linkCount === 1 ? "link" : "links"}
                     </Badge>
                 )}
-                <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-                    <DropdownMenuTrigger asChild>
+                {isDesktop ? (
+                    <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                className={MORE_ACTIONS_BUTTON_CLASS}
+                            >
+                                <MoreHorizontal className="size-5"/>
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="sm:min-w-40">
+                            <DropdownMenuItem onClick={() => onEdit(tag)}>
+                                <PencilLine className="size-4 mr-2"/>
+                                Edit
+                                <Kbd className={SHORTCUT_KEY_CLASS}>E</Kbd>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator/>
+                            <DropdownMenuItem
+                                onClick={() => onDelete(tag)}
+                                variant="destructive"
+                            >
+                                <Trash2 className="size-4 mr-2"/>
+                                Delete
+                                <Kbd className={SHORTCUT_KEY_CLASS}>D</Kbd>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                ) : (
+                    <>
                         <button
-                            className="p-1 px-1.5 text-muted-foreground hover:text-foreground transition-colors focus:outline-none -mr-1"
+                            onClick={() => setIsMenuOpen(true)}
+                            className={MORE_ACTIONS_BUTTON_CLASS}
                         >
                             <MoreHorizontal className="size-5"/>
                         </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="sm:min-w-40">
-                        <DropdownMenuItem onClick={() => onEdit(tag)}>
-                            <PencilLine className="size-4 mr-2"/>
-                            Edit
-                            <Kbd className={SHORTCUT_KEY_CLASS}>E</Kbd>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator/>
-                        <DropdownMenuItem
-                            onClick={() => onDelete(tag)}
-                            variant="destructive"
-                        >
-                            <Trash2 className="size-4 mr-2"/>
-                            Delete
-                            <Kbd className={SHORTCUT_KEY_CLASS}>D</Kbd>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                        <ActionDrawer
+                            open={isMenuOpen}
+                            onOpenChange={setIsMenuOpen}
+                            actions={[
+                                {
+                                    label: "Edit",
+                                    icon: PencilLine,
+                                    onClick: () => onEdit(tag),
+                                },
+                                {
+                                    label: "Delete",
+                                    icon: Trash2,
+                                    onClick: () => onDelete(tag),
+                                    variant: "destructive",
+                                    hasSeparator: true,
+                                },
+                            ]}
+                        />
+                    </>
+                )}
             </div>
         </div>
     );

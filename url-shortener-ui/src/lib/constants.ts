@@ -46,6 +46,9 @@ export const AUTH_REDIRECT_DELAY_MS = 1000;
 
 export const LARGE_SCREEN_MIN_WIDTH_PX = 1024;
 
+/** Below this width the mobile layout (drawer/bottom-sheet) is shown. Aligns with Tailwind `sm` (640px). */
+export const MOBILE_BREAKPOINT_PX = 640;
+
 /** Shared by dashboard header + scroll region so controls align with page cards. */
 export const DASHBOARD_CONTENT_SHELL_CLASS =
     "mx-auto w-full max-w-7xl px-4 md:px-8 lg:px-10";
@@ -82,6 +85,10 @@ export const DEFAULT_PERIOD_DAYS = 30;
 
 /** Shared class for shortcut-keybd indicators inside dropdown menus. */
 export const SHORTCUT_KEY_CLASS = "ml-auto hidden sm:inline-flex min-w-5 max-w-5";
+
+/** Shared class for the three-dots "more actions" trigger button on link/tag cards. */
+export const MORE_ACTIONS_BUTTON_CLASS =
+    "p-1 px-1.5 text-muted-foreground hover:text-foreground transition-colors focus:outline-none -mr-1";
 
 // ---------------------------------------------------------------------------
 // Default / fallback labels

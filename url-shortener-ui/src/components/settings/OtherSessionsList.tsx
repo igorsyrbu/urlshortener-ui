@@ -46,7 +46,7 @@ export function OtherSessionsList({sessions, sessionActionLoading, onLogoutSessi
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="w-full sm:w-auto"
+                                    className="w-fit"
                                     onClick={() => onLogoutSession(session.id)}
                                     disabled={isActionLoading || sessionActionLoading !== null}
                                 >

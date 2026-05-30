@@ -1,20 +1,21 @@
 "use client";
 
 import React, {useEffect, useState} from "react";
-import {Button} from "@/components/ui/button";
-import {DialogFooter} from "@/components/ui/dialog";
-import {EnterKbd} from "@/components/ui/enter-kbd";
-import {Input} from "@/components/ui/input";
+import {AnimatePresence, motion} from "framer-motion";
 import {fetchWithAuth} from "@/lib/api";
 import {generateTitleFromHostname} from "@/lib/utils";
 import {getDomain, isValidUrl, normalizeUrl} from "@/lib/url-utils";
-import {API_ENDPOINTS, GLOW_FADE_DELAY_MS} from "@/lib/constants";
-import {CreateLinkUrlField} from "@/components/links/CreateLinkUrlField";
-import {CreateLinkTitleField} from "@/components/links/CreateLinkTitleField";
-import {TagSelect} from "@/components/links/TagSelect";
+import {API_ENDPOINTS, GLOW_FADE_DELAY_MS, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import type {GlowState} from "@/components/links/create-link-types";
+import {FormScreenContent} from "@/components/links/LinkFormMainScreen";
+import {TagsScreenContent} from "@/components/links/LinkFormTagsScreen";
+import {ALLOWED_TAG_COLORS} from "@/lib/tag-constants";
 
 interface LinkFormFieldsProps {
+    title: string;
     initialLongUrl?: string;
     initialTitle?: string;
     initialTagIds?: string[];
@@ -25,31 +26,66 @@ interface LinkFormFieldsProps {
     enableTitleSuggestion?: boolean;
 }
 
-const LONG_URL_FIELD_ID = "longUrl";
-const TITLE_FIELD_ID = "title";
 const EMPTY_TAG_IDS: string[] = [];
 
+const slideVariants = {
+    enter: (direction: number) => ({
+        x: direction > 0 ? "100%" : "-100%",
+        opacity: 0
+    }),
+    center: {
+        x: 0,
+        opacity: 1
+    },
+    exit: (direction: number) => ({
+        x: direction < 0 ? "100%" : "-100%",
+        opacity: 0
+    })
+};
+
 export function LinkFormFields({
-    initialLongUrl = "",
-    initialTitle = "",
-    initialTagIds = EMPTY_TAG_IDS,
-    onSubmit,
-    submitLabel,
-    submittingLabel,
-    onCancel,
-    enableTitleSuggestion = false,
-}: LinkFormFieldsProps) {
+                                   title,
+                                   initialLongUrl = "",
+                                   initialTitle = "",
+                                   initialTagIds = EMPTY_TAG_IDS,
+                                   onSubmit,
+                                   submitLabel,
+                                   submittingLabel,
+                                   onCancel,
+                                   enableTitleSuggestion = false,
+                               }: LinkFormFieldsProps) {
+    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const [activeScreen, setActiveScreen] = useState<"form" | "tags">("form");
+    const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
+
     const [longUrl, setLongUrl] = useState(initialLongUrl);
     const [urlError, setUrlError] = useState<string | null>(null);
-    const [title, setTitle] = useState(initialTitle);
+    const [titleText, setTitleText] = useState(initialTitle);
     const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialTagIds);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingTitle, setIsLoadingTitle] = useState(false);
     const [glowState, setGlowState] = useState<GlowState>("idle");
 
+    // Tag list operations
+    const {tags, loading: tagsLoading} = useTagStoreWithoutCount();
+    const {createTag} = useTagMutations();
+    const [tagSearch, setTagSearch] = useState("");
+    const [createTagLoading, setCreateTagLoading] = useState(false);
+    const [tagError, setTagError] = useState<string | null>(null);
+
+    const filteredTags = tags
+        .filter((t) => t.name.toLowerCase().includes(tagSearch.toLowerCase()))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    const hasExactMatch = tags.some(
+        (t) => t.name.toLowerCase() === tagSearch.trim().toLowerCase()
+    );
+
+    const showCreateOption = tagSearch.trim() !== "" && !hasExactMatch;
+
     useEffect(() => {
         setLongUrl(initialLongUrl);
-        setTitle(initialTitle);
+        setTitleText(initialTitle);
         setSelectedTagIds(initialTagIds);
         setUrlError(null);
     }, [initialLongUrl, initialTitle, initialTagIds]);
@@ -83,7 +119,7 @@ export function LinkFormFields({
     const setTitleFromHostname = (url: string) => {
         try {
             const hostname = getDomain(url);
-            setTitle(generateTitleFromHostname(hostname));
+            setTitleText(generateTitleFromHostname(hostname));
             applyGlowFeedback();
         } catch {
             setGlowState("idle");
@@ -99,7 +135,7 @@ export function LinkFormFields({
             if (res.ok) {
                 const text = await res.text();
                 if (text && text.trim()) {
-                    setTitle(text);
+                    setTitleText(text);
                     applyGlowFeedback();
                 } else {
                     setTitleFromHostname(longUrl);
@@ -114,82 +150,128 @@ export function LinkFormFields({
         }
     };
 
-    const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handleSubmit = async (e?: React.SyntheticEvent) => {
+        if (e) e.preventDefault();
         const normalized = normalizeUrl(longUrl);
         if (normalized !== longUrl) {
             setLongUrl(normalized);
         }
         if (!isValidUrl(normalized)) {
             setUrlError("Please enter a valid URL (e.g. https://example.com)");
+            setSlideDirection(-1);
+            setActiveScreen("form");
             return;
         }
         setIsSubmitting(true);
         try {
-            await onSubmit(normalized, title, selectedTagIds);
+            await onSubmit(normalized, titleText, selectedTagIds);
         } catch {
             setIsSubmitting(false);
         }
     };
 
+    const handleCreateTag = async () => {
+        if (!tagSearch.trim() || createTagLoading) return;
+        setCreateTagLoading(true);
+        setTagError(null);
+        try {
+            const randomColor = ALLOWED_TAG_COLORS[Math.floor(Math.random() * ALLOWED_TAG_COLORS.length)];
+            const newTag = await createTag(tagSearch.trim(), randomColor);
+            setSelectedTagIds((prev) => [...prev, newTag.id]);
+            setTagSearch("");
+        } catch {
+            setTagError("Failed to create tag");
+        } finally {
+            setCreateTagLoading(false);
+        }
+    };
+
+    const handleToggleTag = (tagId: string) => {
+        setSelectedTagIds((prev) =>
+            prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+        );
+    };
+
     const canSuggestTitle = Boolean(longUrl) && !urlError;
 
     return (
-        <form onSubmit={handleSubmit} className="grid gap-4">
-            <CreateLinkUrlField
-                inputId={LONG_URL_FIELD_ID}
-                value={longUrl}
-                urlError={urlError}
-                onChange={handleUrlChange}
-                onBlur={handleUrlBlur}
-            />
-            {enableTitleSuggestion ? (
-                <CreateLinkTitleField
-                    inputId={TITLE_FIELD_ID}
-                    value={title}
-                    glowState={glowState}
-                    isLoadingTitle={isLoadingTitle}
-                    canSuggestTitle={canSuggestTitle}
-                    onChange={setTitle}
-                    onSuggestTitle={fetchTitle}
-                />
-            ) : (
-                <div className="grid gap-2">
-                    <label htmlFor={TITLE_FIELD_ID} className="text-sm font-medium">
-                        Title
-                    </label>
-                    <Input
-                        id={TITLE_FIELD_ID}
-                        placeholder="e.g. Marketing Campaign Q4"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                    />
-                </div>
-            )}
-            <div className="grid gap-2">
-                <label className="text-sm font-medium">Tags</label>
-                <TagSelect
-                    selectedTagIds={selectedTagIds}
-                    onChange={setSelectedTagIds}
-                />
-            </div>
-            <DialogFooter className="pt-2 gap-2 sm:gap-2">
-                <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>
-                    Cancel
-                </Button>
-                <Button
-                    type="submit"
-                    disabled={isSubmitting || !longUrl.trim()}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                    {isSubmitting ? submittingLabel : (
-                        <>
-                            {submitLabel}
-                            <EnterKbd />
-                        </>
-                    )}
-                </Button>
-            </DialogFooter>
-        </form>
+        <div className="overflow-hidden w-full relative">
+            <AnimatePresence mode="wait" initial={false} custom={slideDirection}>
+                {activeScreen === "form" ? (
+                    <motion.div
+                        key="form"
+                        custom={slideDirection}
+                        variants={slideVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{duration: 0.2, ease: "easeInOut"}}
+                        className="w-full"
+                    >
+                        <FormScreenContent
+                            title={title}
+                            isDesktop={isDesktop}
+                            longUrl={longUrl}
+                            urlError={urlError}
+                            titleText={titleText}
+                            glowState={glowState}
+                            isLoadingTitle={isLoadingTitle}
+                            canSuggestTitle={canSuggestTitle}
+                            enableTitleSuggestion={enableTitleSuggestion}
+                            selectedTagIds={selectedTagIds}
+                            tags={tags}
+                            isSubmitting={isSubmitting}
+                            submitLabel={submitLabel}
+                            submittingLabel={submittingLabel}
+                            onCancel={onCancel}
+                            onUrlChange={handleUrlChange}
+                            onUrlBlur={handleUrlBlur}
+                            onTitleChange={setTitleText}
+                            onSuggestTitle={fetchTitle}
+                            onOpenTagScreen={() => {
+                                setSlideDirection(1);
+                                setActiveScreen("tags");
+                            }}
+                            onTagChange={setSelectedTagIds}
+                            onSubmit={handleSubmit}
+                        />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="tags"
+                        custom={slideDirection}
+                        variants={slideVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{duration: 0.2, ease: "easeInOut"}}
+                        className="w-full"
+                    >
+                        <TagsScreenContent
+                            tagSearch={tagSearch}
+                            onTagSearchChange={setTagSearch}
+                            onCreateTag={handleCreateTag}
+                            createTagLoading={createTagLoading}
+                            tags={tags}
+                            tagsLoading={tagsLoading}
+                            filteredTags={filteredTags}
+                            showCreateOption={showCreateOption}
+                            selectedTagIds={selectedTagIds}
+                            onToggleTag={handleToggleTag}
+                            tagError={tagError}
+                            isSubmitting={isSubmitting}
+                            longUrl={longUrl}
+                            submitLabel={submitLabel}
+                            submittingLabel={submittingLabel}
+                            onBack={() => {
+                                setSlideDirection(-1);
+                                setActiveScreen("form");
+                            }}
+                            onSubmit={handleSubmit}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import {Button} from "@/components/ui/button";
 import {
     Dialog,
@@ -7,7 +9,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {DEFAULT_JWT_TTL_DISPLAY} from "@/lib/constants";
+import {
+    Drawer,
+    DrawerContent,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerHeader,
+    DrawerTitle,
+} from "@/components/ui/drawer";
+import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {DEFAULT_JWT_TTL_DISPLAY, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
 
 export type LogoutTarget =
     | { type: "single"; id: string; isCurrent: boolean }
@@ -39,21 +50,48 @@ function getDialogDescription(target: LogoutTarget, ttl: string): string {
 
 export function SessionLogoutDialog({target, jwtTTL, onClose, onConfirm}: SessionLogoutDialogProps) {
     const ttl = jwtTTL || DEFAULT_JWT_TTL_DISPLAY;
+    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const open = target !== null;
+
+    if (isDesktop) {
+        return (
+            <Dialog open={open} onOpenChange={(isOpen) => {
+                if (!isOpen) onClose();
+            }}>
+                <DialogContent showCloseButton={false}>
+                    <DialogHeader>
+                        <DialogTitle>{getDialogTitle(target)}</DialogTitle>
+                        <DialogDescription>{getDialogDescription(target, ttl)}</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={onClose}>Cancel</Button>
+                        <Button onClick={onConfirm}>Continue</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     return (
-        <Dialog open={target !== null} onOpenChange={(open) => {
-            if (!open) onClose();
+        <Drawer open={open} onOpenChange={(isOpen) => {
+            if (!isOpen) onClose();
         }}>
-            <DialogContent showCloseButton={false}>
-                <DialogHeader>
-                    <DialogTitle>{getDialogTitle(target)}</DialogTitle>
-                    <DialogDescription>{getDialogDescription(target, ttl)}</DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button onClick={onConfirm}>Continue</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            <DrawerContent className="outline-hidden px-6 pb-6 gap-6">
+                <DrawerHeader className="p-0 pb-6 text-center">
+                    <DrawerTitle>{getDialogTitle(target)}</DrawerTitle>
+                    <DrawerDescription className="text-sm text-foreground/70 mt-2">
+                        {getDialogDescription(target, ttl)}
+                    </DrawerDescription>
+                </DrawerHeader>
+                <DrawerFooter className="p-0 flex flex-col gap-2">
+                    <Button onClick={onConfirm} className="w-full">
+                        Continue
+                    </Button>
+                    <Button variant="ghost" onClick={onClose} className="w-full">
+                        Cancel
+                    </Button>
+                </DrawerFooter>
+            </DrawerContent>
+        </Drawer>
     );
 }

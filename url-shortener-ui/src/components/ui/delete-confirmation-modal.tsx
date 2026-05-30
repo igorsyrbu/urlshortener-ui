@@ -2,7 +2,7 @@
 
 import React, {useEffect, useState} from "react";
 import {Check, Copy} from "lucide-react";
-import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
+import {COPY_FEEDBACK_DURATION_MS, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
 import {Input} from "@/components/ui/input";
 import {
     Dialog,
@@ -12,6 +12,15 @@ import {
     DialogHeader,
     DialogTitle
 } from "@/components/ui/dialog";
+import {
+    Drawer,
+    DrawerContent,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerHeader,
+    DrawerTitle
+} from "@/components/ui/drawer";
+import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
 import {Button} from "@/components/ui/button";
 
 interface DeleteConfirmationModalProps {
@@ -38,12 +47,12 @@ interface ConfirmationSectionProps {
 }
 
 function ConfirmationSection({
-    confirmationValue,
-    confirmationType,
-    inputValue,
-    onInputChange,
-    disabled,
-}: ConfirmationSectionProps) {
+                                 confirmationValue,
+                                 confirmationType,
+                                 inputValue,
+                                 onInputChange,
+                                 disabled,
+                             }: ConfirmationSectionProps) {
     const [isCopied, setIsCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -87,19 +96,20 @@ function ConfirmationSection({
 }
 
 export function DeleteConfirmationModal({
-    open,
-    onOpenChange,
-    onConfirm,
-    loading,
-    title,
-    description,
-    warningText,
-    previewContent,
-    confirmLabel = "Delete",
-    confirmLoadingLabel = "Deleting...",
-    confirmationValue,
-    confirmationType,
-}: DeleteConfirmationModalProps) {
+                                            open,
+                                            onOpenChange,
+                                            onConfirm,
+                                            loading,
+                                            title,
+                                            description,
+                                            warningText,
+                                            previewContent,
+                                            confirmLabel = "Delete",
+                                            confirmLoadingLabel = "Deleting...",
+                                            confirmationValue,
+                                            confirmationType,
+                                        }: DeleteConfirmationModalProps) {
+    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
     const [inputValue, setInputValue] = useState("");
 
     useEffect(() => {
@@ -110,55 +120,96 @@ export function DeleteConfirmationModal({
 
     const isConfirmed = !confirmationValue || inputValue === confirmationValue;
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent 
-                className="sm:max-w-106.25 sm:rounded-2xl backdrop-blur-md bg-background/95 border-border"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-            >
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                </DialogHeader>
+    const bodyContent = (
+        <div className="flex flex-col gap-4 mt-3 sm:-mt-1 w-full min-w-0 overflow-hidden">
+            <div className="flex flex-col gap-2">
+                {isDesktop ? (
+                    <DialogDescription className="text-sm text-foreground">{description}</DialogDescription>
+                ) : (
+                    <DrawerDescription className="text-sm text-foreground">{description}</DrawerDescription>
+                )}
+                {warningText && (
+                    <p className="text-sm font-semibold text-foreground">{warningText}</p>
+                )}
+            </div>
 
-                <div className="flex flex-col gap-4 -mt-1 w-full min-w-0 overflow-hidden">
-                    <div className="flex flex-col gap-2">
-                        <DialogDescription className="text-sm text-foreground">{description}</DialogDescription>
-                        {warningText && (
-                            <p className="text-sm font-semibold text-foreground">{warningText}</p>
-                        )}
-                    </div>
+            {previewContent}
 
-                    {previewContent}
+            {confirmationValue && (
+                <ConfirmationSection
+                    confirmationValue={confirmationValue}
+                    confirmationType={confirmationType}
+                    inputValue={inputValue}
+                    onInputChange={setInputValue}
+                    disabled={loading}
+                />
+            )}
+        </div>
+    );
 
-                    {confirmationValue && (
-                        <ConfirmationSection
-                            confirmationValue={confirmationValue}
-                            confirmationType={confirmationType}
-                            inputValue={inputValue}
-                            onInputChange={setInputValue}
+    if (isDesktop) {
+        return (
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent
+                    className="sm:max-w-106.25 sm:rounded-2xl backdrop-blur-md bg-background/95 border-border"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                    <DialogHeader>
+                        <DialogTitle>{title}</DialogTitle>
+                    </DialogHeader>
+
+                    {bodyContent}
+
+                    <DialogFooter className="gap-2 sm:gap-2">
+                        <Button
+                            variant="ghost"
+                            onClick={() => onOpenChange(false)}
                             disabled={loading}
-                        />
-                    )}
-                </div>
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={onConfirm}
+                            disabled={loading || !isConfirmed}
+                        >
+                            {loading ? confirmLoadingLabel : confirmLabel}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
-                <DialogFooter className="gap-2 sm:gap-2">
-                    <Button
-                        variant="ghost"
-                        onClick={() => onOpenChange(false)}
-                        disabled={loading}
-                    >
-                        Cancel
-                    </Button>
+    return (
+        <Drawer open={open} onOpenChange={onOpenChange}>
+            <DrawerContent className="outline-hidden px-6 pb-6 gap-4">
+                <DrawerHeader className="p-0 text-center">
+                    <DrawerTitle>{title}</DrawerTitle>
+                </DrawerHeader>
+
+                {bodyContent}
+
+                <DrawerFooter className="p-0 mt-4 flex flex-col gap-2">
                     <Button
                         variant="destructive"
                         onClick={onConfirm}
                         disabled={loading || !isConfirmed}
+                        className="w-full"
                     >
                         {loading ? confirmLoadingLabel : confirmLabel}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    <Button
+                        variant="ghost"
+                        onClick={() => onOpenChange(false)}
+                        disabled={loading}
+                        className="w-full"
+                    >
+                        Cancel
+                    </Button>
+                </DrawerFooter>
+            </DrawerContent>
+        </Drawer>
     );
 }
 

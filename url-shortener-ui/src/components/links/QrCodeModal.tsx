@@ -1,12 +1,28 @@
 "use client";
 
 import React, {useCallback, useEffect, useRef, useState} from "react";
-import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from "@/components/ui/dialog";
+import {
+    Drawer,
+    DrawerContent,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerHeader,
+    DrawerTitle
+} from "@/components/ui/drawer";
+import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
 import {Button} from "@/components/ui/button";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Check, Copy, Download, Loader2} from "lucide-react";
 import {LinkItem} from "@/lib/types";
-import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
+import {COPY_FEEDBACK_DURATION_MS, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
 import type QRCodeStylingType from "qr-code-styling";
 
 // ---------------------------------------------------------------------------
@@ -157,75 +173,104 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
         if (isOpen) setIsDownloadOpen(false);
     };
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md backdrop-blur-md bg-background/95 border-border"
-                           aria-describedby={undefined}
-                           showCloseButton={false}
-                           onOpenAutoFocus={(e) => e.preventDefault()}>
-                <DialogHeader className="text-left">
-                    <DialogTitle>QR Code</DialogTitle>
-                </DialogHeader>
+    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
 
-                <div className="flex flex-col gap-3 -mt-2">
-                    <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-foreground truncate mr-4"
-                           title={link?.title}>{link?.title}</p>
-                        <div className="flex items-center gap-2 shrink-0">
-                            <DropdownMenu open={isDownloadOpen} onOpenChange={handleDownloadMenuOpenChange}>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon"
-                                            className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                        <Download className="h-4 w-4"/>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="min-w-0">
-                                    <DropdownMenuItem onClick={() => handleDownload("png")}>
-                                        Download PNG
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDownload("svg")}>
-                                        Download SVG
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+    const bodyContent = (
+        <div className="flex flex-col gap-3 -mt-2">
+            <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-foreground truncate mr-4"
+                   title={link?.title}>{link?.title}</p>
+                <div className="flex items-center gap-2 shrink-0">
+                    <DropdownMenu open={isDownloadOpen} onOpenChange={handleDownloadMenuOpenChange}>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                <Download className="h-4 w-4"/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-0">
+                            <DropdownMenuItem onClick={() => handleDownload("png")}>
+                                Download PNG
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDownload("svg")}>
+                                Download SVG
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
 
-                            <DropdownMenu open={isCopyOpen} onOpenChange={handleCopyMenuOpenChange}>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon"
-                                            className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                        {copied ? <Check className="h-4 w-4 text-success"/> :
-                                            <Copy className="h-4 w-4"/>}
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="min-w-0">
-                                    <DropdownMenuItem onClick={() => handleCopy("png")}>
-                                        Copy PNG
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleCopy("svg")}>
-                                        Copy SVG
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </div>
-                    <div
-                        className="relative border border-border rounded-xl p-4 sm:p-8 bg-muted/30 flex items-center justify-center min-h-62.5 sm:min-h-75">
-                        {isQrLoading && (
-                            <div className="absolute inset-0 flex items-center justify-center z-10">
-                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground"/>
-                            </div>
-                        )}
-                        <div ref={qrRef}
-                             className="bg-white p-2 rounded-xl shadow-sm flex items-center justify-center max-w-full [&>svg]:max-w-full [&>svg]:h-auto [&>canvas]:max-w-full [&>canvas]:h-auto"/>
-                    </div>
+                    <DropdownMenu open={isCopyOpen} onOpenChange={handleCopyMenuOpenChange}>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                {copied ? <Check className="h-4 w-4 text-success"/> :
+                                    <Copy className="h-4 w-4"/>}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-0">
+                            <DropdownMenuItem onClick={() => handleCopy("png")}>
+                                Copy PNG
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleCopy("svg")}>
+                                Copy SVG
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
+            </div>
+            <div
+                className="relative border border-border rounded-xl p-4 sm:p-8 bg-muted/30 flex items-center justify-center min-h-62.5 sm:min-h-75">
+                {isQrLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground"/>
+                    </div>
+                )}
+                <div ref={qrRef}
+                     className="bg-white p-2 rounded-xl shadow-sm flex items-center justify-center max-w-full [&>svg]:max-w-full [&>svg]:h-auto [&>canvas]:max-w-full [&>canvas]:h-auto"/>
+            </div>
+        </div>
+    );
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+    if (isDesktop) {
+        return (
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-md backdrop-blur-md bg-background/95 border-border"
+                               showCloseButton={false}
+                               onOpenAutoFocus={(e) => e.preventDefault()}>
+                    <DialogTitle className="sr-only">QR Code</DialogTitle>
+                    <DialogDescription className="sr-only">View and download QR code for this link</DialogDescription>
+                    <DialogHeader className="text-left">
+                        <h2 className="text-lg font-semibold leading-none">QR Code</h2>
+                    </DialogHeader>
+
+                    {bodyContent}
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
+    return (
+        <Drawer open={open} onOpenChange={onOpenChange}>
+            <DrawerContent className="outline-hidden px-6 pb-6 gap-4">
+                <DrawerTitle className="sr-only">QR Code</DrawerTitle>
+                <DrawerDescription className="sr-only">View and download QR code for this link</DrawerDescription>
+                <DrawerHeader className="p-0 text-center">
+                    <h2 className="text-lg font-semibold leading-none">QR Code</h2>
+                </DrawerHeader>
+
+                {bodyContent}
+
+                <DrawerFooter className="p-0">
+                    <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
                         Close
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </DrawerFooter>
+            </DrawerContent>
+        </Drawer>
     );
 }

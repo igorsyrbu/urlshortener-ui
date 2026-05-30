@@ -98,7 +98,7 @@ function SessionRow({session, isCurrent, isActionDisabled, isLoggingOut, onLogou
             <Button
                 variant="outline"
                 size="sm"
-                className="w-full sm:w-auto"
+                className="w-fit"
                 onClick={onLogout}
                 disabled={isActionDisabled}
             >

@@ -44,6 +44,28 @@ export function MobileSidebarDrawer({open, onOpenChange}: MobileSidebarDrawerPro
                         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left duration-300",
                         "focus:outline-none",
                     )}
+                    onPointerDownOutside={(e) => {
+                        const target = e.target as HTMLElement | null;
+                        if (
+                            target?.closest('[data-slot="drawer-content"]') ||
+                            target?.closest('[data-slot="drawer-overlay"]') ||
+                            target?.closest('[data-slot="alert-dialog-content"]') ||
+                            target?.closest('[data-slot="alert-dialog-overlay"]')
+                        ) {
+                            e.preventDefault();
+                        }
+                    }}
+                    onInteractOutside={(e) => {
+                        const target = e.target as HTMLElement | null;
+                        if (
+                            target?.closest('[data-slot="drawer-content"]') ||
+                            target?.closest('[data-slot="drawer-overlay"]') ||
+                            target?.closest('[data-slot="alert-dialog-content"]') ||
+                            target?.closest('[data-slot="alert-dialog-overlay"]')
+                        ) {
+                            e.preventDefault();
+                        }
+                    }}
                 >
                     <DialogPrimitive.Title className="sr-only">Main navigation</DialogPrimitive.Title>
                     <DialogDescription className="sr-only">

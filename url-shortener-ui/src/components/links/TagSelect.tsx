@@ -143,7 +143,7 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
             <PopoverContent
                 align="start"
                 side="bottom"
-                avoidCollisions={false}
+                avoidCollisions={true}
                 portalled={false}
                 className="w-(--radix-popover-trigger-width) p-0"
                 sideOffset={4}

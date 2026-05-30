@@ -16,8 +16,15 @@ import {LinkFavicon} from "@/components/links/LinkFavicon";
 import {TagBadge} from "@/components/tags/TagBadge";
 import {LinkItem, TagItem} from "@/lib/types";
 import {getDomain} from "@/lib/url-utils";
-import {COPY_FEEDBACK_DURATION_MS, SHORTCUT_KEY_CLASS} from "@/lib/constants";
+import {
+    COPY_FEEDBACK_DURATION_MS,
+    MOBILE_BREAKPOINT_PX,
+    MORE_ACTIONS_BUTTON_CLASS,
+    SHORTCUT_KEY_CLASS
+} from "@/lib/constants";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {ActionDrawer} from "@/components/ui/action-drawer";
 
 interface LinkCardProps {
     link: LinkItem;
@@ -83,6 +90,7 @@ export function LinkCard({link, onEdit, onDelete, onQrCode}: LinkCardProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
     const storeTags = useTagStoreWithoutCount((state) => state.tags);
+    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
 
     const resolvedTags = useMemo(
         () => (link.tagIds ?? [])
@@ -174,35 +182,68 @@ export function LinkCard({link, onEdit, onDelete, onQrCode}: LinkCardProps) {
                 {resolvedTags.length > 0 && (
                     <TagsSection tags={resolvedTags}/>
                 )}
-                <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-                    <DropdownMenuTrigger asChild>
+                {isDesktop ? (
+                    <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                className={MORE_ACTIONS_BUTTON_CLASS}>
+                                <MoreHorizontal className="size-5"/>
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="sm:min-w-40">
+                            <DropdownMenuItem onClick={() => onEdit(link)}>
+                                <PencilLine className="size-4 mr-2"/>
+                                Edit
+                                <Kbd className={SHORTCUT_KEY_CLASS}>E</Kbd>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onQrCode(link)}>
+                                <QrCode className="size-4 mr-2"/>
+                                QR Code
+                                <Kbd className={SHORTCUT_KEY_CLASS}>Q</Kbd>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator/>
+                            <DropdownMenuItem
+                                onClick={() => onDelete(link)}
+                                variant="destructive"
+                            >
+                                <Trash2 className="size-4 mr-2"/>
+                                Delete
+                                <Kbd className={SHORTCUT_KEY_CLASS}>D</Kbd>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                ) : (
+                    <>
                         <button
-                            className="p-1 px-1.5 text-muted-foreground hover:text-foreground transition-colors focus:outline-none -mr-1">
+                            onClick={() => setIsMenuOpen(true)}
+                            className={MORE_ACTIONS_BUTTON_CLASS}>
                             <MoreHorizontal className="size-5"/>
                         </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="sm:min-w-40">
-                        <DropdownMenuItem onClick={() => onEdit(link)}>
-                            <PencilLine className="size-4 mr-2"/>
-                            Edit
-                            <Kbd className={SHORTCUT_KEY_CLASS}>E</Kbd>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onQrCode(link)}>
-                            <QrCode className="size-4 mr-2"/>
-                            QR Code
-                            <Kbd className={SHORTCUT_KEY_CLASS}>Q</Kbd>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator/>
-                        <DropdownMenuItem
-                            onClick={() => onDelete(link)}
-                            variant="destructive"
-                        >
-                            <Trash2 className="size-4 mr-2"/>
-                            Delete
-                            <Kbd className={SHORTCUT_KEY_CLASS}>D</Kbd>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                        <ActionDrawer
+                            open={isMenuOpen}
+                            onOpenChange={setIsMenuOpen}
+                            actions={[
+                                {
+                                    label: "Edit",
+                                    icon: PencilLine,
+                                    onClick: () => onEdit(link),
+                                },
+                                {
+                                    label: "QR Code",
+                                    icon: QrCode,
+                                    onClick: () => onQrCode(link),
+                                },
+                                {
+                                    label: "Delete",
+                                    icon: Trash2,
+                                    onClick: () => onDelete(link),
+                                    variant: "destructive",
+                                    hasSeparator: true,
+                                },
+                            ]}
+                        />
+                    </>
+                )}
             </div>
         </div>
     );
