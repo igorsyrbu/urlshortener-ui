@@ -10,15 +10,15 @@
     "postcss": "^8.5.10"
   },
   "scripts": {
-    "install:all": "npm install",
-    "dev": "npm run dev --workspace=url-shortener-ui & npm run dev --workspace=@url-shortener/url-shortener-mock-server & wait",
-    "dev:ui": "npm run dev --workspace=url-shortener-ui",
-    "dev:ui:clean": "npm run dev:clean --workspace=url-shortener-ui",
-    "dev:mock": "npm run dev --workspace=@url-shortener/url-shortener-mock-server",
-    "build": "npm run build --workspace=url-shortener-ui",
-    "clean": "npm run clean --workspace=url-shortener-ui",
-    "lint": "npm run lint --workspace=url-shortener-ui",
-    "typecheck": "npm run typecheck --workspace=@url-shortener/url-shortener-mock-server"
+    "install:all": "pnpm install",
+    "dev": "pnpm --parallel --filter=url-shortener-ui --filter=@url-shortener/url-shortener-mock-server run dev",
+    "dev:ui": "pnpm --filter=url-shortener-ui run dev",
+    "dev:ui:clean": "pnpm --filter=url-shortener-ui run dev:clean",
+    "dev:mock": "pnpm --filter=@url-shortener/url-shortener-mock-server run dev",
+    "build": "pnpm --filter=url-shortener-ui run build",
+    "clean": "pnpm --filter=url-shortener-ui run clean",
+    "lint": "pnpm --filter=url-shortener-ui run lint",
+    "typecheck": "pnpm --filter=@url-shortener/url-shortener-mock-server run typecheck"
   },
   "dependencies": {
     "next": "^16.2.6"

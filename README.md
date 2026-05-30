@@ -50,7 +50,7 @@ pnpm install
 To start both the UI and the mock server concurrently, run the following command from the root directory:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 This will trigger:
@@ -73,7 +73,7 @@ To quickly access the dashboard with test user data, simply click **"Sign in wit
 To remove the Next.js build cache (`.next/`) and start fresh, run:
 
 ```bash
-npm run clean
+pnpm run clean
 ```
 
 This helps resolve issues caused by stale cached artifacts or excessive RAM consumption during development.
@@ -82,7 +82,7 @@ This helps resolve issues caused by stale cached artifacts or excessive RAM cons
 
 ## Project Structure
 
-This repository is divided into two main npm workspaces:
+This repository is divided into two main pnpm workspaces:
 
 ### 1. `url-shortener-ui`
 
