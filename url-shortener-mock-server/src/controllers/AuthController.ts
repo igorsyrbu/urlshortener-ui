@@ -1,5 +1,17 @@
 import { Request, Response } from "express";
 import { authService } from "../services/AuthService";
+import { getLoginPageHtml } from "../views/loginPage";
+
+function parseCookies(cookieHeader?: string): Record<string, string> {
+  const list: Record<string, string> = {};
+  if (!cookieHeader) return list;
+  cookieHeader.split(";").forEach((cookie) => {
+    const parts = cookie.split("=");
+    const key = parts.shift()?.trim() || "";
+    list[key] = decodeURI(parts.join("="));
+  });
+  return list;
+}
 
 export class AuthController {
   static async ottGenerate(req: Request, res: Response) {
@@ -11,7 +23,20 @@ export class AuthController {
   }
 
   static async codeExchange(req: Request, res: Response) {
-    res.cookie("refresh_token", "mock-refresh-token-value", {
+    const code = (req.query.code as string) || "";
+    let uuid = "";
+    if (code.startsWith("mock-google-code-")) {
+      uuid = code.replace("mock-google-code-", "");
+    }
+    
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuid || !uuidRegex.test(uuid)) {
+      res.clearCookie("refresh_token");
+      res.status(401).json({ error: "Unauthorized", message: "Missing or invalid user UUID." });
+      return;
+    }
+
+    res.cookie("refresh_token", `mock-refresh-token-${uuid}`, {
       httpOnly: true,
       secure: false,
       sameSite: "lax",
@@ -19,14 +44,30 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    res.json({ accessToken: authService.getMockAccessToken() });
+    res.json({ accessToken: authService.getMockAccessToken(uuid) });
   }
 
   static async tokenRefresh(req: Request, res: Response) {
-    res.json({ accessToken: authService.getMockAccessToken() });
+    const cookies = parseCookies(req.headers.cookie);
+    const refreshToken = cookies["refresh_token"] || "";
+    
+    let uuid = "";
+    if (refreshToken.startsWith("mock-refresh-token-")) {
+      uuid = refreshToken.replace("mock-refresh-token-", "");
+    }
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuid || !uuidRegex.test(uuid)) {
+      res.clearCookie("refresh_token");
+      res.status(401).json({ error: "Unauthorized", message: "Missing or invalid refresh token." });
+      return;
+    }
+
+    res.json({ accessToken: authService.getMockAccessToken(uuid) });
   }
 
   static async oauth2Google(req: Request, res: Response) {
-    res.redirect(`http://localhost:3000/auth/exchange?code=mock-google-code-${Date.now()}`);
+    res.setHeader("Content-Type", "text/html");
+    res.send(getLoginPageHtml());
   }
 }

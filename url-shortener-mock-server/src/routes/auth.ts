@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/AuthController";
 
-const router = Router();
+const router: Router = Router();
 
 // Generates a mock magic-link (One-Time Token) for a given email/username.
 router.post("/ott/generate", AuthController.ottGenerate);

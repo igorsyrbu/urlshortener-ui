@@ -43,9 +43,16 @@ export class ShortLinksService {
     FALLBACK_SLUG_BASE: "link",
   };
 
-  private inMemoryLinks: ShortLink[] = this.initializeMockData();
+  private userLinksMap: Map<string, ShortLink[]> = new Map();
 
-  private initializeMockData(): ShortLink[] {
+  private getLinksForUser(uuid: string): ShortLink[] {
+    if (!this.userLinksMap.has(uuid)) {
+      this.userLinksMap.set(uuid, this.initializeMockData(uuid));
+    }
+    return this.userLinksMap.get(uuid)!;
+  }
+
+  private initializeMockData(uuid: string): ShortLink[] {
     // Load links and initialize tag associations from the data
     const links = linksData.links.map((link: any) => {
       const { tagIds, ...rest } = link;
@@ -56,9 +63,9 @@ export class ShortLinksService {
     linksData.links.forEach((link: any) => {
       if (link.tagIds && link.tagIds.length > 0) {
         // Filter to only valid tag IDs
-        const validTagIds = tagsService.validateAndFilterTagIds(link.tagIds);
+        const validTagIds = tagsService.validateAndFilterTagIds(uuid, link.tagIds);
         if (validTagIds.length > 0) {
-          tagsService.associateTagsWithLink(link.id, validTagIds);
+          tagsService.associateTagsWithLink(uuid, link.id, validTagIds);
         }
       }
     });
@@ -69,27 +76,37 @@ export class ShortLinksService {
   /**
    * Enriches a link with its associated tag IDs.
    */
-  private enrichLinkWithTags(link: ShortLink): ShortLink {
+  private enrichLinkWithTags(uuid: string, link: ShortLink): ShortLink {
     return {
       ...link,
-      tagIds: tagsService.getTagIdsForLink(link.id),
+      tagIds: tagsService.getTagIdsForLink(uuid, link.id),
     };
+  }
+
+  /**
+   * Retrieves all active short links for a user.
+   */
+  public getAllLinks(uuid: string): ShortLink[] {
+    const links = this.getLinksForUser(uuid);
+    return links.map((link) => this.enrichLinkWithTags(uuid, link));
   }
 
   /**
    * Retrieves a paginated list of short links.
    * 
+   * @param uuid - The user's custom UUID
    * @param page - The zero-based page index
    * @param size - The number of items per page
    * @returns A Page object containing the content and metadata
    */
-  public getPaginatedLinks(page: number, size: number): Page<ShortLink> {
+  public getPaginatedLinks(uuid: string, page: number, size: number): Page<ShortLink> {
+    const links = this.getLinksForUser(uuid);
     const startIndex = page * size;
-    const content = this.inMemoryLinks.slice(startIndex, startIndex + size);
-    const totalElements = this.inMemoryLinks.length;
+    const content = links.slice(startIndex, startIndex + size);
+    const totalElements = links.length;
 
     return {
-      content: content.map((link) => this.enrichLinkWithTags(link)),
+      content: content.map((link) => this.enrichLinkWithTags(uuid, link)),
       totalPages: Math.ceil(totalElements / size),
       totalElements,
       size,
@@ -103,23 +120,26 @@ export class ShortLinksService {
   /**
    * Retrieves multiple short links by their exact IDs.
    * 
+   * @param uuid - The user's custom UUID
    * @param ids - Array of ID strings
    * @returns An array of matched ShortLinks
    */
-  public getLinksByIds(ids: string[]): ShortLink[] {
+  public getLinksByIds(uuid: string, ids: string[]): ShortLink[] {
     const idSet = new Set(ids);
-    return this.inMemoryLinks
+    const links = this.getLinksForUser(uuid);
+    return links
       .filter((link) => idSet.has(link.id))
-      .map((link) => this.enrichLinkWithTags(link));
+      .map((link) => this.enrichLinkWithTags(uuid, link));
   }
 
   /**
    * Creates a new short link from a DTO and prepends it to the in-memory array.
    * 
+   * @param uuid - The user's custom UUID
    * @param dto - The configuration for the new ShortLink
    * @returns The newly created ShortLink object
    */
-  public createLink(dto: CreateShortLinkDto): ShortLink {
+  public createLink(uuid: string, dto: CreateShortLinkDto): ShortLink {
     const newLink: ShortLink = {
       id: randomUUID(),
       title: dto.title?.trim() || ShortLinksService.CONSTANTS.DEFAULT_TITLE,
@@ -129,30 +149,33 @@ export class ShortLinksService {
 
     // Handle tag associations if provided
     if (dto.tagIds && dto.tagIds.length > 0) {
-      const validTagIds = tagsService.validateAndFilterTagIds(dto.tagIds);
+      const validTagIds = tagsService.validateAndFilterTagIds(uuid, dto.tagIds);
       if (validTagIds.length > 0) {
-        tagsService.associateTagsWithLink(newLink.id, validTagIds);
+        tagsService.associateTagsWithLink(uuid, newLink.id, validTagIds);
       }
     }
 
-    this.inMemoryLinks.unshift(newLink);
-    return this.enrichLinkWithTags(newLink);
+    const links = this.getLinksForUser(uuid);
+    links.unshift(newLink);
+    return this.enrichLinkWithTags(uuid, newLink);
   }
 
   /**
    * Updates an existing short link in memory by its ID.
    * 
+   * @param uuid - The user's custom UUID
    * @param id - The ShortLink ID to update
    * @param dto - Optional new fields to overlay
    * @returns The updated ShortLink, or null if not found
    */
-  public updateLink(id: string, dto: UpdateShortLinkDto): ShortLink | null {
-    const index = this.inMemoryLinks.findIndex((link) => link.id === id);
+  public updateLink(uuid: string, id: string, dto: UpdateShortLinkDto): ShortLink | null {
+    const links = this.getLinksForUser(uuid);
+    const index = links.findIndex((link) => link.id === id);
     if (index === -1) {
       return null;
     }
 
-    const existingLink = this.inMemoryLinks[index];
+    const existingLink = links[index];
 
     const updatedLink: ShortLink = {
       ...existingLink,
@@ -163,29 +186,32 @@ export class ShortLinksService {
 
     // Handle tag associations if provided
     if (dto.tagIds !== undefined) {
-      const validTagIds = tagsService.validateAndFilterTagIds(dto.tagIds);
-      tagsService.associateTagsWithLink(id, validTagIds);
+      const validTagIds = tagsService.validateAndFilterTagIds(uuid, dto.tagIds);
+      tagsService.associateTagsWithLink(uuid, id, validTagIds);
     }
 
-    this.inMemoryLinks[index] = updatedLink;
-    return this.enrichLinkWithTags(updatedLink);
+    links[index] = updatedLink;
+    return this.enrichLinkWithTags(uuid, updatedLink);
   }
 
   /**
    * Deletes a short link from memory by its ID.
    * Also removes all tag associations for this link.
    * 
+   * @param uuid - The user's custom UUID
    * @param id - The ShortLink ID to delete
    * @returns true if removed, false if not found
    */
-  public deleteLink(id: string): boolean {
-    const initialLength = this.inMemoryLinks.length;
-    this.inMemoryLinks = this.inMemoryLinks.filter((link) => link.id !== id);
+  public deleteLink(uuid: string, id: string): boolean {
+    const links = this.getLinksForUser(uuid);
+    const initialLength = links.length;
+    const filteredLinks = links.filter((link) => link.id !== id);
     
-    const wasDeleted = this.inMemoryLinks.length < initialLength;
+    const wasDeleted = filteredLinks.length < initialLength;
     if (wasDeleted) {
+      this.userLinksMap.set(uuid, filteredLinks);
       // Clean up tag associations
-      tagsService.removeLinkAssociations(id);
+      tagsService.removeLinkAssociations(uuid, id);
     }
     
     return wasDeleted;
@@ -194,6 +220,10 @@ export class ShortLinksService {
   /**
    * Automatically generates a fallback short URL containing normalized title words and entropy.
    */
+  clearUserData(uuid: string): void {
+    this.userLinksMap.delete(uuid);
+  }
+
   private generateAutoShortUrl(title?: string): string {
     const baseSlug = (title || ShortLinksService.CONSTANTS.FALLBACK_SLUG_BASE)
       .toLowerCase()

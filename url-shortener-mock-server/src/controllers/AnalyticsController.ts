@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
 import { analyticsService } from "../services/AnalyticsService";
+import { shortLinksService } from "../services/ShortLinksService";
+import { AuthenticatedRequest } from "../middleware/authentication";
 
 export class AnalyticsController {
   public static getAnalytics(req: Request, res: Response): void {
+    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const groupBy = req.query.groupBy as string | undefined;
     const period = req.query.period as string | undefined;
     const start = req.query.start as string | undefined;
@@ -26,6 +29,7 @@ export class AnalyticsController {
     const mockData = analyticsService.getAnalyticsData();
 
     const responsePayload = AnalyticsController.buildGroupedResponse(
+      uuid,
       groupBy,
       expectedTotal,
       isRandom,
@@ -62,6 +66,7 @@ export class AnalyticsController {
   }
 
   private static buildGroupedResponse(
+    uuid: string,
     groupBy: string | undefined,
     expectedTotal: number,
     isRandom: boolean,
@@ -87,6 +92,24 @@ export class AnalyticsController {
 
     const targetKey = groupKeyMap[groupBy];
     if (targetKey && mockData[targetKey]) {
+      if (groupBy === "top_link") {
+        // Enforce user isolation: only return links that this user actually owns
+        const userLinks = shortLinksService.getAllLinks(uuid);
+        const userLinkIds = new Set(userLinks.map((l) => l.id));
+        
+        let filteredTopLinks = mockData.topLinks.filter((item: any) => userLinkIds.has(item.shortLinkId));
+        
+        // Dynamically add any newly created links that are not yet in the baseline topLinks
+        const topLinkIds = new Set(filteredTopLinks.map((item: any) => item.shortLinkId));
+        for (const link of userLinks) {
+          if (!topLinkIds.has(link.id)) {
+            filteredTopLinks.push({ shortLinkId: link.id, clicks: 12 });
+          }
+        }
+
+        return analyticsService.processProportionalData(filteredTopLinks, expectedTotal, isRandom);
+      }
+
       return analyticsService.processProportionalData(mockData[targetKey], expectedTotal, isRandom);
     }
 

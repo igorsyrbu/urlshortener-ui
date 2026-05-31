@@ -2,7 +2,7 @@ import { Router } from "express";
 import { UsersController } from "../controllers/UsersController";
 import { authentication } from "../middleware/authentication";
 
-const router = Router();
+const router: Router = Router();
 
 router.get("/users/me", authentication, UsersController.getCurrentUser);
 

@@ -5,6 +5,7 @@ export interface User {
   email: string;
   name: string;
   pictureUrl: string;
+  accountId: string;
 }
 
 export interface Session {
@@ -18,36 +19,69 @@ export interface Session {
 }
 
 class UsersService {
-  private sessions: Session[] = [...sessionsData.sessions];
-  private user: User = usersData.users[0];
+  private userMap: Map<string, User> = new Map();
+  private sessionsMap: Map<string, Session[]> = new Map();
 
-  getUser() {
-    return this.user;
+  private getUserForUser(uuid: string): User {
+    if (!this.userMap.has(uuid)) {
+      const baseUser = usersData.users[0];
+      const uuid_slice = `${uuid.slice(0, 8)}`;
+      this.userMap.set(uuid, {
+        ...baseUser,
+        name: `John Doe`,
+        email: `john.doe@${uuid_slice}.dev`,
+        accountId: `acc-${uuid_slice}`,
+      });
+    }
+    return this.userMap.get(uuid)!;
   }
 
-  updateUserName(name: string) {
-    this.user.name = name;
-    return this.user;
+  private getSessionsForUser(uuid: string): Session[] {
+    if (!this.sessionsMap.has(uuid)) {
+      this.sessionsMap.set(uuid, [...sessionsData.sessions]);
+    }
+    return this.sessionsMap.get(uuid)!;
   }
 
-  getSessions() {
-    return this.sessions;
+  getUser(uuid: string) {
+    return this.getUserForUser(uuid);
   }
 
-  deleteCurrentSession() {
-    this.sessions = this.sessions.filter((s) => !s.current);
+  updateUserName(uuid: string, name: string) {
+    const user = this.getUserForUser(uuid);
+    user.name = name;
+    return user;
   }
 
-  deleteOtherSessions() {
-    this.sessions = this.sessions.filter((s) => s.current);
+  getSessions(uuid: string) {
+    return this.getSessionsForUser(uuid);
   }
 
-  deleteSession(id: string): boolean {
-    const exists = this.sessions.some((s) => s.id === id);
+  deleteCurrentSession(uuid: string) {
+    const sessions = this.getSessionsForUser(uuid);
+    const filtered = sessions.filter((s) => !s.current);
+    this.sessionsMap.set(uuid, filtered);
+  }
+
+  deleteOtherSessions(uuid: string) {
+    const sessions = this.getSessionsForUser(uuid);
+    const filtered = sessions.filter((s) => s.current);
+    this.sessionsMap.set(uuid, filtered);
+  }
+
+  clearUserData(uuid: string): void {
+    this.userMap.delete(uuid);
+    this.sessionsMap.delete(uuid);
+  }
+
+  deleteSession(uuid: string, id: string): boolean {
+    const sessions = this.getSessionsForUser(uuid);
+    const exists = sessions.some((s) => s.id === id);
     if (!exists) {
       return false;
     }
-    this.sessions = this.sessions.filter((s) => s.id !== id);
+    const filtered = sessions.filter((s) => s.id !== id);
+    this.sessionsMap.set(uuid, filtered);
     return true;
   }
 }

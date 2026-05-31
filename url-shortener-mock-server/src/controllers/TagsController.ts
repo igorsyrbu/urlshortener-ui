@@ -1,20 +1,23 @@
 import { Request, Response } from "express";
 import { tagsService } from "../services/TagsService";
+import { AuthenticatedRequest } from "../middleware/authentication";
 
 export class TagsController {
   static async getTags(req: Request, res: Response): Promise<void> {
+    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const page = Math.max(0, parseInt(req.query.page as string, 10) || 0);
     const size = Math.max(1, parseInt(req.query.size as string, 10) || 20);
     const withLinksCount = req.query.withLinksCount === "true";
 
     if (withLinksCount) {
-      res.json(tagsService.getTagsWithCount(page, size));
+      res.json(tagsService.getTagsWithCount(uuid, page, size));
     } else {
-      res.json(tagsService.getTags(page, size));
+      res.json(tagsService.getTags(uuid, page, size));
     }
   }
 
   static async createTag(req: Request, res: Response): Promise<void> {
+    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { name, color } = req.body;
 
     if (!name || typeof name !== "string") {
@@ -27,7 +30,7 @@ export class TagsController {
       return;
     }
 
-    const created = tagsService.createTag({ name, color });
+    const created = tagsService.createTag(uuid, { name, color });
 
     if (!created) {
       res.status(400).json({ error: "Invalid tag data or duplicate name" });
@@ -38,6 +41,7 @@ export class TagsController {
   }
 
   static async updateTag(req: Request, res: Response): Promise<void> {
+    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { id, name, color } = req.body;
 
     if (!id || typeof id !== "string") {
@@ -55,7 +59,7 @@ export class TagsController {
       return;
     }
 
-    const updated = tagsService.updateTag({ id, name, color });
+    const updated = tagsService.updateTag(uuid, { id, name, color });
 
     if (!updated) {
       res.status(404).json({ error: "Tag not found or duplicate name" });
@@ -66,9 +70,10 @@ export class TagsController {
   }
 
   static async deleteTag(req: Request, res: Response): Promise<void> {
+    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { id } = req.params;
 
-    if (!tagsService.deleteTag(id)) {
+    if (!tagsService.deleteTag(uuid, id)) {
       res.status(404).json({ error: "Tag not found" });
       return;
     }

@@ -61,11 +61,19 @@ This will trigger:
 The Next.js frontend is configured to point its API requests to `http://localhost:8080` by default via the
 `NEXT_PUBLIC_API_BASE_URL` env var, meaning everything works out of the box with zero extra configuration.
 
-### Authentication (Mock Mode)
+### Authentication (Mock Mode & Sandbox Isolation)
 
-When running the project with the mock server, the application supports two login methods: **Magic Links** and **Google Sign-In**.
+When running the project with the mock server, the platform supports robust **Google Sign-In Sandbox Isolation** alongside Magic Links. 
 
-To quickly access the dashboard with test user data, simply click **"Sign in with Google"** on the login screen. This will bypass the actual OAuth flow and automatically authenticate you with a pre-configured test profile.
+Clicking **"Sign in with Google"** on the login screen launches an isolated sandbox portal served by the mock server:
+- **Generate Session** — Instantly generates a new, randomized unique User UUID. You can copy this UUID to your clipboard for future access and start a completely fresh sandbox environment.
+- **Resume Session** — Paste a pre-existing User UUID to instantly pick up right where you left off.
+
+#### How State Isolation Works:
+To enable comprehensive sandbox testing, the mock server strictly isolates all in-memory database states per UUID:
+1. **Isolated Data Snapshots** — When a user logs in with a specific UUID, their short links, tag definitions, profile display name, and active sessions are initialized to a default starter dataset.
+2. **Zero Cross-Contamination** — If User A deletes or creates a short link or tag, these changes are immediately reflected in their dashboard and top links analytics, but User B's environment remains completely untouched and unaffected.
+3. **Strict Session Policies** — The sandbox UUID is encoded in both the `access_token` and `refresh_token` cookies. If the UUID is missing or invalid in any API request, the server automatically wipes the `refresh_token` cookies and triggers a `401 Unauthorized` response to redirect the browser to the login screen.
 
 
 ### Cleaning Build Cache

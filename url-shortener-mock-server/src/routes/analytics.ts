@@ -2,7 +2,7 @@ import { Router } from "express";
 import { AnalyticsController } from "../controllers/AnalyticsController";
 import { authentication } from "../middleware/authentication";
 
-const router = Router();
+const router: Router = Router();
 
 // Returns analytics data. Behavior depends on query params:
 //   - groupBy: date, country, continent, device, os, referrer, top_link

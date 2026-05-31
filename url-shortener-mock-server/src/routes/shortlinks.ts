@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ShortLinksController } from "../controllers/ShortLinksController";
 import { authentication } from "../middleware/authentication";
 
-const router = Router();
+const router: Router = Router();
 
 router.get("/shortlinks", authentication, ShortLinksController.getShortLinks);
 router.get("/shortlinks/byIds", authentication, ShortLinksController.getShortLinksByIds);
