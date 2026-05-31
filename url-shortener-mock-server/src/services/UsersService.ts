@@ -1,5 +1,5 @@
-import usersData from "../data/users.json" with { type: "json" };
-import sessionsData from "../data/sessions.json" with { type: "json" };
+import usersData from "../data/users.json";
+import sessionsData from "../data/sessions.json";
 
 export interface User {
   email: string;

@@ -1,4 +1,4 @@
-import tagsData from "../data/tags.json" with { type: "json" };
+import tagsData from "../data/tags.json";
 import { randomUUID } from "crypto";
 
 export interface Tag {

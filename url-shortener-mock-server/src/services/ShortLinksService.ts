@@ -1,4 +1,4 @@
-import linksData from "../data/shortlinks.json" with { type: "json" };
+import linksData from "../data/shortlinks.json";
 import { randomUUID } from "crypto";
 import { tagsService } from "./TagsService";
 

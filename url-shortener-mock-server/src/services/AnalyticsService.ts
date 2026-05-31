@@ -1,4 +1,4 @@
-import rawAnalyticsData from "../data/analytics.json" with { type: "json" };
+import rawAnalyticsData from "../data/analytics.json";
 
 export interface AnalyticsMetric {
   clicks: number;
