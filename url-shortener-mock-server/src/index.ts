@@ -12,6 +12,7 @@ import tagsRoutes from "./routes/tags";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "8080", 10);
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 const cleanupIntervalMinutes = parseInt(process.env.MOCK_CLEANUP_INTERVAL_MINUTES || "1440", 10); //24 hours
 const CLEANUP_INTERVAL_MS = cleanupIntervalMinutes * 60 * 1000;
 
@@ -35,6 +36,7 @@ app.listen(PORT, () => {
   const delayMs = process.env.MOCK_DELAY || "0";
   const inactivityDays = process.env.MOCK_CLEANUP_INACTIVITY_DAYS || "7";
   console.log(`\n🚀 Mock server running at http://localhost:${PORT}`);
+  console.log(`  Frontend URL: ${FRONTEND_URL}`);
   console.log(`  Artificial delay: ${delayMs}ms`);
   console.log(`  Error simulation: send header "x-mock-error: true"`);
   console.log(`  Inactivity cleanup: runs every ${cleanupIntervalMinutes} min, removes data after ${inactivityDays} days of inactivity\n`);

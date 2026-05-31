@@ -1,4 +1,4 @@
-export function getLoginPageHtml(): string {
+export function getLoginPageHtml(frontendUrl: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -488,7 +488,7 @@ export function getLoginPageHtml(): string {
     }
 
     function redirectToExchange(uuid) {
-      window.location.href = 'http://localhost:3000/auth/exchange?code=mock-google-code-' + uuid;
+      window.location.href = '${frontendUrl}/auth/exchange?code=mock-google-code-' + uuid;
     }
   </script>
 </body>

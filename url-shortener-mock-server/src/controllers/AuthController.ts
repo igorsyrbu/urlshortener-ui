@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { authService } from "../services/AuthService";
 import { getLoginPageHtml } from "../views/loginPage";
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
 function parseCookies(cookieHeader?: string): Record<string, string> {
   const list: Record<string, string> = {};
   if (!cookieHeader) return list;
@@ -19,7 +21,7 @@ export class AuthController {
   }
 
   static async ottLogin(req: Request, res: Response) {
-    res.redirect(`http://localhost:3000/auth/exchange?code=mock-auth-code-${Date.now()}`);
+    res.redirect(`${FRONTEND_URL}/auth/exchange?code=mock-auth-code-${Date.now()}`);
   }
 
   static async codeExchange(req: Request, res: Response) {
@@ -68,6 +70,6 @@ export class AuthController {
 
   static async oauth2Google(req: Request, res: Response) {
     res.setHeader("Content-Type", "text/html");
-    res.send(getLoginPageHtml());
+    res.send(getLoginPageHtml(FRONTEND_URL));
   }
 }
