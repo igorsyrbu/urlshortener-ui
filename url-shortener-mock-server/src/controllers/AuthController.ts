@@ -4,6 +4,9 @@ import { getLoginPageHtml } from "../views/loginPage";
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
+const COOKIE_SAMESITE = (process.env.MOCK_COOKIE_SAMESITE || "lax") as "lax" | "strict" | "none";
+const COOKIE_SECURE = process.env.MOCK_COOKIE_SECURE === "true";
+
 function parseCookies(cookieHeader?: string): Record<string, string> {
   const list: Record<string, string> = {};
   if (!cookieHeader) return list;
@@ -37,11 +40,10 @@ export class AuthController {
       res.status(401).json({ error: "Unauthorized", message: "Missing or invalid user UUID." });
       return;
     }
-
     res.cookie("refresh_token", `mock-refresh-token-${uuid}`, {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: COOKIE_SECURE,
+      sameSite: COOKIE_SAMESITE,
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
@@ -52,7 +54,7 @@ export class AuthController {
   static async tokenRefresh(req: Request, res: Response) {
     const cookies = parseCookies(req.headers.cookie);
     const refreshToken = cookies["refresh_token"] || "";
-    
+
     let uuid = "";
     if (refreshToken.startsWith("mock-refresh-token-")) {
       uuid = refreshToken.replace("mock-refresh-token-", "");

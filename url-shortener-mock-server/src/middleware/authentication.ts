@@ -26,11 +26,11 @@ export function authentication(req: Request, res: Response, next: NextFunction):
     if (parts.length === 3) {
       const payloadJson = Buffer.from(parts[1], "base64url").toString("utf8");
       const payload = JSON.parse(payloadJson);
-      
+
       if (payload.sub && payload.sub.startsWith("mock-user-")) {
         const uuid = payload.sub.replace("mock-user-", "");
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        
+
         if (uuidRegex.test(uuid)) {
           (req as AuthenticatedRequest).user = { uuid };
           cleanupService.recordActivity(uuid);

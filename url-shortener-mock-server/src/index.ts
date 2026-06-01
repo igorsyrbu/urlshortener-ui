@@ -35,11 +35,15 @@ app.get("/health", (_req, res) => {
 app.listen(PORT, () => {
   const delayMs = process.env.MOCK_DELAY || "0";
   const inactivityDays = process.env.MOCK_CLEANUP_INACTIVITY_DAYS || "7";
+  const cookieSameSite = process.env.MOCK_COOKIE_SAMESITE || "lax";
+  const cookieSecure = process.env.MOCK_COOKIE_SECURE === "true";
+
   console.log(`\n🚀 Mock server running at http://localhost:${PORT}`);
   console.log(`  Frontend URL: ${FRONTEND_URL}`);
   console.log(`  Artificial delay: ${delayMs}ms`);
   console.log(`  Error simulation: send header "x-mock-error: true"`);
-  console.log(`  Inactivity cleanup: runs every ${cleanupIntervalMinutes} min, removes data after ${inactivityDays} days of inactivity\n`);
+  console.log(`  Inactivity cleanup: runs every ${cleanupIntervalMinutes} min, removes data after ${inactivityDays} days of inactivity`);
+  console.log(`  Cookie settings: sameSite=${cookieSameSite}, secure=${cookieSecure}\n`);
 
   setInterval(() => {
     cleanupService.runCleanup();

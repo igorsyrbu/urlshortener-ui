@@ -63,18 +63,27 @@ The Next.js frontend is configured to point its API requests to `http://localhos
 
 ### Authentication (Mock Mode & Sandbox Isolation)
 
-When running the project with the mock server, the platform supports robust **Google Sign-In Sandbox Isolation** alongside Magic Links. 
+When running the project with the mock server, the platform supports robust **Google Sign-In Sandbox Isolation**
+alongside Magic Links.
 
 Clicking **"Sign in with Google"** on the login screen launches an isolated sandbox portal served by the mock server:
-- **Generate Session** — Instantly generates a new, randomized unique User UUID. You can copy this UUID to your clipboard for future access and start a completely fresh sandbox environment.
+
+- **Generate Session** — Instantly generates a new, randomized unique User UUID. You can copy this UUID to your
+  clipboard for future access and start a completely fresh sandbox environment.
 - **Resume Session** — Paste a pre-existing User UUID to instantly pick up right where you left off.
 
 #### How State Isolation Works:
-To enable comprehensive sandbox testing, the mock server strictly isolates all in-memory database states per UUID:
-1. **Isolated Data Snapshots** — When a user logs in with a specific UUID, their short links, tag definitions, profile display name, and active sessions are initialized to a default starter dataset.
-2. **Zero Cross-Contamination** — If User A deletes or creates a short link or tag, these changes are immediately reflected in their dashboard and top links analytics, but User B's environment remains completely untouched and unaffected.
-3. **Strict Session Policies** — The sandbox UUID is encoded in both the `access_token` and `refresh_token` cookies. If the UUID is missing or invalid in any API request, the server automatically wipes the `refresh_token` cookies and triggers a `401 Unauthorized` response to redirect the browser to the login screen.
 
+To enable comprehensive sandbox testing, the mock server strictly isolates all in-memory database states per UUID:
+
+1. **Isolated Data Snapshots** — When a user logs in with a specific UUID, their short links, tag definitions, profile
+   display name, and active sessions are initialized to a default starter dataset.
+2. **Zero Cross-Contamination** — If User A deletes or creates a short link or tag, these changes are immediately
+   reflected in their dashboard and top links analytics, but User B's environment remains completely untouched and
+   unaffected.
+3. **Strict Session Policies** — The sandbox UUID is encoded in both the `access_token` and `refresh_token` cookies. If
+   the UUID is missing or invalid in any API request, the server automatically wipes the `refresh_token` cookies and
+   triggers a `401 Unauthorized` response to redirect the browser to the login screen.
 
 ### Cleaning Build Cache
 
@@ -113,17 +122,31 @@ spin up a database.
   network conditions.
 - **Error simulation** — you can optionally add the header `x-mock-error: true` to any request to test how the UI
   handles 500 errors.
-- **CORS ready** — pre-configured to accept cross-origin requests from `http://localhost:3000`.
 
 #### Environment Variables (Mock Server)
 
-If you need to customize the mock server, you can copy the `.env.example` file to `.env` inside the
-`url-shortener-mock-server` directory.
+Copy `.env.example` to `.env` in the `url-shortener-mock-server` directory to customize:
 
-| Variable     | Default | Description                               |
-|--------------|---------|-------------------------------------------|
-| `PORT`       | `8080`  | Port the mock server listens on           |
-| `MOCK_DELAY` | `0`     | Artificial response delay in milliseconds |
+| Variable               | Default                 | Description                                  |
+|------------------------|-------------------------|----------------------------------------------|
+| `PORT`                 | `8080`                  | Port the mock server listens on              |
+| `FRONTEND_URL`         | `http://localhost:3000` | URL the UI is served from                    |
+| `MOCK_DELAY`           | `0`                     | Artificial response delay (ms)               |
+| `MOCK_COOKIE_SAMESITE` | `lax`                   | `SameSite` for the `refresh_token` cookie    |
+| `MOCK_COOKIE_SECURE`   | `false`                 | Marks the `refresh_token` cookie as `Secure` |
+
+#### Cross-Domain Deployment
+
+When the UI and mock server are on **different domains**, `SameSite=Lax` (the default) blocks the `refresh_token` cookie
+on cross-site POST requests, logging users out on every refresh. Fix it with:
+
+```bash
+MOCK_COOKIE_SAMESITE=none
+MOCK_COOKIE_SECURE=true
+```
+
+`SameSite=None` allows cross-site cookies, but browsers **require** `Secure=true` alongside it — so the mock server must
+be served over **HTTPS**. For local development on `localhost`, the defaults work as-is.
 
 #### Simulating Errors
 
@@ -170,12 +193,12 @@ curl -H "x-mock-error: true" http://localhost:8080/users/me
 
 **Tags**
 
-| Method | Path                                 | Description                    |
-|--------|--------------------------------------|--------------------------------|
-| GET    | `/tags?page=&size=&withLinksCount=`  | Paginated list of tags         |
-| POST   | `/tags`                              | Create a new tag               |
-| PUT    | `/tags`                              | Update an existing tag         |
-| DELETE | `/tags/:id`                          | Delete a tag                   |
+| Method | Path                                | Description            |
+|--------|-------------------------------------|------------------------|
+| GET    | `/tags?page=&size=&withLinksCount=` | Paginated list of tags |
+| POST   | `/tags`                             | Create a new tag       |
+| PUT    | `/tags`                             | Update an existing tag |
+| DELETE | `/tags/:id`                         | Delete a tag           |
 
 **Analytics**
 
