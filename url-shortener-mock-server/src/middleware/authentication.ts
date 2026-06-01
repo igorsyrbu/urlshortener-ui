@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { memoryStore } from "../services/MemoryStore";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -31,6 +32,10 @@ export function authentication(req: Request, res: Response, next: NextFunction):
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
         if (uuidRegex.test(uuid)) {
+          if (!memoryStore.hasUserState(uuid)) {
+            res.status(401).json({ error: "Unauthorized", message: "User not logged in." });
+            return;
+          }
           (req as AuthenticatedRequest).user = { uuid };
           next();
           return;

@@ -1,6 +1,6 @@
-import linksData from "../data/shortlinks.json";
 import {randomUUID} from "crypto";
 import {tagsService} from "./TagsService";
+import {memoryStore} from "./MemoryStore";
 
 export interface ShortLink {
   id: string;
@@ -43,39 +43,8 @@ export class ShortLinksService {
     FALLBACK_SLUG_BASE: "link",
   };
 
-  private userLinksMap: Map<string, ShortLink[]> = new Map();
-
-  private getLinksForUser(uuid: string): ShortLink[] {
-    const exists = this.userLinksMap.has(uuid);
-    if (!exists) {
-      this.userLinksMap.set(uuid, this.initializeMockData(uuid));
-    }
-    return this.userLinksMap.get(uuid)!;
-  }
-
-  private initializeMockData(uuid: string): ShortLink[] {
-    // Load links and initialize tag associations from the data
-    const links = linksData.links.map((link: any) => {
-      const { tagIds, ...rest } = link;
-      return rest;
-    });
-
-    // Set up tag associations from the loaded data
-    linksData.links.forEach((link: any) => {
-      if (link.tagIds && link.tagIds.length > 0) {
-        // Filter to only valid tag IDs
-        const validTagIds = tagsService.validateAndFilterTagIds(uuid, link.tagIds);
-        if (validTagIds.length > 0) {
-          tagsService.associateTagsWithLink(uuid, link.id, validTagIds);
-        }
-      }
-    });
-
-    return links;
-  }
-
   /**
-   * Enriches a link with its associated tag IDs.
+   * Enrich a link with its associated tag IDs.
    */
   private enrichLinkWithTags(uuid: string, link: ShortLink): ShortLink {
     return {
@@ -88,8 +57,8 @@ export class ShortLinksService {
    * Retrieves all active short links for a user.
    */
   public getAllLinks(uuid: string): ShortLink[] {
-    const links = this.getLinksForUser(uuid);
-    return links.map((link) => this.enrichLinkWithTags(uuid, link));
+    const userState = memoryStore.getUserState(uuid);
+    return userState.links.map((link) => this.enrichLinkWithTags(uuid, link));
   }
 
   /**
@@ -101,7 +70,8 @@ export class ShortLinksService {
    * @returns A Page object containing the content and metadata
    */
   public getPaginatedLinks(uuid: string, page: number, size: number): Page<ShortLink> {
-    const links = this.getLinksForUser(uuid);
+    const userState = memoryStore.getUserState(uuid);
+    const links = userState.links;
     const startIndex = page * size;
     const content = links.slice(startIndex, startIndex + size);
     const totalElements = links.length;
@@ -127,8 +97,8 @@ export class ShortLinksService {
    */
   public getLinksByIds(uuid: string, ids: string[]): ShortLink[] {
     const idSet = new Set(ids);
-    const links = this.getLinksForUser(uuid);
-    return links
+    const userState = memoryStore.getUserState(uuid);
+    return userState.links
       .filter((link) => idSet.has(link.id))
       .map((link) => this.enrichLinkWithTags(uuid, link));
   }
@@ -156,8 +126,8 @@ export class ShortLinksService {
       }
     }
 
-    const links = this.getLinksForUser(uuid);
-    links.unshift(newLink);
+    const userState = memoryStore.getUserState(uuid);
+    userState.links.unshift(newLink);
     return this.enrichLinkWithTags(uuid, newLink);
   }
 
@@ -170,7 +140,8 @@ export class ShortLinksService {
    * @returns The updated ShortLink, or null if not found
    */
   public updateLink(uuid: string, id: string, dto: UpdateShortLinkDto): ShortLink | null {
-    const links = this.getLinksForUser(uuid);
+    const userState = memoryStore.getUserState(uuid);
+    const links = userState.links;
     const index = links.findIndex((link) => link.id === id);
     if (index === -1) {
       return null;
@@ -204,13 +175,12 @@ export class ShortLinksService {
    * @returns true if removed, false if not found
    */
   public deleteLink(uuid: string, id: string): boolean {
-    const links = this.getLinksForUser(uuid);
-    const initialLength = links.length;
-    const filteredLinks = links.filter((link) => link.id !== id);
+    const userState = memoryStore.getUserState(uuid);
+    const initialLength = userState.links.length;
+    userState.links = userState.links.filter((link) => link.id !== id);
 
-    const wasDeleted = filteredLinks.length < initialLength;
+    const wasDeleted = userState.links.length < initialLength;
     if (wasDeleted) {
-      this.userLinksMap.set(uuid, filteredLinks);
       // Clean up tag associations
       tagsService.removeLinkAssociations(uuid, id);
     }
@@ -233,3 +203,4 @@ export class ShortLinksService {
 }
 
 export const shortLinksService = new ShortLinksService();
+

@@ -1,5 +1,5 @@
-import tagsData from "../data/tags.json";
 import { randomUUID } from "crypto";
+import { memoryStore } from "./MemoryStore";
 
 export interface Tag {
   id: string;
@@ -36,35 +36,13 @@ export interface Page<T> {
 const ALLOWED_COLORS = ["red", "yellow", "lime", "green", "blue", "cyan", "purple", "gray"];
 
 export class TagsService {
-  private userTagsMap: Map<string, Tag[]> = new Map();
-  private userAssociationsMap: Map<string, Map<string, string[]>> = new Map();
-
-  private getTagsForUser(uuid: string): Tag[] {
-    if (!this.userTagsMap.has(uuid)) {
-      this.userTagsMap.set(uuid, this.initializeMockData());
-    }
-    return this.userTagsMap.get(uuid)!;
-  }
-
-  private getAssociationsForUser(uuid: string): Map<string, string[]> {
-    if (!this.userAssociationsMap.has(uuid)) {
-      this.userAssociationsMap.set(uuid, new Map());
-    }
-    return this.userAssociationsMap.get(uuid)!;
-  }
-
-  private initializeMockData(): Tag[] {
-    return tagsData.tags.map((tag: any) => ({
-      ...tag,
-    }));
-  }
-
   /**
    * Validates that all provided tagIds exist in the tags store.
    * Returns only the valid tagIds (filters out invalid ones silently).
    */
   public validateAndFilterTagIds(uuid: string, tagIds: string[]): string[] {
-    const tags = this.getTagsForUser(uuid);
+    const userState = memoryStore.getUserState(uuid);
+    const tags = userState.tags;
     const validTagIds = new Set(tags.map((tag) => tag.id));
     return tagIds.filter((id) => validTagIds.has(id));
   }
@@ -73,7 +51,8 @@ export class TagsService {
    * Associates tags with a link. Replaces any existing associations.
    */
   public associateTagsWithLink(uuid: string, linkId: string, tagIds: string[]): void {
-    const associations = this.getAssociationsForUser(uuid);
+    const userState = memoryStore.getUserState(uuid);
+    const associations = userState.tagAssociations;
     if (tagIds.length === 0) {
       associations.delete(linkId);
     } else {
@@ -86,7 +65,8 @@ export class TagsService {
    * Gets all tag IDs associated with a link.
    */
   public getTagIdsForLink(uuid: string, linkId: string): string[] {
-    const associations = this.getAssociationsForUser(uuid);
+    const userState = memoryStore.getUserState(uuid);
+    const associations = userState.tagAssociations;
     return associations.get(linkId) || [];
   }
 
@@ -94,7 +74,8 @@ export class TagsService {
    * Removes all tag associations for a link (when link is deleted).
    */
   public removeLinkAssociations(uuid: string, linkId: string): void {
-    const associations = this.getAssociationsForUser(uuid);
+    const userState = memoryStore.getUserState(uuid);
+    const associations = userState.tagAssociations;
     associations.delete(linkId);
   }
 
@@ -102,7 +83,8 @@ export class TagsService {
    * Calculates the link count for a specific tag.
    */
   private getLinkCountForTag(uuid: string, tagId: string): number {
-    const associations = this.getAssociationsForUser(uuid);
+    const userState = memoryStore.getUserState(uuid);
+    const associations = userState.tagAssociations;
     let count = 0;
     for (const tagIds of associations.values()) {
       if (tagIds.includes(tagId)) {
@@ -116,7 +98,8 @@ export class TagsService {
    * Removes a tag from all link associations (when tag is deleted).
    */
   public removeTagFromAllAssociations(uuid: string, tagId: string): void {
-    const associations = this.getAssociationsForUser(uuid);
+    const userState = memoryStore.getUserState(uuid);
+    const associations = userState.tagAssociations;
     for (const [linkId, tagIds] of associations) {
       const filtered = tagIds.filter((id) => id !== tagId);
       if (filtered.length === 0) {
@@ -131,7 +114,8 @@ export class TagsService {
    * Retrieves a paginated list of tags.
    */
   public getTags(uuid: string, page: number, size: number): Page<Tag> {
-    const tags = this.getTagsForUser(uuid);
+    const userState = memoryStore.getUserState(uuid);
+    const tags = userState.tags;
     const startIndex = page * size;
     const content = tags.slice(startIndex, startIndex + size);
     const totalElements = tags.length;
@@ -180,7 +164,8 @@ export class TagsService {
       return null;
     }
 
-    const tags = this.getTagsForUser(uuid);
+    const userState = memoryStore.getUserState(uuid);
+    const tags = userState.tags;
     // Check for duplicate name (case-insensitive)
     const nameLower = trimmedName.toLowerCase();
     const existing = tags.find(
@@ -205,7 +190,8 @@ export class TagsService {
    * Validates: tag exists, name is unique if changed.
    */
   public updateTag(uuid: string, dto: UpdateTagDto): Tag | null {
-    const tags = this.getTagsForUser(uuid);
+    const userState = memoryStore.getUserState(uuid);
+    const tags = userState.tags;
     const tagIndex = tags.findIndex((tag) => tag.id === dto.id);
     if (tagIndex === -1) {
       return null;
@@ -247,13 +233,12 @@ export class TagsService {
    * Deletes a tag and removes all its associations.
    */
   public deleteTag(uuid: string, id: string): boolean {
-    const tags = this.getTagsForUser(uuid);
-    const initialLength = tags.length;
-    const filteredTags = tags.filter((tag) => tag.id !== id);
+    const userState = memoryStore.getUserState(uuid);
+    const initialLength = userState.tags.length;
+    userState.tags = userState.tags.filter((tag) => tag.id !== id);
     
-    const wasDeleted = filteredTags.length < initialLength;
+    const wasDeleted = userState.tags.length < initialLength;
     if (wasDeleted) {
-      this.userTagsMap.set(uuid, filteredTags);
       this.removeTagFromAllAssociations(uuid, id);
     }
     
@@ -262,3 +247,4 @@ export class TagsService {
 }
 
 export const tagsService = new TagsService();
+

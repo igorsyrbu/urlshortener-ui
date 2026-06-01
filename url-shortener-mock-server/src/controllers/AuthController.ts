@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { authService } from "../services/AuthService";
 import { getLoginPageHtml } from "../views/loginPage";
+import { memoryStore } from "../services/MemoryStore";
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
@@ -40,6 +41,9 @@ export class AuthController {
       res.status(401).json({ error: "Unauthorized", message: "Missing or invalid user UUID." });
       return;
     }
+
+    memoryStore.registerUserSession(uuid);
+
     res.cookie("refresh_token", `mock-refresh-token-${uuid}`, {
       httpOnly: true,
       secure: COOKIE_SECURE,
@@ -66,6 +70,8 @@ export class AuthController {
       res.status(401).json({ error: "Unauthorized", message: "Missing or invalid refresh token." });
       return;
     }
+
+    memoryStore.registerUserSession(uuid);
 
     res.json({ accessToken: authService.getMockAccessToken(uuid) });
   }
