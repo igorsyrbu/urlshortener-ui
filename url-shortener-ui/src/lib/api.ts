@@ -1,9 +1,7 @@
 import {useAuthStore} from "@/lib/store/auth";
 import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 
-export const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
-
+export const API_BASE_URL = "/api";
 // ---------------------------------------------------------------------------
 // Token refresh queue
 // ---------------------------------------------------------------------------
