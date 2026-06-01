@@ -66,8 +66,8 @@ export function DeviceTab({deviceTab, data, isLoading, totalClicks}: DeviceTabPr
 
         return (
             <g>
-                <foreignObject x={x + 10} y={y} width="calc(100% - 92px)" height={height}>
-                    <div className="w-full h-full flex items-center pr-2 gap-3">
+                <foreignObject x={x + 10} y={y} width="100%" height={height}>
+                    <div {...{ xmlns: "http://www.w3.org/1999/xhtml" }} className="w-[calc(100%-110px)] h-full flex items-center pr-2 gap-3">
                         <div className="shrink-0 size-5 flex items-center justify-center overflow-hidden">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img

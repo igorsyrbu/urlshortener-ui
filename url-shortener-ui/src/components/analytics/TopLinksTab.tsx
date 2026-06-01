@@ -58,8 +58,8 @@ export function TopLinksTab({topLinks, isLoading, totalClicks}: TopLinksTabProps
                         <FaviconPlaceholder/>
                     </g>
                 )}
-                <foreignObject x={x + 10} y={y} width="calc(100% - 92px)" height={height}>
-                    <div className="w-full h-full flex items-center pr-2 gap-3">
+                <foreignObject x={x + 10} y={y} width="100%" height={height}>
+                    <div {...{ xmlns: "http://www.w3.org/1999/xhtml" }} className="w-[calc(100%-110px)] h-full flex items-center pr-2 gap-3">
                         {item?.longUrl && (
                             <div
                                 className="shrink-0 size-5 flex items-center justify-center rounded-full overflow-hidden bg-muted">
