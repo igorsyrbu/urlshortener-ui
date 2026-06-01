@@ -1,6 +1,6 @@
 import linksData from "../data/shortlinks.json";
-import { randomUUID } from "crypto";
-import { tagsService } from "./TagsService";
+import {randomUUID} from "crypto";
+import {tagsService} from "./TagsService";
 
 export interface ShortLink {
   id: string;
@@ -46,7 +46,8 @@ export class ShortLinksService {
   private userLinksMap: Map<string, ShortLink[]> = new Map();
 
   private getLinksForUser(uuid: string): ShortLink[] {
-    if (!this.userLinksMap.has(uuid)) {
+    const exists = this.userLinksMap.has(uuid);
+    if (!exists) {
       this.userLinksMap.set(uuid, this.initializeMockData(uuid));
     }
     return this.userLinksMap.get(uuid)!;
@@ -93,7 +94,7 @@ export class ShortLinksService {
 
   /**
    * Retrieves a paginated list of short links.
-   * 
+   *
    * @param uuid - The user's custom UUID
    * @param page - The zero-based page index
    * @param size - The number of items per page
@@ -119,7 +120,7 @@ export class ShortLinksService {
 
   /**
    * Retrieves multiple short links by their exact IDs.
-   * 
+   *
    * @param uuid - The user's custom UUID
    * @param ids - Array of ID strings
    * @returns An array of matched ShortLinks
@@ -134,7 +135,7 @@ export class ShortLinksService {
 
   /**
    * Creates a new short link from a DTO and prepends it to the in-memory array.
-   * 
+   *
    * @param uuid - The user's custom UUID
    * @param dto - The configuration for the new ShortLink
    * @returns The newly created ShortLink object
@@ -162,7 +163,7 @@ export class ShortLinksService {
 
   /**
    * Updates an existing short link in memory by its ID.
-   * 
+   *
    * @param uuid - The user's custom UUID
    * @param id - The ShortLink ID to update
    * @param dto - Optional new fields to overlay
@@ -197,7 +198,7 @@ export class ShortLinksService {
   /**
    * Deletes a short link from memory by its ID.
    * Also removes all tag associations for this link.
-   * 
+   *
    * @param uuid - The user's custom UUID
    * @param id - The ShortLink ID to delete
    * @returns true if removed, false if not found
@@ -206,24 +207,20 @@ export class ShortLinksService {
     const links = this.getLinksForUser(uuid);
     const initialLength = links.length;
     const filteredLinks = links.filter((link) => link.id !== id);
-    
+
     const wasDeleted = filteredLinks.length < initialLength;
     if (wasDeleted) {
       this.userLinksMap.set(uuid, filteredLinks);
       // Clean up tag associations
       tagsService.removeLinkAssociations(uuid, id);
     }
-    
+
     return wasDeleted;
   }
 
   /**
    * Automatically generates a fallback short URL containing normalized title words and entropy.
    */
-  clearUserData(uuid: string): void {
-    this.userLinksMap.delete(uuid);
-  }
-
   private generateAutoShortUrl(title?: string): string {
     const baseSlug = (title || ShortLinksService.CONSTANTS.FALLBACK_SLUG_BASE)
       .toLowerCase()

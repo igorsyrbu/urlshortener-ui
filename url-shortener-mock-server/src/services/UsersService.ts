@@ -69,11 +69,6 @@ class UsersService {
     this.sessionsMap.set(uuid, filtered);
   }
 
-  clearUserData(uuid: string): void {
-    this.userMap.delete(uuid);
-    this.sessionsMap.delete(uuid);
-  }
-
   deleteSession(uuid: string, id: string): boolean {
     const sessions = this.getSessionsForUser(uuid);
     const exists = sessions.some((s) => s.id === id);

@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { cleanupService } from "../services/CleanupService";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -33,7 +32,6 @@ export function authentication(req: Request, res: Response, next: NextFunction):
 
         if (uuidRegex.test(uuid)) {
           (req as AuthenticatedRequest).user = { uuid };
-          cleanupService.recordActivity(uuid);
           next();
           return;
         }

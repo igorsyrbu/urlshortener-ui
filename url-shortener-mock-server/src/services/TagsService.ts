@@ -128,14 +128,6 @@ export class TagsService {
   }
 
   /**
-   * Removes all data for a given user from the in-memory store.
-   */
-  public clearUserData(uuid: string): void {
-    this.userTagsMap.delete(uuid);
-    this.userAssociationsMap.delete(uuid);
-  }
-
-  /**
    * Retrieves a paginated list of tags.
    */
   public getTags(uuid: string, page: number, size: number): Page<Tag> {
