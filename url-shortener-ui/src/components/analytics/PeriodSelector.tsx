@@ -5,6 +5,9 @@ import {Calendar} from "@/components/ui/calendar";
 import {Calendar as CalendarIcon} from "lucide-react";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {DateRange} from "react-day-picker";
+import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {DateRangeDrawer} from "@/components/analytics/DateRangeDrawer";
 
 interface PeriodSelectorProps {
     period: string;
@@ -34,6 +37,8 @@ export function PeriodSelector({
                                    onCustomDateRangeChange,
                                }: PeriodSelectorProps) {
     const [date, setDate] = useState<DateRange | undefined>(customDateRange);
+    const isMobile = useMediaQuery(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`);
+    const [drawerOpen, setDrawerOpen] = useState(false);
 
     useEffect(() => {
         setDate(customDateRange);
@@ -45,7 +50,6 @@ export function PeriodSelector({
         } else {
             const newRange = {from: date.from, to: selectedDay};
 
-            // Ensure from < to
             if (newRange.from > newRange.to) {
                 const temp = newRange.from;
                 newRange.from = newRange.to;
@@ -55,6 +59,11 @@ export function PeriodSelector({
             setDate(newRange);
             onCustomDateRangeChange(newRange);
         }
+    };
+
+    const handleDrawerDateRangeSelect = (range: DateRange) => {
+        setDate(range);
+        onCustomDateRangeChange(range);
     };
 
     return (
@@ -70,26 +79,44 @@ export function PeriodSelector({
                 </button>
             ))}
 
-            <Popover>
-                <PopoverTrigger asChild>
+            {isMobile ? (
+                <>
                     <button
-                        className={`flex-[1.5] sm:flex-none px-2 sm:px-3 py-1.5 justify-center rounded-md transition-colors flex items-center gap-1.5 sm:gap-2 ${period === "custom" ? activeClasses : inactiveClasses}`}
+                        onClick={() => setDrawerOpen(true)}
+                        className={`flex-[1.5] px-2 py-1.5 justify-center rounded-md transition-colors flex items-center gap-1.5 ${period === "custom" ? activeClasses : inactiveClasses}`}
                     >
-                        <CalendarIcon className="size-[15px] sm:size-[16px]" />
+                        <CalendarIcon className="size-[15px]"/>
                         Custom
                     </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={date?.from || new Date()}
-                        selected={date}
-                        onSelect={handleCalendarSelect}
-                        numberOfMonths={2}
+                    <DateRangeDrawer
+                        open={drawerOpen}
+                        onOpenChange={setDrawerOpen}
+                        onDateRangeSelect={handleDrawerDateRangeSelect}
+                        initialRange={customDateRange}
                     />
-                </PopoverContent>
-            </Popover>
+                </>
+            ) : (
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <button
+                            className={`flex-none px-2 sm:px-3 py-1.5 justify-center rounded-md transition-colors flex items-center gap-1.5 sm:gap-2 ${period === "custom" ? activeClasses : inactiveClasses}`}
+                        >
+                            <CalendarIcon className="size-[15px] sm:size-[16px]"/>
+                            Custom
+                        </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={date?.from || new Date()}
+                            selected={date}
+                            onSelect={handleCalendarSelect}
+                            numberOfMonths={2}
+                        />
+                    </PopoverContent>
+                </Popover>
+            )}
         </div>
     );
 }
