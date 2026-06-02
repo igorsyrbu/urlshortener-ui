@@ -13,12 +13,20 @@ const manrope = Manrope({
 export const metadata: Metadata = {
     title: "Short Links",
     description: "Dashboard for URL Shortener",
+    appleWebApp: {
+        capable: true,
+        statusBarStyle: "black-translucent",
+    },
 };
 
 export const viewport: Viewport = {
     width: "device-width",
     initialScale: 1,
     maximumScale: 1,
+    themeColor: [
+        {media: "(prefers-color-scheme: light)", color: "#ffffff"},
+        {media: "(prefers-color-scheme: dark)", color: "#1e1e1e"},
+    ],
 };
 
 export default function RootLayout({
