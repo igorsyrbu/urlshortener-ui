@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/drawer";
 import { Calendar } from "@/components/ui/calendar";
 import { IosWheelPicker, type WheelPickerItem } from "@/components/ui/ios-wheel-picker";
-import { Button } from "@/components/ui/button";
+
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { ALLOWED_YEARS } from "@/lib/constants";
 
@@ -32,13 +32,12 @@ const MONTHS = [
 
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-type Step = "start" | "end";
-
 interface DateRangeDrawerProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onDateRangeSelect: (range: DateRange) => void;
     initialRange?: DateRange;
+    period: string;
 }
 
 function todayAtMidnight(): Date {
@@ -47,12 +46,18 @@ function todayAtMidnight(): Date {
     return d;
 }
 
-function getDefaultDisplayMonth(range: DateRange | undefined): number {
-    return range?.from?.getMonth() ?? new Date().getMonth();
-}
-
-function getDefaultDisplayYear(range: DateRange | undefined): number {
-    return range?.from?.getFullYear() ?? ALLOWED_YEARS[0];
+function getDefaultRange(period: string): DateRange {
+    const today = todayAtMidnight();
+    if (period === "custom") {
+        const from = new Date(today);
+        from.setDate(from.getDate() - 6);
+        return { from, to: today };
+    }
+    const match = period.match(/\d+/);
+    const days = match ? parseInt(match[0], 10) : 7;
+    const from = new Date(today);
+    from.setDate(from.getDate() - days + 1);
+    return { from, to: today };
 }
 
 export function DateRangeDrawer({
@@ -60,14 +65,11 @@ export function DateRangeDrawer({
     onOpenChange,
     onDateRangeSelect,
     initialRange,
+    period,
 }: DateRangeDrawerProps) {
-    const [step, setStep] = useState<Step>("start");
-    const [startDate, setStartDate] = useState<Date | undefined>(
-        initialRange?.from
-    );
-    const [endDate, setEndDate] = useState<Date | undefined>(initialRange?.to);
-    const [displayMonth, setDisplayMonth] = useState(() => getDefaultDisplayMonth(initialRange));
-    const [displayYear, setDisplayYear] = useState(() => getDefaultDisplayYear(initialRange));
+    const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(initialRange);
+    const [displayMonth, setDisplayMonth] = useState(() => new Date().getMonth());
+    const [displayYear, setDisplayYear] = useState<number>(() => ALLOWED_YEARS[0]);
     const [showWheelPicker, setShowWheelPicker] = useState(false);
     const bounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -79,13 +81,13 @@ export function DateRangeDrawer({
 
     useEffect(() => {
         if (!open) return;
-        setStep("start");
         setShowWheelPicker(false);
-        setStartDate(initialRange?.from);
-        setEndDate(initialRange?.to);
-        setDisplayMonth(getDefaultDisplayMonth(initialRange));
-        setDisplayYear(getDefaultDisplayYear(initialRange));
-    }, [open, initialRange]);
+        const range = initialRange ?? getDefaultRange(period);
+        setSelectedRange(range);
+        const ref = range.to ?? new Date();
+        setDisplayMonth(ref.getMonth());
+        setDisplayYear(ref.getFullYear());
+    }, [open, initialRange, period]);
 
     const handleOpenChange = useCallback(
         (nextOpen: boolean) => {
@@ -94,15 +96,7 @@ export function DateRangeDrawer({
         [onOpenChange]
     );
 
-    const switchToEndStep = useCallback(() => {
-        setStep("end");
-        setShowWheelPicker(false);
-        const ref = startDate ?? new Date();
-        setDisplayMonth(ref.getMonth());
-        setDisplayYear(ref.getFullYear());
-    }, [startDate]);
-
-    const handleStartMonthChange = useCallback((index: number) => {
+    const handleMonthChange = useCallback((index: number) => {
         setDisplayMonth(index);
         clearTimeout(bounceTimeoutRef.current);
         const today = new Date();
@@ -112,24 +106,6 @@ export function DateRangeDrawer({
             }, 200);
         }
     }, [displayYear]);
-
-    const handleEndMonthChange = useCallback((index: number) => {
-        setDisplayMonth(index);
-        clearTimeout(bounceTimeoutRef.current);
-        const today = new Date();
-        const startMonth = startDate ? startDate.getMonth() : 0;
-        const startYear = startDate ? startDate.getFullYear() : displayYear;
-        if (displayYear === startYear && index < startMonth) {
-            bounceTimeoutRef.current = setTimeout(() => {
-                setDisplayMonth(startMonth);
-            }, 200);
-        }
-        if (displayYear === today.getFullYear() && index > today.getMonth()) {
-            bounceTimeoutRef.current = setTimeout(() => {
-                setDisplayMonth(today.getMonth());
-            }, 200);
-        }
-    }, [displayYear, startDate]);
 
     const handleYearChange = useCallback(
         (index: number) => {
@@ -141,35 +117,32 @@ export function DateRangeDrawer({
         []
     );
 
-    const handleStartDaySelect = useCallback(
-        (day: Date) => {
-            const today = todayAtMidnight();
-            if (day > today) return;
-            setStartDate(day);
-            setDisplayMonth(day.getMonth());
-            setDisplayYear(day.getFullYear());
-        },
-        []
-    );
-
-    const handleEndDaySelect = useCallback(
-        (day: Date) => {
-            const today = todayAtMidnight();
-            if (startDate && day < startDate) return;
-            if (day > today) return;
-            setEndDate(day);
-            setDisplayMonth(day.getMonth());
-            setDisplayYear(day.getFullYear());
-        },
-        [startDate]
-    );
-
     const handleCalendarMonthChange = useCallback(
         (month: Date) => {
             setDisplayMonth(month.getMonth());
             setDisplayYear(month.getFullYear());
         },
         []
+    );
+
+    const handleSelect = useCallback(
+        (_range: DateRange | undefined, selectedDay: Date) => {
+            if (!selectedRange?.from || (selectedRange?.from && selectedRange?.to)) {
+                setSelectedRange({ from: selectedDay, to: undefined });
+                return;
+            }
+
+            const from = selectedRange.from;
+            const to = selectedDay;
+
+            if (from > to) {
+                onDateRangeSelect({ from: to, to: from });
+            } else {
+                onDateRangeSelect({ from, to });
+            }
+            onOpenChange(false);
+        },
+        [selectedRange, onDateRangeSelect, onOpenChange]
     );
 
     const handleTogglePicker = useCallback(() => {
@@ -200,14 +173,7 @@ export function DateRangeDrawer({
         }
     }, [displayMonth, displayYear]);
 
-    const startMonthItems = useMemo((): WheelPickerItem[] => {
-        return MONTHS.map((name) => ({
-            label: name,
-            disabled: false,
-        }));
-    }, []);
-
-    const endMonthItems = useMemo((): WheelPickerItem[] => {
+    const monthItems = useMemo((): WheelPickerItem[] => {
         return MONTHS.map((name) => ({
             label: name,
             disabled: false,
@@ -231,68 +197,25 @@ export function DateRangeDrawer({
         [displayYear, displayMonth]
     );
 
-    const startDisabledDays = useMemo(() => {
+    const disabledDays = useMemo(() => {
         const today = todayAtMidnight();
         return [{ after: today }];
     }, []);
 
-    const endDisabledDays = useMemo(() => {
-        const today = todayAtMidnight();
-        const matchers: Array<{ before: Date } | { after: Date }> = [{ after: today }];
-        if (startDate) {
-            matchers.push({ before: startDate });
-        }
-        return matchers;
-    }, [startDate]);
-
-    const handleConfirm = useCallback(() => {
-        if (startDate && endDate) {
-            onDateRangeSelect({ from: startDate, to: endDate });
-            onOpenChange(false);
-        }
-    }, [startDate, endDate, onDateRangeSelect, onOpenChange]);
-
-    const handleBack = useCallback(() => {
-        setStep("start");
-        setShowWheelPicker(false);
-        const ref = startDate ?? new Date();
-        setDisplayMonth(ref.getMonth());
-        setDisplayYear(ref.getFullYear());
-    }, [startDate]);
-
-    const title = step === "start" ? "Select Start Date" : "Select End Date";
-    const stepLabel = step === "start" ? "1/2" : "2/2";
-
-    const currentMonthItems = step === "start" ? startMonthItems : endMonthItems;
-    const handleDaySelect = step === "start" ? handleStartDaySelect : handleEndDaySelect;
-    const handleMonthChange = step === "start" ? handleStartMonthChange : handleEndMonthChange;
-    const currentDisabledDays = step === "start" ? startDisabledDays : endDisabledDays;
-    const selectedDay = step === "start" ? startDate : endDate;
-
     const headerLabel = `${MONTHS[displayMonth]} ${displayYear}`;
-
-    const today = useMemo(() => todayAtMidnight(), []);
-    const isStartDateValid = startDate ? startDate <= today : false;
-    const isEndDateValid = endDate
-        ? endDate <= today && (!startDate || endDate >= startDate)
-        : false;
 
     return (
         <Drawer open={open} onOpenChange={handleOpenChange}>
             <DrawerContent className="outline-hidden">
                 <DrawerHeader className="p-4 pb-0 flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-muted-foreground">
-                            {stepLabel}
-                        </span>
-                    </div>
+                    <div className="w-6" />
                     <DrawerTitle className="text-base font-semibold text-foreground">
-                        {title}
+                        Select Date Range
                     </DrawerTitle>
                     <div className="w-6" />
                 </DrawerHeader>
                 <DrawerDescription className="sr-only">
-                    {title}
+                    Select a date range
                 </DrawerDescription>
 
                 {showWheelPicker ? (
@@ -314,7 +237,7 @@ export function DateRangeDrawer({
                             <div className="flex items-center justify-center gap-0">
                                 <div className="flex-1">
                                     <IosWheelPicker
-                                        items={currentMonthItems}
+                                        items={monthItems}
                                         selectedIndex={displayMonth}
                                         onChange={handleMonthChange}
                                         perspective="left"
@@ -335,26 +258,26 @@ export function DateRangeDrawer({
                 ) : (
                     <div className="flex flex-col flex-1">
                         <div className="px-4 mt-2 flex items-center justify-between shrink-0">
-                            <button
-                                type="button"
-                                onClick={handleTogglePicker}
-                                className="flex items-center gap-1 text-primary font-semibold text-sm"
-                            >
-                                {headerLabel}
-                                <ChevronRight className="size-4" />
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={handleTogglePicker}
+                                    className="flex items-center gap-1 text-foreground font-semibold text-sm"
+                                >
+                                    {headerLabel}
+                                    <ChevronRight className="size-4 text-primary" />
+                                </button>
                             <div className="flex items-center gap-1">
                                 <button
                                     type="button"
                                     onClick={handlePrevMonth}
-                                    className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                                    className="p-1 text-primary hover:text-primary/80 transition-colors"
                                 >
                                     <ChevronLeft className="size-4" />
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleNextMonth}
-                                    className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                                    className="p-1 text-primary hover:text-primary/80 transition-colors"
                                 >
                                     <ChevronRight className="size-4" />
                                 </button>
@@ -362,17 +285,16 @@ export function DateRangeDrawer({
                         </div>
                         <div className="px-4 h-[360px]">
                             <Calendar
-                                mode="single"
-                                selected={selectedDay}
-                                onSelect={(day) => {
-                                    if (day) handleDaySelect(day);
-                                }}
+                                mode="range"
+                                selected={selectedRange}
+                                onSelect={handleSelect}
                                 month={displayMonthDate}
                                 onMonthChange={handleCalendarMonthChange}
-                                disabled={currentDisabledDays}
+                                disabled={disabledDays}
                                 numberOfMonths={1}
                                 showOutsideDays={false}
                                 disableNavigation
+                                weekStartsOn={1}
                                 formatters={{
                                     formatWeekdayName: (date: Date) => WEEKDAYS[date.getDay()],
                                 }}
@@ -386,35 +308,6 @@ export function DateRangeDrawer({
                         </div>
                     </div>
                 )}
-
-                <div className="px-4 pt-4 pb-6 flex flex-col items-center gap-2">
-                    {step === "start" ? (
-                        <Button
-                            className="w-full"
-                            disabled={!isStartDateValid}
-                            onClick={switchToEndStep}
-                        >
-                            Next
-                        </Button>
-                    ) : (
-                        <>
-                            <Button
-                                className="w-full"
-                                disabled={!isEndDateValid}
-                                onClick={handleConfirm}
-                            >
-                                Done
-                            </Button>
-                            <button
-                                type="button"
-                                onClick={handleBack}
-                                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                                Back
-                            </button>
-                        </>
-                    )}
-                </div>
             </DrawerContent>
         </Drawer>
     );

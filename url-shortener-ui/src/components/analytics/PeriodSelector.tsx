@@ -93,6 +93,7 @@ export function PeriodSelector({
                         onOpenChange={setDrawerOpen}
                         onDateRangeSelect={handleDrawerDateRangeSelect}
                         initialRange={customDateRange}
+                        period={period}
                     />
                 </>
             ) : (
@@ -113,6 +114,7 @@ export function PeriodSelector({
                             selected={date}
                             onSelect={handleCalendarSelect}
                             numberOfMonths={2}
+                            weekStartsOn={1}
                         />
                     </PopoverContent>
                 </Popover>
