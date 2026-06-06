@@ -107,7 +107,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Sidebar />
                 <div className="flex flex-1 flex-col min-w-0 h-full overflow-hidden relative">
                     <div
-                        className={`z-20 shrink-0 border-b bg-sidebar overflow-y-auto [scrollbar-gutter:stable] transition-all duration-300 ease-in-out ${isScrolled ? "border-border/50 shadow-sm" : "border-transparent"} ${isHeaderHidden ? "-mt-16 opacity-0 pointer-events-none md:mt-0 md:pointer-events-auto md:opacity-100" : "mt-0 opacity-100"}`}
+                        className={`z-20 absolute md:static top-0 left-0 right-0 shrink-0 border-b bg-sidebar overflow-y-auto [scrollbar-gutter:stable] transition-all duration-300 ease-in-out ${isScrolled ? "border-border/50 shadow-sm" : "border-transparent"} ${isHeaderHidden ? "-translate-y-full opacity-0 pointer-events-none md:translate-y-0 md:pointer-events-auto md:opacity-100" : "translate-y-0 opacity-100"}`}
                     >
                         <div className={DASHBOARD_CONTENT_SHELL_CLASS}>
                             <Header
@@ -118,7 +118,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         </div>
                     </div>
                     <main
-                        className="relative min-h-0 flex-1 overflow-y-auto bg-sidebar [scrollbar-gutter:stable]"
+                        className="relative min-h-0 flex-1 overflow-y-auto bg-sidebar pt-16 md:pt-0 [scrollbar-gutter:stable]"
                         onScroll={handleScroll}
                     >
                         <div
