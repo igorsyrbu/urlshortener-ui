@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { DateRange } from "react-day-picker";
+import React, {useState, useCallback, useMemo, useRef, useEffect} from "react";
+import {DateRange} from "react-day-picker";
 import {
     Drawer,
     DrawerContent,
@@ -9,11 +9,12 @@ import {
     DrawerTitle,
     DrawerDescription,
 } from "@/components/ui/drawer";
-import { Calendar } from "@/components/ui/calendar";
-import { IosWheelPicker, type WheelPickerItem } from "@/components/ui/ios-wheel-picker";
+import {Calendar} from "@/components/ui/calendar";
+import {IosWheelPicker, type WheelPickerItem} from "@/components/ui/ios-wheel-picker";
 
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { ALLOWED_YEARS } from "@/lib/constants";
+import {cn} from "@/lib/utils";
+import {ChevronDown, ChevronLeft, ChevronRight} from "lucide-react";
+import {ALLOWED_YEARS} from "@/lib/constants";
 
 const MONTHS = [
     "January",
@@ -51,22 +52,22 @@ function getDefaultRange(period: string): DateRange {
     if (period === "custom") {
         const from = new Date(today);
         from.setDate(from.getDate() - 6);
-        return { from, to: today };
+        return {from, to: today};
     }
     const match = period.match(/\d+/);
     const days = match ? parseInt(match[0], 10) : 7;
     const from = new Date(today);
     from.setDate(from.getDate() - days + 1);
-    return { from, to: today };
+    return {from, to: today};
 }
 
 export function DateRangeDrawer({
-    open,
-    onOpenChange,
-    onDateRangeSelect,
-    initialRange,
-    period,
-}: DateRangeDrawerProps) {
+                                    open,
+                                    onOpenChange,
+                                    onDateRangeSelect,
+                                    initialRange,
+                                    period,
+                                }: DateRangeDrawerProps) {
     const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(initialRange);
     const [displayMonth, setDisplayMonth] = useState(() => new Date().getMonth());
     const [displayYear, setDisplayYear] = useState<number>(() => ALLOWED_YEARS[0]);
@@ -128,7 +129,7 @@ export function DateRangeDrawer({
     const handleSelect = useCallback(
         (_range: DateRange | undefined, selectedDay: Date) => {
             if (!selectedRange?.from || (selectedRange?.from && selectedRange?.to)) {
-                setSelectedRange({ from: selectedDay, to: undefined });
+                setSelectedRange({from: selectedDay, to: undefined});
                 return;
             }
 
@@ -136,9 +137,9 @@ export function DateRangeDrawer({
             const to = selectedDay;
 
             if (from > to) {
-                onDateRangeSelect({ from: to, to: from });
+                onDateRangeSelect({from: to, to: from});
             } else {
-                onDateRangeSelect({ from, to });
+                onDateRangeSelect({from, to});
             }
             onOpenChange(false);
         },
@@ -199,8 +200,15 @@ export function DateRangeDrawer({
 
     const disabledDays = useMemo(() => {
         const today = todayAtMidnight();
-        return [{ after: today }];
+        return [{after: today}];
     }, []);
+
+    const today = todayAtMidnight();
+    const minAllowedDate = new Date(ALLOWED_YEARS[0], 0, 1);
+    const maxAllowedDate = today;
+
+    const isPrevDisabled = displayYear === minAllowedDate.getFullYear() && displayMonth === minAllowedDate.getMonth();
+    const isNextDisabled = displayYear === maxAllowedDate.getFullYear() && displayMonth === maxAllowedDate.getMonth();
 
     const headerLabel = `${MONTHS[displayMonth]} ${displayYear}`;
 
@@ -208,106 +216,109 @@ export function DateRangeDrawer({
         <Drawer open={open} onOpenChange={handleOpenChange}>
             <DrawerContent className="outline-hidden">
                 <DrawerHeader className="p-4 pb-0 flex flex-row items-center justify-between">
-                    <div className="w-6" />
+                    <div className="w-6"/>
                     <DrawerTitle className="text-base font-semibold text-foreground">
                         Select Date Range
                     </DrawerTitle>
-                    <div className="w-6" />
+                    <div className="w-6"/>
                 </DrawerHeader>
                 <DrawerDescription className="sr-only">
                     Select a date range
                 </DrawerDescription>
 
-                {showWheelPicker ? (
-                    <div data-vaul-no-drag className="shrink-0">
-                        <div className="px-4 mt-2 flex items-center">
+                <div className="relative h-105 flex flex-col">
+                    <div className="pl-9 pr-7 mt-4 flex items-center justify-between shrink-0">
+                        <button
+                            type="button"
+                            onClick={handleTogglePicker}
+                            className={cn("flex items-center gap-1 font-semibold text-sm antialiased", showWheelPicker ? "text-primary" : "text-foreground")}
+                        >
+                            {headerLabel}
+                            <span className="relative w-4 h-4">
+                                <ChevronRight
+                                    className={cn("size-4 absolute inset-0 transition-opacity text-primary", showWheelPicker ? "opacity-0" : "opacity-100")}/>
+                                <ChevronDown
+                                    className={cn("size-4 absolute inset-0 transition-opacity text-primary", showWheelPicker ? "opacity-100" : "opacity-0")}/>
+                            </span>
+                        </button>
+                        <div className={cn("flex items-center gap-1", showWheelPicker && "invisible")}>
                             <button
                                 type="button"
-                                onClick={handleTogglePicker}
-                                className="flex items-center gap-1 text-primary font-semibold text-sm"
+                                onClick={handlePrevMonth}
+                                disabled={isPrevDisabled}
+                                aria-disabled={isPrevDisabled}
+                                className="p-1 text-primary hover:text-primary/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-primary"
                             >
-                                {headerLabel}
-                                <ChevronDown className="size-4" />
+                                <ChevronLeft className="size-4"/>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleNextMonth}
+                                disabled={isNextDisabled}
+                                aria-disabled={isNextDisabled}
+                                className="p-1 text-primary hover:text-primary/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-primary"
+                            >
+                                <ChevronRight className="size-4"/>
                             </button>
                         </div>
-                        <div className="relative px-4">
-                            <div className="ios-wheel-picker__mask ios-wheel-picker__mask--top" />
-                            <div className="ios-wheel-picker__mask ios-wheel-picker__mask--bottom" />
-                            <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 h-10 rounded-xl bg-muted/50 pointer-events-none" />
-                            <div className="flex items-center justify-center gap-0">
-                                <div className="flex-1">
-                                    <IosWheelPicker
-                                        items={monthItems}
-                                        selectedIndex={displayMonth}
-                                        onChange={handleMonthChange}
-                                        perspective="left"
-                                        loop
-                                    />
-                                </div>
-                                <div className="flex-1">
-                                    <IosWheelPicker
-                                        items={yearItems}
-                                        selectedIndex={yearIndex >= 0 ? yearIndex : 0}
-                                        onChange={handleYearChange}
-                                        perspective="right"
-                                    />
+                    </div>
+                    <div className="relative mt-1 flex-1">
+                        <div className={cn("absolute inset-0 flex flex-col", showWheelPicker && "hidden")}>
+                            <div className="px-4 flex-1">
+                                <Calendar
+                                    mode="range"
+                                    selected={selectedRange}
+                                    onSelect={handleSelect}
+                                    month={displayMonthDate}
+                                    onMonthChange={handleCalendarMonthChange}
+                                    disabled={disabledDays}
+                                    numberOfMonths={1}
+                                    showOutsideDays={false}
+                                    disableNavigation
+                                    weekStartsOn={1}
+                                    formatters={{
+                                        formatWeekdayName: (date: Date) => WEEKDAYS[date.getDay()],
+                                    }}
+                                    classNames={{
+                                        month_caption: "hidden",
+                                        nav: "hidden",
+                                        root: "w-full",
+                                        today: "text-foreground data-[selected=true]:rounded-none",
+                                    }}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+                        <div
+                            className={cn("absolute inset-0 flex flex-col", !showWheelPicker && "invisible pointer-events-none")}>
+                            <div className="relative px-4 flex-1 flex items-center justify-center" data-vaul-no-drag>
+                                <div className="ios-wheel-picker__mask ios-wheel-picker__mask--top"/>
+                                <div className="ios-wheel-picker__mask ios-wheel-picker__mask--bottom"/>
+                                <div
+                                    className="absolute inset-x-4 top-1/2 -translate-y-1/2 h-10 rounded-xl bg-muted/50 pointer-events-none"/>
+                                <div className="flex items-center justify-center gap-2">
+                                    <div className="flex-none w-34">
+                                        <IosWheelPicker
+                                            items={monthItems}
+                                            selectedIndex={displayMonth}
+                                            onChange={handleMonthChange}
+                                            perspective="left"
+                                            loop
+                                        />
+                                    </div>
+                                    <div className="flex-none w-30">
+                                        <IosWheelPicker
+                                            items={yearItems}
+                                            selectedIndex={yearIndex >= 0 ? yearIndex : 0}
+                                            onChange={handleYearChange}
+                                            perspective="right"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                ) : (
-                    <div className="flex flex-col flex-1">
-                        <div className="px-4 mt-2 flex items-center justify-between shrink-0">
-                                <button
-                                    type="button"
-                                    onClick={handleTogglePicker}
-                                    className="flex items-center gap-1 text-foreground font-semibold text-sm"
-                                >
-                                    {headerLabel}
-                                    <ChevronRight className="size-4 text-primary" />
-                                </button>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    type="button"
-                                    onClick={handlePrevMonth}
-                                    className="p-1 text-primary hover:text-primary/80 transition-colors"
-                                >
-                                    <ChevronLeft className="size-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleNextMonth}
-                                    className="p-1 text-primary hover:text-primary/80 transition-colors"
-                                >
-                                    <ChevronRight className="size-4" />
-                                </button>
-                            </div>
-                        </div>
-                        <div className="px-4 h-[360px]">
-                            <Calendar
-                                mode="range"
-                                selected={selectedRange}
-                                onSelect={handleSelect}
-                                month={displayMonthDate}
-                                onMonthChange={handleCalendarMonthChange}
-                                disabled={disabledDays}
-                                numberOfMonths={1}
-                                showOutsideDays={false}
-                                disableNavigation
-                                weekStartsOn={1}
-                                formatters={{
-                                    formatWeekdayName: (date: Date) => WEEKDAYS[date.getDay()],
-                                }}
-                                classNames={{
-                                    month_caption: "hidden",
-                                    nav: "hidden",
-                                    root: "w-full",
-                                }}
-                                className="w-full"
-                            />
-                        </div>
-                    </div>
-                )}
+                </div>
             </DrawerContent>
         </Drawer>
     );
