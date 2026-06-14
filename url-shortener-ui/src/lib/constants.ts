@@ -79,6 +79,8 @@ export const DEFAULT_PAGE_SIZE = 20;
 
 export const DEFAULT_PERIOD_DAYS = 30;
 
+export const ALLOWED_YEARS = [2026] as const;
+
 // ---------------------------------------------------------------------------
 // UI helpers
 // ---------------------------------------------------------------------------

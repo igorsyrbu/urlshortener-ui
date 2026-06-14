@@ -250,3 +250,112 @@
     opacity: 0 !important;
     backdrop-filter: blur(0px) !important;
 }
+
+/* iOS Wheel Picker */
+.ios-wheel-picker {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 22.2rem;
+    width: 100%;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.ios-wheel-picker__scene {
+    min-width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    touch-action: pan-x;
+}
+
+.ios-wheel-picker__viewport {
+    height: 36px;
+    width: 100%;
+    perspective: 1000px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -khtml-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ios-wheel-picker__viewport--perspective-left {
+    perspective-origin: calc(50% + 60px) 50%;
+    transform: translateX(10px);
+}
+
+.ios-wheel-picker__viewport--perspective-right {
+    perspective-origin: calc(50% - 60px) 50%;
+    transform: translateX(-10px);
+}
+
+.ios-wheel-picker__container {
+    height: 100%;
+    width: 100%;
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
+.ios-wheel-picker__slide {
+    width: 100%;
+    height: 100%;
+    font-size: 1.25rem;
+    font-weight: 300;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    opacity: 0;
+    color: var(--foreground);
+}
+
+.ios-wheel-picker__mask {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: calc(50% - 36px / 2);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.ios-wheel-picker__mask--top {
+    top: 0;
+    background: linear-gradient(
+        to top,
+        rgba(255, 255, 255, 0.65) 0%,
+        rgba(255, 255, 255, 1) 100%
+    );
+}
+
+.dark .ios-wheel-picker__mask--top {
+    background: linear-gradient(
+        to top,
+        rgba(30, 30, 30, 0.65) 0%,
+        rgba(30, 30, 30, 1) 100%
+    );
+}
+
+.ios-wheel-picker__mask--bottom {
+    bottom: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.65) 0%,
+        rgba(255, 255, 255, 1) 100%
+    );
+}
+
+.dark .ios-wheel-picker__mask--bottom {
+    background: linear-gradient(
+        to bottom,
+        rgba(30, 30, 30, 0.65) 0%,
+        rgba(30, 30, 30, 1) 100%
+    );
+}
