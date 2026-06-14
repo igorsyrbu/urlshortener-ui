@@ -10,5 +10,6 @@ router.post("/shortlinks", authentication, ShortLinksController.createShortLink)
 router.put("/shortlinks", authentication, ShortLinksController.updateShortLink);
 router.delete("/shortlinks/:id", authentication, ShortLinksController.deleteShortLink);
 router.get("/longurl/title", authentication, ShortLinksController.getLongUrlTitle);
+router.get("/longurl/metadata", authentication, ShortLinksController.getLongUrlMetadata);
 
 export default router;

@@ -1,37 +1,69 @@
-import { parse } from "node-html-parser";
+import { parse, HTMLElement } from "node-html-parser";
 
 const FETCH_TIMEOUT_MS = 3_000;
-const MAX_BODY_BYTES = 50 * 1024; // 50KB
+const MAX_BODY_BYTES = 100 * 1024; // Increased to 100KB for better metadata coverage
+
+export interface UrlMetadata {
+  title: string;
+  description: string;
+  favicon: string;
+}
 
 type FetchResponse = Awaited<ReturnType<typeof fetch>>;
 
-export async function fetchPageTitle(url: string): Promise<string> {
+export async function fetchUrlMetadata(url: string): Promise<UrlMetadata> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-  const response = await fetch(url, {
-    signal: controller.signal,
-    redirect: "follow",
-    headers: { Accept: "text/html" },
-  }).finally(() => clearTimeout(timeoutId));
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      redirect: "follow",
+      headers: { 
+        "User-Agent": "Mozilla/5.0 (compatible; UrlShortenerBot/1.0; +https://sho.rt)",
+        "Accept": "text/html" 
+      },
+    });
 
-  validateContentType(response);
+    validateResponse(response);
 
-  const html = await readBody(response);
-  const title = parse(html).querySelector("title")?.text?.trim() ?? "";
+    const html = await readBody(response);
+    const root = parse(html);
 
-  if (!title) throw new Error("<title> tag is blank");
+    const title = extractTitle(root);
+    const description = extractDescription(root);
+    const favicon = extractFavicon(root, url);
 
-  return title;
+    return { title, description, favicon };
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      throw new Error(`Timeout: Failed to fetch metadata within ${FETCH_TIMEOUT_MS}ms`);
+    }
+    if (error.code === "ENOTFOUND" || error.code === "EAI_AGAIN") {
+      throw new Error(`DNS Error: Could not resolve host for ${url}`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
-function validateContentType(response: FetchResponse): void {
+/**
+ * Legacy support for fetching only the title.
+ */
+export async function fetchPageTitle(url: string): Promise<string> {
+  const metadata = await fetchUrlMetadata(url);
+  return metadata.title;
+}
+
+function validateResponse(response: FetchResponse): void {
+  if (!response.ok) {
+    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+  }
+
   const contentType = response.headers.get("content-type") ?? "";
-
-  if (!contentType) throw new Error("Missing content-type header");
-
   if (!contentType.toLowerCase().includes("text/html")) {
-    throw new Error(`Content-Type is not HTML: ${contentType}`);
+    throw new Error(`Invalid Content-Type: Expected text/html but got ${contentType}`);
   }
 }
 
@@ -61,4 +93,60 @@ async function readBody(response: FetchResponse): Promise<string> {
   }
 
   return new TextDecoder().decode(buffer);
+}
+
+function extractTitle(root: HTMLElement): string {
+  // Priority: og:title -> title tag -> twitter:title
+  return (
+    root.querySelector('meta[property="og:title"]')?.getAttribute("content") ||
+    root.querySelector('meta[name="og:title"]')?.getAttribute("content") ||
+    root.querySelector("title")?.text ||
+    root.querySelector('meta[name="twitter:title"]')?.getAttribute("content") ||
+    ""
+  ).trim();
+}
+
+function extractDescription(root: HTMLElement): string {
+  // Priority: description -> og:description -> twitter:description
+  return (
+    root.querySelector('meta[name="description"]')?.getAttribute("content") ||
+    root.querySelector('meta[property="og:description"]')?.getAttribute("content") ||
+    root.querySelector('meta[name="og:description"]')?.getAttribute("content") ||
+    root.querySelector('meta[name="twitter:description"]')?.getAttribute("content") ||
+    ""
+  ).trim();
+}
+
+function extractFavicon(root: HTMLElement, baseUrl: string): string {
+  const iconSelectors = [
+    'link[rel="apple-touch-icon"]',
+    'link[rel="shortcut icon"]',
+    'link[rel="icon"]',
+    'link[rel="icon shortcut"]',
+  ];
+
+  let faviconUrl = "";
+  for (const selector of iconSelectors) {
+    const href = root.querySelector(selector)?.getAttribute("href");
+    if (href) {
+      faviconUrl = href;
+      break;
+    }
+  }
+
+  if (!faviconUrl) {
+    try {
+      const url = new URL(baseUrl);
+      return `${url.origin}/favicon.ico`;
+    } catch {
+      return "";
+    }
+  }
+
+  // Resolve relative URLs
+  try {
+    return new URL(faviconUrl, baseUrl).href;
+  } catch {
+    return faviconUrl;
+  }
 }

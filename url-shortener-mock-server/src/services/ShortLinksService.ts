@@ -67,11 +67,38 @@ export class ShortLinksService {
    * @param uuid - The user's custom UUID
    * @param page - The zero-based page index
    * @param size - The number of items per page
+   * @param q - Optional search query to filter by title or long URL
+   * @param tagIds - Optional array of tag IDs to filter by
    * @returns A Page object containing the content and metadata
    */
-  public getPaginatedLinks(uuid: string, page: number, size: number): Page<ShortLink> {
+  public getPaginatedLinks(
+    uuid: string,
+    page: number,
+    size: number,
+    q?: string,
+    tagIds?: string[]
+  ): Page<ShortLink> {
     const userState = memoryStore.getUserState(uuid);
-    const links = userState.links;
+    let links = userState.links;
+
+    // Apply search filter
+    if (q) {
+      const searchLower = q.toLowerCase();
+      links = links.filter(
+        (link) =>
+          link.title.toLowerCase().includes(searchLower) ||
+          link.longUrl.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply tag filter
+    if (tagIds && tagIds.length > 0) {
+      links = links.filter((link) => {
+        const linkTagIds = tagsService.getTagIdsForLink(uuid, link.id);
+        return tagIds.every((id) => linkTagIds.includes(id));
+      });
+    }
+
     const startIndex = page * size;
     const content = links.slice(startIndex, startIndex + size);
     const totalElements = links.length;
