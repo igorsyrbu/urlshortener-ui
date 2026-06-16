@@ -3,6 +3,7 @@
 import {useEffect} from "react";
 import {Button} from "@/components/ui/button";
 import {AlertCircle} from "lucide-react";
+import {logger} from "@/lib/logger";
 
 export default function GlobalError({
                                         error,
@@ -12,7 +13,7 @@ export default function GlobalError({
     reset: () => void;
 }) {
     useEffect(() => {
-        console.error("Global boundary caught error:", error);
+        logger.error("Global boundary caught error", error, { digest: error.digest });
     }, [error]);
 
     return (

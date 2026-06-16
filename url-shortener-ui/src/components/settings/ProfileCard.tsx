@@ -8,6 +8,7 @@ import {toast} from "sonner";
 import {fetchWithAuth} from "@/lib/api";
 import {useAuthStore, UserProfile} from "@/lib/store/auth";
 import {API_ENDPOINTS} from "@/lib/constants";
+import {logger} from "@/lib/logger";
 
 export function ProfileCard() {
     const user = useAuthStore((state) => state.user);
@@ -32,7 +33,7 @@ export function ProfileCard() {
                 setUser(data);
             }
         } catch (error) {
-            console.error("Failed to load profile", error);
+            logger.error("Failed to load profile", error);
         }
     };
 
@@ -50,7 +51,7 @@ export function ProfileCard() {
                 toast.error("Failed to update profile");
             }
         } catch (error) {
-            console.error("Error updating name", error);
+            logger.error("Error updating name", error);
             toast.error("An unexpected error occurred while updating profile");
         } finally {
             setIsSaving(false);
