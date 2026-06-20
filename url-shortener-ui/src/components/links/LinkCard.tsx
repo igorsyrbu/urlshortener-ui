@@ -1,7 +1,18 @@
 "use client";
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {Archive, ArchiveRestore, Check, Copy, CornerDownRight, MoreVertical, PencilLine, QrCode, Tag, Trash2} from "lucide-react";
+import {
+    Archive,
+    ArchiveRestore,
+    Check,
+    Copy,
+    CornerDownRight,
+    MoreVertical,
+    PencilLine,
+    QrCode,
+    Tag,
+    Trash2
+} from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -90,7 +101,16 @@ function TagsSection({tags}: { tags: TagItem[] }) {
     );
 }
 
-export function LinkCard({link, onEdit, onDelete, onQrCode, onArchiveToggle, onArchiveRequest, onMouseEnter, onMouseLeave}: LinkCardProps) {
+export function LinkCard({
+                             link,
+                             onEdit,
+                             onDelete,
+                             onQrCode,
+                             onArchiveToggle,
+                             onArchiveRequest,
+                             onMouseEnter,
+                             onMouseLeave
+                         }: LinkCardProps) {
     const [copied, setCopied] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -147,18 +167,19 @@ export function LinkCard({link, onEdit, onDelete, onQrCode, onArchiveToggle, onA
             className={cn(
                 "group flex items-center p-4 md:p-5 rounded-xl bg-background border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-4 outline-none",
             )}>
-            <div
-                className="relative shrink-0 size-9 rounded-full flex items-center justify-center border-[0.5px] border-border overflow-hidden bg-muted text-foreground">
-                <div className={cn("size-full flex items-center justify-center", !link.isActive && "blur-lg brightness-150 dark:brightness-100")}>
-                    <LinkFavicon longUrl={link.longUrl}/>
-                </div>
-                {!link.isActive && (
-                    <div
-                        className="absolute inset-0 flex items-center justify-center">
-                        <Archive className="size-5 text-foreground"/>
+            {link.isActive ? (
+                <div
+                    className="relative shrink-0 size-9 rounded-full flex items-center justify-center border-[0.5px] border-border overflow-hidden bg-muted text-foreground">
+                    <div className="size-full flex items-center justify-center">
+                        <LinkFavicon longUrl={link.longUrl}/>
                     </div>
-                )}
-            </div>
+                </div>
+            ) : (
+                <div
+                    className="relative shrink-0 size-9 rounded-full flex items-center justify-center border-[0.5px] border-border overflow-hidden bg-muted text-foreground transition-all duration-200">
+                    <Archive className="size-5"/>
+                </div>
+            )}
 
             <div className="flex-1 min-w-0 flex flex-col gap-1">
                 <h3 className="text-sm font-bold text-card-foreground leading-tight pt-0.5 truncate">{link.title}</h3>
