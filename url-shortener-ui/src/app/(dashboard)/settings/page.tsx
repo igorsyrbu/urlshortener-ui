@@ -9,7 +9,6 @@ import {getJwtTTL} from "@/lib/utils";
 import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 import {UserSession} from "@/lib/session-utils";
 import {PageContainer} from "@/components/layout/PageContainer";
-import {PageHeading} from "@/components/layout/PageHeading";
 import {ProfileCard} from "@/components/settings/ProfileCard";
 import {AppearanceCard} from "@/components/settings/AppearanceCard";
 import {CurrentSessionCard} from "@/components/settings/CurrentSessionCard";
@@ -112,8 +111,6 @@ export default function SettingsPage() {
 
     return (
         <PageContainer>
-            <PageHeading>Settings</PageHeading>
-
             <ProfileCard/>
             <AppearanceCard/>
 

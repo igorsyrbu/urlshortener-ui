@@ -23,6 +23,7 @@ export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkMod
                 longUrl,
                 title,
                 shortUrl: link.shortUrl,
+                isActive: link.isActive,
                 tagIds: [...tagIds],
             }),
         });

@@ -63,6 +63,7 @@ export class MemoryStore {
         title: rest.title,
         shortUrl: rest.shortUrl,
         longUrl: rest.longUrl,
+        isActive: link.isActive ?? true,
       };
     });
 
