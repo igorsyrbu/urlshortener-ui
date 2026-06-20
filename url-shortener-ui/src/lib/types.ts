@@ -12,5 +12,6 @@ export interface LinkItem {
     title: string;
     shortUrl: string;
     longUrl: string;
+    isActive: boolean;
     tagIds?: string[];
 }

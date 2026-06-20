@@ -34,6 +34,7 @@ interface DeleteConfirmationModalProps {
     previewContent?: React.ReactNode;
     confirmLabel?: string;
     confirmLoadingLabel?: string;
+    confirmVariant?: "default" | "destructive";
     confirmationValue?: string;
     confirmationType?: string;
 }
@@ -96,19 +97,20 @@ function ConfirmationSection({
 }
 
 export function DeleteConfirmationModal({
-                                            open,
-                                            onOpenChange,
-                                            onConfirm,
-                                            loading,
-                                            title,
-                                            description,
-                                            warningText,
-                                            previewContent,
-                                            confirmLabel = "Delete",
-                                            confirmLoadingLabel = "Deleting...",
-                                            confirmationValue,
-                                            confirmationType,
-                                        }: DeleteConfirmationModalProps) {
+                                             open,
+                                             onOpenChange,
+                                             onConfirm,
+                                             loading,
+                                             title,
+                                             description,
+                                             warningText,
+                                             previewContent,
+                                             confirmLabel = "Delete",
+                                             confirmLoadingLabel = "Deleting...",
+                                             confirmVariant = "destructive",
+                                             confirmationValue,
+                                             confirmationType,
+                                         }: DeleteConfirmationModalProps) {
     const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
     const [inputValue, setInputValue] = useState("");
 
@@ -169,7 +171,7 @@ export function DeleteConfirmationModal({
                             Cancel
                         </Button>
                         <Button
-                            variant="destructive"
+                            variant={confirmVariant}
                             onClick={onConfirm}
                             disabled={loading || !isConfirmed}
                         >
@@ -192,7 +194,7 @@ export function DeleteConfirmationModal({
 
                 <DrawerFooter className="p-0 mt-4 flex flex-col gap-2">
                     <Button
-                        variant="destructive"
+                        variant={confirmVariant}
                         onClick={onConfirm}
                         disabled={loading || !isConfirmed}
                         className="w-full"

@@ -4,6 +4,7 @@ import {useEffect, useState} from "react";
 import {fetchWithAuth} from "@/lib/api";
 import {EditLinkModal} from "@/components/links/EditLinkModal";
 import {DeleteLinkModal} from "@/components/links/DeleteLinkModal";
+import {ArchiveLinkModal} from "@/components/links/ArchiveLinkModal";
 import {QrCodeModal} from "@/components/links/QrCodeModal";
 import {LinkCard} from "@/components/links/LinkCard";
 import {EmptyLinksState} from "@/components/links/EmptyLinksState";
@@ -13,11 +14,11 @@ import {useLinkStore} from "@/lib/store/links";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
-import {PageHeading} from "@/components/layout/PageHeading";
+import {PageToolbar} from "@/components/layout/PageToolbar";
 import {API_ENDPOINTS} from "@/lib/constants";
 
 export default function LinksPage() {
-    const {links, loading, error, fetchLinks, clearError} = useLinkStore();
+    const {links, loading, error, fetchLinks, clearError, showArchived, setShowArchived, toggleLinkActive} = useLinkStore();
     const {fetchTags} = useTagStoreWithoutCount();
     const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -26,11 +27,71 @@ export default function LinksPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isQrCodeModalOpen, setIsQrCodeModalOpen] = useState(false);
     const [linkForQrCode, setLinkForQrCode] = useState<LinkItem | null>(null);
+    const [hoveredLinkId, setHoveredLinkId] = useState<string | null>(null);
+    const [archiveModalLink, setArchiveModalLink] = useState<LinkItem | null>(null);
+    const [isArchiving, setIsArchiving] = useState(false);
 
     useEffect(() => {
         fetchLinks();
         fetchTags();
     }, [fetchLinks, fetchTags]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (
+                e.key.toLowerCase() !== "a" ||
+                e.metaKey ||
+                e.ctrlKey ||
+                e.altKey
+            ) {
+                return;
+            }
+
+            const target = e.target as HTMLElement;
+            if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+            if (target.closest('[role="dialog"], [role="menu"]')) return;
+            if (archiveModalLink) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const hoveredCard = document.querySelector("[data-link-id]:hover") as HTMLElement | null;
+            const hoveredId = hoveredLinkId ?? hoveredCard?.dataset.linkId ?? null;
+
+            if (hoveredId) {
+                const hoveredLink = useLinkStore.getState().links.find((l) => l.id === hoveredId);
+                if (hoveredLink) {
+                    setArchiveModalLink(hoveredLink);
+                }
+            } else {
+                setShowArchived(!showArchived);
+                fetchLinks(0);
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown, true);
+        return () => document.removeEventListener("keydown", handleKeyDown, true);
+    }, [hoveredLinkId, showArchived, fetchLinks, setShowArchived, archiveModalLink]);
+
+    const handleShowArchivedChange = (value: boolean) => {
+        setShowArchived(value);
+        fetchLinks(0);
+    };
+
+    const handleArchiveToggle = (link: LinkItem) => {
+        toggleLinkActive(link.id, !link.isActive);
+    };
+
+    const handleArchiveConfirm = async () => {
+        if (!archiveModalLink) return;
+        setIsArchiving(true);
+        try {
+            await toggleLinkActive(archiveModalLink.id, !archiveModalLink.isActive);
+            setArchiveModalLink(null);
+        } finally {
+            setIsArchiving(false);
+        }
+    };
 
     const handleDeleteClick = (link: LinkItem) => {
         setLinkToDelete(link);
@@ -75,9 +136,7 @@ export default function LinksPage() {
     return (
         <TooltipProvider>
             <PageContainer>
-                <div className="flex items-center justify-between">
-                    <PageHeading>Links</PageHeading>
-                </div>
+                <PageToolbar showOptions showArchived={showArchived} onShowArchivedChange={handleShowArchivedChange} className="mb-[-8px]" />
 
                 {error && (
                     <div
@@ -105,6 +164,10 @@ export default function LinksPage() {
                                     onEdit={handleEdit}
                                     onDelete={handleDeleteClick}
                                     onQrCode={handleQrCode}
+                                    onArchiveToggle={handleArchiveToggle}
+                                    onArchiveRequest={(link) => setArchiveModalLink(link)}
+                                    onMouseEnter={() => setHoveredLinkId(link.id)}
+                                    onMouseLeave={() => setHoveredLinkId(null)}
                                 />
                         ))}
                     </div>
@@ -131,6 +194,14 @@ export default function LinksPage() {
                     open={isQrCodeModalOpen}
                     onOpenChange={setIsQrCodeModalOpen}
                     link={linkForQrCode}
+                />
+
+                <ArchiveLinkModal
+                    open={!!archiveModalLink}
+                    onOpenChange={(open) => !open && setArchiveModalLink(null)}
+                    link={archiveModalLink}
+                    onConfirm={handleArchiveConfirm}
+                    loading={isArchiving}
                 />
             </PageContainer>
         </TooltipProvider>

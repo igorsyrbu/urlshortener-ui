@@ -8,6 +8,7 @@ interface ShortLinkResponse {
     title: string;
     shortUrl: string;
     longUrl: string;
+    isActive: boolean;
     tagIds?: string[];
 }
 
@@ -28,9 +29,12 @@ interface LinkStore {
     error: string | null;
     page: number;
     hasMore: boolean;
+    showArchived: boolean;
     fetchLinks: (page?: number) => Promise<void>;
     setLinks: (links: LinkItem[]) => void;
     clearError: () => void;
+    setShowArchived: (show: boolean) => void;
+    toggleLinkActive: (id: string, isActive: boolean) => Promise<void>;
 }
 
 function mapResponseToLinkItem(item: ShortLinkResponse): LinkItem {
@@ -39,6 +43,7 @@ function mapResponseToLinkItem(item: ShortLinkResponse): LinkItem {
         title: item.title || DEFAULT_LINK_TITLE,
         shortUrl: item.shortUrl,
         longUrl: item.longUrl,
+        isActive: item.isActive,
         tagIds: item.tagIds,
     };
 }
@@ -49,14 +54,16 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
     error: null,
     page: 0,
     hasMore: true,
+    showArchived: false,
 
     fetchLinks: async (page = 0) => {
         if (get().loading) return;
 
         set({loading: true, error: null});
         try {
+            const {showArchived} = get();
             const res = await fetchWithAuth(
-                `${API_ENDPOINTS.SHORTLINKS}?page=${page}&size=${DEFAULT_PAGE_SIZE}`,
+                `${API_ENDPOINTS.SHORTLINKS}?page=${page}&size=${DEFAULT_PAGE_SIZE}&showArchived=${showArchived}`,
             );
 
             if (res.ok) {
@@ -81,4 +88,23 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
 
     setLinks: (links) => set({links}),
     clearError: () => set({error: null}),
+
+    setShowArchived: (show) => set({showArchived: show}),
+
+    toggleLinkActive: async (id, isActive) => {
+        try {
+            const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS, {
+                method: "PUT",
+                body: JSON.stringify({id, isActive}),
+            });
+            if (res.ok) {
+                await get().fetchLinks(0);
+            } else {
+                set({error: `Failed to toggle link status: ${res.status}`});
+            }
+        } catch (error) {
+            console.error("Error toggling link active state", error);
+            set({error: error instanceof Error ? error.message : "Unknown error occurred"});
+        }
+    },
 }));

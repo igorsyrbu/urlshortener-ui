@@ -6,7 +6,7 @@ import {DeleteTagModal} from "@/components/tags/DeleteTagModal";
 import {TagCard} from "@/components/tags/TagCard";
 import {EmptyTagsState} from "@/components/tags/EmptyTagsState";
 import {PageContainer} from "@/components/layout/PageContainer";
-import {PageHeading} from "@/components/layout/PageHeading";
+import {PageToolbar} from "@/components/layout/PageToolbar";
 import {Button} from "@/components/ui/button";
 import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
 import {useTagMutations} from "@/lib/hooks/useTagMutations";
@@ -60,9 +60,6 @@ export default function TagsPage() {
     if (error) {
         return (
             <PageContainer>
-                <div className="flex items-center justify-between">
-                    <PageHeading>Tags</PageHeading>
-                </div>
                 <div
                     className="bg-destructive/10 text-destructive p-4 rounded-lg flex items-center justify-between">
                     <span>{error}</span>
@@ -81,9 +78,7 @@ export default function TagsPage() {
 
     return (
         <PageContainer>
-            <div className="flex items-center justify-between">
-                <PageHeading>Tags</PageHeading>
-            </div>
+            <PageToolbar className="mb-[-8px]" />
 
             {!loading && tags.length === 0 ? (
                 <EmptyTagsState/>

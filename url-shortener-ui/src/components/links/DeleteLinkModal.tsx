@@ -33,7 +33,7 @@ interface LinkPreviewCardProps {
     longUrl: string;
 }
 
-function LinkPreviewCard({shortUrl, longUrl}: LinkPreviewCardProps) {
+export function LinkPreviewCard({shortUrl, longUrl}: LinkPreviewCardProps) {
     return (
         <div
             className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30 min-w-0 w-full overflow-hidden">

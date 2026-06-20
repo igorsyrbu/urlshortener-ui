@@ -7,6 +7,7 @@ export interface ShortLink {
   title: string;
   shortUrl: string;
   longUrl: string;
+  isActive: boolean;
   tagIds?: string[];
 }
 
@@ -25,6 +26,7 @@ export interface CreateShortLinkDto {
   longUrl: string;
   title?: string;
   shortUrl?: string;
+  isActive?: boolean;
   tagIds?: string[];
 }
 
@@ -32,6 +34,7 @@ export interface UpdateShortLinkDto {
   longUrl?: string;
   title?: string;
   shortUrl?: string;
+  isActive?: boolean;
   tagIds?: string[];
 }
 
@@ -69,9 +72,9 @@ export class ShortLinksService {
    * @param size - The number of items per page
    * @returns A Page object containing the content and metadata
    */
-  public getPaginatedLinks(uuid: string, page: number, size: number): Page<ShortLink> {
+  public getPaginatedLinks(uuid: string, page: number, size: number, showArchived: boolean = false): Page<ShortLink> {
     const userState = memoryStore.getUserState(uuid);
-    const links = userState.links;
+    const links = showArchived ? userState.links : userState.links.filter((l) => l.isActive);
     const startIndex = page * size;
     const content = links.slice(startIndex, startIndex + size);
     const totalElements = links.length;
@@ -116,6 +119,7 @@ export class ShortLinksService {
       title: dto.title?.trim() || ShortLinksService.CONSTANTS.DEFAULT_TITLE,
       shortUrl: dto.shortUrl?.trim() || this.generateAutoShortUrl(dto.title),
       longUrl: dto.longUrl.trim(),
+      isActive: dto.isActive ?? true,
     };
 
     // Handle tag associations if provided
@@ -154,6 +158,7 @@ export class ShortLinksService {
       longUrl: dto.longUrl ?? existingLink.longUrl,
       title: dto.title ?? existingLink.title,
       shortUrl: dto.shortUrl ?? existingLink.shortUrl,
+      isActive: dto.isActive ?? existingLink.isActive,
     };
 
     // Handle tag associations if provided

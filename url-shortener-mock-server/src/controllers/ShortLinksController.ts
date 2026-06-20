@@ -8,7 +8,8 @@ export class ShortLinksController {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const page = Math.max(0, parseInt(req.query.page as string, 10) || 0);
     const size = Math.max(1, parseInt(req.query.size as string, 10) || 20);
-    res.json(shortLinksService.getPaginatedLinks(uuid, page, size));
+    const showArchived = req.query.showArchived === "true";
+    res.json(shortLinksService.getPaginatedLinks(uuid, page, size, showArchived));
   }
 
   static async getShortLinksByIds(req: Request, res: Response): Promise<void> {

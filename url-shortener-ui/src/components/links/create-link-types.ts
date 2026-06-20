@@ -5,5 +5,6 @@ export interface ShortLinkData {
     title: string;
     longUrl: string;
     shortUrl: string;
+    isActive?: boolean;
     tagIds?: string[];
 }
