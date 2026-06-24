@@ -9,9 +9,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage",
+    "test": "NODE_OPTIONS=--no-deprecation vitest",
+    "test:ui": "NODE_OPTIONS=--no-deprecation vitest --ui",
+    "test:coverage": "NODE_OPTIONS=--no-deprecation vitest --coverage",
     "type-check": "tsc --noEmit"
   },
   "engines": {
@@ -51,7 +51,7 @@
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.2",
-    "@vitejs/plugin-react": "^6.0.2",
+    "@vitest/coverage-v8": "^4.1.9",
     "@vitest/ui": "^4.1.8",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
