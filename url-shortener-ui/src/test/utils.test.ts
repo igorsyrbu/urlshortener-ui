@@ -12,7 +12,7 @@ describe('Utils', () => {
     });
 
     it('should handle conditional classes with clsx', () => {
-      expect(cn('base-class', false && 'hidden', 'visible')).toBe('base-class visible');
+      expect(cn('base-class', false, 'visible')).toBe('base-class visible');
     });
 
     it('should handle undefined and null', () => {
