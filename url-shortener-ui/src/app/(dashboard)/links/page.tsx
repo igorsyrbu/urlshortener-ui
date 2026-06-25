@@ -15,6 +15,7 @@ import {useLinkStore} from "@/lib/store/links";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
+import {PageHeading} from "@/components/layout/PageHeading";
 import {PageToolbar} from "@/components/layout/PageToolbar";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
@@ -147,7 +148,7 @@ export default function LinksPage() {
     return (
         <TooltipProvider>
             <PageContainer>
-                <PageToolbar showOptions showArchived={showArchived} onShowArchivedChange={handleShowArchivedChange} className="mb-[-8px]" />
+                <PageToolbar showOptions showArchived={showArchived} onShowArchivedChange={handleShowArchivedChange} className="-mb-2" />
 
                 {error && (
                     <div

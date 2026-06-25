@@ -6,7 +6,7 @@ import {
     ArchiveRestore,
     Check,
     Copy,
-    CornerDownRight,
+    CornerDownRight, MoreHorizontal,
     MoreVertical,
     PencilLine,
     QrCode,
