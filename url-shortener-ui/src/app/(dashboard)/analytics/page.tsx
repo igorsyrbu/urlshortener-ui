@@ -52,10 +52,7 @@ export default function AnalyticsPage() {
 
     return (
         <PageContainer>
-            <div className="flex flex-col justify-between gap-4 sm:h-8 sm:flex-row sm:items-start">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h2>
-                </div>
+            <div className="flex justify-end">
                 <PeriodSelector
                     period={period}
                     customDateRange={customDateRange}

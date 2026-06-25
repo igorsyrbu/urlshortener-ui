@@ -56,6 +56,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
                     longUrl,
                     title,
                     shortUrl: null,
+                    isActive: true,
                     tagIds: tagIds.length > 0 ? [...tagIds] : undefined,
                 }),
             });

@@ -5,6 +5,7 @@
       "title": "Spring Boot",
       "shortUrl": "https://sho.rt/springboot",
       "longUrl": "https://spring.io/projects/spring-boot",
+      "isActive": true,
       "tagIds": [
         "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
         "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
@@ -15,6 +16,7 @@
       "title": "Claude by Anthropic",
       "shortUrl": "https://sho.rt/claude",
       "longUrl": "https://claude.ai",
+      "isActive": true,
       "tagIds": []
     },
     {
@@ -22,6 +24,7 @@
       "title": "Google Gemini",
       "shortUrl": "https://sho.rt/gemini",
       "longUrl": "https://gemini.google.com",
+      "isActive": true,
       "tagIds": []
     },
     {
@@ -29,6 +32,7 @@
       "title": "IntelliJ IDEA",
       "shortUrl": "https://sho.rt/intellij",
       "longUrl": "https://www.jetbrains.com/idea/",
+      "isActive": true,
       "tagIds": [
         "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a"
       ]
@@ -38,6 +42,7 @@
       "title": "Next.js by Vercel",
       "shortUrl": "https://sho.rt/nextjs",
       "longUrl": "https://nextjs.org",
+      "isActive": true,
       "tagIds": []
     },
     {
@@ -45,6 +50,7 @@
       "title": "Warp Terminal",
       "shortUrl": "https://sho.rt/warp",
       "longUrl": "https://www.warp.dev",
+      "isActive": false,
       "tagIds": []
     },
     {
@@ -52,6 +58,7 @@
       "title": "Yaak API Client",
       "shortUrl": "https://sho.rt/yaak",
       "longUrl": "https://yaak.app",
+      "isActive": true,
       "tagIds": []
     },
     {
@@ -59,6 +66,7 @@
       "title": "OrbStack",
       "shortUrl": "https://sho.rt/orbstack",
       "longUrl": "https://orbstack.dev",
+      "isActive": true,
       "tagIds": []
     }
   ]

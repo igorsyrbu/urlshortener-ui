@@ -1,7 +1,18 @@
 "use client";
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {Check, Copy, CornerDownRight, MoreHorizontal, PencilLine, QrCode, Tag, Trash2} from "lucide-react";
+import {
+    Archive,
+    ArchiveRestore,
+    Check,
+    Copy,
+    CornerDownRight,
+    MoreVertical,
+    PencilLine,
+    QrCode,
+    Tag,
+    Trash2
+} from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,6 +26,7 @@ import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
 import {TagBadge} from "@/components/tags/TagBadge";
 import {LinkItem, TagItem} from "@/lib/types";
+import {cn} from "@/lib/utils";
 import {getDomain} from "@/lib/url-utils";
 import {
     COPY_FEEDBACK_DURATION_MS,
@@ -31,6 +43,10 @@ interface LinkCardProps {
     onEdit: (link: LinkItem) => void;
     onDelete: (link: LinkItem) => void;
     onQrCode: (link: LinkItem) => void;
+    onArchiveToggle?: (link: LinkItem) => void;
+    onArchiveRequest?: (link: LinkItem) => void;
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
 }
 
 function getSafeDomain(longUrl: string): string {
@@ -85,7 +101,16 @@ function TagsSection({tags}: { tags: TagItem[] }) {
     );
 }
 
-export function LinkCard({link, onEdit, onDelete, onQrCode}: LinkCardProps) {
+export function LinkCard({
+                             link,
+                             onEdit,
+                             onDelete,
+                             onQrCode,
+                             onArchiveToggle,
+                             onArchiveRequest,
+                             onMouseEnter,
+                             onMouseLeave
+                         }: LinkCardProps) {
     const [copied, setCopied] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -136,11 +161,25 @@ export function LinkCard({link, onEdit, onDelete, onQrCode}: LinkCardProps) {
         <div
             ref={cardRef}
             tabIndex={0}
-            className="group flex items-center p-4 md:p-5 rounded-xl bg-background border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-4 outline-none">
-            <div
-                className="shrink-0 size-9 rounded-full flex items-center justify-center border-[0.5px] border-border overflow-hidden bg-muted text-foreground">
-                <LinkFavicon longUrl={link.longUrl}/>
-            </div>
+            data-link-id={link.id}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            className={cn(
+                "group flex items-center p-4 md:p-5 rounded-xl bg-background border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-4 outline-none",
+            )}>
+            {link.isActive ? (
+                <div
+                    className="relative shrink-0 size-9 rounded-full flex items-center justify-center border-[0.5px] border-border overflow-hidden bg-muted text-foreground">
+                    <div className="size-full flex items-center justify-center">
+                        <LinkFavicon longUrl={link.longUrl}/>
+                    </div>
+                </div>
+            ) : (
+                <div
+                    className="relative shrink-0 size-9 rounded-full flex items-center justify-center border-[0.5px] border-border overflow-hidden bg-muted text-foreground transition-all duration-200">
+                    <Archive className="size-5"/>
+                </div>
+            )}
 
             <div className="flex-1 min-w-0 flex flex-col gap-1">
                 <h3 className="text-sm font-bold text-card-foreground leading-tight pt-0.5 truncate">{link.title}</h3>
@@ -203,6 +242,17 @@ export function LinkCard({link, onEdit, onDelete, onQrCode}: LinkCardProps) {
                                 QR Code
                                 <Kbd className={SHORTCUT_KEY_CLASS}>Q</Kbd>
                             </DropdownMenuItem>
+                            {(onArchiveToggle || onArchiveRequest) && (
+                                <DropdownMenuItem onClick={() => (onArchiveRequest ?? onArchiveToggle)?.(link)}>
+                                    {link.isActive ? (
+                                        <Archive className="size-4 mr-2"/>
+                                    ) : (
+                                        <ArchiveRestore className="size-4 mr-2"/>
+                                    )}
+                                    <span className="flex-1">{link.isActive ? "Archive" : "Unarchive"}</span>
+                                    <Kbd className={SHORTCUT_KEY_CLASS}>A</Kbd>
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator/>
                             <DropdownMenuItem
                                 onClick={() => onDelete(link)}
@@ -236,6 +286,13 @@ export function LinkCard({link, onEdit, onDelete, onQrCode}: LinkCardProps) {
                                     icon: QrCode,
                                     onClick: () => onQrCode(link),
                                 },
+                                ...((onArchiveToggle || onArchiveRequest) ? [
+                                    {
+                                        label: link.isActive ? "Archive" : "Unarchive",
+                                        icon: link.isActive ? Archive : ArchiveRestore,
+                                        onClick: () => (onArchiveRequest ?? onArchiveToggle)?.(link),
+                                    },
+                                ] : []),
                                 {
                                     label: "Delete",
                                     icon: Trash2,

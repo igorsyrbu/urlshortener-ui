@@ -31,7 +31,8 @@ export function LinkFavicon({longUrl}: LinkFaviconProps) {
             alt="Favicon"
             width={36}
             height={36}
-            className="size-full object-cover"
+            unoptimized
+            className="size-full object-cover rounded-full"
             onError={() => setHasError(true)}
         />
     );

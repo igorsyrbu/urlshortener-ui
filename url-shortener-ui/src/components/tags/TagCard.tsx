@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useCallback, useEffect, useRef, useState} from "react";
-import {Link, MoreHorizontal, PencilLine, Tag, Trash2} from "lucide-react";
+import {Link, MoreVertical, PencilLine, Tag, Trash2} from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -95,7 +95,7 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
                                 className={MORE_ACTIONS_BUTTON_CLASS}
                                 aria-label="More actions for tag"
                             >
-                                <MoreHorizontal className="size-5"/>
+                                <MoreVertical className="size-5"/>
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="sm:min-w-40">
@@ -122,7 +122,7 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
                             className={MORE_ACTIONS_BUTTON_CLASS}
                             aria-label="More actions for tag"
                         >
-                            <MoreHorizontal className="size-5"/>
+                            <MoreVertical className="size-5"/>
                         </button>
                         <ActionDrawer
                             open={isMenuOpen}

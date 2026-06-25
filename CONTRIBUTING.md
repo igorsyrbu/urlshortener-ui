@@ -44,7 +44,8 @@ Before implementing the client-side API call, ask yourself:
 * **Should it be a public call, or a call to access user resources?**
 * **Should it be secured so it won't be abused?**
 
-If the endpoint handles user-specific data or requires a level of protection, you **must** ensure it includes an **Authorization** request header with a JWT token.
+If the endpoint handles user-specific data or requires a level of protection, you **must** ensure it includes an *
+*Authorization** request header with a JWT token.
 
 ### 2. Update the Mock Server
 
@@ -61,6 +62,26 @@ examples of standard CRUD operations:
 - **`POST /api/resources`** — Create a new resource
 - **`PUT /api/resources/{id}`** — Update an existing resource
 - **`DELETE /api/resources/{id}`** — Delete a resource
+
+## Submitting a Pull Request
+
+When your change is ready, open a pull request using the template in `.github/pull_request_template.md`.
+
+### One Feature or Fix per PR
+
+Each pull request must address **a single feature or a single fix**. Bundling unrelated changes makes review slower and
+increases the risk of regressions.
+
+Examples of a single, focused PR:
+
+- Add a delete confirmation dialog to the tag management page
+- Fix the analytics date-range preset not selecting the last 7 days
+- Update the mock server to support the new `/tags` endpoint
+
+Examples of what to split into separate PRs:
+
+- A PR that both redesigns the login page and refactors the analytics API client
+- A PR that fixes a bug in link creation and also adds dark-mode toggle animations
 
 ---
 
