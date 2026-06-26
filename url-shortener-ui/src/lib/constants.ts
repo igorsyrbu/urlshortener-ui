@@ -40,6 +40,9 @@ export const COPY_FEEDBACK_DURATION_MS = 2000;
 export const GLOW_FADE_DELAY_MS = 1000;
 export const AUTH_REDIRECT_DELAY_MS = 1000;
 
+export const MAGIC_LINK_COOLDOWN_INTERVAL_MS = 1000;
+export const MAGIC_LINK_COOLDOWN_STORAGE_KEY = "magicLinkCooldownByEmail";
+
 // ---------------------------------------------------------------------------
 // Layout breakpoints (pixels) — align with Tailwind `lg` (1024px)
 // ---------------------------------------------------------------------------
