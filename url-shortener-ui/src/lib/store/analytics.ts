@@ -3,6 +3,7 @@ import {fetchWithAuth} from "@/lib/api";
 import type {DateRange} from "react-day-picker";
 import {LinkItem} from "@/lib/types";
 import {API_ENDPOINTS, DEFAULT_PERIOD_DAYS} from "@/lib/constants";
+import {logger} from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,10 +56,6 @@ interface AnalyticsStore {
     fetchDeviceData: (tab: DeviceTab) => void;
 }
 
-// ---------------------------------------------------------------------------
-// Query-param builder (single source of truth)
-// ---------------------------------------------------------------------------
-
 function buildQueryParams(period: string, customDateRange: DateRange | undefined): string {
     if (period === "custom" && customDateRange?.from && customDateRange?.to) {
         const startStr = customDateRange.from.toISOString().split("T")[0];
@@ -86,10 +83,6 @@ function buildPreviousPeriodParams(period: string): string | null {
     return `?start=${startStr}&end=${endStr}`;
 }
 
-// ---------------------------------------------------------------------------
-// Individual fetch helpers
-// ---------------------------------------------------------------------------
-
 function fetchTotalClicks(
     queryParams: string,
     set: (partial: Partial<AnalyticsStore>) => void,
@@ -99,7 +92,7 @@ function fetchTotalClicks(
         .then((data) => {
             if (typeof data === "number") set({totalClicks: data, loading: false});
         })
-        .catch((e) => console.error("Total clicks fetch error", e));
+        .catch((e) => logger.error("Total clicks fetch error", e));
 }
 
 function fetchPreviousPeriodClicks(
@@ -117,7 +110,7 @@ function fetchPreviousPeriodClicks(
         .then((data) => {
             if (typeof data === "number") set({previousTotalClicks: data});
         })
-        .catch((e) => console.error("Previous total clicks fetch error", e));
+        .catch((e) => logger.error("Previous total clicks fetch error", e));
 }
 
 function fetchTimeSeries(
@@ -127,7 +120,7 @@ function fetchTimeSeries(
     fetchWithAuth(`${API_ENDPOINTS.ANALYTICS}${queryParams}&groupBy=date`)
         .then((res) => (res.ok ? res.json() : []))
         .then((data) => set({timeSeries: data}))
-        .catch((e) => console.error("Time series fetch error", e));
+        .catch((e) => logger.error("Time series fetch error", e));
 }
 
 function fetchReferrers(
@@ -137,7 +130,7 @@ function fetchReferrers(
     fetchWithAuth(`${API_ENDPOINTS.ANALYTICS}${queryParams}&groupBy=referrer`)
         .then((res) => (res.ok ? res.json() : []))
         .then((data) => set({referrers: data}))
-        .catch((e) => console.error("Referrers fetch error", e));
+        .catch((e) => logger.error("Referrers fetch error", e));
 }
 
 async function fetchTopLinks(
@@ -151,7 +144,7 @@ async function fetchTopLinks(
         const enriched = await enrichTopLinksWithDetails(data);
         set({topLinks: enriched});
     } catch (e) {
-        console.error("Top Links fetch error", e);
+        logger.error("Top Links fetch error", e);
     }
 }
 
@@ -174,14 +167,10 @@ async function enrichTopLinksWithDetails(
         const detailsMap = new Map(detailsData.map((d) => [d.id, d]));
         return data.map((d) => ({...d, details: detailsMap.get(d.shortLinkId)}));
     } catch (e) {
-        console.error("Top Links details fetch error", e);
+        logger.error("Top Links details fetch error", e);
         return data;
     }
 }
-
-// ---------------------------------------------------------------------------
-// Store
-// ---------------------------------------------------------------------------
 
 export const useAnalyticsStore = create<AnalyticsStore>((set, get) => ({
     period: "P7D",
@@ -266,7 +255,7 @@ export const useAnalyticsStore = create<AnalyticsStore>((set, get) => ({
                 else set({continents: data, isLocationLoading: false});
             })
             .catch((e) => {
-                console.error(`${tab} fetch error`, e);
+                logger.error(`${tab} fetch error`, e);
                 set({isLocationLoading: false});
             });
     },
@@ -285,7 +274,7 @@ export const useAnalyticsStore = create<AnalyticsStore>((set, get) => ({
                 else set({os: data, isDeviceLoading: false});
             })
             .catch((e) => {
-                console.error(`${tab} fetch error`, e);
+                logger.error(`${tab} fetch error`, e);
                 set({isDeviceLoading: false});
             });
     },

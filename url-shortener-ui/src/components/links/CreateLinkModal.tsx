@@ -12,6 +12,7 @@ import {CreateLinkModalLoading} from "@/components/links/CreateLinkModalLoading"
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS, CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
 import type {ShortLinkData} from "@/components/links/create-link-types";
+import {logger} from "@/lib/logger";
 
 type ViewState = "form" | "loading" | "success";
 
@@ -63,12 +64,12 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
                 const data = await res.json();
                 await handleSubmitSuccess(data);
             } else {
-                console.error("Failed to create link");
+                logger.error("Failed to create link", undefined, { status: res.status });
                 setViewState("form");
                 throw new Error("Failed to create link");
             }
         } catch (err) {
-            console.error("Error creating link", err);
+            logger.error("Error creating link", err);
             setViewState("form");
             throw err;
         }

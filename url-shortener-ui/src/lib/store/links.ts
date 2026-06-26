@@ -2,26 +2,8 @@ import {create} from "zustand";
 import {fetchWithAuth} from "@/lib/api";
 import {LinkItem} from "@/lib/types";
 import {API_ENDPOINTS, DEFAULT_LINK_TITLE, DEFAULT_PAGE_SIZE} from "@/lib/constants";
-
-interface ShortLinkResponse {
-    id: string;
-    title: string;
-    shortUrl: string;
-    longUrl: string;
-    isActive: boolean;
-    tagIds?: string[];
-}
-
-interface PageResponse<T> {
-    content: T[];
-    totalPages: number;
-    totalElements: number;
-    size: number;
-    number: number;
-    first: boolean;
-    last: boolean;
-    empty: boolean;
-}
+import {logger} from "@/lib/logger";
+import type {ShortLinkDTO, PageDTO} from "@/lib/api-types";
 
 interface LinkStore {
     links: LinkItem[];
@@ -37,7 +19,7 @@ interface LinkStore {
     toggleLinkActive: (id: string, isActive: boolean) => Promise<void>;
 }
 
-function mapResponseToLinkItem(item: ShortLinkResponse): LinkItem {
+function mapResponseToLinkItem(item: ShortLinkDTO): LinkItem {
     return {
         id: item.id,
         title: item.title || DEFAULT_LINK_TITLE,
@@ -67,7 +49,7 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
             );
 
             if (res.ok) {
-                const data: PageResponse<ShortLinkResponse> = await res.json();
+                const data: PageDTO<ShortLinkDTO> = await res.json();
                 const mapped = data.content.map(mapResponseToLinkItem);
 
                 set((state) => ({
@@ -79,7 +61,7 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
                 set({error: `Failed to fetch links: ${res.status}`});
             }
         } catch (error) {
-            console.error("Error fetching links", error);
+            logger.error("Error fetching links", error);
             set({error: error instanceof Error ? error.message : "Unknown error occurred"});
         } finally {
             set({loading: false});

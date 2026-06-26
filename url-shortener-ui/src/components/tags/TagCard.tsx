@@ -93,6 +93,7 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
                         <DropdownMenuTrigger asChild>
                             <button
                                 className={MORE_ACTIONS_BUTTON_CLASS}
+                                aria-label="More actions for tag"
                             >
                                 <MoreVertical className="size-5"/>
                             </button>
@@ -119,6 +120,7 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
                         <button
                             onClick={() => setIsMenuOpen(true)}
                             className={MORE_ACTIONS_BUTTON_CLASS}
+                            aria-label="More actions for tag"
                         >
                             <MoreVertical className="size-5"/>
                         </button>

@@ -5,6 +5,7 @@ import {EditTagModal} from "@/components/tags/EditTagModal";
 import {DeleteTagModal} from "@/components/tags/DeleteTagModal";
 import {TagCard} from "@/components/tags/TagCard";
 import {EmptyTagsState} from "@/components/tags/EmptyTagsState";
+import {TagCardSkeletonList} from "@/components/tags/TagCardSkeleton";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {PageToolbar} from "@/components/layout/PageToolbar";
 import {Button} from "@/components/ui/button";
@@ -51,9 +52,10 @@ export default function TagsPage() {
 
     if (loading && tags.length === 0) {
         return (
-            <div className="p-8 text-center text-muted-foreground">
-                Loading tags...
-            </div>
+            <PageContainer>
+                <PageToolbar className="-mb-2" />
+                <TagCardSkeletonList count={5} />
+            </PageContainer>
         );
     }
 
@@ -78,7 +80,7 @@ export default function TagsPage() {
 
     return (
         <PageContainer>
-            <PageToolbar className="mb-[-8px]" />
+            <PageToolbar className="-mb-2" />
 
             {!loading && tags.length === 0 ? (
                 <EmptyTagsState/>

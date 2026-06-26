@@ -6,7 +6,7 @@ import {
     ArchiveRestore,
     Check,
     Copy,
-    CornerDownRight,
+    CornerDownRight, MoreHorizontal,
     MoreVertical,
     PencilLine,
     QrCode,
@@ -192,6 +192,7 @@ export function LinkCard({
                             onClick={handleCopy}
                             className="flex items-center justify-center size-5 text-muted-foreground hover:text-foreground transition-all shrink-0"
                             title="Copy Link"
+                            aria-label={copied ? "Link copied" : "Copy link to clipboard"}
                         >
                             {copied ? (
                                 <Check className="size-3 text-success"/>
@@ -225,8 +226,9 @@ export function LinkCard({
                     <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                         <DropdownMenuTrigger asChild>
                             <button
-                                className={MORE_ACTIONS_BUTTON_CLASS}>
-                                <MoreVertical className="size-5"/>
+                                className={MORE_ACTIONS_BUTTON_CLASS}
+                                aria-label="More actions for link">
+                                <MoreHorizontal className="size-5"/>
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="sm:min-w-40">
@@ -266,8 +268,9 @@ export function LinkCard({
                     <>
                         <button
                             onClick={() => setIsMenuOpen(true)}
-                            className={MORE_ACTIONS_BUTTON_CLASS}>
-                            <MoreVertical className="size-5"/>
+                            className={MORE_ACTIONS_BUTTON_CLASS}
+                            aria-label="More actions for link">
+                            <MoreHorizontal className="size-5"/>
                         </button>
                         <ActionDrawer
                             open={isMenuOpen}

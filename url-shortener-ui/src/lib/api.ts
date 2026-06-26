@@ -1,5 +1,6 @@
 import {useAuthStore} from "@/lib/store/auth";
 import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
+import {logger} from "@/lib/logger";
 
 export const API_BASE_URL = "/api";
 // ---------------------------------------------------------------------------
@@ -45,7 +46,7 @@ async function refreshAccessToken(): Promise<string | null> {
         }
         return newToken ?? null;
     } catch (error) {
-        console.error("Failed to refresh token", error);
+        logger.error("Failed to refresh token", error);
         return null;
     }
 }

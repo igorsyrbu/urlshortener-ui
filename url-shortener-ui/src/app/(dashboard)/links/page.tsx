@@ -7,6 +7,7 @@ import {DeleteLinkModal} from "@/components/links/DeleteLinkModal";
 import {ArchiveLinkModal} from "@/components/links/ArchiveLinkModal";
 import {QrCodeModal} from "@/components/links/QrCodeModal";
 import {LinkCard} from "@/components/links/LinkCard";
+import {LinkCardSkeletonList} from "@/components/links/LinkCardSkeleton";
 import {EmptyLinksState} from "@/components/links/EmptyLinksState";
 import {TooltipProvider} from "@/components/ui/tooltip";
 import {Button} from "@/components/ui/button";
@@ -14,8 +15,10 @@ import {useLinkStore} from "@/lib/store/links";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
+import {PageHeading} from "@/components/layout/PageHeading";
 import {PageToolbar} from "@/components/layout/PageToolbar";
 import {API_ENDPOINTS} from "@/lib/constants";
+import {logger} from "@/lib/logger";
 
 export default function LinksPage() {
     const {links, loading, error, fetchLinks, clearError, showArchived, setShowArchived, toggleLinkActive} = useLinkStore();
@@ -110,10 +113,10 @@ export default function LinksPage() {
                 setDeleteModalOpen(false);
                 setLinkToDelete(null);
             } else {
-                console.error("Failed to delete link");
+                logger.error("Failed to delete link", undefined, { status: res.status, linkId: linkToDelete.id });
             }
         } catch (e) {
-            console.error("Error deleting link", e);
+            logger.error("Error deleting link", e, { linkId: linkToDelete.id });
         } finally {
             setIsDeleting(false);
         }
@@ -130,13 +133,22 @@ export default function LinksPage() {
     };
 
     if (loading && links.length === 0) {
-        return <div className="p-8 text-center text-muted-foreground">Loading links...</div>;
+        return (
+            <TooltipProvider>
+                <PageContainer>
+                    <div className="flex items-center justify-between">
+                        <PageHeading>Links</PageHeading>
+                    </div>
+                    <LinkCardSkeletonList count={5} />
+                </PageContainer>
+            </TooltipProvider>
+        );
     }
 
     return (
         <TooltipProvider>
             <PageContainer>
-                <PageToolbar showOptions showArchived={showArchived} onShowArchivedChange={handleShowArchivedChange} className="mb-[-8px]" />
+                <PageToolbar showOptions showArchived={showArchived} onShowArchivedChange={handleShowArchivedChange} className="-mb-2" />
 
                 {error && (
                     <div
