@@ -6,7 +6,7 @@ import {
     ArchiveRestore,
     Check,
     Copy,
-    CornerDownRight, MoreHorizontal,
+    CornerDownRight,
     MoreVertical,
     PencilLine,
     QrCode,
@@ -228,7 +228,7 @@ export function LinkCard({
                             <button
                                 className={MORE_ACTIONS_BUTTON_CLASS}
                                 aria-label="More actions for link">
-                                <MoreHorizontal className="size-5"/>
+                                <MoreVertical className="size-5"/>
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="sm:min-w-40">
@@ -270,7 +270,7 @@ export function LinkCard({
                             onClick={() => setIsMenuOpen(true)}
                             className={MORE_ACTIONS_BUTTON_CLASS}
                             aria-label="More actions for link">
-                            <MoreHorizontal className="size-5"/>
+                            <MoreVertical className="size-5"/>
                         </button>
                         <ActionDrawer
                             open={isMenuOpen}
