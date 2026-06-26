@@ -9,7 +9,21 @@ export class ShortLinksController {
     const page = Math.max(0, parseInt(req.query.page as string, 10) || 0);
     const size = Math.max(1, parseInt(req.query.size as string, 10) || 20);
     const showArchived = req.query.showArchived === "true";
-    res.json(shortLinksService.getPaginatedLinks(uuid, page, size, showArchived));
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : undefined;
+    const tagIds = ShortLinksController.parseTagIdsQuery(req.query.tagIds);
+
+    res.json(shortLinksService.getPaginatedLinks(uuid, page, size, { showArchived, q, tagIds }));
+  }
+
+  private static parseTagIdsQuery(value: unknown): string[] | undefined {
+    const rawTagIds = Array.isArray(value) ? value : [value];
+    const tagIds = rawTagIds
+      .filter((tagId): tagId is string => typeof tagId === "string")
+      .flatMap((tagId) => tagId.split(","))
+      .map((tagId) => tagId.trim())
+      .filter(Boolean);
+
+    return tagIds.length > 0 ? tagIds : undefined;
   }
 
   static async getShortLinksByIds(req: Request, res: Response): Promise<void> {

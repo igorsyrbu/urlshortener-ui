@@ -38,6 +38,12 @@ export interface UpdateShortLinkDto {
   tagIds?: string[];
 }
 
+export interface GetPaginatedLinksOptions {
+  showArchived?: boolean;
+  q?: string;
+  tagIds?: string[];
+}
+
 export class ShortLinksService {
   private static readonly CONSTANTS = {
     DEFAULT_TITLE: "Untitled Link",
@@ -70,11 +76,27 @@ export class ShortLinksService {
    * @param uuid - The user's custom UUID
    * @param page - The zero-based page index
    * @param size - The number of items per page
+   * @param options - Optional archive, search, and tag filters
    * @returns A Page object containing the content and metadata
    */
-  public getPaginatedLinks(uuid: string, page: number, size: number, showArchived: boolean = false): Page<ShortLink> {
+  public getPaginatedLinks(
+    uuid: string,
+    page: number,
+    size: number,
+    options: GetPaginatedLinksOptions = {}
+  ): Page<ShortLink> {
     const userState = memoryStore.getUserState(uuid);
-    const links = showArchived ? userState.links : userState.links.filter((l) => l.isActive);
+    let links = options.showArchived ? userState.links : userState.links.filter((link) => link.isActive);
+
+    if (options.q) {
+      const normalizedQuery = options.q.toLowerCase();
+      links = links.filter((link) => this.linkMatchesSearch(link, normalizedQuery));
+    }
+
+    if (options.tagIds && options.tagIds.length > 0) {
+      links = links.filter((link) => this.linkMatchesAllTags(uuid, link.id, options.tagIds ?? []));
+    }
+
     const startIndex = page * size;
     const content = links.slice(startIndex, startIndex + size);
     const totalElements = links.length;
@@ -89,6 +111,18 @@ export class ShortLinksService {
       last: startIndex + size >= totalElements,
       empty: content.length === 0,
     };
+  }
+
+  private linkMatchesSearch(link: ShortLink, normalizedQuery: string): boolean {
+    return (
+      link.title.toLowerCase().includes(normalizedQuery) ||
+      link.longUrl.toLowerCase().includes(normalizedQuery)
+    );
+  }
+
+  private linkMatchesAllTags(uuid: string, linkId: string, tagIds: string[]): boolean {
+    const linkTagIds = tagsService.getTagIdsForLink(uuid, linkId);
+    return tagIds.every((tagId) => linkTagIds.includes(tagId));
   }
 
   /**
@@ -208,4 +242,3 @@ export class ShortLinksService {
 }
 
 export const shortLinksService = new ShortLinksService();
-
