@@ -15,6 +15,7 @@ import {CurrentSessionCard} from "@/components/settings/CurrentSessionCard";
 import {OtherSessionsList} from "@/components/settings/OtherSessionsList";
 import {DangerZoneCard} from "@/components/settings/DangerZoneCard";
 import {SessionLogoutDialog, LogoutTarget} from "@/components/settings/SessionLogoutDialog";
+import {logger} from "@/lib/logger";
 
 export default function SettingsPage() {
     const router = useRouter();
@@ -48,7 +49,7 @@ export default function SettingsPage() {
                 setSessions(data);
             }
         } catch (error) {
-            console.error("Failed to load sessions", error);
+            logger.error("Failed to load sessions", error);
         } finally {
             setIsLoadingSessions(false);
         }
@@ -72,7 +73,7 @@ export default function SettingsPage() {
                 toast.error("Failed to terminate session");
             }
         } catch (error) {
-            console.error("Error terminating session", error);
+            logger.error("Error terminating session", error);
             toast.error("An unexpected error occurred while terminating session");
         } finally {
             setSessionActionLoading(null);
@@ -90,7 +91,7 @@ export default function SettingsPage() {
                 toast.error("Failed to terminate other sessions");
             }
         } catch (error) {
-            console.error("Error terminating other sessions", error);
+            logger.error("Error terminating other sessions", error);
             toast.error("An unexpected error occurred while terminating other sessions");
         } finally {
             setSessionActionLoading(null);

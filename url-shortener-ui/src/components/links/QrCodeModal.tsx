@@ -24,6 +24,7 @@ import {Check, Copy, Download, Loader2} from "lucide-react";
 import {LinkItem} from "@/lib/types";
 import {COPY_FEEDBACK_DURATION_MS, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
 import type QRCodeStylingType from "qr-code-styling";
+import {logger} from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
 // Module-level import cache — the dynamic import promise is resolved only once
@@ -158,7 +159,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
             setCopied(ext);
             setTimeout(() => setCopied(null), COPY_FEEDBACK_DURATION_MS);
         } catch (e) {
-            console.error(`Failed to copy ${ext}`, e);
+            logger.error(`Failed to copy ${ext}`, e);
         }
         setIsCopyOpen(false);
     };

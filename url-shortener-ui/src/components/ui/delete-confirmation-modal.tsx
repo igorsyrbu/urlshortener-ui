@@ -12,6 +12,7 @@ import {
     DialogHeader,
     DialogTitle
 } from "@/components/ui/dialog";
+import {logger} from "@/lib/logger";
 import {
     Drawer,
     DrawerContent,
@@ -62,7 +63,7 @@ function ConfirmationSection({
             setIsCopied(true);
             setTimeout(() => setIsCopied(false), COPY_FEEDBACK_DURATION_MS);
         } catch (err) {
-            console.error("Failed to copy confirmation text", err);
+            logger.error("Failed to copy confirmation text", err);
         }
     };
 
@@ -97,20 +98,20 @@ function ConfirmationSection({
 }
 
 export function DeleteConfirmationModal({
-                                             open,
-                                             onOpenChange,
-                                             onConfirm,
-                                             loading,
-                                             title,
-                                             description,
-                                             warningText,
-                                             previewContent,
-                                             confirmLabel = "Delete",
-                                             confirmLoadingLabel = "Deleting...",
-                                             confirmVariant = "destructive",
-                                             confirmationValue,
-                                             confirmationType,
-                                         }: DeleteConfirmationModalProps) {
+                                            open,
+                                            onOpenChange,
+                                            onConfirm,
+                                            loading,
+                                            title,
+                                            description,
+                                            warningText,
+                                            previewContent,
+                                            confirmLabel = "Delete",
+                                            confirmLoadingLabel = "Deleting...",
+                                            confirmVariant = "destructive",
+                                            confirmationValue,
+                                            confirmationType,
+                                        }: DeleteConfirmationModalProps) {
     const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
     const [inputValue, setInputValue] = useState("");
 

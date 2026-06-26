@@ -6,6 +6,7 @@ import {Input} from "@/components/ui/input";
 import {Check, Copy} from "lucide-react";
 import {motion} from "framer-motion";
 import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
+import {logger} from "@/lib/logger";
 
 interface CreateLinkSuccessProps {
     shortUrl: string;
@@ -21,7 +22,7 @@ export function CreateLinkSuccess({shortUrl, onClose}: CreateLinkSuccessProps) {
             setIsCopied(true);
             setTimeout(() => setIsCopied(false), COPY_FEEDBACK_DURATION_MS);
         } catch (err) {
-            console.error("Failed to copy", err);
+            logger.error("Failed to copy", err);
         }
     };
 

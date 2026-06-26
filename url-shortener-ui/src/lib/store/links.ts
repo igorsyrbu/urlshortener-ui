@@ -85,7 +85,7 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
                 set({error: `Failed to toggle link status: ${res.status}`});
             }
         } catch (error) {
-            console.error("Error toggling link active state", error);
+            logger.error("Error toggling link active state", error);
             set({error: error instanceof Error ? error.message : "Unknown error occurred"});
         }
     },

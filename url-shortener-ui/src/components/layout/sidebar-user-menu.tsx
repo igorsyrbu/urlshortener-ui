@@ -13,6 +13,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {logger} from "@/lib/logger";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {
     AlertDialog,
@@ -47,7 +48,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
                 method: "DELETE",
             });
         } catch (error) {
-            console.error("Failed to terminate session on backend", error);
+            logger.error("Failed to terminate session on backend", error);
         } finally {
             logout();
             router.replace("/login");

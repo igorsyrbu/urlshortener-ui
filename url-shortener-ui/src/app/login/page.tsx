@@ -13,6 +13,7 @@ import {LoginStatusMessage} from "@/components/auth/LoginStatusMessage";
 import {LoginOAuthDivider} from "@/components/auth/LoginOAuthDivider";
 import {LoginGoogleSignInButton} from "@/components/auth/LoginGoogleSignInButton";
 import {useMagicLinkCooldown} from "@/lib/hooks/useMagicLinkCooldown";
+import {logger} from "@/lib/logger";
 
 function parseRetryAfter(headers: Headers): number | null {
     const value = headers.get("Retry-After");
@@ -42,7 +43,7 @@ export default function LoginPage() {
     }, []);
 
     const handleTurnstileError = useCallback((errorCode: string) => {
-        console.error("Turnstile error code:", errorCode);
+        logger.error("Turnstile error code", undefined, {errorCode});
         setTurnstileToken("");
     }, []);
 

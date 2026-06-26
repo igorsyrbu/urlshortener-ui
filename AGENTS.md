@@ -188,7 +188,19 @@ if (response.status === HTTP_TOO_MANY_REQUESTS) { ...
 
 ---
 
-## 5. What Not to Do
+## 5. Logging
+
+- **Never use `console.log`, `console.error`, `console.warn`, or `console.info` directly.**
+- Import the shared logger from `@/lib/logger`:
+  ```ts
+  import {logger} from "@/lib/logger";
+  ```
+- Use its typed methods: `logger.error(message, error?, context?)`, `logger.warn(message, context?)`, `logger.info(message, context?)`.
+- The logger prints to the dev console in development and will route to an error monitoring service in production.
+
+---
+
+## 6. What Not to Do
 
 | Do not                                                | Reason                                                      |
 |-------------------------------------------------------|-------------------------------------------------------------|
@@ -200,3 +212,4 @@ if (response.status === HTTP_TOO_MANY_REQUESTS) { ...
 | Add a new UI component without checking if one exists | Leads to duplication and inconsistency                      |
 | Use `<a>` for internal links                          | Bypasses Next.js client-side navigation                     |
 | Hardcode strings that appear more than once           | Should be a constant or come from a translation/config file |
+| Use `console.log` / `console.error` for logging       | Use the `logger` from `@/lib/logger` instead — it works in dev and will send to monitoring in production |
