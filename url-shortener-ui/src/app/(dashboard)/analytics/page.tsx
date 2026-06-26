@@ -13,6 +13,7 @@ import {LocationTab} from "@/components/analytics/LocationTab";
 import {DeviceTab} from "@/components/analytics/DeviceTab";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {AnalyticsCard} from "@/components/analytics/AnalyticsCard";
+import {AnalyticsPageSkeleton} from "@/components/analytics/AnalyticsSkeleton";
 
 export default function AnalyticsPage() {
     const {
@@ -42,6 +43,14 @@ export default function AnalyticsPage() {
     useEffect(() => {
         fetchAnalytics();
     }, [fetchAnalytics]);
+
+    if (loading && timeSeries.length === 0) {
+        return (
+            <PageContainer>
+                <AnalyticsPageSkeleton />
+            </PageContainer>
+        );
+    }
 
     const handleZoom = (range: DateRange) => {
         setCustomDateRange(range);

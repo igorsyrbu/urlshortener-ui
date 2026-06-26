@@ -16,6 +16,7 @@ export interface ShortLinkDTO {
   title: string;
   shortUrl: string;
   longUrl: string;
+  isActive: boolean;
   tagIds?: string[];
   createdAt?: string;
   updatedAt?: string;
