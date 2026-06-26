@@ -251,6 +251,13 @@
     backdrop-filter: blur(0px) !important;
 }
 
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-surface * {
+    outline: none !important;
+}
+
 /* iOS Wheel Picker */
 .ios-wheel-picker {
     position: relative;

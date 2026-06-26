@@ -21,7 +21,7 @@ interface BarLabelProps {
 }
 
 interface YAxisTickProps {
-    y: number;
+    y: string | number;
     payload: { value: string };
 }
 
@@ -29,7 +29,7 @@ interface HorizontalBarChartProps {
     data: BarChartDataItem[];
     totalClicks: number;
     color: string;
-    renderLabel: (props: BarLabelProps) => React.ReactNode;
+    renderLabel: (props: BarLabelProps) => React.ReactElement;
 }
 
 const BAR_HEIGHT = 52;
@@ -104,6 +104,7 @@ export function HorizontalBarChart({
                         <XAxis dataKey="clicks" type="number" hide domain={[0, maxDataValue]}/>
                         <ChartTooltip
                             cursor={false}
+                            axisId="left"
                             content={({active, payload}) => {
                                 if (!active || !payload || payload.length === 0) return null;
 
@@ -135,7 +136,7 @@ export function HorizontalBarChart({
                                 );
                             }}
                         />
-                        <Bar dataKey="clicks" layout="vertical" radius={BAR_RADIUS} barSize={BAR_SIZE} fillOpacity={1}
+                        <Bar dataKey="clicks" radius={BAR_RADIUS} barSize={BAR_SIZE} fillOpacity={1}
                              yAxisId="left">
                             {chartData.map((entry, index) => (
                                 <Cell

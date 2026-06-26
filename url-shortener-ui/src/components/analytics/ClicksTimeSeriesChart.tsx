@@ -18,7 +18,7 @@ interface RefAreaPoint {
 }
 
 interface RechartsMouseEvent {
-    activeLabel?: string;
+    activeLabel?: string | number;
     activePayload?: { payload: { rawDate: string } }[];
 }
 
@@ -61,13 +61,13 @@ export function ClicksTimeSeriesChart({timeSeries, onZoom}: ClicksTimeSeriesChar
 
     const handleMouseDown = (e: RechartsMouseEvent) => {
         if (e?.activeLabel && e?.activePayload?.length) {
-            setRefAreaLeft({formatted: e.activeLabel, raw: e.activePayload[0].payload.rawDate});
+            setRefAreaLeft({formatted: String(e.activeLabel), raw: e.activePayload[0].payload.rawDate});
         }
     };
 
     const handleMouseMove = (e: RechartsMouseEvent) => {
         if (refAreaLeft && e?.activeLabel && e?.activePayload?.length) {
-            setRefAreaRight({formatted: e.activeLabel, raw: e.activePayload[0].payload.rawDate});
+            setRefAreaRight({formatted: String(e.activeLabel), raw: e.activePayload[0].payload.rawDate});
         }
     };
 
@@ -164,7 +164,7 @@ function TimeSeriesAreaChart({
                         ticks={maxClicks <= LOW_CLICKS_THRESHOLD ? Array.from({length: Math.max(1, maxClicks) + 1}, (_, i) => i) : undefined}
                         tickFormatter={formatYAxisTick}
                     />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent/>}/>
+                    <ChartTooltip cursor={false} content={(props) => <ChartTooltipContent {...props}/>}/>
                     <Area
                         type="monotone"
                         dataKey="clicks"

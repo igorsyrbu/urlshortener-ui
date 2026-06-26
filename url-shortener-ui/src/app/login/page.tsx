@@ -29,6 +29,11 @@ export default function LoginPage() {
     const [turnstileToken, setTurnstileToken] = useState("");
     const {remainingSeconds, isCooldownActive, startCooldown} = useMagicLinkCooldown(email);
     const turnstileEnabled = process.env.NEXT_PUBLIC_ENABLE_TURNSTILE === "true";
+    const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
+
+    if (turnstileEnabled && !turnstileSiteKey) {
+        throw new Error("NEXT_PUBLIC_TURNSTILE_SITE_KEY is required when Turnstile is enabled");
+    }
 
     const isLocked = manuallyLocked && isCooldownActive;
 
@@ -169,7 +174,7 @@ export default function LoginPage() {
                     {turnstileEnabled && (
                         <div className="mt-4 flex justify-center">
                             <TurnstileWidget
-                                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                                siteKey={turnstileSiteKey}
                                 onSuccess={handleTurnstileSuccess}
                                 onError={handleTurnstileError}
                                 onExpire={handleTurnstileExpire}
