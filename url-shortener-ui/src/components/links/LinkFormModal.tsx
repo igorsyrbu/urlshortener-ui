@@ -2,8 +2,7 @@
 
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/components/ui/drawer";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
-import {MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
 
 interface LinkFormModalProps {
@@ -29,7 +28,7 @@ export function LinkFormModal({
                                   initialTagIds,
                                   onSubmit,
                               }: LinkFormModalProps) {
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
     const handleSubmit = async (longUrl: string, title: string, tagIds: string[]) => {
         await onSubmit(longUrl, title, tagIds);
         onOpenChange(false);

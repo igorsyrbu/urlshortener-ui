@@ -5,8 +5,7 @@ import {Archive, MoreVertical} from "lucide-react";
 import {cn} from "@/lib/utils";
 import {Kbd} from "@/components/ui/kbd";
 import {SearchBar} from "@/components/layout/SearchBar";
-import {MOBILE_BREAKPOINT_PX} from "@/lib/constants";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -33,7 +32,7 @@ export function PageToolbar({
                                 className
                             }: PageToolbarProps) {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
 
     return (
         <div className={cn("flex items-center gap-2 sm:gap-4", className)}>

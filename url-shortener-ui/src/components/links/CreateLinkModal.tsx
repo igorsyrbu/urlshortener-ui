@@ -3,14 +3,14 @@
 import {useState} from "react";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/components/ui/drawer";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useLinkStore} from "@/lib/store/links";
 import {AnimatePresence, motion} from "framer-motion";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
 import {CreateLinkSuccess} from "@/components/links/CreateLinkSuccess";
 import {CreateLinkModalLoading} from "@/components/links/CreateLinkModalLoading";
 import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS, CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {API_ENDPOINTS, CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD} from "@/lib/constants";
 import type {ShortLinkData} from "@/components/links/create-link-types";
 import {logger} from "@/lib/logger";
 
@@ -28,7 +28,7 @@ interface CreateLinkModalBodyProps {
 const CONFETTI_ORIGIN_Y = 0.6;
 
 function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
     const [viewState, setViewState] = useState<ViewState>("form");
     const [shortLink, setShortLink] = useState<ShortLinkData | null>(null);
     const {fetchLinks} = useLinkStore();
@@ -114,7 +114,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
 }
 
 export function CreateLinkModal({open, onOpenChange}: CreateLinkModalProps) {
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
 
     if (isDesktop) {
         return (

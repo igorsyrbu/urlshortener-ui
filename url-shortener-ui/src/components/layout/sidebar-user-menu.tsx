@@ -26,8 +26,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {Drawer, DrawerContent, DrawerDescription, DrawerTitle, DrawerTrigger,} from "@/components/ui/drawer";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
-import {MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 
 interface SidebarUserMenuProps {
     onNavigate?: () => void;
@@ -37,7 +36,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
     const router = useRouter();
     const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
 
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);

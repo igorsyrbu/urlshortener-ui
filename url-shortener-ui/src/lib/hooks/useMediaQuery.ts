@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useState} from "react";
+import {MOBILE_BREAKPOINT_PX} from "@/lib/constants";
 
 export function useMediaQuery(query: string): boolean {
     const [value, setValue] = useState(false);
@@ -22,4 +23,12 @@ export function useMediaQuery(query: string): boolean {
     }, [query]);
 
     return isMounted ? value : false;
+}
+
+export function useIsDesktop(): boolean {
+    return useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+}
+
+export function useIsMobile(): boolean {
+    return useMediaQuery(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`);
 }

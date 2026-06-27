@@ -17,12 +17,12 @@ import {
     DrawerHeader,
     DrawerTitle
 } from "@/components/ui/drawer";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {Button} from "@/components/ui/button";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Check, Copy, Download, Loader2} from "lucide-react";
 import {LinkItem} from "@/lib/types";
-import {COPY_FEEDBACK_DURATION_MS, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
 import type QRCodeStylingType from "qr-code-styling";
 import {logger} from "@/lib/logger";
 
@@ -174,7 +174,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
         if (isOpen) setIsDownloadOpen(false);
     };
 
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
 
     const bodyContent = (
         <div className="flex flex-col gap-3 -mt-2">

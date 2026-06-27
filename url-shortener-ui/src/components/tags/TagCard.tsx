@@ -12,8 +12,8 @@ import {
 import {Kbd} from "@/components/ui/kbd";
 import {Badge} from "@/components/ui/badge";
 import {TagItem} from "@/lib/types";
-import {MOBILE_BREAKPOINT_PX, MORE_ACTIONS_BUTTON_CLASS, SHORTCUT_KEY_CLASS} from "@/lib/constants";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {MORE_ACTIONS_BUTTON_CLASS, SHORTCUT_KEY_CLASS} from "@/lib/constants";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {ActionDrawer} from "@/components/ui/action-drawer";
 import {isModalOpen} from "@/lib/utils";
 
@@ -26,7 +26,7 @@ interface TagCardProps {
 export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
 
     const linkCount = tag.linkCount ?? 0;
 

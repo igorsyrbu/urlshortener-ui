@@ -6,8 +6,7 @@ import {ChartContainer, ChartTooltip, ChartTooltipContent} from "@/components/ui
 import {AnimatePresence, motion} from "framer-motion";
 import {AnalyticsDailyClick} from "@/lib/store/analytics";
 import {DateRange} from "react-day-picker";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
-import {MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 
 interface ClicksTimeSeriesChartProps {
     timeSeries: AnalyticsDailyClick[];
@@ -43,7 +42,7 @@ const chartConfig = {
 };
 
 export function ClicksTimeSeriesChart({timeSeries, onZoom}: ClicksTimeSeriesChartProps) {
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
 
     return (
         <div className="h-80 sm:h-96 mt-4 relative w-full">

@@ -17,8 +17,8 @@ import {
     DrawerHeader,
     DrawerTitle,
 } from "@/components/ui/drawer";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
-import {DEFAULT_JWT_TTL_DISPLAY, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
+import {DEFAULT_JWT_TTL_DISPLAY} from "@/lib/constants";
 
 export type LogoutTarget =
     | { type: "single"; id: string; isCurrent: boolean }
@@ -50,7 +50,7 @@ function getDialogDescription(target: LogoutTarget, ttl: string): string {
 
 export function SessionLogoutDialog({target, jwtTTL, onClose, onConfirm}: SessionLogoutDialogProps) {
     const ttl = jwtTTL || DEFAULT_JWT_TTL_DISPLAY;
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
     const open = target !== null;
 
     if (isDesktop) {

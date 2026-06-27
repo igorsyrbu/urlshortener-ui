@@ -2,7 +2,7 @@
 
 import React, {useEffect, useState} from "react";
 import {Check, Copy} from "lucide-react";
-import {COPY_FEEDBACK_DURATION_MS, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
 import {Input} from "@/components/ui/input";
 import {
     Dialog,
@@ -21,7 +21,7 @@ import {
     DrawerHeader,
     DrawerTitle
 } from "@/components/ui/drawer";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {Button} from "@/components/ui/button";
 
 interface DeleteConfirmationModalProps {
@@ -112,7 +112,7 @@ export function DeleteConfirmationModal({
                                             confirmationValue,
                                             confirmationType,
                                         }: DeleteConfirmationModalProps) {
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
     const [inputValue, setInputValue] = useState("");
 
     useEffect(() => {

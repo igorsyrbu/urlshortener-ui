@@ -21,8 +21,7 @@ import {
     DrawerHeader,
     DrawerTitle,
 } from "@/components/ui/drawer";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
-import {MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 
 interface DangerZoneCardProps {
     isDeleteDialogOpen: boolean;
@@ -37,7 +36,7 @@ export function DangerZoneCard({
                                    onCloseDeleteDialog,
                                    onConfirmDelete,
                                }: DangerZoneCardProps) {
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
     const user = useAuthStore((state) => state.user);
     const userEmail = user?.email || "";
 

@@ -5,8 +5,8 @@ import {AnimatePresence, motion} from "framer-motion";
 import {fetchWithAuth} from "@/lib/api";
 import {generateTitleFromHostname} from "@/lib/utils";
 import {getDomain, isValidUrl, normalizeUrl} from "@/lib/url-utils";
-import {API_ENDPOINTS, GLOW_FADE_DELAY_MS, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {API_ENDPOINTS, GLOW_FADE_DELAY_MS} from "@/lib/constants";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import type {GlowState} from "@/components/links/create-link-types";
@@ -54,7 +54,7 @@ export function LinkFormFields({
                                    onCancel,
                                    enableTitleSuggestion = false,
                                }: LinkFormFieldsProps) {
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
     const [activeScreen, setActiveScreen] = useState<"form" | "tags">("form");
     const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
 

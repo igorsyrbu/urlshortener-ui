@@ -30,12 +30,11 @@ import {cn, isModalOpen} from "@/lib/utils";
 import {getDomain} from "@/lib/url-utils";
 import {
     COPY_FEEDBACK_DURATION_MS,
-    MOBILE_BREAKPOINT_PX,
     MORE_ACTIONS_BUTTON_CLASS,
     SHORTCUT_KEY_CLASS
 } from "@/lib/constants";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
+import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {ActionDrawer} from "@/components/ui/action-drawer";
 
 interface LinkCardProps {
@@ -115,7 +114,7 @@ export function LinkCard({
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
     const storeTags = useTagStoreWithoutCount((state) => state.tags);
-    const isDesktop = useMediaQuery(`(min-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const isDesktop = useIsDesktop();
 
     const resolvedTags = useMemo(
         () => (link.tagIds ?? [])

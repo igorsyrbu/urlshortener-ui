@@ -5,8 +5,8 @@ import {Calendar} from "@/components/ui/calendar";
 import {Calendar as CalendarIcon} from "lucide-react";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {DateRange} from "react-day-picker";
-import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
-import {ALLOWED_YEARS, MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {useIsMobile} from "@/lib/hooks/useMediaQuery";
+import {ALLOWED_YEARS} from "@/lib/constants";
 import {DateRangeDrawer} from "@/components/analytics/DateRangeDrawer";
 
 interface PeriodSelectorProps {
@@ -58,7 +58,7 @@ export function PeriodSelector({
                                    onCustomDateRangeChange,
                                }: PeriodSelectorProps) {
     const [date, setDate] = useState<DateRange | undefined>(customDateRange);
-    const isMobile = useMediaQuery(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`);
+    const isMobile = useIsMobile();
     const [drawerOpen, setDrawerOpen] = useState(false);
 
     useEffect(() => {
