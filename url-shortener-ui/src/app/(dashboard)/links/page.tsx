@@ -15,13 +15,21 @@ import {useLinkStore} from "@/lib/store/links";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
-import {PageHeading} from "@/components/layout/PageHeading";
 import {PageToolbar} from "@/components/layout/PageToolbar";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 
 export default function LinksPage() {
-    const {links, loading, error, fetchLinks, clearError, showArchived, setShowArchived, toggleLinkActive} = useLinkStore();
+    const {
+        links,
+        loading,
+        error,
+        fetchLinks,
+        clearError,
+        showArchived,
+        setShowArchived,
+        toggleLinkActive
+    } = useLinkStore();
     const {fetchTags} = useTagStoreWithoutCount();
     const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -113,10 +121,10 @@ export default function LinksPage() {
                 setDeleteModalOpen(false);
                 setLinkToDelete(null);
             } else {
-                logger.error("Failed to delete link", undefined, { status: res.status, linkId: linkToDelete.id });
+                logger.error("Failed to delete link", undefined, {status: res.status, linkId: linkToDelete.id});
             }
         } catch (e) {
-            logger.error("Error deleting link", e, { linkId: linkToDelete.id });
+            logger.error("Error deleting link", e, {linkId: linkToDelete.id});
         } finally {
             setIsDeleting(false);
         }
@@ -136,10 +144,9 @@ export default function LinksPage() {
         return (
             <TooltipProvider>
                 <PageContainer>
-                    <div className="flex items-center justify-between">
-                        <PageHeading>Links</PageHeading>
-                    </div>
-                    <LinkCardSkeletonList count={5} />
+                    <PageToolbar showOptions showArchived={showArchived} onShowArchivedChange={handleShowArchivedChange}
+                                 className="-mb-2"/>
+                    <LinkCardSkeletonList count={5}/>
                 </PageContainer>
             </TooltipProvider>
         );
@@ -148,7 +155,8 @@ export default function LinksPage() {
     return (
         <TooltipProvider>
             <PageContainer>
-                <PageToolbar showOptions showArchived={showArchived} onShowArchivedChange={handleShowArchivedChange} className="-mb-2" />
+                <PageToolbar showOptions showArchived={showArchived} onShowArchivedChange={handleShowArchivedChange}
+                             className="-mb-2"/>
 
                 {error && (
                     <div
@@ -170,17 +178,17 @@ export default function LinksPage() {
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {links.map((link) => (
-                                <LinkCard
-                                    key={link.id}
-                                    link={link}
-                                    onEdit={handleEdit}
-                                    onDelete={handleDeleteClick}
-                                    onQrCode={handleQrCode}
-                                    onArchiveToggle={handleArchiveToggle}
-                                    onArchiveRequest={(link) => setArchiveModalLink(link)}
-                                    onMouseEnter={() => setHoveredLinkId(link.id)}
-                                    onMouseLeave={() => setHoveredLinkId(null)}
-                                />
+                            <LinkCard
+                                key={link.id}
+                                link={link}
+                                onEdit={handleEdit}
+                                onDelete={handleDeleteClick}
+                                onQrCode={handleQrCode}
+                                onArchiveToggle={handleArchiveToggle}
+                                onArchiveRequest={(link) => setArchiveModalLink(link)}
+                                onMouseEnter={() => setHoveredLinkId(link.id)}
+                                onMouseLeave={() => setHoveredLinkId(null)}
+                            />
                         ))}
                     </div>
                 )}
