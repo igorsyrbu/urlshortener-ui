@@ -7,6 +7,7 @@ import {ModeToggle} from "@/components/layout/ThemeToggle";
 import {Button} from "@/components/ui/button";
 import {PageHeading} from "@/components/layout/PageHeading";
 import {usePathname} from "next/navigation";
+import {isModalOpen} from "@/lib/utils";
 
 interface HeaderProps {
     onCreateClick?: () => void;
@@ -36,6 +37,7 @@ export function Header({onCreateClick, onMenuClick, createLabel = "Create link"}
                 !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName);
 
             if (isCreateShortcut) {
+                if (isModalOpen()) return;
                 e.preventDefault();
                 onCreateClick?.();
             }

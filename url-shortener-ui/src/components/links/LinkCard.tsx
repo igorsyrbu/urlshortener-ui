@@ -26,7 +26,7 @@ import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
 import {TagBadge} from "@/components/tags/TagBadge";
 import {LinkItem, TagItem} from "@/lib/types";
-import {cn} from "@/lib/utils";
+import {cn, isModalOpen} from "@/lib/utils";
 import {getDomain} from "@/lib/url-utils";
 import {
     COPY_FEEDBACK_DURATION_MS,
@@ -136,6 +136,8 @@ export function LinkCard({
 
         const isCardActive = isMenuOpen || cardRef.current?.matches(":hover");
         if (!isCardActive) return;
+
+        if (isModalOpen()) return;
 
         if (event.key.toLowerCase() === "e") {
             event.preventDefault();

@@ -18,6 +18,7 @@ import {PageContainer} from "@/components/layout/PageContainer";
 import {PageToolbar} from "@/components/layout/PageToolbar";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
+import {isModalOpen} from "@/lib/utils";
 
 export default function LinksPage() {
     const {
@@ -62,6 +63,7 @@ export default function LinksPage() {
             if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
             if (target.closest('[role="dialog"], [role="menu"]')) return;
             if (archiveModalLink) return;
+            if (isModalOpen()) return;
 
             e.preventDefault();
             e.stopPropagation();

@@ -15,6 +15,7 @@ import {TagItem} from "@/lib/types";
 import {MOBILE_BREAKPOINT_PX, MORE_ACTIONS_BUTTON_CLASS, SHORTCUT_KEY_CLASS} from "@/lib/constants";
 import {useMediaQuery} from "@/lib/hooks/useMediaQuery";
 import {ActionDrawer} from "@/components/ui/action-drawer";
+import {isModalOpen} from "@/lib/utils";
 
 interface TagCardProps {
     tag: TagItem;
@@ -41,6 +42,8 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
             const isCardActive =
                 isMenuOpen || cardRef.current?.matches(":hover");
             if (!isCardActive) return;
+
+            if (isModalOpen()) return;
 
             if (event.key.toLowerCase() === "e") {
                 event.preventDefault();

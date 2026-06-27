@@ -71,3 +71,9 @@ export function generateTitleFromHostname(hostname: string): string {
 
     return titled || withoutPort;
 }
+
+export function isModalOpen(): boolean {
+    if (typeof document === "undefined") return false;
+    return document.querySelector('[role="dialog"], [role="alertdialog"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"]') !== null;
+}
+

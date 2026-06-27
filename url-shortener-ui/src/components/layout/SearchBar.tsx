@@ -4,7 +4,7 @@ import {useEffect, useRef} from "react";
 import {Search} from "lucide-react";
 import {Kbd, KbdGroup} from "@/components/ui/kbd";
 import {Input} from "@/components/ui/input";
-import {cn} from "@/lib/utils";
+import {cn, isModalOpen} from "@/lib/utils";
 
 interface SearchBarProps {
     placeholder?: string;
@@ -18,6 +18,7 @@ export function SearchBar({placeholder = "Search...", className}: SearchBarProps
         const handleKeyDown = (e: KeyboardEvent) => {
             const isSearchShortcut = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k";
             if (isSearchShortcut && inputRef.current) {
+                if (isModalOpen()) return;
                 e.preventDefault();
                 inputRef.current.focus();
             }
