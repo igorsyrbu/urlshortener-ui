@@ -51,7 +51,7 @@ export function PageToolbar({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="sm:min-w-48">
                             <DropdownMenuItem
-                                className="group focus:bg-transparent data-[highlighted]:bg-transparent"
+                                className="group focus:bg-transparent data-highlighted:bg-transparent"
                                 onSelect={(e) => {
                                     e.preventDefault();
                                     onShowArchivedChange?.(!showArchived);

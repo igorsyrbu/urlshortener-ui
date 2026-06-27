@@ -1,7 +1,7 @@
 import {create} from "zustand";
 import {fetchWithAuth} from "@/lib/api";
 import {LinkItem} from "@/lib/types";
-import {API_ENDPOINTS, DEFAULT_LINK_TITLE, DEFAULT_PAGE_SIZE} from "@/lib/constants";
+import {API_ENDPOINTS, DEFAULT_LINK_TITLE, DEFAULT_PAGE_SIZE, SHOW_ARCHIVED_STORAGE_KEY} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import type {ShortLinkDTO, PageDTO} from "@/lib/api-types";
 
@@ -16,6 +16,7 @@ interface LinkStore {
     setLinks: (links: LinkItem[]) => void;
     clearError: () => void;
     setShowArchived: (show: boolean) => void;
+    hydrateShowArchived: () => void;
     toggleLinkActive: (id: string, isActive: boolean) => Promise<void>;
 }
 
@@ -71,7 +72,25 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
     setLinks: (links) => set({links}),
     clearError: () => set({error: null}),
 
-    setShowArchived: (show) => set({showArchived: show}),
+    setShowArchived: (show) => {
+        try {
+            localStorage.setItem(SHOW_ARCHIVED_STORAGE_KEY, String(show));
+        } catch (e) {
+            logger.error("Failed to save showArchived to localStorage", e);
+        }
+        set({showArchived: show});
+    },
+
+    hydrateShowArchived: () => {
+        try {
+            const stored = localStorage.getItem(SHOW_ARCHIVED_STORAGE_KEY);
+            if (stored !== null) {
+                set({showArchived: stored === "true"});
+            }
+        } catch (e) {
+            logger.error("Failed to load showArchived from localStorage", e);
+        }
+    },
 
     toggleLinkActive: async (id, isActive) => {
         try {

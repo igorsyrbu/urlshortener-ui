@@ -42,6 +42,7 @@ export const AUTH_REDIRECT_DELAY_MS = 1000;
 
 export const MAGIC_LINK_COOLDOWN_INTERVAL_MS = 1000;
 export const MAGIC_LINK_COOLDOWN_STORAGE_KEY = "magicLinkCooldownByEmail";
+export const SHOW_ARCHIVED_STORAGE_KEY = "showArchived";
 
 // ---------------------------------------------------------------------------
 // Layout breakpoints (pixels) — align with Tailwind `lg` (1024px)

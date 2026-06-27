@@ -29,7 +29,8 @@ export default function LinksPage() {
         clearError,
         showArchived,
         setShowArchived,
-        toggleLinkActive
+        toggleLinkActive,
+        hydrateShowArchived
     } = useLinkStore();
     const {fetchTags} = useTagStoreWithoutCount();
     const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
@@ -42,6 +43,10 @@ export default function LinksPage() {
     const [hoveredLinkId, setHoveredLinkId] = useState<string | null>(null);
     const [archiveModalLink, setArchiveModalLink] = useState<LinkItem | null>(null);
     const [isArchiving, setIsArchiving] = useState(false);
+
+    useEffect(() => {
+        hydrateShowArchived();
+    }, [hydrateShowArchived]);
 
     useEffect(() => {
         fetchLinks();
