@@ -12,10 +12,12 @@ interface LinkStore {
     page: number;
     hasMore: boolean;
     showArchived: boolean;
+    searchQuery: string;
     fetchLinks: (page?: number) => Promise<void>;
     setLinks: (links: LinkItem[]) => void;
     clearError: () => void;
     setShowArchived: (show: boolean) => void;
+    setSearchQuery: (query: string) => void;
     hydrateShowArchived: () => void;
     toggleLinkActive: (id: string, isActive: boolean) => Promise<void>;
 }
@@ -38,15 +40,23 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
     page: 0,
     hasMore: true,
     showArchived: false,
+    searchQuery: "",
 
     fetchLinks: async (page = 0) => {
         if (get().loading) return;
 
         set({loading: true, error: null});
         try {
-            const {showArchived} = get();
+            const {showArchived, searchQuery} = get();
+            const params = new URLSearchParams();
+            params.set("page", String(page));
+            params.set("size", String(DEFAULT_PAGE_SIZE));
+            params.set("showArchived", String(showArchived));
+            if (searchQuery) {
+                params.set("search", searchQuery);
+            }
             const res = await fetchWithAuth(
-                `${API_ENDPOINTS.SHORTLINKS}?page=${page}&size=${DEFAULT_PAGE_SIZE}&showArchived=${showArchived}`,
+                `${API_ENDPOINTS.SHORTLINKS}?${params}`,
             );
 
             if (res.ok) {
@@ -80,6 +90,8 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
         }
         set({showArchived: show});
     },
+
+    setSearchQuery: (query) => set({searchQuery: query}),
 
     hydrateShowArchived: () => {
         try {

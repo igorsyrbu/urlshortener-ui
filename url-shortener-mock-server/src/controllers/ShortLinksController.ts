@@ -9,7 +9,8 @@ export class ShortLinksController {
     const page = Math.max(0, parseInt(req.query.page as string, 10) || 0);
     const size = Math.max(1, parseInt(req.query.size as string, 10) || 20);
     const showArchived = req.query.showArchived === "true";
-    res.json(shortLinksService.getPaginatedLinks(uuid, page, size, showArchived));
+    const search = req.query.search as string | undefined;
+    res.json(shortLinksService.getPaginatedLinks(uuid, page, size, showArchived, search));
   }
 
   static async getShortLinksByIds(req: Request, res: Response): Promise<void> {

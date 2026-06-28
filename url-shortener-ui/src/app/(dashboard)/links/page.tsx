@@ -9,6 +9,7 @@ import {QrCodeModal} from "@/components/links/QrCodeModal";
 import {LinkCard} from "@/components/links/LinkCard";
 import {LinkCardSkeletonList} from "@/components/links/LinkCardSkeleton";
 import {EmptyLinksState} from "@/components/links/EmptyLinksState";
+import {NoLinksFoundState} from "@/components/links/NoLinksFoundState";
 import {TooltipProvider} from "@/components/ui/tooltip";
 import {Button} from "@/components/ui/button";
 import {useLinkStore} from "@/lib/store/links";
@@ -19,6 +20,7 @@ import {PageToolbar} from "@/components/layout/PageToolbar";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import {isModalOpen} from "@/lib/utils";
+import {useDebounce} from "@/lib/hooks/useDebounce";
 
 export default function LinksPage() {
     const {
@@ -30,7 +32,8 @@ export default function LinksPage() {
         showArchived,
         setShowArchived,
         toggleLinkActive,
-        hydrateShowArchived
+        hydrateShowArchived,
+        searchQuery
     } = useLinkStore();
     const {fetchTags} = useTagStoreWithoutCount();
     const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
@@ -43,10 +46,21 @@ export default function LinksPage() {
     const [hoveredLinkId, setHoveredLinkId] = useState<string | null>(null);
     const [archiveModalLink, setArchiveModalLink] = useState<LinkItem | null>(null);
     const [isArchiving, setIsArchiving] = useState(false);
+    const [searchInput, setSearchInput] = useState("");
+    const debouncedSearch = useDebounce(searchInput, 500);
 
     useEffect(() => {
         hydrateShowArchived();
     }, [hydrateShowArchived]);
+
+    useEffect(() => {
+        const trimmed = debouncedSearch.trim();
+        const store = useLinkStore.getState();
+        if (store.searchQuery !== trimmed) {
+            store.setSearchQuery(trimmed);
+            store.fetchLinks(0);
+        }
+    }, [debouncedSearch]);
 
     useEffect(() => {
         fetchLinks();
@@ -147,12 +161,23 @@ export default function LinksPage() {
         setIsQrCodeModalOpen(true);
     };
 
+    const toolbar = (
+        <PageToolbar
+            showOptions
+            showArchived={showArchived}
+            onShowArchivedChange={handleShowArchivedChange}
+            searchValue={searchInput}
+            onSearchChange={setSearchInput}
+            placeholder="Search by URL or title"
+            className="-mb-2"
+        />
+    );
+
     if (loading && links.length === 0) {
         return (
             <TooltipProvider>
                 <PageContainer>
-                    <PageToolbar showOptions showArchived={showArchived} onShowArchivedChange={handleShowArchivedChange}
-                                 className="-mb-2"/>
+                    {toolbar}
                     <LinkCardSkeletonList count={5}/>
                 </PageContainer>
             </TooltipProvider>
@@ -162,8 +187,7 @@ export default function LinksPage() {
     return (
         <TooltipProvider>
             <PageContainer>
-                <PageToolbar showOptions showArchived={showArchived} onShowArchivedChange={handleShowArchivedChange}
-                             className="-mb-2"/>
+                {toolbar}
 
                 {error && (
                     <div
@@ -181,7 +205,7 @@ export default function LinksPage() {
                 )}
 
                 {!loading && links.length === 0 ? (
-                    <EmptyLinksState/>
+                    searchQuery !== "" ? <NoLinksFoundState/> : <EmptyLinksState/>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {links.map((link) => (

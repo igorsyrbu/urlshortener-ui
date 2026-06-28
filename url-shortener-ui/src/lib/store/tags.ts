@@ -8,8 +8,10 @@ interface TagStore {
     tags: TagItem[];
     loading: boolean;
     error: string | null;
+    searchQuery: string;
     fetchTags: (params?: { withLinksCount?: boolean; size?: number }) => Promise<void>;
     getTagById: (id: string) => TagItem | undefined;
+    setSearchQuery: (query: string) => void;
     clearError: () => void;
 }
 
@@ -17,15 +19,20 @@ export const useTagStoreWithoutCount = create<TagStore>((set, get) => ({
     tags: [],
     loading: false,
     error: null,
+    searchQuery: "",
 
     fetchTags: async (params) => {
         if (get().loading) return;
 
         set({loading: true, error: null});
         try {
+            const {searchQuery} = get();
             const query = new URLSearchParams();
             query.set("withLinksCount", "false");
             query.set("size", String(params?.size ?? 20));
+            if (searchQuery) {
+                query.set("search", searchQuery);
+            }
 
             await fetchTagsResponse(query, set, fetchWithAuth);
         } catch (error) {
@@ -36,6 +43,8 @@ export const useTagStoreWithoutCount = create<TagStore>((set, get) => ({
     },
 
     getTagById: (id) => get().tags.find((tag) => tag.id === id),
+
+    setSearchQuery: (query) => set({searchQuery: query}),
 
     clearError: () => set({error: null}),
 }));

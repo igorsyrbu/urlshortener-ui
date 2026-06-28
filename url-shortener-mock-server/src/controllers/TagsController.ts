@@ -8,11 +8,12 @@ export class TagsController {
     const page = Math.max(0, parseInt(req.query.page as string, 10) || 0);
     const size = Math.max(1, parseInt(req.query.size as string, 10) || 20);
     const withLinksCount = req.query.withLinksCount === "true";
+    const search = req.query.search as string | undefined;
 
     if (withLinksCount) {
-      res.json(tagsService.getTagsWithCount(uuid, page, size));
+      res.json(tagsService.getTagsWithCount(uuid, page, size, search));
     } else {
-      res.json(tagsService.getTags(uuid, page, size));
+      res.json(tagsService.getTags(uuid, page, size, search));
     }
   }
 

@@ -19,6 +19,10 @@ interface PageToolbarProps {
     showOptions?: boolean;
     showArchived?: boolean;
     onShowArchivedChange?: (value: boolean) => void;
+    searchValue?: string;
+    onSearchChange?: (value: string) => void;
+    onSearchClear?: () => void;
+    placeholder?: string;
     className?: string;
 }
 
@@ -29,7 +33,11 @@ export function PageToolbar({
                                 showOptions = false,
                                 showArchived = false,
                                 onShowArchivedChange,
-                                className
+                                 searchValue,
+                                 onSearchChange,
+                                 onSearchClear,
+                                 placeholder,
+                                 className
                             }: PageToolbarProps) {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const isDesktop = useIsDesktop();
@@ -37,7 +45,12 @@ export function PageToolbar({
     return (
         <div className={cn("flex items-center gap-2 sm:gap-4", className)}>
             <div className="min-w-0 flex-1 max-w-md">
-                <SearchBar/>
+                <SearchBar
+                    value={searchValue}
+                    onChange={onSearchChange}
+                    onClear={onSearchClear}
+                    placeholder={placeholder}
+                />
             </div>
 
             {showOptions && (

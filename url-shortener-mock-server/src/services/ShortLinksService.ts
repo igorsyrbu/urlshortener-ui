@@ -72,9 +72,20 @@ export class ShortLinksService {
    * @param size - The number of items per page
    * @returns A Page object containing the content and metadata
    */
-  public getPaginatedLinks(uuid: string, page: number, size: number, showArchived: boolean = false): Page<ShortLink> {
+  public getPaginatedLinks(uuid: string, page: number, size: number, showArchived: boolean = false, search?: string): Page<ShortLink> {
     const userState = memoryStore.getUserState(uuid);
-    const links = showArchived ? userState.links : userState.links.filter((l) => l.isActive);
+    let links = showArchived ? userState.links : userState.links.filter((l) => l.isActive);
+
+    if (search) {
+      const q = search.toLowerCase();
+      links = links.filter(
+        (l) =>
+          l.title.toLowerCase().includes(q) ||
+          l.shortUrl.toLowerCase().includes(q) ||
+          l.longUrl.toLowerCase().includes(q)
+      );
+    }
+
     const startIndex = page * size;
     const content = links.slice(startIndex, startIndex + size);
     const totalElements = links.length;

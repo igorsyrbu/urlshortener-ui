@@ -111,11 +111,13 @@ export class TagsService {
   }
 
   /**
-   * Retrieves a paginated list of tags.
+   * Retrieves a paginated list of tags, optionally filtered by search term.
    */
-  public getTags(uuid: string, page: number, size: number): Page<Tag> {
+  public getTags(uuid: string, page: number, size: number, search?: string): Page<Tag> {
     const userState = memoryStore.getUserState(uuid);
-    const tags = userState.tags;
+    const tags = search
+      ? userState.tags.filter((tag) => tag.name.toLowerCase().includes(search.toLowerCase()))
+      : userState.tags;
     const startIndex = page * size;
     const content = tags.slice(startIndex, startIndex + size);
     const totalElements = tags.length;
@@ -133,10 +135,10 @@ export class TagsService {
   }
 
   /**
-   * Retrieves a paginated list of tags with link counts.
+   * Retrieves a paginated list of tags with link counts, optionally filtered by search term.
    */
-  public getTagsWithCount(uuid: string, page: number, size: number): Page<TagWithCount> {
-    const tagsPage = this.getTags(uuid, page, size);
+  public getTagsWithCount(uuid: string, page: number, size: number, search?: string): Page<TagWithCount> {
+    const tagsPage = this.getTags(uuid, page, size, search);
     
     const contentWithCount: TagWithCount[] = tagsPage.content.map((tag) => ({
       ...tag,
