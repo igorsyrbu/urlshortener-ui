@@ -3,6 +3,17 @@
 Thank you for your interest in contributing to this project! Your time and effort are highly valued. To ensure a smooth
 process for everyone, please review the following guidelines before starting your work.
 
+## Before You Start Working
+
+To avoid duplicated effort, **always open an issue before writing any code**.
+
+Once the issue is open, wait for a maintainer to confirm it's a good fit and assign it to you. This ensures no one
+ends up building the same thing in parallel.
+
+- Please do not submit a PR for a feature that hasn't been discussed in an issue first.
+- If an issue already exists, leave a comment saying you'd like to work on it and wait for assignment.
+- Bug fixes for clear, reproducible bugs are the exception — feel free to open a PR directly.
+
 ## Suggesting a New Feature
 
 When proposing a new feature via an issue or pull request, please make sure you provide sufficient context:
