@@ -27,7 +27,7 @@ export function ActionDrawer({
                              }: ActionDrawerProps) {
     return (
         <Drawer open={open} onOpenChange={onOpenChange}>
-            <DrawerContent className="p-0 outline-hidden">
+            <DrawerContent className="p-0 outline-hidden" mobileMenuSpacing>
                 <DrawerTitle className="sr-only">{title}</DrawerTitle>
                 <DrawerDescription className="sr-only">List of actions available</DrawerDescription>
                 <div className="flex flex-col mt-3">

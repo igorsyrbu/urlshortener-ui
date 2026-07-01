@@ -52,11 +52,16 @@ function DrawerOverlay({
     )
 }
 
+interface DrawerContentProps extends React.ComponentProps<typeof DrawerPrimitive.Content> {
+    mobileMenuSpacing?: boolean;
+}
+
 function DrawerContent({
                            className,
                            children,
+                           mobileMenuSpacing = false,
                            ...props
-                       }: React.ComponentProps<typeof DrawerPrimitive.Content>) {
+                       }: DrawerContentProps) {
     return (
         <DrawerPortal>
             <DrawerOverlay/>
@@ -69,7 +74,12 @@ function DrawerContent({
                 {...props}
             >
                 <div className="bg-foreground/20 mx-auto mt-4 h-1 w-12 rounded-full shrink-0"/>
-                <div className="flex flex-col flex-1 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+                <div className={cn(
+                    "flex flex-col flex-1",
+                    mobileMenuSpacing
+                        ? "pb-[calc(2.25rem+env(safe-area-inset-bottom,0))]"
+                        : "pb-[calc(1.5rem+env(safe-area-inset-bottom,0))]"
+                )}>
                     {children}
                 </div>
             </DrawerPrimitive.Content>

@@ -121,7 +121,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
                     <DrawerTrigger asChild>
                         {triggerElement}
                     </DrawerTrigger>
-                    <DrawerContent className="p-0 outline-hidden">
+                    <DrawerContent className="p-0 outline-hidden" mobileMenuSpacing>
                         <DrawerTitle className="sr-only">Account options</DrawerTitle>
                         <DrawerDescription className="sr-only">Settings and log out</DrawerDescription>
 
