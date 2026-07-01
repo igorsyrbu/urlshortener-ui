@@ -176,6 +176,15 @@ export function TagFormModal({
                         >
                             {isSubmitting ? submittingLabel : submitLabel}
                         </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={handleCancel}
+                            disabled={isSubmitting}
+                            className="w-full"
+                        >
+                            Cancel
+                        </Button>
                     </DrawerFooter>
                 </form>
             </DrawerContent>

@@ -25,8 +25,17 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {Drawer, DrawerContent, DrawerDescription, DrawerTitle, DrawerTrigger,} from "@/components/ui/drawer";
+import {
+    Drawer,
+    DrawerContent,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
+} from "@/components/ui/drawer";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
+import {Button} from "@/components/ui/button";
 
 interface SidebarUserMenuProps {
     onNavigate?: () => void;
@@ -151,25 +160,54 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
                 </Drawer>
             )}
 
-            <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            You will be signed out immediately and will need to sign in again to continue.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleLogout}
-                            variant="destructive"
-                        >
-                            Log out
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            {isDesktop ? (
+                <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                You will be signed out immediately and will need to sign in again to continue.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={handleLogout}
+                                variant="destructive"
+                            >
+                                Log out
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            ) : (
+                <Drawer open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+                    <DrawerContent className="outline-hidden px-6 pb-6 gap-6">
+                        <DrawerHeader className="p-0 pb-6 text-center">
+                            <DrawerTitle>Are you sure?</DrawerTitle>
+                            <DrawerDescription className="text-sm text-foreground/70 mt-2">
+                                You will be signed out immediately and will need to sign in again to continue.
+                            </DrawerDescription>
+                        </DrawerHeader>
+                        <DrawerFooter className="p-0 flex flex-col gap-2">
+                            <Button
+                                variant="destructive"
+                                onClick={handleLogout}
+                                className="w-full"
+                            >
+                                Log out
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                onClick={() => setIsConfirmOpen(false)}
+                                className="w-full"
+                            >
+                                Cancel
+                            </Button>
+                        </DrawerFooter>
+                    </DrawerContent>
+                </Drawer>
+            )}
         </>
     );
 }

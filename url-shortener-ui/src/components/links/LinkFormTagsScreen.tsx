@@ -26,6 +26,7 @@ interface TagsScreenContentProps {
     submittingLabel: string;
     onBack: () => void;
     onSubmit: (e?: React.SyntheticEvent) => void;
+    onCancel: () => void;
 }
 
 export function TagsScreenContent({
@@ -46,6 +47,7 @@ export function TagsScreenContent({
                                       submittingLabel,
                                       onBack,
                                       onSubmit,
+                                      onCancel,
                                   }: TagsScreenContentProps) {
     return (
         <>
@@ -148,6 +150,15 @@ export function TagsScreenContent({
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                     {isSubmitting ? submittingLabel : submitLabel}
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={onCancel}
+                    disabled={isSubmitting}
+                    className="w-full"
+                >
+                    Cancel
                 </Button>
             </div>
         </>

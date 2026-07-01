@@ -181,7 +181,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
     const isDesktop = useIsDesktop();
 
     const bodyContent = (
-        <div className="flex flex-col gap-3 -mt-2">
+        <div className="flex flex-col gap-3 mt-3 sm:-mt-2">
             <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-foreground truncate mr-4"
                    title={link?.title}>{link?.title}</p>
@@ -269,12 +269,6 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
                 </DrawerHeader>
 
                 {bodyContent}
-
-                <DrawerFooter className="p-0">
-                    <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
-                        Close
-                    </Button>
-                </DrawerFooter>
             </DrawerContent>
         </Drawer>
     );

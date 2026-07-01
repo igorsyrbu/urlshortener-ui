@@ -268,6 +268,7 @@ export function LinkFormFields({
                                 setActiveScreen("form");
                             }}
                             onSubmit={handleSubmit}
+                            onCancel={onCancel}
                         />
                     </motion.div>
                 )}

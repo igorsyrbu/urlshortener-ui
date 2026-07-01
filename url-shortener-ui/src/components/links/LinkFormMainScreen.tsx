@@ -141,11 +141,15 @@ export function FormScreenContent({
                     )}
                 </div>
                 <DialogFooter className="pt-2 gap-2 sm:gap-2">
-                    {isDesktop && (
-                        <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>
-                            Cancel
-                        </Button>
-                    )}
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={onCancel}
+                        disabled={isSubmitting}
+                        className={cn(!isDesktop && "w-full")}
+                    >
+                        Cancel
+                    </Button>
                     <Button
                         type="submit"
                         disabled={isSubmitting || !longUrl.trim()}
