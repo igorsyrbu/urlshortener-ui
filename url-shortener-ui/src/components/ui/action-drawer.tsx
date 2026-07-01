@@ -18,6 +18,7 @@ interface ActionDrawerProps {
     title?: string;
     actions: ActionItem[];
     align?: "left" | "center";
+    overlayClassName?: string;
 }
 
 export function ActionDrawer({
@@ -26,12 +27,13 @@ export function ActionDrawer({
                                  title = "Actions",
                                  actions,
                                  align = "left",
+                                 overlayClassName,
                              }: ActionDrawerProps) {
     const isCentered = align === "center";
 
     return (
         <Drawer open={open} onOpenChange={onOpenChange}>
-            <DrawerContent className="p-0 outline-hidden" mobileMenuSpacing overlayClassName="backdrop-blur-md">
+            <DrawerContent className="p-0 outline-hidden" mobileMenuSpacing overlayClassName={overlayClassName ?? "backdrop-blur-md"}>
                 <DrawerTitle className="sr-only">{title}</DrawerTitle>
                 <DrawerDescription className="sr-only">List of actions available</DrawerDescription>
                 <div className="flex flex-col mt-3">
@@ -60,7 +62,7 @@ export function ActionDrawer({
                                     )}
                                 >
                                     {isCentered ? (
-                                        <span className="flex items-center gap-3.5 mx-auto">
+                                        <span className="flex items-center gap-3.5 mx-auto -translate-x-1">
                                             <Icon
                                                 className={cn("size-5 shrink-0", isDestructive ? "text-destructive" : "text-muted-foreground")}/>
                                             <span>{action.label}</span>
