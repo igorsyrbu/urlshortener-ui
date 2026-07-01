@@ -58,14 +58,7 @@ const extractShortKey = (shortUrl: string): string =>
 
 type QrFileExtension = "svg" | "png";
 
-async function writeToClipboard(ext: QrFileExtension, blob: Blob): Promise<void> {
-    if (ext === "png") {
-        await navigator.clipboard.write([new ClipboardItem({"image/png": blob})]);
-    } else {
-        const text = await blob.text();
-        await navigator.clipboard.writeText(text);
-    }
-}
+const IS_CLIPBOARD_ITEM_SUPPORTED = typeof ClipboardItem !== "undefined";
 
 interface QrCodeModalProps {
     open: boolean;
@@ -151,21 +144,69 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
         setIsDownloadOpen(false);
     };
 
-    const handleCopy = async (ext: QrFileExtension): Promise<void> => {
-        try {
+    // iOS Safari revokes user-activation after any `await` that precedes a
+    // clipboard call, so we must call `navigator.clipboard.write()` with zero
+    // awaits before it.  ClipboardItem accepts a Promise<Blob>, which lets us
+    // pass the async work as the *value* of the item — Safari captures the
+    // activation at call time, before the promise resolves.
+    //
+    // NOTE: this bug is not unit-testable because it depends on Safari's
+    // real user-activation timing; it can only be verified on a real iOS device.
+    const handleCopy = (ext: QrFileExtension): void => {
+        const mime = ext === "png" ? "image/png" : "text/plain";
+
+        const blobPromise: Promise<Blob> = (async () => {
             const qr = await getOrBuildHighResQr();
-            if (!qr) return;
+            if (!qr) throw new Error("QR instance not ready");
+            const raw = await qr.getRawData(ext);
+            if (!raw) throw new Error("No data returned from getRawData");
+            if (ext === "svg") {
+                const text = await (raw as Blob).text();
+                return new Blob([text], {type: "text/plain"});
+            }
+            return raw as Blob;
+        })();
 
-            const blob = await qr.getRawData(ext);
-            if (!blob) return;
-
-            await writeToClipboard(ext, blob as Blob);
-            setCopied(ext);
-            setTimeout(() => setCopied(null), COPY_FEEDBACK_DURATION_MS);
-        } catch (e) {
-            logger.error(`Failed to copy ${ext}`, e);
+        if (!IS_CLIPBOARD_ITEM_SUPPORTED) {
+            // Fallback for browsers without ClipboardItem (old Safari/WebKit).
+            // These browsers don't enforce strict user-activation on writeText,
+            // so calling it asynchronously after blob resolution is safe.
+            blobPromise
+                .then(async (blob) => {
+                    const text = await blob.text();
+                    await navigator.clipboard.writeText(text);
+                    setCopied(ext);
+                    setTimeout(() => setCopied(null), COPY_FEEDBACK_DURATION_MS);
+                })
+                .catch((e) => logger.error(`Failed to copy ${ext} (fallback)`, e))
+                .finally(() => setIsCopyOpen(false));
+            return;
         }
-        setIsCopyOpen(false);
+
+        navigator.clipboard
+            .write([new ClipboardItem({[mime]: blobPromise})])
+            .then(() => {
+                setCopied(ext);
+                setTimeout(() => setCopied(null), COPY_FEEDBACK_DURATION_MS);
+            })
+            .catch((e) => {
+                // Some older WebKit builds reject ClipboardItem for "text/plain".
+                // Fall back to writeText — these browsers don't enforce strict
+                // user-activation, so async usage is safe here.
+                if (ext === "svg") {
+                    blobPromise
+                        .then(async (blob) => {
+                            const text = await blob.text();
+                            await navigator.clipboard.writeText(text);
+                            setCopied(ext);
+                            setTimeout(() => setCopied(null), COPY_FEEDBACK_DURATION_MS);
+                        })
+                        .catch((inner) => logger.error(`Failed to copy ${ext} (writeText fallback)`, inner));
+                } else {
+                    logger.error(`Failed to copy ${ext}`, e);
+                }
+            })
+            .finally(() => setIsCopyOpen(false));
     };
 
     const handleDownloadMenuOpenChange = (isOpen: boolean): void => {
