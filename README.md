@@ -5,12 +5,6 @@ This project is a Next.js frontend for a modern and minimalistic URL shortener w
 This repository contains the open-sourced frontend user interface and a lightweight mock backend server for a
 high-performance URL Shortener SaaS.
 
-## Core Philosophy
-
-The foundational philosophy of the project is to keep the application **minimalistic** and distraction-free. Bulky,
-cluttered, or confusing elements should be intentionally avoided. Every change and new feature must intuitively enhance
-the User Experience (UX), focusing squarely on simplicity, clarity, and ease of use.
-
 ---
 
 ## Features
@@ -23,18 +17,22 @@ the User Experience (UX), focusing squarely on simplicity, clarity, and ease of 
 - **Session Management** — View and revoke active login sessions from a dedicated screen
 - **Minimalistic UI** — Built with Next.js, focused on UX, with full dark mode support
 
+---
+
 ## Tech Stack
 
 - **Frontend** — [Next.js](https://nextjs.org/)
 - **Mock Server** — [Express](https://expressjs.com/)
 - **Package Management** — pnpm Workspaces
 
-## Prerequisites
+---
+
+## Getting Started
+
+### Prerequisites
 
 - **Node.js** `>= 22.0.0`
 - **pnpm** `>= 9.0.0`
-
-## Getting Started
 
 ### Installation
 
@@ -107,6 +105,72 @@ The frontend application built using **Next.js**. It provides the full user inte
 including dashboards for managing short links, viewing detailed analytics, and handling user settings and session
 management. It consumes the REST API endpoints.
 
+#### Environment Variables
+
+Copy `.env.example` to `.env` in the `url-shortener-ui` directory to customize:
+
+| Variable                         | Example                    | Description                                                   |
+|----------------------------------|----------------------------|---------------------------------------------------------------|
+| `NEXT_PUBLIC_API_BASE_URL`       | `http://localhost:8080`    | Base URL of the backend API                                   |
+| `NEXT_PUBLIC_ENABLE_TURNSTILE`   | `true`                     | Enables or disables Cloudflare Turnstile CAPTCHA verification |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `1x00000000000000000000AA` | Site key used for Cloudflare Turnstile CAPTCHA                |
+
+#### API Reference
+
+**Auth**
+
+| Method | Path                           | Query / Body Params           | Description                                          |
+|--------|--------------------------------|-------------------------------|------------------------------------------------------|
+| POST   | `/ott/generate`                | Body: `{ email }`             | Generate magic link                                  |
+| POST   | `/ott/login`                   | Body: `{ token }`             | Verify OTT token (returns tokens/redirect URL)       |
+| GET    | `/auth/code/exchange`          | Query: `code` (required)      | Exchange authorization code for access/refresh token |
+| POST   | `/token/refresh`               | (Uses `refresh_token` cookie) | Refresh access token                                 |
+| GET    | `/oauth2/authorization/google` | -                             | Start Google OAuth2 flow                             |
+
+**Users**
+
+| Method | Path                      | Query / Body Params | Description                         |
+|--------|---------------------------|---------------------|-------------------------------------|
+| GET    | `/users/me`               | -                   | Get current user profile            |
+| PUT    | `/users/me/name`          | Body: `{ name }`    | Update user display name            |
+| GET    | `/users/sessions`         | -                   | List active login sessions          |
+| DELETE | `/users/sessions/current` | -                   | Terminate the current session       |
+| DELETE | `/users/sessions/other`   | -                   | Terminate all other active sessions |
+| DELETE | `/users/sessions/:id`     | Path variable: `id` | Terminate a specific active session |
+
+**Short Links**
+
+| Method | Path                | Query / Body Params                                       | Description                                |
+|--------|---------------------|-----------------------------------------------------------|--------------------------------------------|
+| GET    | `/shortlinks`       | Query: `page`, `size`, `showArchived` (boolean), `search` | Paginated & filterable list of short links |
+| GET    | `/shortlinks/byIds` | Query: `ids` (comma-separated, required)                  | Bulk lookup short links by IDs             |
+| POST   | `/shortlinks`       | Body: `{ longUrl, title, tagIds, isActive }`              | Create a new short link                    |
+| PUT    | `/shortlinks`       | Body: `{ id, longUrl, title, tagIds, isActive }`          | Update an existing short link              |
+| DELETE | `/shortlinks/:id`   | Path variable: `id`                                       | Delete a short link                        |
+| GET    | `/longurl/title`    | Query: `url` (required)                                   | Extract page title from target URL         |
+
+**Tags**
+
+| Method | Path        | Query / Body Params                                         | Description                         |
+|--------|-------------|-------------------------------------------------------------|-------------------------------------|
+| GET    | `/tags`     | Query: `page`, `size`, `withLinksCount` (boolean), `search` | Paginated & filterable list of tags |
+| POST   | `/tags`     | Body: `{ name, color }`                                     | Create a new tag                    |
+| PUT    | `/tags`     | Body: `{ id, name, color }`                                 | Update an existing tag              |
+| DELETE | `/tags/:id` | Path variable: `id`                                         | Delete a tag                        |
+
+**Analytics**
+
+| Method | Path         | Query / Body Params                                   | Description                                      |
+|--------|--------------|-------------------------------------------------------|--------------------------------------------------|
+| GET    | `/analytics` | Query: `period` (`P7D`/`P30D`/`P90D`), `start`, `end` | Total clicks (number) for a period or date range |
+| GET    | `/analytics` | Query: `period`/`start`/`end`, `groupBy=date`         | Daily clicks time series                         |
+| GET    | `/analytics` | Query: `period`/`start`/`end`, `groupBy=country`      | Country breakdown                                |
+| GET    | `/analytics` | Query: `period`/`start`/`end`, `groupBy=continent`    | Continent breakdown                              |
+| GET    | `/analytics` | Query: `period`/`start`/`end`, `groupBy=device`       | Device breakdown                                 |
+| GET    | `/analytics` | Query: `period`/`start`/`end`, `groupBy=os`           | Operating system breakdown                       |
+| GET    | `/analytics` | Query: `period`/`start`/`end`, `groupBy=referrer`     | Referrer source breakdown                        |
+| GET    | `/analytics` | Query: `period`/`start`/`end`, `groupBy=top_link`     | Top links breakdown by clicks                    |
+
 ### 2. `url-shortener-mock-server`
 
 A standalone **Express** backend that acts as a mock server. Since the actual backend remains a closed-source private
@@ -123,11 +187,11 @@ spin up a database.
 - **Error simulation** — you can optionally add the header `x-mock-error: true` to any request to test how the UI
   handles 500 errors.
 
-#### Environment Variables (Mock Server)
+#### Environment Variables
 
 Copy `.env.example` to `.env` in the `url-shortener-mock-server` directory to customize:
 
-| Variable               | Default                 | Description                                  |
+| Variable               | Example                 | Description                                  |
 |------------------------|-------------------------|----------------------------------------------|
 | `PORT`                 | `8080`                  | Port the mock server listens on              |
 | `FRONTEND_URL`         | `http://localhost:3000` | URL the UI is served from                    |
@@ -157,61 +221,25 @@ curl -H "x-mock-error: true" http://localhost:8080/users/me
 # → 500 { "error": "Simulated server error", ... }
 ```
 
-#### API Reference
+---
 
-**Auth**
+## Why Open Source?
 
-| Method | Path                           | Description                  |
-|--------|--------------------------------|------------------------------|
-| POST   | `/ott/generate`                | Generate magic link          |
-| POST   | `/ott/login`                   | Verify OTT token (redirects) |
-| GET    | `/auth/code/exchange?code=`    | Exchange auth code for token |
-| POST   | `/token/refresh`               | Refresh access token         |
-| GET    | `/oauth2/authorization/google` | Start Google OAuth2 flow     |
+I've decided to open source the frontend of this SaaS with two main goals:
 
-**Users**
+1. **Real-world experience** — Contribute to an actual product and gain open-source experience you can showcase on your
+   resume or CV.
+2. **Community driven** — Your contributions directly shape the direction and features of this product.
 
-| Method | Path                      | Description                  |
-|--------|---------------------------|------------------------------|
-| GET    | `/users/me`               | Get current user profile     |
-| PUT    | `/users/me/name`          | Update user display name     |
-| GET    | `/users/sessions`         | List active sessions         |
-| DELETE | `/users/sessions/current` | Terminate current session    |
-| DELETE | `/users/sessions/other`   | Terminate all other sessions |
-| DELETE | `/users/sessions/:id`     | Terminate a specific session |
+Whether you're fixing a bug or proposing a new feature, every contribution matters. 🙌
 
-**Short Links**
+---
 
-| Method | Path                      | Description                   |
-|--------|---------------------------|-------------------------------|
-| GET    | `/shortlinks?page=&size=` | Paginated list of links       |
-| GET    | `/shortlinks/byIds?ids=`  | Bulk lookup by IDs            |
-| POST   | `/shortlinks`             | Create a new short link       |
-| PUT    | `/shortlinks`             | Update an existing short link |
-| DELETE | `/shortlinks/:id`         | Delete a short link           |
-| GET    | `/longurl/title?url=`     | Extract page title from URL   |
+## Core Philosophy
 
-**Tags**
-
-| Method | Path                                | Description            |
-|--------|-------------------------------------|------------------------|
-| GET    | `/tags?page=&size=&withLinksCount=` | Paginated list of tags |
-| POST   | `/tags`                             | Create a new tag       |
-| PUT    | `/tags`                             | Update an existing tag |
-| DELETE | `/tags/:id`                         | Delete a tag           |
-
-**Analytics**
-
-| Method | Path                               | Description           |
-|--------|------------------------------------|-----------------------|
-| GET    | `/analytics?period=`               | Total clicks (number) |
-| GET    | `/analytics?period=&groupBy=date`  | Daily time series     |
-| GET    | `/analytics?...&groupBy=country`   | Country breakdown     |
-| GET    | `/analytics?...&groupBy=continent` | Continent breakdown   |
-| GET    | `/analytics?...&groupBy=device`    | Device breakdown      |
-| GET    | `/analytics?...&groupBy=os`        | OS breakdown          |
-| GET    | `/analytics?...&groupBy=referrer`  | Referrer breakdown    |
-| GET    | `/analytics?...&groupBy=top_link`  | Top links by clicks   |
+The foundational philosophy of the project is to keep the application **minimalistic** and distraction-free. Bulky,
+cluttered, or confusing elements should be intentionally avoided. Every change and new feature must intuitively enhance
+the User Experience (UX), focusing squarely on simplicity, clarity, and ease of use.
 
 ---
 
@@ -225,15 +253,7 @@ Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on how to submit
 One thing to keep in mind: **keep it minimalistic**. Every change should enhance UX through simplicity, clarity, and
 ease of use — not add noise or complexity.
 
-## Why Open Source?
-
-I've decided to open source the frontend of this SaaS with two main goals:
-
-1. **Real-world experience** — Contribute to an actual product and gain open-source experience you can showcase on your
-   resume or CV.
-2. **Community driven** — Your contributions directly shape the direction and features of this product.
-
-Whether you're fixing a bug or proposing a new feature, every contribution matters. 🙌
+---
 
 ## License
 
