@@ -54,17 +54,19 @@ function DrawerOverlay({
 
 interface DrawerContentProps extends React.ComponentProps<typeof DrawerPrimitive.Content> {
     mobileMenuSpacing?: boolean;
+    overlayClassName?: string;
 }
 
 function DrawerContent({
                            className,
                            children,
                            mobileMenuSpacing = false,
+                           overlayClassName,
                            ...props
                        }: DrawerContentProps) {
     return (
         <DrawerPortal>
-            <DrawerOverlay/>
+            <DrawerOverlay className={overlayClassName}/>
             <DrawerPrimitive.Content
                 data-slot="drawer-content"
                 className={cn(

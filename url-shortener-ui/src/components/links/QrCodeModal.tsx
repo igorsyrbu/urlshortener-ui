@@ -13,18 +13,18 @@ import {
     Drawer,
     DrawerContent,
     DrawerDescription,
-    DrawerFooter,
     DrawerHeader,
     DrawerTitle
 } from "@/components/ui/drawer";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {Button} from "@/components/ui/button";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
-import {Check, Copy, Download, Loader2} from "lucide-react";
+import {Check, Copy, Download, FileImage, FileType, Loader2} from "lucide-react";
 import {LinkItem} from "@/lib/types";
 import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
 import type QRCodeStylingType from "qr-code-styling";
 import {logger} from "@/lib/logger";
+import {ActionDrawer} from "@/components/ui/action-drawer";
 
 // ---------------------------------------------------------------------------
 // Module-level import cache — the dynamic import promise is resolved only once
@@ -209,74 +209,33 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
             .finally(() => setIsCopyOpen(false));
     };
 
-    const handleDownloadMenuOpenChange = (isOpen: boolean): void => {
-        setIsDownloadOpen(isOpen);
-        if (isOpen) setIsCopyOpen(false);
-    };
-
-    const handleCopyMenuOpenChange = (isOpen: boolean): void => {
-        setIsCopyOpen(isOpen);
-        if (isOpen) setIsDownloadOpen(false);
-    };
-
     const isDesktop = useIsDesktop();
 
-    const bodyContent = (
-        <div className="flex flex-col gap-3 mt-3 sm:-mt-2">
-            <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-foreground truncate mr-4"
-                   title={link?.title}>{link?.title}</p>
-                <div className="flex items-center gap-2 shrink-0">
-                    <DropdownMenu open={isDownloadOpen} onOpenChange={handleDownloadMenuOpenChange}>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                <Download className="h-4 w-4"/>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-0">
-                            <DropdownMenuItem onClick={() => handleDownload("png")}>
-                                Download PNG
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDownload("svg")}>
-                                Download SVG
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <DropdownMenu open={isCopyOpen} onOpenChange={handleCopyMenuOpenChange}>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                {copied ? <Check className="h-4 w-4 text-success"/> :
-                                    <Copy className="h-4 w-4"/>}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-0">
-                            <DropdownMenuItem onClick={() => handleCopy("png")}>
-                                Copy PNG
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleCopy("svg")}>
-                                Copy SVG
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+    // Shared QR image area — used by both the desktop Dialog and mobile Drawer.
+    const qrPreviewContent = (
+        <div
+            className="relative border border-border rounded-xl p-4 sm:p-8 bg-muted/30 flex items-center justify-center min-h-62.5 sm:min-h-75">
+            {isQrLoading && (
+                <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground"/>
                 </div>
-            </div>
-            <div
-                className="relative border border-border rounded-xl p-4 sm:p-8 bg-muted/30 flex items-center justify-center min-h-62.5 sm:min-h-75">
-                {isQrLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground"/>
-                    </div>
-                )}
-                <div ref={qrRef}
-                     className="bg-white p-2 rounded-xl shadow-sm flex items-center justify-center max-w-full [&>svg]:max-w-full [&>svg]:h-auto [&>canvas]:max-w-full [&>canvas]:h-auto"/>
-            </div>
+            )}
+            <div ref={qrRef}
+                 className="bg-white p-2 rounded-xl shadow-sm flex items-center justify-center max-w-full [&>svg]:max-w-full [&>svg]:h-auto [&>canvas]:max-w-full [&>canvas]:h-auto"/>
         </div>
     );
 
     if (isDesktop) {
+        const handleDownloadMenuOpenChange = (isOpen: boolean): void => {
+            setIsDownloadOpen(isOpen);
+            if (isOpen) setIsCopyOpen(false);
+        };
+
+        const handleCopyMenuOpenChange = (isOpen: boolean): void => {
+            setIsCopyOpen(isOpen);
+            if (isOpen) setIsDownloadOpen(false);
+        };
+
         return (
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-md backdrop-blur-md bg-background/95 border-border"
@@ -288,7 +247,49 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
                         <h2 className="text-lg font-semibold leading-none">QR Code</h2>
                     </DialogHeader>
 
-                    {bodyContent}
+                    <div className="flex flex-col gap-3 mt-3 sm:-mt-2">
+                        <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-foreground truncate mr-4"
+                               title={link?.title}>{link?.title}</p>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <DropdownMenu open={isDownloadOpen} onOpenChange={handleDownloadMenuOpenChange}>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon"
+                                                className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                            <Download className="h-4 w-4"/>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="min-w-0">
+                                        <DropdownMenuItem onClick={() => handleDownload("png")}>
+                                            Download PNG
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleDownload("svg")}>
+                                            Download SVG
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <DropdownMenu open={isCopyOpen} onOpenChange={handleCopyMenuOpenChange}>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon"
+                                                className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                            {copied ? <Check className="h-4 w-4 text-success"/> :
+                                                <Copy className="h-4 w-4"/>}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="min-w-0">
+                                        <DropdownMenuItem onClick={() => handleCopy("png")}>
+                                            Copy PNG
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleCopy("svg")}>
+                                            Copy SVG
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                        {qrPreviewContent}
+                    </div>
 
                     <DialogFooter>
                         <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -300,17 +301,83 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
         );
     }
 
+    // Mobile: nested ActionDrawers slide up on top of the QR drawer.
+    // No cancel button — users dismiss by swiping or tapping the overlay.
     return (
-        <Drawer open={open} onOpenChange={onOpenChange}>
-            <DrawerContent className="outline-hidden px-6 pb-6 gap-4">
-                <DrawerTitle className="sr-only">QR Code</DrawerTitle>
-                <DrawerDescription className="sr-only">View and download QR code for this link</DrawerDescription>
-                <DrawerHeader className="p-0 text-center">
-                    <h2 className="text-lg font-semibold leading-none">QR Code</h2>
-                </DrawerHeader>
+        <>
+            <Drawer open={open} onOpenChange={onOpenChange}>
+                <DrawerContent className="outline-hidden px-6 pb-6 gap-4">
+                    <DrawerTitle className="sr-only">QR Code</DrawerTitle>
+                    <DrawerDescription className="sr-only">View and download QR code for this link</DrawerDescription>
+                    <DrawerHeader className="p-0 text-center">
+                        <h2 className="text-lg font-semibold leading-none">QR Code</h2>
+                    </DrawerHeader>
 
-                {bodyContent}
-            </DrawerContent>
-        </Drawer>
+                    <div className="flex flex-col gap-3 mt-3">
+                        <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-foreground truncate mr-4"
+                               title={link?.title}>{link?.title}</p>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    onClick={() => setIsDownloadOpen(true)}
+                                    aria-label="Download QR code"
+                                >
+                                    <Download className="h-4 w-4"/>
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    onClick={() => setIsCopyOpen(true)}
+                                    aria-label="Copy QR code"
+                                >
+                                    {copied ? <Check className="h-4 w-4 text-success"/> : <Copy className="h-4 w-4"/>}
+                                </Button>
+                            </div>
+                        </div>
+                        {qrPreviewContent}
+                    </div>
+                </DrawerContent>
+            </Drawer>
+
+            <ActionDrawer
+                open={isDownloadOpen}
+                onOpenChange={setIsDownloadOpen}
+                title="Download QR code"
+                actions={[
+                    {
+                        label: "Download as PNG",
+                        icon: FileImage,
+                        onClick: () => handleDownload("png"),
+                    },
+                    {
+                        label: "Download as SVG",
+                        icon: FileType,
+                        onClick: () => handleDownload("svg"),
+                    },
+                ]}
+            />
+
+            <ActionDrawer
+                open={isCopyOpen}
+                onOpenChange={setIsCopyOpen}
+                title="Copy QR code"
+                actions={[
+                    {
+                        label: "Copy as PNG",
+                        icon: FileImage,
+                        onClick: () => handleCopy("png"),
+                    },
+                    {
+                        label: "Copy as SVG",
+                        icon: FileType,
+                        onClick: () => handleCopy("svg"),
+                    },
+                ]}
+            />
+        </>
     );
 }

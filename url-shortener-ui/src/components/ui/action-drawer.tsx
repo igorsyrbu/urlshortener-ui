@@ -27,7 +27,7 @@ export function ActionDrawer({
                              }: ActionDrawerProps) {
     return (
         <Drawer open={open} onOpenChange={onOpenChange}>
-            <DrawerContent className="p-0 outline-hidden" mobileMenuSpacing>
+            <DrawerContent className="p-0 outline-hidden" mobileMenuSpacing overlayClassName="backdrop-blur-md">
                 <DrawerTitle className="sr-only">{title}</DrawerTitle>
                 <DrawerDescription className="sr-only">List of actions available</DrawerDescription>
                 <div className="flex flex-col mt-3">
@@ -47,16 +47,18 @@ export function ActionDrawer({
                                         onOpenChange(false);
                                     }}
                                     className={cn(
-                                        "flex w-full items-center gap-3.5 px-6 py-2.5 text-sm font-medium transition-colors outline-hidden select-none",
+                                        "flex w-full py-2.5 text-sm font-medium transition-colors outline-hidden select-none",
                                         "hover:bg-muted/10 active:bg-muted/20",
                                         isDestructive
                                             ? "text-destructive hover:bg-destructive/5 active:bg-destructive/10"
                                             : "text-foreground"
                                     )}
                                 >
-                                    <Icon
-                                        className={cn("size-5 shrink-0", isDestructive ? "text-destructive" : "text-muted-foreground")}/>
-                                    <span>{action.label}</span>
+                                    <span className="flex items-center gap-3.5 mx-auto">
+                                        <Icon
+                                            className={cn("size-5 shrink-0", isDestructive ? "text-destructive" : "text-muted-foreground")}/>
+                                        <span>{action.label}</span>
+                                    </span>
                                 </button>
                             </React.Fragment>
                         );
