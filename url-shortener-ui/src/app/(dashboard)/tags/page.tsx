@@ -68,7 +68,6 @@ export default function TagsPage() {
             searchValue={searchInput}
             onSearchChange={setSearchInput}
             placeholder="Search..."
-            className="-mb-2"
         />
     );
 

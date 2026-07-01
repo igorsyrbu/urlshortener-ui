@@ -106,6 +106,7 @@ export const DEFAULT_JWT_TTL_DISPLAY = "1 hour";
 // ---------------------------------------------------------------------------
 // Chart colors — mirror the CSS custom properties so JS-only charts
 // (e.g. Recharts `fill` prop) can reference a single source of truth.
+// Distinct color choices are intentional for high-contrast visual categorization.
 // ---------------------------------------------------------------------------
 
 export const CHART_COLORS = {

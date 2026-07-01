@@ -61,7 +61,7 @@ export default function AnalyticsPage() {
 
     return (
         <PageContainer>
-            <div className="flex justify-end">
+            <div className="flex min-h-10 items-center justify-end">
                 <PeriodSelector
                     period={period}
                     customDateRange={customDateRange}
@@ -85,7 +85,7 @@ export default function AnalyticsPage() {
                 <ClicksTimeSeriesChart timeSeries={timeSeries} onZoom={handleZoom}/>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="md:mt-2 grid grid-cols-1 gap-y-4 md:gap-y-6 gap-x-4 md:grid-cols-2 md:gap-x-5">
                 <AnalyticsCard title="Top Links">
                     <TopLinksTab topLinks={topLinks} isLoading={loading} totalClicks={totalClicks}/>
                 </AnalyticsCard>

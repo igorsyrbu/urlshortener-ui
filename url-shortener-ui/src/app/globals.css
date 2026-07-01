@@ -90,6 +90,9 @@
     --input: #d1cabe;
     --ring: #d96a47;
 
+    /* Distinct chart colors: deliberately chosen to provide clear, high-contrast
+       visual categorization for different metrics (locations, devices, OS, referrers, etc.)
+       in analytics charts, rather than matching the terracotta brand theme. */
     --chart-1: #d96a47;
     --chart-2: #2563eb;
     --chart-3: #16a34a;
@@ -163,6 +166,9 @@
     --input: #33322f;
     --ring: #c95d3c;
 
+    /* Distinct chart colors: deliberately chosen to provide clear, high-contrast
+       visual categorization for different metrics (locations, devices, OS, referrers, etc.)
+       in analytics charts, rather than matching the terracotta brand theme. */
     --chart-1: #c95d3c;
     --chart-2: #3b82f6;
     --chart-3: #22c55e;

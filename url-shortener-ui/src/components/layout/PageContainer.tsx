@@ -6,7 +6,7 @@ interface PageContainerProps {
 
 export function PageContainer({children}: PageContainerProps) {
     return (
-        <div className="-mt-6 flex w-full flex-col gap-6 pb-12">
+        <div className="flex w-full flex-col gap-4 pb-12">
             {children}
         </div>
     );

@@ -122,7 +122,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         onScroll={handleScroll}
                     >
                         <div
-                            className={`${DASHBOARD_CONTENT_SHELL_CLASS} pb-4 pt-8 md:pb-8 md:pt-12 lg:pb-10 lg:pt-12`}
+                            className={`${DASHBOARD_CONTENT_SHELL_CLASS} pb-4 pt-2 md:pb-8 md:pt-6 lg:pb-10 lg:pt-6`}
                         >
                             {children}
                         </div>

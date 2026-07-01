@@ -35,7 +35,7 @@ export function LinkCardSkeleton() {
 
 export function LinkCardSkeletonList({ count = 3 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-1 gap-4">
+    <div className="grid grid-cols-1 gap-3">
       {Array.from({ length: count }).map((_, index) => (
         <LinkCardSkeleton key={index} />
       ))}

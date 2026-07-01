@@ -174,6 +174,9 @@ const GlowingEffect = memo(
                   var(--black) calc(25% / var(--repeating-conic-gradient-times))
                 )`
                                     : autoRotate
+                                        // Intentional rainbow effect: these neon colors (pink, gold, lime, blue) are
+                                        // deliberately chosen to produce a multicolor conic gradient sweep, not meant
+                                        // to match the brand palette.
                                         ? `radial-gradient(circle, #dd7bbb 10%, #dd7bbb00 20%),
                 radial-gradient(circle at 40% 40%, #d79f1e 5%, #d79f1e00 15%),
                 radial-gradient(circle at 60% 60%, #5a922c 10%, #5a922c00 20%), 
@@ -186,6 +189,7 @@ const GlowingEffect = memo(
                   #4c7894 calc(75% / var(--repeating-conic-gradient-times)),
                   #dd7bbb calc(100% / var(--repeating-conic-gradient-times))
                 )`
+                                        // Intentional rainbow effect: same multicolor palette for the static (non-rotating) state.
                                         : `radial-gradient(circle, #dd7bbb 10%, #dd7bbb00 20%),
                 radial-gradient(circle at 40% 40%, #d79f1e 5%, #d79f1e00 15%),
                 radial-gradient(circle at 60% 60%, #5a922c 10%, #5a922c00 20%), 

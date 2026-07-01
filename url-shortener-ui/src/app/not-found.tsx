@@ -13,7 +13,7 @@ export default function NotFoundPage() {
     return (
         <section className="flex min-h-screen w-full flex-col items-center justify-center bg-sidebar px-4">
             <div className="flex flex-col items-center gap-6 text-center">
-                <div className="flex size-16 items-center justify-center rounded-2xl border-[0.5px] border-border bg-muted">
+                <div className="flex size-16 items-center justify-center rounded-xl border-[0.5px] border-border bg-muted">
                     <LinkIcon className="size-7 text-muted-foreground" />
                 </div>
                 <div className="flex flex-col gap-2">

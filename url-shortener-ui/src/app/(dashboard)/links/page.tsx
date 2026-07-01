@@ -169,7 +169,6 @@ export default function LinksPage() {
             searchValue={searchInput}
             onSearchChange={setSearchInput}
             placeholder="Search by URL or title"
-            className="-mb-2"
         />
     );
 
@@ -207,7 +206,7 @@ export default function LinksPage() {
                 {!loading && links.length === 0 ? (
                     searchQuery !== "" ? <NoLinksFoundState/> : <EmptyLinksState/>
                 ) : (
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 gap-3">
                         {links.map((link) => (
                             <LinkCard
                                 key={link.id}

@@ -37,7 +37,7 @@ export function AppearanceCard() {
                         <button
                             key={option.value}
                             onClick={() => setTheme(option.value)}
-                            className={`flex flex-col items-center justify-center p-3 border-[0.5px] rounded-xl hover:bg-muted transition-colors w-24 sm:w-28 ${mounted && theme === option.value ? "border-primary ring-1 ring-primary" : "border-border"}`}
+                            className={`flex flex-col items-center justify-center p-3 border-[0.5px] rounded-xl hover:bg-muted transition-colors w-24 sm:w-28 outline-hidden focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${mounted && theme === option.value ? "border-primary ring-1 ring-primary" : "border-border"}`}
                         >
                             <option.icon className="size-6 mb-1.5 stroke-[1.5]"/>
                             <span className="text-xs sm:text-sm font-medium">{option.label}</span>

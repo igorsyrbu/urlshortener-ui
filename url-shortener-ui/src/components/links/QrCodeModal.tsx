@@ -40,6 +40,10 @@ const getQRCodeStylingLib = async (): Promise<(typeof import("qr-code-styling"))
     return cachedQRCodeStylingLib;
 };
 
+// Intentional Design Choice: Dots are hardcoded to black (#000000) and the background
+// to white ("white") to guarantee maximum contrast and reliable physical device scanning
+// (especially for paper prints and dark mode screens). These values must not be refactored
+// to use theme-based variables.
 const QR_BASE_OPTIONS = {
     dotsOptions: {color: "#000000", type: "rounded"} as const,
     backgroundOptions: {color: "white"} as const,

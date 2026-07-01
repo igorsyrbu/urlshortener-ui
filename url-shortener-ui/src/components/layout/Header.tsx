@@ -65,17 +65,17 @@ export function Header({onCreateClick, onMenuClick, createLabel = "Create link"}
                 <PageHeading>{title}</PageHeading>
                 <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-3">
                     <ModeToggle/>
-                    <button
+                    <Button
                         type="button"
                         onClick={onCreateClick}
-                        className="ml-1 flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 text-primary-foreground transition-all hover:bg-primary/90 active:scale-95 sm:ml-2 sm:gap-2 sm:px-4"
+                        className="ml-1 sm:ml-2"
                     >
                         <span className="text-xs font-bold tracking-wider uppercase">{createLabel}</span>
                         <Kbd
                             className="hidden h-5 min-w-5 justify-center border-primary-foreground/20 bg-primary-foreground/20 px-1.5 text-primary-foreground sm:flex">
                             C
                         </Kbd>
-                    </button>
+                    </Button>
                 </div>
             </div>
         </header>

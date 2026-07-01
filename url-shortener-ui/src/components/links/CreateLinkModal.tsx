@@ -81,8 +81,6 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
                 {viewState === "form" ? (
                     <motion.div
                         key="form"
-                        initial={{opacity: 0, y: 10}}
-                        animate={{opacity: 1, y: 0}}
                         exit={{opacity: 0, scale: 0.95}}
                         transition={{duration: 0.2}}
                         className="p-6"
@@ -120,7 +118,7 @@ export function CreateLinkModal({open, onOpenChange}: CreateLinkModalProps) {
         return (
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent
-                    className="gap-0 border-border bg-background/95 p-0 backdrop-blur-md sm:max-w-106.25 sm:rounded-2xl"
+                    className="gap-0 border-border bg-background/95 p-0 backdrop-blur-md sm:max-w-106.25"
                     onOpenAutoFocus={(e) => e.preventDefault()}
                 >
                     <DialogTitle className="sr-only">Create link</DialogTitle>
