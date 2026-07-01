@@ -347,6 +347,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
                 open={isDownloadOpen}
                 onOpenChange={setIsDownloadOpen}
                 title="Download QR code"
+                align="center"
                 actions={[
                     {
                         label: "Download as PNG",
@@ -365,6 +366,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
                 open={isCopyOpen}
                 onOpenChange={setIsCopyOpen}
                 title="Copy QR code"
+                align="center"
                 actions={[
                     {
                         label: "Copy as PNG",

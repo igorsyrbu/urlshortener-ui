@@ -17,6 +17,7 @@ interface ActionDrawerProps {
     onOpenChange: (open: boolean) => void;
     title?: string;
     actions: ActionItem[];
+    align?: "left" | "center";
 }
 
 export function ActionDrawer({
@@ -24,7 +25,10 @@ export function ActionDrawer({
                                  onOpenChange,
                                  title = "Actions",
                                  actions,
+                                 align = "left",
                              }: ActionDrawerProps) {
+    const isCentered = align === "center";
+
     return (
         <Drawer open={open} onOpenChange={onOpenChange}>
             <DrawerContent className="p-0 outline-hidden" mobileMenuSpacing overlayClassName="backdrop-blur-md">
@@ -47,18 +51,27 @@ export function ActionDrawer({
                                         onOpenChange(false);
                                     }}
                                     className={cn(
-                                        "flex w-full py-2.5 text-sm font-medium transition-colors outline-hidden select-none",
+                                        "flex w-full text-sm font-medium transition-colors outline-hidden select-none",
                                         "hover:bg-muted/10 active:bg-muted/20",
                                         isDestructive
                                             ? "text-destructive hover:bg-destructive/5 active:bg-destructive/10"
-                                            : "text-foreground"
+                                            : "text-foreground",
+                                        isCentered ? "py-2.5" : "items-center gap-3.5 px-6 py-2.5"
                                     )}
                                 >
-                                    <span className="flex items-center gap-3.5 mx-auto">
-                                        <Icon
-                                            className={cn("size-5 shrink-0", isDestructive ? "text-destructive" : "text-muted-foreground")}/>
-                                        <span>{action.label}</span>
-                                    </span>
+                                    {isCentered ? (
+                                        <span className="flex items-center gap-3.5 mx-auto">
+                                            <Icon
+                                                className={cn("size-5 shrink-0", isDestructive ? "text-destructive" : "text-muted-foreground")}/>
+                                            <span>{action.label}</span>
+                                        </span>
+                                    ) : (
+                                        <>
+                                            <Icon
+                                                className={cn("size-5 shrink-0", isDestructive ? "text-destructive" : "text-muted-foreground")}/>
+                                            <span>{action.label}</span>
+                                        </>
+                                    )}
                                 </button>
                             </React.Fragment>
                         );
