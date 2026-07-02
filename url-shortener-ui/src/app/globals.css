@@ -62,37 +62,49 @@
 
 :root {
     --background: #ffffff;
-    /* pure white body */
     --foreground: #2d2b28;
-    /* dark gray/brown text */
     --card: #ffffff;
     --card-foreground: #2d2b28;
     --popover: #ffffff;
     --popover-foreground: #2d2b28;
-
     --primary: #d96a47;
-    /* Claude Terracotta */
     --primary-foreground: #ffffff;
-
     --secondary: #e5e1d8;
     --secondary-foreground: #2d2b28;
-
     --muted: #f3f1eb;
     --muted-foreground: #8a8882;
-
     --accent: #f5f4ef;
     --accent-foreground: #2d2b28;
-
     --destructive: #cc2525;
     --destructive-foreground: #ffffff;
-
     --border: #d1cabe;
     --input: #d1cabe;
     --ring: #d96a47;
+    --success: #16a34a;
+    --success-foreground: #ffffff;
+    --sidebar: #f5f4ef;
+    --sidebar-foreground: #2d2b28;
+    --sidebar-primary: #d96a47;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e5e1d8;
+    --sidebar-accent-foreground: #2d2b28;
+    --sidebar-border: #d1cabe;
+    --sidebar-ring: #d96a47;
+    --header: #f5f4ef;
+    --header-foreground: #2d2b28;
+    --footer: #f5f4ef;
+    --footer-foreground: #2d2b28;
+    --code: #f3f1eb;
+    --code-foreground: #2d2b28;
+    --code-highlight: #e5e1d8;
+    --code-number: #8a8882;
+    --code-selection: #e5e1d8;
+    --code-border: #d1cabe;
+    --radius: 0.5rem;
+}
 
-    /* Distinct chart colors: deliberately chosen to provide clear, high-contrast
-       visual categorization for different metrics (locations, devices, OS, referrers, etc.)
-       in analytics charts, rather than matching the terracotta brand theme. */
+/* Chart palette - light mode */
+:root {
     --chart-1: #d96a47;
     --chart-2: #2563eb;
     --chart-3: #16a34a;
@@ -104,71 +116,55 @@
     --chart-os: #22d3ee;
     --chart-referrers: #f472b6;
     --chart-top-links: #818cf8;
-
-    --success: #16a34a;
-    --success-foreground: #ffffff;
-
-    --sidebar: #f5f4ef;
-    /* Claude's signature warm off-white/beige sidebar */
-    --sidebar-foreground: #2d2b28;
-    --sidebar-primary: #d96a47;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #e5e1d8;
-    --sidebar-accent-foreground: #2d2b28;
-    --sidebar-border: #d1cabe;
-    --sidebar-ring: #d96a47;
-
-    --header: #f5f4ef;
-    /* header matching sidebar */
-    --header-foreground: #2d2b28;
-    --footer: #f5f4ef;
-    --footer-foreground: #2d2b28;
-
-    --code: #f3f1eb;
-    --code-foreground: #2d2b28;
-    --code-highlight: #e5e1d8;
-    --code-number: #8a8882;
-    --code-selection: #e5e1d8;
-    --code-border: #d1cabe;
-
-    --radius: 0.5rem;
 }
 
 .dark,
 [data-theme="dark"] {
     --background: #1e1e1e;
-    /* content section background */
     --foreground: #eae6df;
-    /* light cream text */
     --card: #1e1e1e;
     --card-foreground: #eae6df;
     --popover: #1e1e1e;
     --popover-foreground: #eae6df;
-
     --primary: #c95d3c;
-    /* slightly darker Terracotta for dark mode */
     --primary-foreground: #ffffff;
-
     --secondary: #3b3a36;
     --secondary-foreground: #eae6df;
-
     --muted: #3d3b36;
     --muted-foreground: #9b978f;
-
     --accent: #3b3a36;
     --accent-foreground: #eae6df;
-
     --destructive: #c93336;
     --destructive-foreground: #ffffff;
-
     --border: #33322f;
-    /* softer, less vivid border */
     --input: #33322f;
     --ring: #c95d3c;
+    --success: #22c55e;
+    --success-foreground: #ffffff;
+    --sidebar: #121212;
+    --sidebar-foreground: #eae6df;
+    --sidebar-primary: #c95d3c;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #3b3a36;
+    --sidebar-accent-foreground: #eae6df;
+    --sidebar-border: #33322f;
+    --sidebar-ring: #c95d3c;
+    --header: #121212;
+    --header-foreground: #eae6df;
+    --footer: #121212;
+    --footer-foreground: #eae6df;
+    --code: #1a1916;
+    --code-foreground: #eae6df;
+    --code-highlight: #3b3a36;
+    --code-number: #9b978f;
+    --code-selection: #3b3a36;
+    --code-border: #33322f;
+    --radius: 0.5rem;
+}
 
-    /* Distinct chart colors: deliberately chosen to provide clear, high-contrast
-       visual categorization for different metrics (locations, devices, OS, referrers, etc.)
-       in analytics charts, rather than matching the terracotta brand theme. */
+/* Chart palette - dark mode */
+.dark,
+[data-theme="dark"] {
     --chart-1: #c95d3c;
     --chart-2: #3b82f6;
     --chart-3: #22c55e;
@@ -180,33 +176,6 @@
     --chart-os: #22d3ee;
     --chart-referrers: #f472b6;
     --chart-top-links: #818cf8;
-
-    --success: #22c55e;
-    --success-foreground: #ffffff;
-
-    --sidebar: #121212;
-    /* darker background for the app body / sidebar */
-    --sidebar-foreground: #eae6df;
-    --sidebar-primary: #c95d3c;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #3b3a36;
-    --sidebar-accent-foreground: #eae6df;
-    --sidebar-border: #33322f;
-    --sidebar-ring: #c95d3c;
-
-    --header: #121212;
-    --header-foreground: #eae6df;
-    --footer: #121212;
-    --footer-foreground: #eae6df;
-
-    --code: #1a1916;
-    --code-foreground: #eae6df;
-    --code-highlight: #3b3a36;
-    --code-number: #9b978f;
-    --code-selection: #3b3a36;
-    --code-border: #33322f;
-
-    --radius: 0.5rem;
 }
 
 @layer base {
@@ -342,33 +311,33 @@
 .ios-wheel-picker__mask--top {
     top: 0;
     background: linear-gradient(
-        to top,
-        rgba(255, 255, 255, 0.65) 0%,
-        rgba(255, 255, 255, 1) 100%
+            to top,
+            rgba(255, 255, 255, 0.65) 0%,
+            rgba(255, 255, 255, 1) 100%
     );
 }
 
 .dark .ios-wheel-picker__mask--top {
     background: linear-gradient(
-        to top,
-        rgba(30, 30, 30, 0.65) 0%,
-        rgba(30, 30, 30, 1) 100%
+            to top,
+            rgba(30, 30, 30, 0.65) 0%,
+            rgba(30, 30, 30, 1) 100%
     );
 }
 
 .ios-wheel-picker__mask--bottom {
     bottom: 0;
     background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.65) 0%,
-        rgba(255, 255, 255, 1) 100%
+            to bottom,
+            rgba(255, 255, 255, 0.65) 0%,
+            rgba(255, 255, 255, 1) 100%
     );
 }
 
 .dark .ios-wheel-picker__mask--bottom {
     background: linear-gradient(
-        to bottom,
-        rgba(30, 30, 30, 0.65) 0%,
-        rgba(30, 30, 30, 1) 100%
+            to bottom,
+            rgba(30, 30, 30, 0.65) 0%,
+            rgba(30, 30, 30, 1) 100%
     );
 }
