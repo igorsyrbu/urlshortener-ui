@@ -62,7 +62,7 @@ export function ActionDrawer({
                                     )}
                                 >
                                     {isCentered ? (
-                                        <span className="flex items-center gap-3.5 mx-auto -translate-x-1">
+                                        <span className="flex items-center gap-3.5 mx-auto -translate-x-3.5">
                                             <Icon
                                                 className={cn("size-5 shrink-0", isDestructive ? "text-destructive" : "text-muted-foreground")}/>
                                             <span>{action.label}</span>
