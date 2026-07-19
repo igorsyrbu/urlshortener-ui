@@ -183,6 +183,20 @@ export class ShortLinksService {
   }
 
   /**
+   * Finds an active short link by its short key (last segment of shortUrl).
+   * Searches all user states. Returns null if not found or inactive.
+   */
+  public findByShortKey(key: string): ShortLink | null {
+    for (const state of memoryStore.getAllUserStates()) {
+      const link = state.links.find(
+        (l) => l.isActive && l.shortUrl.split("/").pop() === key,
+      );
+      if (link) return link;
+    }
+    return null;
+  }
+
+  /**
    * Deletes a short link from memory by its ID.
    * Also removes all tag associations for this link.
    *

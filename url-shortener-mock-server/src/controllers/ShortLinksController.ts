@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { shortLinksService } from "../services/ShortLinksService";
 import { fetchPageTitle } from "../services/PageTitleService";
+import { fetchOpenGraph } from "../services/OpenGraphService";
 import { AuthenticatedRequest } from "../middleware/authentication";
 
 export class ShortLinksController {
@@ -50,6 +51,29 @@ export class ShortLinksController {
     }
 
     res.status(200).json({ message: "Link deleted" });
+  }
+
+  static async getPublicLinkPreview(req: Request, res: Response): Promise<void> {
+    const key = req.params.key;
+
+    const link = shortLinksService.findByShortKey(key);
+    if (!link) {
+      res.status(404).json({ type: "about:blank", title: "Not Found", status: 404 });
+      return;
+    }
+
+    const og = await fetchOpenGraph(link.longUrl);
+    const domain = new URL(link.longUrl).hostname;
+
+    res.json({
+      key,
+      shortUrl: link.shortUrl,
+      longUrl: link.longUrl,
+      title: og.title || link.title,
+      description: og.description || null,
+      ogImageUrl: og.ogImageUrl || null,
+      faviconDomain: domain,
+    });
   }
 
   static async getLongUrlTitle(req: Request, res: Response): Promise<void> {

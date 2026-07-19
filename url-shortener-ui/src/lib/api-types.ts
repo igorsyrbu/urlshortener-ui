@@ -121,6 +121,16 @@ export interface OTTGenerateResponse {
   email: string;
 }
 
+export interface ShortLinkPreviewDTO {
+    key: string;
+    shortUrl: string;
+    longUrl: string;
+    title: string;
+    description?: string;
+    ogImageUrl?: string;
+    faviconDomain?: string;
+}
+
 export interface ApiErrorResponse {
   error: string;
   message?: string;

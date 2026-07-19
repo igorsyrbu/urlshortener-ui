@@ -3,6 +3,7 @@ import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 
 export const API_BASE_URL = "/api";
+export const SERVER_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 // ---------------------------------------------------------------------------
 // Token refresh queue
 // ---------------------------------------------------------------------------

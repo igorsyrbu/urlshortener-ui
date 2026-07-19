@@ -4,6 +4,7 @@ import { authentication } from "../middleware/authentication";
 
 const router: Router = Router();
 
+router.get("/public/preview/:key", ShortLinksController.getPublicLinkPreview);
 router.get("/shortlinks", authentication, ShortLinksController.getShortLinks);
 router.get("/shortlinks/byIds", authentication, ShortLinksController.getShortLinksByIds);
 router.post("/shortlinks", authentication, ShortLinksController.createShortLink);

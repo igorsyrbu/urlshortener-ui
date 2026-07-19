@@ -17,6 +17,10 @@ export interface UserState {
 export class MemoryStore {
   private userStates = new Map<string, UserState>();
 
+  public getAllUserStates(): UserState[] {
+    return Array.from(this.userStates.values());
+  }
+
   public hasUserState(uuid: string): boolean {
     return this.userStates.has(uuid);
   }

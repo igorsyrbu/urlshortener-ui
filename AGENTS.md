@@ -45,8 +45,8 @@ beyond what is strictly needed for rendering.
 - Default to **Server Components**. Only add `"use client"` when the component genuinely requires browser APIs, event
   listeners, or React state/effects.
 - Keep `"use client"` boundaries as **small and deep** in the tree as possible — push interactivity to leaf components.
-- Use **`loading.tsx`** and **`error.tsx`** files at appropriate route segments to handle loading and error states
-  declaratively.
+- Use **`error.tsx`** files at appropriate route segments to handle error states declaratively.
+  **No route-level `loading.tsx`** — prefer component-level loading states (skeletons, spinners) to avoid full-page layout shifts and flickering.
 - Use **`Suspense`** boundaries around async components for granular loading states.
 
 ### Data Fetching
@@ -211,5 +211,6 @@ if (response.status === HTTP_TOO_MANY_REQUESTS) { ...
 | Use `any` in TypeScript                               | Undermines type safety                                      |
 | Add a new UI component without checking if one exists | Leads to duplication and inconsistency                      |
 | Use `<a>` for internal links                          | Bypasses Next.js client-side navigation                     |
+| Use route-level `loading.tsx` for loading states      | Causes full-page layout shifts and flickering; prefer component-level skeletons |
 | Hardcode strings that appear more than once           | Should be a constant or come from a translation/config file |
 | Use `console.log` / `console.error` for logging       | Use the `logger` from `@/lib/logger` instead — it works in dev and will send to monitoring in production |

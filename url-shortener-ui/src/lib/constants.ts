@@ -6,6 +6,7 @@ export const ROUTES = {
     LOGIN: "/login",
     LINKS: "/links",
     DASHBOARD: "/dashboard",
+    INSPECT: "/inspect",
     ANALYTICS: "/analytics",
     SETTINGS: "/settings",
 } as const;
@@ -17,6 +18,7 @@ export const ROUTES = {
 export const API_ENDPOINTS = {
     SHORTLINKS: "/shortlinks",
     SHORTLINKS_BY_IDS: "/shortlinks/byIds",
+    SHORTLINKS_PREVIEW: (key: string) => `/public/preview/${key}`,
     TAGS: "/tags",
     ANALYTICS: "/analytics",
     LONG_URL_TITLE: "/longurl/title",
