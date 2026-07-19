@@ -20,11 +20,6 @@
     --color-sidebar-primary: var(--sidebar-primary);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
     --color-chart-locations: var(--chart-locations);
     --color-chart-devices: var(--chart-devices);
     --color-chart-os: var(--chart-os);
@@ -105,11 +100,6 @@
 
 /* Chart palette - light mode */
 :root {
-    --chart-1: #d96a47;
-    --chart-2: #2563eb;
-    --chart-3: #16a34a;
-    --chart-4: #d946ef;
-    --chart-5: #f59e0b;
     --chart-clicks: #b35622;
     --chart-locations: #34d399;
     --chart-devices: #facc15;
@@ -165,11 +155,6 @@
 /* Chart palette - dark mode */
 .dark,
 [data-theme="dark"] {
-    --chart-1: #c95d3c;
-    --chart-2: #3b82f6;
-    --chart-3: #22c55e;
-    --chart-4: #e879f9;
-    --chart-5: #fbbf24;
     --chart-clicks: #f97316;
     --chart-locations: #34d399;
     --chart-devices: #facc15;
