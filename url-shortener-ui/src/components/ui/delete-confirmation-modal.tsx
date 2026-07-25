@@ -154,7 +154,7 @@ export function DeleteConfirmationModal({
         return (
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent
-                    className="sm:max-w-106.25 sm:rounded-2xl backdrop-blur-md bg-background/95 border-border"
+                    className="sm:max-w-106.25 sm:rounded-2xl border-border"
                     onOpenAutoFocus={(e) => e.preventDefault()}
                 >
                     <DialogHeader>

@@ -118,7 +118,7 @@ export function CreateLinkModal({open, onOpenChange}: CreateLinkModalProps) {
         return (
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent
-                    className="gap-0 border-border bg-background/95 p-0 backdrop-blur-md sm:max-w-106.25"
+                    className="gap-0 border-border p-0 sm:max-w-106.25"
                     onOpenAutoFocus={(e) => e.preventDefault()}
                 >
                     <DialogTitle className="sr-only">Create link</DialogTitle>

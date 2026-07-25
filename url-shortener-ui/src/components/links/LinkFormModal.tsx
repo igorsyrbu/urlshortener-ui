@@ -38,7 +38,7 @@ export function LinkFormModal({
         return (
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent
-                    className="sm:max-w-106.25 backdrop-blur-md bg-background/95 border-border gap-0 p-0"
+                    className="sm:max-w-106.25 border-border gap-0 p-0"
                     onOpenAutoFocus={(e) => e.preventDefault()}
                 >
                     <DialogTitle className="sr-only">{title}</DialogTitle>

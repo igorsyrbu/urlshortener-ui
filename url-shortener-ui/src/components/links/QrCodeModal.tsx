@@ -238,7 +238,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
 
         return (
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="sm:max-w-md backdrop-blur-md bg-background/95 border-border"
+                <DialogContent className="sm:max-w-md border-border"
                                showCloseButton={false}
                                onOpenAutoFocus={(e) => e.preventDefault()}>
                     <DialogTitle className="sr-only">QR Code</DialogTitle>

@@ -131,6 +131,13 @@ export interface ShortLinkPreviewDTO {
     faviconDomain?: string;
 }
 
+export interface LongUrlTitleResponse {
+  title: string;
+  description: string | null;
+  ogImageUrl: string | null;
+  faviconDomain: string | null;
+}
+
 export interface ApiErrorResponse {
   error: string;
   message?: string;

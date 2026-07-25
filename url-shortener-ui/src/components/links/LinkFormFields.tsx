@@ -6,6 +6,7 @@ import {fetchWithAuth} from "@/lib/api";
 import {generateTitleFromHostname} from "@/lib/utils";
 import {getDomain, isValidUrl, normalizeUrl} from "@/lib/url-utils";
 import {API_ENDPOINTS, GLOW_FADE_DELAY_MS} from "@/lib/constants";
+import type {LongUrlTitleResponse} from "@/lib/api-types";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useTagMutations} from "@/lib/hooks/useTagMutations";
@@ -133,9 +134,9 @@ export function LinkFormFields({
         try {
             const res = await fetchWithAuth(`${API_ENDPOINTS.LONG_URL_TITLE}?url=${encodeURIComponent(longUrl)}`);
             if (res.ok) {
-                const text = await res.text();
-                if (text && text.trim()) {
-                    setTitleText(text);
+                const data: LongUrlTitleResponse = await res.json();
+                if (data.title?.trim()) {
+                    setTitleText(data.title.trim());
                     applyGlowFeedback();
                 } else {
                     setTitleFromHostname(longUrl);

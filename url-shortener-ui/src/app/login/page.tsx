@@ -2,7 +2,7 @@
 
 import React, {useCallback, useState} from "react";
 import {Card, CardContent, CardDescription, CardHeader} from "@/components/ui/card";
-import {Link} from "lucide-react";
+import {Link as LinkIcon} from "lucide-react";
 import {API_BASE_URL} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {LoginMagicLinkForm} from "@/components/auth/LoginMagicLinkForm";
@@ -141,7 +141,7 @@ export default function LoginPage() {
                             <div className="flex justify-center">
                                 <div
                                     className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                    <Link className="h-6 w-6"/>
+                                    <LinkIcon className="h-6 w-6"/>
                                 </div>
                             </div>
                             <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back</h1>

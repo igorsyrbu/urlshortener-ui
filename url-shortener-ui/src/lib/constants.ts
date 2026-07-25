@@ -9,6 +9,7 @@ export const ROUTES = {
     INSPECT: "/inspect",
     ANALYTICS: "/analytics",
     SETTINGS: "/settings",
+    REPORT_ABUSE: "/report-abuse",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -32,6 +33,7 @@ export const API_ENDPOINTS = {
     OTT_LOGIN: "/ott/login",
     AUTH_CODE_EXCHANGE: "/auth/code/exchange",
     OAUTH2_GOOGLE: "/oauth2/authorization/google",
+    ABUSE_REPORT: "/public/abuse/report",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -131,3 +133,31 @@ export const FAVICON_SIZE = 64;
 // ---------------------------------------------------------------------------
 
 export const FLAG_SERVICE_URL = "https://hatscripts.github.io/circle-flags/flags";
+
+// ---------------------------------------------------------------------------
+// Abuse report
+// ---------------------------------------------------------------------------
+
+export const ABUSE_REASONS = [
+    "SPAM_OR_MISLEADING",
+    "PHISHING_OR_MALWARE",
+    "HARASSMENT_OR_THREATS",
+    "ILLEGAL_CONTENT",
+    "COPYRIGHT_OR_TRADEMARK",
+    "IMPERSONATION",
+    "OTHER",
+] as const;
+
+export type AbuseReason = (typeof ABUSE_REASONS)[number];
+
+export const ABUSE_REASON_LABELS: Record<AbuseReason, string> = {
+    SPAM_OR_MISLEADING: "Spam or misleading",
+    PHISHING_OR_MALWARE: "Phishing or malware",
+    HARASSMENT_OR_THREATS: "Harassment or threats",
+    ILLEGAL_CONTENT: "Illegal content",
+    COPYRIGHT_OR_TRADEMARK: "Copyright or trademark infringement",
+    IMPERSONATION: "Impersonation",
+    OTHER: "Other",
+};
+
+export const ABUSE_DESCRIPTION_MAX_LENGTH = 2000;

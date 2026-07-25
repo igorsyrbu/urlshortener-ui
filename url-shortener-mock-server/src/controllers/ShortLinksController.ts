@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { shortLinksService } from "../services/ShortLinksService";
-import { fetchPageTitle } from "../services/PageTitleService";
 import { fetchOpenGraph } from "../services/OpenGraphService";
 import { AuthenticatedRequest } from "../middleware/authentication";
 
@@ -80,15 +79,21 @@ export class ShortLinksController {
     const url = req.query.url as string;
 
     if (!url) {
-      res.status(400).send("URL parameter is required");
+      res.status(400).json({ title: "", description: null, ogImageUrl: null, faviconDomain: null });
       return;
     }
 
     try {
-      const title = await fetchPageTitle(url);
-      res.type("text/plain").send(title);
+      const og = await fetchOpenGraph(url);
+      const domain = new URL(url).hostname;
+      res.json({
+        title: og.title || "",
+        description: og.description || null,
+        ogImageUrl: og.ogImageUrl || null,
+        faviconDomain: domain,
+      });
     } catch {
-      res.type("text/plain").send("");
+      res.json({ title: "", description: null, ogImageUrl: null, faviconDomain: null });
     }
   }
 }

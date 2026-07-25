@@ -118,7 +118,7 @@ export function TagFormModal({
         return (
             <Dialog open={open} onOpenChange={handleOpenChange}>
                 <DialogContent
-                    className="sm:max-w-106.25 sm:rounded-2xl backdrop-blur-md bg-background/95 border-border gap-0 overflow-hidden p-0"
+                    className="sm:max-w-106.25 sm:rounded-2xl border-border gap-0 overflow-hidden p-0"
                     onOpenAutoFocus={(e) => e.preventDefault()}
                 >
                     <DialogTitle className="sr-only">{title}</DialogTitle>
