@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { Request, Response } from "express";
 import { authService } from "../services/AuthService";
 import { getLoginPageHtml } from "../views/loginPage";
@@ -49,7 +50,8 @@ export class AuthController {
   }
 
   static async ottLogin(req: Request, res: Response) {
-    res.redirect(`${FRONTEND_URL}/auth/exchange?code=mock-auth-code-${Date.now()}`);
+    const uuid = crypto.randomUUID();
+    res.redirect(`${FRONTEND_URL}/auth/exchange?code=mock-auth-code-${uuid}`);
   }
 
   static async codeExchange(req: Request, res: Response) {
@@ -57,6 +59,8 @@ export class AuthController {
     let uuid = "";
     if (code.startsWith("mock-google-code-")) {
       uuid = code.replace("mock-google-code-", "");
+    } else if (code.startsWith("mock-auth-code-")) {
+      uuid = code.replace("mock-auth-code-", "");
     }
     
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -121,6 +121,12 @@ export interface OTTGenerateResponse {
   email: string;
 }
 
+export interface OTTLoginByOtpRequest {
+  loginType: "otp";
+  email: string;
+  code: string;
+}
+
 export interface ShortLinkPreviewDTO {
     key: string;
     shortUrl: string;

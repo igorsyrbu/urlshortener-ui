@@ -36,8 +36,8 @@ high-performance URL Shortener SaaS.
 
 ### Installation
 
-This project uses [pnpm workspaces](https://pnpm.io/workspaces). Run the install command once from the root directory
-to install dependencies for both the UI and the mock server:
+This project uses [pnpm workspaces](https://pnpm.io/workspaces). Run the install command once from the root directory to
+install dependencies for both the UI and the mock server:
 
 ```bash
 pnpm install
@@ -69,6 +69,18 @@ Clicking **"Sign in with Google"** on the login screen launches an isolated sand
 - **Generate Session** — Instantly generates a new, randomized unique User UUID. You can copy this UUID to your
   clipboard for future access and start a completely fresh sandbox environment.
 - **Resume Session** — Paste a pre-existing User UUID to instantly pick up right where you left off.
+
+##### Magic Link & OTP Login
+
+The mock server accepts **any OTP code** entered on the login screen. To log in:
+
+1. Enter any email (e.g. `test@example.com`) and click **Send magic link**.
+2. A 6-digit `InputOTP` field appears. Enter any 6 digits (e.g. `123456`).
+3. The code auto-submits to `POST /ott/login` with `loginType=otp`. The mock server accepts every request and redirects
+   to `/auth/exchange` with a valid code, creating a fresh sandboxed session.
+
+You can also log in directly with a **magic link token** by navigating to
+`/auth/ott?token=<any-token>` — the mock server accepts every token.
 
 #### How State Isolation Works:
 
@@ -119,13 +131,13 @@ Copy `.env.example` to `.env` in the `url-shortener-ui` directory to customize:
 
 **Auth**
 
-| Method | Path                           | Query / Body Params           | Description                                          |
-|--------|--------------------------------|-------------------------------|------------------------------------------------------|
-| POST   | `/ott/generate`                | Body: `{ email }`             | Generate magic link                                  |
-| POST   | `/ott/login`                   | Body: `{ token }`             | Verify OTT token (returns tokens/redirect URL)       |
-| GET    | `/auth/code/exchange`          | Query: `code` (required)      | Exchange authorization code for access/refresh token |
-| POST   | `/token/refresh`               | (Uses `refresh_token` cookie) | Refresh access token                                 |
-| GET    | `/oauth2/authorization/google` | -                             | Start Google OAuth2 flow                             |
+| Method | Path                           | Query / Body Params                                                                                       | Description                                                |
+|--------|--------------------------------|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------|
+| POST   | `/ott/generate`                | Body: `{ email }`                                                                                         | Generate magic link                                        |
+| POST   | `/ott/login`                   | Body (token): `loginType=token&token=<uuid>`<br/>Body (OTP): `loginType=otp&email=<email>&code=<6-digit>` | Verify OTT token or OTP code (returns tokens/redirect URL) |
+| GET    | `/auth/code/exchange`          | Query: `code` (required)                                                                                  | Exchange authorization code for access/refresh token       |
+| POST   | `/token/refresh`               | (Uses `refresh_token` cookie)                                                                             | Refresh access token                                       |
+| GET    | `/oauth2/authorization/google` | -                                                                                                         | Start Google OAuth2 flow                                   |
 
 **Users**
 

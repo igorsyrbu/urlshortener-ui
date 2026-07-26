@@ -6,6 +6,7 @@ import {Link as LinkIcon} from "lucide-react";
 import {API_BASE_URL} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {LoginMagicLinkForm} from "@/components/auth/LoginMagicLinkForm";
+import {LoginOtpForm} from "@/components/auth/LoginOtpForm";
 import {TurnstileWidget} from "@/components/auth/TurnstileWidget";
 import {MagicLinkCooldownMessage} from "@/components/auth/MagicLinkCooldownMessage";
 import type {LoginMessage} from "@/components/auth/LoginStatusMessage";
@@ -15,6 +16,8 @@ import {LoginGoogleSignInButton} from "@/components/auth/LoginGoogleSignInButton
 import {useMagicLinkCooldown} from "@/lib/hooks/useMagicLinkCooldown";
 import {logger} from "@/lib/logger";
 
+const OTP_CODE_LENGTH = 6;
+
 function parseRetryAfter(headers: Headers): number | null {
     const value = headers.get("Retry-After");
     if (!value) return null;
@@ -22,8 +25,22 @@ function parseRetryAfter(headers: Headers): number | null {
     return Number.isFinite(seconds) && seconds > 0 ? seconds : null;
 }
 
+function extractExchangeUrl(redirectUrl: string): string | null {
+    try {
+        const url = new URL(redirectUrl, window.location.origin);
+        if (url.pathname === "/auth/exchange" && url.searchParams.has("code")) {
+            return url.pathname + url.search;
+        }
+    } catch {
+        return null;
+    }
+    return null;
+}
+
 export default function LoginPage() {
     const [email, setEmail] = useState("");
+    const [code, setCode] = useState("");
+    const [showOtpForm, setShowOtpForm] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<LoginMessage | null>(null);
     const [manuallyLocked, setManuallyLocked] = useState(false);
@@ -54,6 +71,17 @@ export default function LoginPage() {
     const handleEmailChange = (newEmail: string) => {
         setEmail(newEmail);
         if (manuallyLocked) setManuallyLocked(false);
+    };
+
+    const handleCodeChange = (newCode: string) => {
+        setCode(newCode);
+    };
+
+    const handleChangeEmail = () => {
+        setShowOtpForm(false);
+        setCode("");
+        setEmail("");
+        setMessage(null);
     };
 
     const handleMagicLinkSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -111,17 +139,86 @@ export default function LoginPage() {
                 throw new Error(`Failed to generate magic link: ${response.status}`);
             }
 
-            setMessage({
-                type: "success",
-                text: "Magic link sent! Check your email to continue.",
-            });
-            setEmail("");
-
+            setShowOtpForm(true);
             setTurnstileToken("");
         } catch (error) {
             setMessage({
                 type: "error",
                 text: error instanceof Error ? error.message : "Failed to send magic link",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmitCode = async (submittedCode?: string) => {
+        setMessage(null);
+
+        const trimmedEmail = email.trim();
+        const trimmedCode = (submittedCode ?? code).trim();
+
+        if (!trimmedEmail) {
+            setMessage({type: "error", text: "Please enter your email address"});
+            return;
+        }
+
+        if (trimmedCode.length !== OTP_CODE_LENGTH) {
+            setMessage({type: "error", text: "Please enter the 6-digit code"});
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const bodyParams = new URLSearchParams({
+                loginType: "otp",
+                email: trimmedEmail,
+                code: trimmedCode,
+            });
+
+            const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.OTT_LOGIN}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: bodyParams.toString(),
+                credentials: "include",
+                redirect: "follow",
+            });
+
+            if (response.status === 429) {
+                const retryAfterSeconds = parseRetryAfter(response.headers);
+                if (retryAfterSeconds !== null) {
+                    startCooldown(retryAfterSeconds);
+                    setManuallyLocked(true);
+                    return;
+                }
+                setMessage({
+                    type: "error",
+                    text: "Too many attempts. Please try again later.",
+                });
+                return;
+            }
+
+            const exchangeUrl = extractExchangeUrl(response.url);
+            if (exchangeUrl) {
+                window.location.href = exchangeUrl;
+                return;
+            }
+
+            const responseText = await response.text();
+            const errorMessage = responseText.includes("Invalid token")
+                ? "Invalid code or email"
+                : responseText || "Failed to sign in";
+
+            setMessage({
+                type: "error",
+                text: errorMessage,
+            });
+        } catch (error) {
+            setMessage({
+                type: "error",
+                text: error instanceof Error ? error.message : "Failed to sign in",
             });
         } finally {
             setLoading(false);
@@ -149,16 +246,27 @@ export default function LoginPage() {
                                 continue</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <LoginMagicLinkForm
-                                email={email}
-                                loading={loading}
-                                inputDisabled={isLocked}
-                                buttonDisabled={isLocked}
-                                turnstileEnabled={turnstileEnabled}
-                                turnstileSolved={!!turnstileToken}
-                                onEmailChange={handleEmailChange}
-                                onSubmit={handleMagicLinkSubmit}
-                            />
+                            {showOtpForm ? (
+                                <LoginOtpForm
+                                    email={email}
+                                    code={code}
+                                    loading={loading}
+                                    onCodeChange={handleCodeChange}
+                                    onSubmit={handleSubmitCode}
+                                    onChangeEmail={handleChangeEmail}
+                                />
+                            ) : (
+                                <LoginMagicLinkForm
+                                    email={email}
+                                    loading={loading}
+                                    inputDisabled={isLocked}
+                                    buttonDisabled={isLocked}
+                                    turnstileEnabled={turnstileEnabled}
+                                    turnstileSolved={!!turnstileToken}
+                                    onEmailChange={handleEmailChange}
+                                    onSubmit={handleMagicLinkSubmit}
+                                />
+                            )}
 
                             {isLocked ? (
                                 <MagicLinkCooldownMessage remainingSeconds={remainingSeconds}/>
@@ -172,7 +280,7 @@ export default function LoginPage() {
                         </CardContent>
                     </Card>
 
-                    {turnstileEnabled && (
+                    {turnstileEnabled && !showOtpForm && (
                         <div className="mt-4 flex justify-center">
                             <TurnstileWidget
                                 siteKey={turnstileSiteKey}

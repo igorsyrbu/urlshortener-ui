@@ -48,6 +48,7 @@ function OttProcessor() {
                         ref={formRef}
                         className="hidden"
                     >
+                        <input type="hidden" name="loginType" value="token"/>
                         <input type="hidden" name="token" value={token}/>
                     </form>
                 </div>
