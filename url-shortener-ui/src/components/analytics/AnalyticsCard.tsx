@@ -18,7 +18,7 @@ interface AnalyticsCardProps {
 
 export function AnalyticsCard({title, tabs, onTabChange, children}: AnalyticsCardProps) {
     return (
-        <div className="flex flex-col rounded-xl border-[0.5px] border-border bg-background p-4 sm:p-6">
+        <div className="flex flex-col rounded-xl border-[0.5px] border-border bg-card p-4 sm:p-6">
             <div className="mb-6 flex items-center justify-between border-b-[0.5px] border-border pb-2">
                 {title && !tabs ? (
                     <span className="-mb-2.5 border-b-2 border-foreground pb-2 text-sm font-bold text-foreground">

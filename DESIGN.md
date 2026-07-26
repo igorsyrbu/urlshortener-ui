@@ -5,9 +5,17 @@ This document outlines the design system, styling guidelines, and established vi
 ---
 
 ## 1. Theme & Color Palette
-The application follows a warm, cream/terracotta-based design system (reminiscent of the Anthropic "Claude" aesthetic).
+The application ships with a **default warm, cream/terracotta-based palette** (reminiscent of the "Claude" aesthetic), plus a set of alternative built-in color palettes and a custom theme builder.
 
-### Brand & Core Colors
+### Palettes (color themes)
+* The default palette ("Terracotta") is defined in `:root` / `.dark` in `src/app/globals.css` and corresponds to the absence of the `data-palette` attribute.
+* Alternative palettes (`ayu`, `catppuccin`, `mono`, `forest`, `one-dark`, `tokyo-night`, `zen`) are defined as `[data-palette="..."]` blocks in `globals.css`, applied by `PaletteProvider` (`src/providers/palette-provider.tsx`). They override **colors only** — typography, radii, and shadows never change.
+* All card surfaces (link cards, tag cards, analytics cards, settings cards, empty states, skeletons) use the `--card` token; the dashboard page canvas uses `--sidebar`. Border colors in every palette are solid (no transparency) and tuned to the same contrast as the default theme's borders.
+* Custom themes are derived at runtime from 4 user-picked colors (background = page canvas behind the cards, cards = all link/tag/analytics/settings cards, accent = drives both primary actions and accent surfaces, danger = delete/error actions) by `src/lib/themes/custom-theme.ts` and applied as inline CSS variables. Text colors are auto-derived for WCAG AA readability; the opposite light/dark variant is derived automatically. Custom themes can be shared/imported as a comma-separated string of 4 hex colors.
+* Selection persists in `localStorage` (key `themePalette`) and is applied before first paint by an inline init script in `src/app/layout.tsx`.
+* Palette definitions below describe the **default** palette.
+
+### Brand & Core Colors (default palette)
 * **Primary (Terracotta):**
   * Light Mode: `#d96a47`
   * Dark Mode: `#c95d3c`
@@ -103,6 +111,8 @@ The gradient sweep uses: pink (`#dd7bbb`), gold (`#d79f1e`), lime (`#5a922c`), a
 The analytics visualizations (located in `src/app/globals.css` and [`src/lib/constants.ts`](file:///Users/igorsyrbu/IdeaProjects/url-shortener/urlshortener-ui/url-shortener-ui/src/lib/constants.ts)) use a **distinct, high-contrast color palette** instead of the core terracotta brand palette.
 
 Colors like emerald green, yellow/gold, bright cyan, pink, and indigo/purple are intentionally selected to provide clear visual categorization and separation for different data dimensions (e.g. locations, devices, OS, referrers) in Recharts rendering. This is a deliberate choice for readability and data parsing reliability and should **not** be refactored to matching brand tones.
+
+**Exception within the exception:** `--chart-clicks` (the Total clicks time series) **does follow the active color palette** — each palette maps it to its primary color, and custom themes derive it from the picked primary. Only the categorical series colors stay fixed across palettes.
 
 ### QR Code Contrast (Scan Reliability Exception)
 The `QrCodeModal` generation settings in [`src/components/links/QrCodeModal.tsx`](file:///Users/igorsyrbu/IdeaProjects/url-shortener/urlshortener-ui/url-shortener-ui/src/components/links/QrCodeModal.tsx) hardcode the dot color to black (`#000000`) and the background options color to white (`"white"`). This is a deliberate design requirement to guarantee maximum scanning contrast for device readers and paper prints under any UI theme (light/dark) and should **not** be refactored to theme-based dynamic variables.

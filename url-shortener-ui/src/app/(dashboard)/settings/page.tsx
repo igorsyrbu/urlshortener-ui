@@ -11,6 +11,7 @@ import {UserSession} from "@/lib/session-utils";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {ProfileCard} from "@/components/settings/ProfileCard";
 import {AppearanceCard} from "@/components/settings/AppearanceCard";
+import {ThemeCard} from "@/components/settings/ThemeCard";
 import {CurrentSessionCard} from "@/components/settings/CurrentSessionCard";
 import {OtherSessionsList} from "@/components/settings/OtherSessionsList";
 import {DangerZoneCard} from "@/components/settings/DangerZoneCard";
@@ -114,6 +115,7 @@ export default function SettingsPage() {
         <PageContainer>
             <ProfileCard/>
             <AppearanceCard/>
+            <ThemeCard/>
 
             <div className="flex flex-col gap-6">
                 <CurrentSessionCard

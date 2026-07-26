@@ -17,7 +17,7 @@ interface NoResultsStateProps {
 export function NoResultsState({icon: Icon, title, subtitle, itemHeightClass, pillWidthClass}: NoResultsStateProps) {
     return (
         <div
-            className="flex flex-col items-center justify-center py-20 px-4 bg-background border-[0.5px] border-border rounded-xl relative overflow-hidden">
+            className="flex flex-col items-center justify-center py-20 px-4 bg-card border-[0.5px] border-border rounded-xl relative overflow-hidden">
             <div
                 className="flex flex-col items-center pointer-events-none select-none h-44 overflow-hidden relative w-full mb-8 mask-[linear-gradient(to_bottom,transparent,black_30%,black_70%,transparent)]">
                 <div

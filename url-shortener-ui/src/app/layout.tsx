@@ -2,6 +2,8 @@ import type {Metadata, Viewport} from "next";
 import {Manrope} from "next/font/google";
 import "./globals.css";
 import {ThemeProvider} from "@/providers/theme-provider";
+import {PaletteProvider} from "@/providers/palette-provider";
+import {buildPaletteInitScript} from "@/lib/themes/palette-init-script";
 import {Toaster} from "@/components/ui/sonner";
 import React from "react";
 
@@ -40,14 +42,17 @@ export default function RootLayout({
             className={`${manrope.variable} font-sans antialiased bg-background text-foreground`}
             suppressHydrationWarning
         >
+        <script dangerouslySetInnerHTML={{__html: buildPaletteInitScript()}}/>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
         >
-            {children}
-            <Toaster/>
+            <PaletteProvider>
+                {children}
+                <Toaster/>
+            </PaletteProvider>
         </ThemeProvider>
         </body>
         </html>
