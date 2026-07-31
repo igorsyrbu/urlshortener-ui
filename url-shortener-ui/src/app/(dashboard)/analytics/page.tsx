@@ -70,7 +70,7 @@ export default function AnalyticsPage() {
                 />
             </div>
 
-            <div className="flex flex-col gap-6 rounded-xl border-[0.5px] border-border bg-background p-4 sm:p-6">
+            <div className="flex flex-col gap-6 rounded-xl border-[0.5px] border-border bg-card p-4 sm:p-6">
                 <div>
                     <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Total Clicks</p>
                     <div className="mt-2 flex flex-wrap items-center gap-4">
