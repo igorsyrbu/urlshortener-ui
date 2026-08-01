@@ -72,15 +72,18 @@ Clicking **"Sign in with Google"** on the login screen launches an isolated sand
 
 ##### Magic Link & OTP Login
 
-The mock server accepts **any OTP code** entered on the login screen. To log in:
+Both magic-link **tokens** and **OTP codes** are submitted through the same `POST /ott/login` endpoint via a shared
+hidden auto-submit form.
+
+To log in with an OTP code:
 
 1. Enter any email (e.g. `test@example.com`) and click **Send magic link**.
 2. A 6-digit `InputOTP` field appears. Enter any 6 digits (e.g. `123456`).
-3. The code auto-submits to `POST /ott/login` with `loginType=otp`. The mock server accepts every request and redirects
-   to `/auth/exchange` with a valid code, creating a fresh sandboxed session.
+3. The code auto-submits to `POST /ott/login` with `loginType=otp`, `email`, and `code`. The mock server accepts every
+   request and redirects to `/auth/exchange` with a valid code, creating a fresh sandboxed session.
 
 You can also log in directly with a **magic link token** by navigating to
-`/auth/ott?token=<any-token>` — the mock server accepts every token.
+`/auth/ott?token=<any-token>&email=<your-email>` — the mock server accepts every token.
 
 #### How State Isolation Works:
 

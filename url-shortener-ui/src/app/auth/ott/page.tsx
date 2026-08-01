@@ -1,27 +1,21 @@
 "use client";
 
-import {Suspense, useEffect, useRef} from "react"
+import {Suspense} from "react"
 import {useSearchParams} from "next/navigation"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
-import {API_BASE_URL} from "@/lib/api"
+import {OttLoginForm} from "@/components/auth/OttLoginForm"
 
 function OttProcessor() {
     const searchParams = useSearchParams()
     const token = searchParams.get("token")
-    const formRef = useRef<HTMLFormElement>(null)
+    const email = searchParams.get("email")
 
-    useEffect(() => {
-        if (token && formRef.current) {
-            formRef.current.submit()
-        }
-    }, [token])
-
-    if (!token) {
+    if (!token || !email) {
         return (
             <Card className="w-87.5 shadow-lg">
                 <CardHeader>
                     <CardTitle>Error</CardTitle>
-                    <CardDescription>No token provided</CardDescription>
+                    <CardDescription>Invalid or incomplete magic link</CardDescription>
                 </CardHeader>
             </Card>
         )
@@ -41,16 +35,7 @@ function OttProcessor() {
                         <span>Verifying...</span>
                     </div>
 
-                    {/* Hidden form for auto-submission */}
-                    <form
-                        action={`${API_BASE_URL}/ott/login`}
-                        method="POST"
-                        ref={formRef}
-                        className="hidden"
-                    >
-                        <input type="hidden" name="loginType" value="token"/>
-                        <input type="hidden" name="token" value={token}/>
-                    </form>
+                    <OttLoginForm loginType="token" token={token} email={email}/>
                 </div>
             </CardContent>
         </Card>

@@ -7,6 +7,7 @@ import {API_BASE_URL} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {LoginMagicLinkForm} from "@/components/auth/LoginMagicLinkForm";
 import {LoginOtpForm} from "@/components/auth/LoginOtpForm";
+import {OttLoginForm} from "@/components/auth/OttLoginForm";
 import {TurnstileWidget} from "@/components/auth/TurnstileWidget";
 import {MagicLinkCooldownMessage} from "@/components/auth/MagicLinkCooldownMessage";
 import type {LoginMessage} from "@/components/auth/LoginStatusMessage";
@@ -25,21 +26,10 @@ function parseRetryAfter(headers: Headers): number | null {
     return Number.isFinite(seconds) && seconds > 0 ? seconds : null;
 }
 
-function extractExchangeUrl(redirectUrl: string): string | null {
-    try {
-        const url = new URL(redirectUrl, window.location.origin);
-        if (url.pathname === "/auth/exchange" && url.searchParams.has("code")) {
-            return url.pathname + url.search;
-        }
-    } catch {
-        return null;
-    }
-    return null;
-}
-
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [code, setCode] = useState("");
+    const [submittedCode, setSubmittedCode] = useState<string | null>(null);
     const [showOtpForm, setShowOtpForm] = useState(false);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<LoginMessage | null>(null);
@@ -151,7 +141,7 @@ export default function LoginPage() {
         }
     };
 
-    const handleSubmitCode = async (submittedCode?: string) => {
+    const handleSubmitCode = (submittedCode?: string) => {
         setMessage(null);
 
         const trimmedEmail = email.trim();
@@ -167,62 +157,8 @@ export default function LoginPage() {
             return;
         }
 
-        try {
-            setLoading(true);
-
-            const bodyParams = new URLSearchParams({
-                loginType: "otp",
-                email: trimmedEmail,
-                code: trimmedCode,
-            });
-
-            const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.OTT_LOGIN}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: bodyParams.toString(),
-                credentials: "include",
-                redirect: "follow",
-            });
-
-            if (response.status === 429) {
-                const retryAfterSeconds = parseRetryAfter(response.headers);
-                if (retryAfterSeconds !== null) {
-                    startCooldown(retryAfterSeconds);
-                    setManuallyLocked(true);
-                    return;
-                }
-                setMessage({
-                    type: "error",
-                    text: "Too many attempts. Please try again later.",
-                });
-                return;
-            }
-
-            const exchangeUrl = extractExchangeUrl(response.url);
-            if (exchangeUrl) {
-                window.location.href = exchangeUrl;
-                return;
-            }
-
-            const responseText = await response.text();
-            const errorMessage = responseText.includes("Invalid token")
-                ? "Invalid code or email"
-                : responseText || "Failed to sign in";
-
-            setMessage({
-                type: "error",
-                text: errorMessage,
-            });
-        } catch (error) {
-            setMessage({
-                type: "error",
-                text: error instanceof Error ? error.message : "Failed to sign in",
-            });
-        } finally {
-            setLoading(false);
-        }
+        setLoading(true);
+        setSubmittedCode(trimmedCode);
     };
 
     const handleGoogleSignIn = () => {
@@ -231,6 +167,9 @@ export default function LoginPage() {
 
     return (
         <>
+            {submittedCode && (
+                <OttLoginForm loginType="otp" email={email} code={submittedCode}/>
+            )}
             <div className="flex min-h-screen w-full items-center justify-center bg-muted/30 p-4">
                 <div className="w-full max-w-md">
                     <Card className="border-border shadow-lg">

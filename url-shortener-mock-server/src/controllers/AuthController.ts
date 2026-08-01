@@ -50,6 +50,28 @@ export class AuthController {
   }
 
   static async ottLogin(req: Request, res: Response) {
+    const { loginType, token, email, code } = req.body as {
+      loginType?: string;
+      token?: string;
+      email?: string;
+      code?: string;
+    };
+
+    if (loginType === "token") {
+      if (!token || !email) {
+        res.status(400).json({ error: "Bad Request", message: "Missing token or email" });
+        return;
+      }
+    } else if (loginType === "otp") {
+      if (!email || !code) {
+        res.status(400).json({ error: "Bad Request", message: "Missing email or code" });
+        return;
+      }
+    } else {
+      res.status(400).json({ error: "Bad Request", message: "Missing or invalid loginType" });
+      return;
+    }
+
     const uuid = crypto.randomUUID();
     res.redirect(`${FRONTEND_URL}/auth/exchange?code=mock-auth-code-${uuid}`);
   }
