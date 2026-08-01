@@ -16,15 +16,13 @@ import {
 import {logger} from "@/lib/logger";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import {
     Drawer,
     DrawerContent,
@@ -161,25 +159,20 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
             )}
 
             {isDesktop ? (
-                <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
+                <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+                    <DialogContent showCloseButton={false}>
+                        <DialogHeader>
+                            <DialogTitle>Are you sure?</DialogTitle>
+                            <DialogDescription>
                                 You will be signed out immediately and will need to sign in again to continue.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={handleLogout}
-                                variant="destructive"
-                            >
-                                Log out
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>Cancel</Button>
+                            <Button variant="destructive" onClick={handleLogout}>Log out</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             ) : (
                 <Drawer open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
                     <DrawerContent className="outline-hidden px-6 pb-6 gap-6">
