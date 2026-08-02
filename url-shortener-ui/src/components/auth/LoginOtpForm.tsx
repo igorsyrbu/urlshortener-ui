@@ -5,7 +5,7 @@ import {Input} from "@/components/ui/input";
 import {ButtonSpinner} from "@/components/ui/button-spinner";
 import {InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot} from "@/components/ui/input-otp";
 import {X} from "lucide-react";
-import React from "react";
+import React, {useRef} from "react";
 
 interface LoginOtpFormProps {
     email: string;
@@ -24,14 +24,29 @@ export function LoginOtpForm({
                                   onSubmit,
                                   onChangeEmail,
                               }: LoginOtpFormProps) {
-    const handleSubmit = (e: React.FormEvent) => {
+    const isPasteRef = useRef(false);
+    const prevCodeLengthRef = useRef(0);
+
+    const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
         onSubmit(code);
+    };
+
+    const handleCodeChange = (newCode: string) => {
+        const lengthIncrease = newCode.length - prevCodeLengthRef.current;
+        prevCodeLengthRef.current = newCode.length;
+        isPasteRef.current = lengthIncrease > 1;
+        onCodeChange(newCode);
     };
 
     const handleComplete = (completedCode: string) => {
         if (loading) return;
         onCodeChange(completedCode);
+        if (!isPasteRef.current) {
+            isPasteRef.current = false;
+            return;
+        }
+        isPasteRef.current = false;
         onSubmit(completedCode);
     };
 
@@ -67,7 +82,7 @@ export function LoginOtpForm({
                     id="otp-code"
                     maxLength={6}
                     value={code}
-                    onChange={onCodeChange}
+                    onChange={handleCodeChange}
                     onComplete={handleComplete}
                     disabled={loading}
                     aria-label="Verification code"

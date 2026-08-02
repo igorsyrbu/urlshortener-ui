@@ -19,13 +19,50 @@ function canSubmit(loginType: OttLoginType, token?: string, email?: string, code
     return Boolean(email && code);
 }
 
+function submitForm(form: HTMLFormElement): void {
+    if (typeof form.requestSubmit === "function") {
+        form.requestSubmit();
+        return;
+    }
+
+    const submitButton = form.querySelector("button[type='submit']") as HTMLButtonElement | null;
+    if (submitButton) {
+        submitButton.click();
+        return;
+    }
+
+    form.submit();
+}
+
 export function OttLoginForm({loginType, token, email, code}: OttLoginFormProps) {
     const formRef = useRef<HTMLFormElement>(null);
+    const submittedRef = useRef(false);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-        if (canSubmit(loginType, token, email, code) && formRef.current) {
-            formRef.current.submit();
+        if (submittedRef.current) {
+            return;
         }
+
+        if (!canSubmit(loginType, token, email, code) || !formRef.current) {
+            return;
+        }
+
+        const form = formRef.current;
+        submittedRef.current = true;
+
+        timeoutRef.current = setTimeout(() => {
+            timeoutRef.current = null;
+            submitForm(form);
+        }, 0);
+
+        return () => {
+            if (timeoutRef.current !== null) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+                submittedRef.current = false;
+            }
+        };
     }, [loginType, token, email, code]);
 
     return (
@@ -39,6 +76,7 @@ export function OttLoginForm({loginType, token, email, code}: OttLoginFormProps)
             {token && <input type="hidden" name="token" value={token}/>}
             {email && <input type="hidden" name="email" value={email}/>}
             {code && <input type="hidden" name="code" value={code}/>}
+            <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1}/>
         </form>
     );
 }
