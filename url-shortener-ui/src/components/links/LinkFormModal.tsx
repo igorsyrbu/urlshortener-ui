@@ -14,7 +14,8 @@ interface LinkFormModalProps {
     initialLongUrl?: string;
     initialTitle?: string;
     initialTagIds?: string[];
-    onSubmit: (longUrl: string, title: string, tagIds: string[]) => Promise<void>;
+    initialKey?: string;
+    onSubmit: (longUrl: string, title: string, key: string, tagIds: string[]) => Promise<void>;
 }
 
 export function LinkFormModal({
@@ -26,11 +27,12 @@ export function LinkFormModal({
                                   initialLongUrl,
                                   initialTitle,
                                   initialTagIds,
+                                  initialKey,
                                   onSubmit,
                               }: LinkFormModalProps) {
     const isDesktop = useIsDesktop();
-    const handleSubmit = async (longUrl: string, title: string, tagIds: string[]) => {
-        await onSubmit(longUrl, title, tagIds);
+    const handleSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {
+        await onSubmit(longUrl, title, key, tagIds);
         onOpenChange(false);
     };
 
@@ -52,6 +54,7 @@ export function LinkFormModal({
                             initialLongUrl={initialLongUrl}
                             initialTitle={initialTitle}
                             initialTagIds={initialTagIds}
+                            initialKey={initialKey}
                             onSubmit={handleSubmit}
                             submitLabel={submitLabel}
                             submittingLabel={submittingLabel}
@@ -74,6 +77,7 @@ export function LinkFormModal({
                         initialLongUrl={initialLongUrl}
                         initialTitle={initialTitle}
                         initialTagIds={initialTagIds}
+                        initialKey={initialKey}
                         onSubmit={handleSubmit}
                         submitLabel={submitLabel}
                         submittingLabel={submittingLabel}

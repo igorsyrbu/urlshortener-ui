@@ -8,13 +8,12 @@ import {useLinkStore} from "@/lib/store/links";
 import {AnimatePresence, motion} from "framer-motion";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
 import {CreateLinkSuccess} from "@/components/links/CreateLinkSuccess";
-import {CreateLinkModalLoading} from "@/components/links/CreateLinkModalLoading";
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS, CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD} from "@/lib/constants";
-import type {ShortLinkData} from "@/components/links/create-link-types";
+import {ShortKeyConflictError, type ShortLinkData} from "@/components/links/create-link-types";
 import {logger} from "@/lib/logger";
 
-type ViewState = "form" | "loading" | "success";
+type ViewState = "form" | "success";
 
 interface CreateLinkModalProps {
     open: boolean;
@@ -47,15 +46,14 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
         fetchLinks();
     };
 
-    const handleFormSubmit = async (longUrl: string, title: string, tagIds: string[]) => {
-        setViewState("loading");
+    const handleFormSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {
         try {
             const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS, {
                 method: "POST",
                 body: JSON.stringify({
                     longUrl,
                     title,
-                    shortUrl: null,
+                    key,
                     isActive: true,
                     tagIds: tagIds.length > 0 ? [...tagIds] : undefined,
                 }),
@@ -63,14 +61,15 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
             if (res.ok) {
                 const data = await res.json();
                 await handleSubmitSuccess(data);
+            } else if (res.status === 409) {
+                logger.error("Short link key conflict on create", undefined, {status: res.status});
+                throw new ShortKeyConflictError();
             } else {
                 logger.error("Failed to create link", undefined, { status: res.status });
-                setViewState("form");
                 throw new Error("Failed to create link");
             }
         } catch (err) {
             logger.error("Error creating link", err);
-            setViewState("form");
             throw err;
         }
     };
@@ -92,6 +91,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
                         )}
                         <LinkFormFields
                             title="Create link"
+                            autoGenerateKey
                             onSubmit={handleFormSubmit}
                             submitLabel="Create"
                             submittingLabel="Creating..."
@@ -100,8 +100,6 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
                         />
                     </motion.div>
                 ) : null}
-
-                {viewState === "loading" ? <CreateLinkModalLoading/> : null}
 
                 {viewState === "success" && shortLink ? (
                     <CreateLinkSuccess shortUrl={shortLink.shortUrl} onClose={() => onOpenChange(false)}/>

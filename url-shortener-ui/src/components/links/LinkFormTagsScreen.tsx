@@ -2,6 +2,7 @@
 
 import {Check, ChevronLeft, Loader2, Plus, Search} from "lucide-react";
 import {Button} from "@/components/ui/button";
+import {ButtonSpinner} from "@/components/ui/button-spinner";
 import {Input} from "@/components/ui/input";
 import {TagBadge} from "@/components/tags/TagBadge";
 import {TagItem} from "@/lib/types";
@@ -21,6 +22,7 @@ interface TagsScreenContentProps {
     onToggleTag: (tagId: string) => void;
     tagError: string | null;
     isSubmitting: boolean;
+    hasKeyError: boolean;
     longUrl: string;
     submitLabel: string;
     submittingLabel: string;
@@ -42,6 +44,7 @@ export function TagsScreenContent({
                                       onToggleTag,
                                       tagError,
                                       isSubmitting,
+                                      hasKeyError,
                                       longUrl,
                                       submitLabel,
                                       submittingLabel,
@@ -146,10 +149,15 @@ export function TagsScreenContent({
                 <Button
                     type="button"
                     onClick={() => onSubmit()}
-                    disabled={isSubmitting || !longUrl.trim()}
+                    disabled={isSubmitting || !longUrl.trim() || hasKeyError}
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                    {isSubmitting ? submittingLabel : submitLabel}
+                    {isSubmitting ? (
+                        <>
+                            <ButtonSpinner className="text-primary-foreground"/>
+                            {submittingLabel}
+                        </>
+                    ) : submitLabel}
                 </Button>
                 <Button
                     type="button"

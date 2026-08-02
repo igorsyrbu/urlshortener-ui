@@ -26,6 +26,7 @@ function mapResponseToLinkItem(item: ShortLinkDTO): LinkItem {
     return {
         id: item.id,
         title: item.title || DEFAULT_LINK_TITLE,
+        key: item.key,
         shortUrl: item.shortUrl,
         longUrl: item.longUrl,
         isActive: item.isActive,

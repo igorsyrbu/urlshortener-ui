@@ -1,26 +1,35 @@
 "use client";
 
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import {AnimatePresence, motion} from "framer-motion";
 import {fetchWithAuth} from "@/lib/api";
 import {generateTitleFromHostname} from "@/lib/utils";
-import {getDomain, isValidUrl, normalizeUrl} from "@/lib/url-utils";
-import {API_ENDPOINTS, GLOW_FADE_DELAY_MS} from "@/lib/constants";
-import type {LongUrlTitleResponse} from "@/lib/api-types";
+import {getDomain, getShortKeyValidationError, isValidUrl, normalizeUrl} from "@/lib/url-utils";
+import {
+    API_ENDPOINTS,
+    GLOW_FADE_DELAY_MS,
+    KEY_AVAILABILITY_CHECK_DEBOUNCE_MS,
+    SHORT_KEY_TAKEN_MESSAGE,
+} from "@/lib/constants";
+import type {LongUrlTitleResponse, RandomKeyResponse} from "@/lib/api-types";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
+import {useDebounce} from "@/lib/hooks/useDebounce";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useTagMutations} from "@/lib/hooks/useTagMutations";
-import type {GlowState} from "@/components/links/create-link-types";
+import {type GlowState, ShortKeyConflictError} from "@/components/links/create-link-types";
 import {FormScreenContent} from "@/components/links/LinkFormMainScreen";
 import {TagsScreenContent} from "@/components/links/LinkFormTagsScreen";
 import {ALLOWED_TAG_COLORS} from "@/lib/tag-constants";
+import {logger} from "@/lib/logger";
 
 interface LinkFormFieldsProps {
     title: string;
     initialLongUrl?: string;
     initialTitle?: string;
     initialTagIds?: string[];
-    onSubmit: (longUrl: string, title: string, tagIds: string[]) => Promise<void>;
+    initialKey?: string;
+    autoGenerateKey?: boolean;
+    onSubmit: (longUrl: string, title: string, key: string, tagIds: string[]) => Promise<void>;
     submitLabel: string;
     submittingLabel: string;
     onCancel: () => void;
@@ -49,6 +58,8 @@ export function LinkFormFields({
                                    initialLongUrl = "",
                                    initialTitle = "",
                                    initialTagIds = EMPTY_TAG_IDS,
+                                   initialKey = "",
+                                   autoGenerateKey = false,
                                    onSubmit,
                                    submitLabel,
                                    submittingLabel,
@@ -62,12 +73,17 @@ export function LinkFormFields({
     const [longUrl, setLongUrl] = useState(initialLongUrl);
     const [urlError, setUrlError] = useState<string | null>(null);
     const [titleText, setTitleText] = useState(initialTitle);
+    const [key, setKey] = useState(initialKey);
+    const [keyError, setKeyError] = useState<string | null>(null);
+    const [isKeyLoading, setIsKeyLoading] = useState(false);
     const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialTagIds);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingTitle, setIsLoadingTitle] = useState(false);
     const [glowState, setGlowState] = useState<GlowState>("idle");
 
-    // Tag list operations
+    const hasUserEditedKeyRef = useRef(false);
+    const pendingKeyRequestRef = useRef<Promise<string | null> | null>(null);
+
     const {tags, loading: tagsLoading} = useTagStoreWithoutCount();
     const {createTag} = useTagMutations();
     const [tagSearch, setTagSearch] = useState("");
@@ -89,7 +105,106 @@ export function LinkFormFields({
         setTitleText(initialTitle);
         setSelectedTagIds(initialTagIds);
         setUrlError(null);
+        setKeyError(null);
+        hasUserEditedKeyRef.current = false;
     }, [initialLongUrl, initialTitle, initialTagIds]);
+
+    useEffect(() => {
+        if (!hasUserEditedKeyRef.current) {
+            setKey(initialKey);
+            setKeyError(null);
+        }
+    }, [initialKey]);
+
+    const fetchRandomKey = useCallback(async (force: boolean): Promise<string | null> => {
+        if (pendingKeyRequestRef.current) {
+            return pendingKeyRequestRef.current;
+        }
+
+        const request = (async () => {
+            try {
+                const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS_RANDOM);
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch random key: ${res.status}`);
+                }
+
+                const data = (await res.json()) as RandomKeyResponse;
+
+                const shouldApplyKey = force || !hasUserEditedKeyRef.current;
+                if (!shouldApplyKey) {
+                    return null;
+                }
+
+                setKey(data.key);
+                setKeyError(null);
+                return data.key;
+            } catch (err) {
+                logger.error("Error fetching random key", err);
+                if (!hasUserEditedKeyRef.current) {
+                    setKeyError("Failed to generate a random key. Please type one manually.");
+                }
+                return null;
+            }
+        })();
+
+        setIsKeyLoading(true);
+        pendingKeyRequestRef.current = request;
+
+        const result = await request;
+
+        setIsKeyLoading(false);
+        pendingKeyRequestRef.current = null;
+        return result;
+    }, []);
+
+    useEffect(() => {
+        if (autoGenerateKey) {
+            void fetchRandomKey(false);
+        }
+    }, [autoGenerateKey, fetchRandomKey]);
+
+    const debouncedKey = useDebounce(key, KEY_AVAILABILITY_CHECK_DEBOUNCE_MS);
+
+    useEffect(() => {
+        const trimmedKey = debouncedKey.trim();
+        const trimmedInitialKey = initialKey.trim();
+        const isExistingKey =
+            trimmedInitialKey !== ""
+            && trimmedKey.toLowerCase() === trimmedInitialKey.toLowerCase();
+
+        const shouldSkipCheck =
+            !hasUserEditedKeyRef.current ||
+            trimmedKey === "" ||
+            getShortKeyValidationError(trimmedKey) !== null ||
+            isExistingKey;
+
+        if (shouldSkipCheck) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const checkAvailability = async () => {
+            try {
+                const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS_EXISTS(trimmedKey));
+                if (cancelled) return;
+
+                if (res.status === 200) {
+                    setKeyError(SHORT_KEY_TAKEN_MESSAGE);
+                } else if (res.status === 404) {
+                    setKeyError(null);
+                }
+            } catch (err) {
+                logger.error("Error checking short link key availability", err);
+            }
+        };
+
+        void checkAvailability();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [debouncedKey, initialKey]);
 
     const handleUrlChange = (value: string) => {
         setLongUrl(value);
@@ -110,6 +225,24 @@ export function LinkFormFields({
         } else {
             setUrlError(null);
         }
+    };
+
+    const handleKeyChange = (value: string) => {
+        hasUserEditedKeyRef.current = true;
+        setKey(value);
+        setKeyError(getShortKeyValidationError(value));
+    };
+
+    const handleKeyBlur = () => {
+        if (key.trim() !== "" || isKeyLoading || pendingKeyRequestRef.current) return;
+        setKeyError(null);
+        hasUserEditedKeyRef.current = false;
+        void fetchRandomKey(true);
+    };
+
+    const handleRandomizeKey = () => {
+        hasUserEditedKeyRef.current = false;
+        void fetchRandomKey(true);
     };
 
     const applyGlowFeedback = () => {
@@ -163,10 +296,35 @@ export function LinkFormFields({
             setActiveScreen("form");
             return;
         }
+
+        let resolvedKey = key.trim();
+        if (pendingKeyRequestRef.current) {
+            setIsSubmitting(true);
+            resolvedKey = (await pendingKeyRequestRef.current) ?? resolvedKey;
+        }
+
+        if (!resolvedKey) {
+            setKeyError("Key is required.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        const keyValidationError = getShortKeyValidationError(resolvedKey);
+        if (keyValidationError) {
+            setKeyError(keyValidationError);
+            setIsSubmitting(false);
+            return;
+        }
+
         setIsSubmitting(true);
         try {
-            await onSubmit(normalized, titleText, selectedTagIds);
-        } catch {
+            await onSubmit(normalized, titleText, resolvedKey, selectedTagIds);
+        } catch (err) {
+            if (err instanceof ShortKeyConflictError) {
+                setKeyError(err.message);
+                setSlideDirection(-1);
+                setActiveScreen("form");
+            }
             setIsSubmitting(false);
         }
     };
@@ -219,6 +377,10 @@ export function LinkFormFields({
                             isLoadingTitle={isLoadingTitle}
                             canSuggestTitle={canSuggestTitle}
                             enableTitleSuggestion={enableTitleSuggestion}
+                            keyValue={key}
+                            keyError={keyError}
+                            isKeyLoading={isKeyLoading}
+                            isKeyUnavailable={keyError === SHORT_KEY_TAKEN_MESSAGE}
                             selectedTagIds={selectedTagIds}
                             tags={tags}
                             isSubmitting={isSubmitting}
@@ -229,6 +391,9 @@ export function LinkFormFields({
                             onUrlBlur={handleUrlBlur}
                             onTitleChange={setTitleText}
                             onSuggestTitle={fetchTitle}
+                            onKeyChange={handleKeyChange}
+                            onKeyRandomize={handleRandomizeKey}
+                            onKeyBlur={handleKeyBlur}
                             onOpenTagScreen={() => {
                                 setSlideDirection(1);
                                 setActiveScreen("tags");
@@ -261,6 +426,7 @@ export function LinkFormFields({
                             onToggleTag={handleToggleTag}
                             tagError={tagError}
                             isSubmitting={isSubmitting}
+                            hasKeyError={!!keyError}
                             longUrl={longUrl}
                             submitLabel={submitLabel}
                             submittingLabel={submittingLabel}

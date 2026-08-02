@@ -18,6 +18,8 @@ export const ROUTES = {
 
 export const API_ENDPOINTS = {
     SHORTLINKS: "/shortlinks",
+    SHORTLINKS_RANDOM: "/shortlinks/random",
+    SHORTLINKS_EXISTS: (key: string) => `/shortlinks/${key}/exists`,
     SHORTLINKS_BY_IDS: "/shortlinks/byIds",
     SHORTLINKS_PREVIEW: (key: string) => `/public/preview/${key}`,
     TAGS: "/tags",
@@ -43,6 +45,7 @@ export const API_ENDPOINTS = {
 export const COPY_FEEDBACK_DURATION_MS = 2000;
 export const GLOW_FADE_DELAY_MS = 1000;
 export const AUTH_REDIRECT_DELAY_MS = 1000;
+export const KEY_AVAILABILITY_CHECK_DEBOUNCE_MS = 600;
 
 export const MAGIC_LINK_COOLDOWN_INTERVAL_MS = 1000;
 export const MAGIC_LINK_COOLDOWN_STORAGE_KEY = "magicLinkCooldownByEmail";
@@ -107,6 +110,13 @@ export const MORE_ACTIONS_BUTTON_CLASS =
 
 export const DEFAULT_LINK_TITLE = "Untitled Link";
 export const DEFAULT_JWT_TTL_DISPLAY = "1 hour";
+export const SHORT_KEY_TAKEN_MESSAGE = "This short link is already taken.";
+
+// ---------------------------------------------------------------------------
+// Short link domain (mock-only, shown statically inside the create/edit forms)
+// ---------------------------------------------------------------------------
+
+export const MOCKED_SHORT_DOMAIN = "sho.rt";
 
 // ---------------------------------------------------------------------------
 // Chart colors — mirror the CSS custom properties so JS-only charts

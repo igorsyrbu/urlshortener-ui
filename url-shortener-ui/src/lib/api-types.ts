@@ -14,6 +14,7 @@ export interface PageDTO<T> {
 export interface ShortLinkDTO {
   id: string;
   title: string;
+  key: string;
   shortUrl: string;
   longUrl: string;
   isActive: boolean;
@@ -25,7 +26,8 @@ export interface ShortLinkDTO {
 export interface CreateShortLinkRequest {
   longUrl: string;
   title: string;
-  shortUrl?: string | null;
+  key: string;
+  isActive?: boolean;
   tagIds?: string[];
 }
 
@@ -33,9 +35,14 @@ export interface UpdateShortLinkRequest {
   id: string;
   title: string;
   longUrl: string;
+  key: string;
+  isActive?: boolean;
   tagIds?: string[];
 }
 
+export interface RandomKeyResponse {
+  key: string;
+}
 
 export interface TagDTO {
   id: string;

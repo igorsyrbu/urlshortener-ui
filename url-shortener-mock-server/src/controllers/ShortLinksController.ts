@@ -24,20 +24,43 @@ export class ShortLinksController {
 
   static async createShortLink(req: Request, res: Response): Promise<void> {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
-    res.status(201).json(shortLinksService.createLink(uuid, req.body));
+    const result = shortLinksService.createLink(uuid, req.body);
+
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error });
+      return;
+    }
+
+    res.status(201).json(result.link);
   }
 
   static async updateShortLink(req: Request, res: Response): Promise<void> {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { id, ...dto } = req.body;
-    const updated = shortLinksService.updateLink(uuid, id, dto);
+    const result = shortLinksService.updateLink(uuid, id, dto);
 
-    if (!updated) {
-      res.status(404).json({ error: "Link not found" });
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error });
       return;
     }
 
-    res.json(updated);
+    res.json(result.link);
+  }
+
+  static getRandomKey(req: Request, res: Response): void {
+    res.json({ key: shortLinksService.generateRandomKey() });
+  }
+
+  static keyExists(req: Request, res: Response): void {
+    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
+    const key = req.params.key as string;
+
+    if (shortLinksService.keyExists(uuid, key)) {
+      res.status(200).json({ exists: true });
+      return;
+    }
+
+    res.status(404).json({ exists: false });
   }
 
   static async deleteShortLink(req: Request, res: Response): Promise<void> {

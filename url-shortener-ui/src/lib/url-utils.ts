@@ -39,3 +39,26 @@ export function normalizeUrl(value: string): string {
 
     return trimmed;
 }
+
+// ---------------------------------------------------------------------------
+// Short link key validation
+// ---------------------------------------------------------------------------
+
+export const SHORT_KEY_MAX_LENGTH = 30;
+const SHORT_KEY_REGEX = /^[A-Za-z0-9-]+$/;
+
+export function isValidShortKey(value: string): boolean {
+    return SHORT_KEY_REGEX.test(value) && value.length <= SHORT_KEY_MAX_LENGTH;
+}
+
+export function getShortKeyValidationError(value: string): string | null {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return null;
+    if (!SHORT_KEY_REGEX.test(trimmed)) {
+        return "Key can only contain letters, numbers, and hyphens.";
+    }
+    if (trimmed.length > SHORT_KEY_MAX_LENGTH) {
+        return "Key must be 30 characters or fewer.";
+    }
+    return null;
+}

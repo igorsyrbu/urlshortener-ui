@@ -10,6 +10,7 @@ export interface TagItem {
 export interface LinkItem {
     id: string;
     title: string;
+    key?: string;
     shortUrl: string;
     longUrl: string;
     isActive: boolean;

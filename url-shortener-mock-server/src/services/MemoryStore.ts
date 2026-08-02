@@ -62,10 +62,12 @@ export class MemoryStore {
           tagAssociations.set(link.id, validIds);
         }
       }
+      const shortUrl: string = rest.shortUrl;
       return {
         id: rest.id,
         title: rest.title,
-        shortUrl: rest.shortUrl,
+        key: rest.key ?? shortUrl.split("/").pop() ?? "",
+        shortUrl,
         longUrl: rest.longUrl,
         isActive: link.isActive ?? true,
       };

@@ -5,6 +5,7 @@ import {memoryStore} from "./MemoryStore";
 export interface ShortLink {
   id: string;
   title: string;
+  key: string;
   shortUrl: string;
   longUrl: string;
   isActive: boolean;
@@ -25,7 +26,7 @@ export interface Page<T> {
 export interface CreateShortLinkDto {
   longUrl: string;
   title?: string;
-  shortUrl?: string;
+  key: string;
   isActive?: boolean;
   tagIds?: string[];
 }
@@ -33,18 +34,30 @@ export interface CreateShortLinkDto {
 export interface UpdateShortLinkDto {
   longUrl?: string;
   title?: string;
-  shortUrl?: string;
+  key?: string;
   isActive?: boolean;
   tagIds?: string[];
 }
+
+export type ShortLinkMutationResult =
+  | { ok: true; link: ShortLink }
+  | { ok: false; status: 400 | 404 | 409; error: string };
+
+const CONFLICT_MESSAGE = "This short link is already taken.";
 
 export class ShortLinksService {
   private static readonly CONSTANTS = {
     DEFAULT_TITLE: "Untitled Link",
     BASE_DOMAIN: "https://sho.rt",
-    MAX_SLUG_LENGTH: 8,
-    FALLBACK_SLUG_BASE: "link",
   };
+
+  private static readonly KEY_RULES = {
+    MAX_LENGTH: 30,
+    PATTERN: /^[A-Za-z0-9-]+$/,
+  };
+
+  private static readonly RANDOM_KEY_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  private static readonly RANDOM_KEY_LENGTH = 6;
 
   /**
    * Enrich a link with its associated tag IDs.
@@ -54,6 +67,39 @@ export class ShortLinksService {
       ...link,
       tagIds: tagsService.getTagIdsForLink(uuid, link.id),
     };
+  }
+
+  private normalizeKey(key: string): string {
+    return key.toLowerCase();
+  }
+
+  private validateKey(key: string): string | null {
+    if (!key) return "Key is required.";
+    if (key.length > ShortLinksService.KEY_RULES.MAX_LENGTH) {
+      return "Key must be 30 characters or fewer.";
+    }
+    if (!ShortLinksService.KEY_RULES.PATTERN.test(key)) {
+      return "Key can only contain letters, numbers, and hyphens.";
+    }
+    return null;
+  }
+
+  private isKeyTaken(uuid: string, key: string, excludeId?: string): boolean {
+    const normalized = this.normalizeKey(key);
+    const userState = memoryStore.getUserState(uuid);
+    return userState.links.some(
+      (link) => link.id !== excludeId && this.normalizeKey(link.key) === normalized,
+    );
+  }
+
+  private isGloballyTaken(key: string): boolean {
+    const normalized = this.normalizeKey(key);
+    for (const state of memoryStore.getAllUserStates()) {
+      if (state.links.some((link) => this.normalizeKey(link.key) === normalized)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -82,6 +128,7 @@ export class ShortLinksService {
         (l) =>
           l.title.toLowerCase().includes(q) ||
           l.shortUrl.toLowerCase().includes(q) ||
+          l.key.toLowerCase().includes(q) ||
           l.longUrl.toLowerCase().includes(q)
       );
     }
@@ -119,16 +166,25 @@ export class ShortLinksService {
 
   /**
    * Creates a new short link from a DTO and prepends it to the in-memory array.
+   * The `key` is required; taken keys are rejected with a 409 conflict.
    *
    * @param uuid - The user's custom UUID
    * @param dto - The configuration for the new ShortLink
-   * @returns The newly created ShortLink object
    */
-  public createLink(uuid: string, dto: CreateShortLinkDto): ShortLink {
+  public createLink(uuid: string, dto: CreateShortLinkDto): ShortLinkMutationResult {
+    const key = dto.key?.trim() ?? "";
+
+    const keyError = this.validateKey(key);
+    if (keyError) return { ok: false, status: 400, error: keyError };
+    if (this.isKeyTaken(uuid, key)) {
+      return { ok: false, status: 409, error: CONFLICT_MESSAGE };
+    }
+
     const newLink: ShortLink = {
       id: randomUUID(),
       title: dto.title?.trim() || ShortLinksService.CONSTANTS.DEFAULT_TITLE,
-      shortUrl: dto.shortUrl?.trim() || this.generateAutoShortUrl(dto.title),
+      key,
+      shortUrl: `${ShortLinksService.CONSTANTS.BASE_DOMAIN}/${key}`,
       longUrl: dto.longUrl.trim(),
       isActive: dto.isActive ?? true,
     };
@@ -143,32 +199,46 @@ export class ShortLinksService {
 
     const userState = memoryStore.getUserState(uuid);
     userState.links.unshift(newLink);
-    return this.enrichLinkWithTags(uuid, newLink);
+    return { ok: true, link: this.enrichLinkWithTags(uuid, newLink) };
   }
 
   /**
    * Updates an existing short link in memory by its ID.
+   * `key` is editable; re-casing the existing key is always accepted, while
+   * switching to another taken key is rejected with a 409 conflict.
    *
    * @param uuid - The user's custom UUID
    * @param id - The ShortLink ID to update
    * @param dto - Optional new fields to overlay
-   * @returns The updated ShortLink, or null if not found
    */
-  public updateLink(uuid: string, id: string, dto: UpdateShortLinkDto): ShortLink | null {
+  public updateLink(uuid: string, id: string, dto: UpdateShortLinkDto): ShortLinkMutationResult {
     const userState = memoryStore.getUserState(uuid);
     const links = userState.links;
     const index = links.findIndex((link) => link.id === id);
     if (index === -1) {
-      return null;
+      return { ok: false, status: 404, error: "Link not found" };
     }
 
     const existingLink = links[index];
 
+    let key = existingLink.key;
+    if (dto.key !== undefined) {
+      key = dto.key.trim();
+      const keyError = this.validateKey(key);
+      if (keyError) return { ok: false, status: 400, error: keyError };
+
+      const isReCasing = this.normalizeKey(key) === this.normalizeKey(existingLink.key);
+      if (!isReCasing && this.isKeyTaken(uuid, key, id)) {
+        return { ok: false, status: 409, error: CONFLICT_MESSAGE };
+      }
+    }
+
     const updatedLink: ShortLink = {
       ...existingLink,
+      key,
+      shortUrl: `${ShortLinksService.CONSTANTS.BASE_DOMAIN}/${key}`,
       longUrl: dto.longUrl ?? existingLink.longUrl,
       title: dto.title ?? existingLink.title,
-      shortUrl: dto.shortUrl ?? existingLink.shortUrl,
       isActive: dto.isActive ?? existingLink.isActive,
     };
 
@@ -179,17 +249,44 @@ export class ShortLinksService {
     }
 
     links[index] = updatedLink;
-    return this.enrichLinkWithTags(uuid, updatedLink);
+    return { ok: true, link: this.enrichLinkWithTags(uuid, updatedLink) };
   }
 
   /**
-   * Finds an active short link by its short key (last segment of shortUrl).
+   * Returns `true` when the key is already taken by one of the user's links
+   * (case-insensitive) — mirroring the create/update conflict logic.
+   */
+  public keyExists(uuid: string, key: string): boolean {
+    return this.isKeyTaken(uuid, key);
+  }
+
+  /**
+   * Generates a random short key that is not already taken by any link in the store.
+   */
+  public generateRandomKey(): string {
+    const chars = ShortLinksService.RANDOM_KEY_CHARS;
+    const length = ShortLinksService.RANDOM_KEY_LENGTH;
+
+    let key = "";
+    do {
+      key = Array.from(
+        { length },
+        () => chars[Math.floor(Math.random() * chars.length)],
+      ).join("");
+    } while (this.isGloballyTaken(key));
+
+    return key;
+  }
+
+  /**
+   * Finds an active short link by its short key, case-insensitively.
    * Searches all user states. Returns null if not found or inactive.
    */
   public findByShortKey(key: string): ShortLink | null {
+    const normalized = key.toLowerCase();
     for (const state of memoryStore.getAllUserStates()) {
       const link = state.links.find(
-        (l) => l.isActive && l.shortUrl.split("/").pop() === key,
+        (l) => l.isActive && l.key.toLowerCase() === normalized,
       );
       if (link) return link;
     }
@@ -217,20 +314,6 @@ export class ShortLinksService {
 
     return wasDeleted;
   }
-
-  /**
-   * Automatically generates a fallback short URL containing normalized title words and entropy.
-   */
-  private generateAutoShortUrl(title?: string): string {
-    const baseSlug = (title || ShortLinksService.CONSTANTS.FALLBACK_SLUG_BASE)
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "")
-      .slice(0, ShortLinksService.CONSTANTS.MAX_SLUG_LENGTH);
-
-    const entropy = Math.floor(Math.random() * 100);
-    return `${ShortLinksService.CONSTANTS.BASE_DOMAIN}/${baseSlug}${entropy}`;
-  }
 }
 
 export const shortLinksService = new ShortLinksService();
-

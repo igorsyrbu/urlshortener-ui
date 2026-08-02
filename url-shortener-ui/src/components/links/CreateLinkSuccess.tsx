@@ -55,7 +55,7 @@ export function CreateLinkSuccess({shortUrl, onClose}: CreateLinkSuccessProps) {
                     onClick={handleCopy}
                     title="Copy to clipboard"
                 >
-                    {isCopied ? <Check className="h-4 w-4"/> : <Copy className="h-4 w-4"/>}
+                    {isCopied ? <Check className="h-4 w-4 text-success"/> : <Copy className="h-4 w-4"/>}
                 </Button>
             </div>
 
