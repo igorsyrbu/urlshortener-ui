@@ -45,9 +45,6 @@ export function LoginMagicLinkForm({
                     className="h-12 rounded-xl"
                     disabled={loading || inputDisabled}
                 />
-                <p className="pl-2 text-sm text-muted-foreground">
-                    We&apos;ll email you a magic link and a 6-digit code you can use to sign in.
-                </p>
             </div>
 
             <Button

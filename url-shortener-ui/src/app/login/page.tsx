@@ -153,7 +153,7 @@ export default function LoginPage() {
         }
 
         if (trimmedCode.length !== OTP_CODE_LENGTH) {
-            setMessage({type: "error", text: "Please enter the 6-digit code"});
+            setMessage({type: "error", text: "Please enter the verification code"});
             return;
         }
 

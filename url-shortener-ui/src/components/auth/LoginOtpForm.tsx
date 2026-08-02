@@ -4,6 +4,7 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {ButtonSpinner} from "@/components/ui/button-spinner";
 import {InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot} from "@/components/ui/input-otp";
+import {REGEXP_ONLY_DIGITS_AND_CHARS} from "input-otp";
 import {X} from "lucide-react";
 import React, {useRef} from "react";
 
@@ -78,6 +79,9 @@ export function LoginOtpForm({
             </div>
 
             <div className="flex flex-col gap-2.5">
+                <p className="text-center text-xs sm:text-sm text-muted-foreground">
+                    We sent a code to your inbox. Enter it below
+                </p>
                 <InputOTP
                     id="otp-code"
                     maxLength={6}
@@ -85,6 +89,11 @@ export function LoginOtpForm({
                     onChange={handleCodeChange}
                     onComplete={handleComplete}
                     disabled={loading}
+                    pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+                    inputMode="text"
+                    spellCheck="false"
+                    autoCorrect="off"
+                    autoCapitalize="off"
                     aria-label="Verification code"
                     containerClassName="justify-center py-1"
                 >
@@ -100,9 +109,6 @@ export function LoginOtpForm({
                         <InputOTPSlot index={5} />
                     </InputOTPGroup>
                 </InputOTP>
-                <p className="text-center text-xs sm:text-sm text-muted-foreground">
-                    We sent a 6-digit verification code to your inbox
-                </p>
             </div>
 
             <Button
