@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {
     Dialog,
     DialogContent,
@@ -51,6 +51,8 @@ export function TagFormModal({
     const [name, setName] = useState(initialName);
     const [selectedColor, setSelectedColor] = useState<BadgeVariant>(initialColor);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const isDesktop = useIsDesktop();
 
     useEffect(() => {
         if (open) {
@@ -59,6 +61,13 @@ export function TagFormModal({
             setIsSubmitting(false);
         }
     }, [open, initialName, initialColor]);
+
+    useEffect(() => {
+        if (!open || !isDesktop) return;
+        if (initialName) return;
+        const frame = requestAnimationFrame(() => inputRef.current?.focus());
+        return () => cancelAnimationFrame(frame);
+    }, [open, isDesktop, initialName]);
 
     const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -89,8 +98,6 @@ export function TagFormModal({
         onOpenChange(false);
     };
 
-    const isDesktop = useIsDesktop();
-
     const formFields = (
         <>
             <div className="grid gap-2">
@@ -98,6 +105,7 @@ export function TagFormModal({
                     Name
                 </label>
                 <Input
+                    ref={inputRef}
                     id="tag-name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -126,7 +134,7 @@ export function TagFormModal({
                     <DialogHeader className="p-6 pb-4">
                         <h2 className="text-lg font-semibold leading-none">{title}</h2>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="px-6 pb-6 grid gap-5">
+                    <form onSubmit={handleSubmit} className="px-6 grid gap-5">
                         {formFields}
 
                         <DialogFooter className="pt-2 gap-2 sm:gap-2">

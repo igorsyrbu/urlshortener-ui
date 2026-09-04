@@ -13,6 +13,7 @@ import {ShortLinkKeyField} from "@/components/links/ShortLinkKeyField";
 import {TagSelect} from "@/components/links/TagSelect";
 import {TagBadge} from "@/components/tags/TagBadge";
 import {TagItem} from "@/lib/types";
+import type {UrlCleanerResponse} from "@/lib/api-types";
 import type {GlowState} from "@/components/links/create-link-types";
 import {cn} from "@/lib/utils";
 
@@ -25,6 +26,8 @@ interface FormScreenContentProps {
     isDesktop: boolean;
     longUrl: string;
     urlError: string | null;
+    cleanerResult: UrlCleanerResponse | null;
+    cleanedTrackerCount: number | null;
     titleText: string;
     glowState: GlowState;
     isLoadingTitle: boolean;
@@ -42,6 +45,8 @@ interface FormScreenContentProps {
     onCancel: () => void;
     onUrlChange: (value: string) => void;
     onUrlBlur: () => void;
+    onCleanUrl: () => void;
+    onReviewUrl: () => void;
     onTitleChange: (value: string) => void;
     onSuggestTitle: () => void;
     onKeyChange: (value: string) => void;
@@ -57,6 +62,8 @@ export function FormScreenContent({
                                       isDesktop,
                                       longUrl,
                                       urlError,
+                                      cleanerResult,
+                                      cleanedTrackerCount,
                                       titleText,
                                       glowState,
                                       isLoadingTitle,
@@ -74,6 +81,8 @@ export function FormScreenContent({
                                       onCancel,
                                       onUrlChange,
                                       onUrlBlur,
+                                      onCleanUrl,
+                                      onReviewUrl,
                                       onTitleChange,
                                       onSuggestTitle,
                                       onKeyChange,
@@ -94,8 +103,12 @@ export function FormScreenContent({
                     inputId={LONG_URL_FIELD_ID}
                     value={longUrl}
                     urlError={urlError}
+                    cleanerResult={cleanerResult}
+                    cleanedTrackerCount={cleanedTrackerCount}
                     onChange={onUrlChange}
                     onBlur={onUrlBlur}
+                    onClean={onCleanUrl}
+                    onReview={onReviewUrl}
                 />
                 <ShortLinkKeyField
                     inputId={SHORT_LINK_KEY_FIELD_ID}

@@ -76,7 +76,7 @@ export function SessionLogoutDialog({target, jwtTTL, onClose, onConfirm}: Sessio
         <Drawer open={open} onOpenChange={(isOpen) => {
             if (!isOpen) onClose();
         }}>
-            <DrawerContent className="outline-hidden px-6 pb-6 gap-6">
+            <DrawerContent className="outline-hidden px-6 gap-6">
                 <DrawerHeader className="p-0 pb-6 text-center">
                     <DrawerTitle>{getDialogTitle(target)}</DrawerTitle>
                     <DrawerDescription className="text-sm text-foreground/70 mt-2">

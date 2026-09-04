@@ -175,7 +175,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
                 </Dialog>
             ) : (
                 <Drawer open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-                    <DrawerContent className="outline-hidden px-6 pb-6 gap-6">
+                    <DrawerContent className="outline-hidden px-6 gap-6">
                         <DrawerHeader className="p-0 pb-6 text-center">
                             <DrawerTitle>Are you sure?</DrawerTitle>
                             <DrawerDescription className="text-sm text-foreground/70 mt-2">

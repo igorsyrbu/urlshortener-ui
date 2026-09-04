@@ -1,6 +1,6 @@
 "use client";
 
-import {Check, ChevronLeft, Loader2, Plus, Search} from "lucide-react";
+import {ArrowLeft, Check, Loader2, Plus, Search} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {ButtonSpinner} from "@/components/ui/button-spinner";
 import {Input} from "@/components/ui/input";
@@ -60,9 +60,10 @@ export function TagsScreenContent({
                     variant="ghost"
                     size="icon"
                     onClick={onBack}
+                    aria-label="Back to form"
                     className="absolute left-0 h-8 w-8 text-muted-foreground hover:text-foreground"
                 >
-                    <ChevronLeft className="size-4"/>
+                    <ArrowLeft className="size-4"/>
                 </Button>
                 <h2 className="text-lg font-semibold text-foreground text-center">Select tags</h2>
             </div>

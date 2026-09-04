@@ -16,6 +16,8 @@ interface LinkFormModalProps {
     initialTagIds?: string[];
     initialKey?: string;
     onSubmit: (longUrl: string, title: string, key: string, tagIds: string[]) => Promise<void>;
+    enableUrlCleaner?: boolean;
+    enableTitleSuggestion?: boolean;
 }
 
 export function LinkFormModal({
@@ -29,6 +31,8 @@ export function LinkFormModal({
                                   initialTagIds,
                                   initialKey,
                                   onSubmit,
+                                  enableUrlCleaner = false,
+                                  enableTitleSuggestion = false,
                               }: LinkFormModalProps) {
     const isDesktop = useIsDesktop();
     const handleSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {
@@ -59,6 +63,8 @@ export function LinkFormModal({
                             submitLabel={submitLabel}
                             submittingLabel={submittingLabel}
                             onCancel={() => onOpenChange(false)}
+                            enableUrlCleaner={enableUrlCleaner}
+                            enableTitleSuggestion={enableTitleSuggestion}
                         />
                     </div>
                 </DialogContent>
@@ -71,7 +77,7 @@ export function LinkFormModal({
             <DrawerContent className="p-0 outline-hidden">
                 <DrawerTitle className="sr-only">{title}</DrawerTitle>
                 <DrawerDescription className="sr-only">Form to edit or create short link</DrawerDescription>
-                <div className="px-6 pb-6 pt-6">
+                <div className="px-6 pt-6">
                     <LinkFormFields
                         title={title}
                         initialLongUrl={initialLongUrl}
@@ -82,6 +88,8 @@ export function LinkFormModal({
                         submitLabel={submitLabel}
                         submittingLabel={submittingLabel}
                         onCancel={() => onOpenChange(false)}
+                        enableUrlCleaner={enableUrlCleaner}
+                        enableTitleSuggestion={enableTitleSuggestion}
                     />
                 </div>
             </DrawerContent>

@@ -112,7 +112,7 @@ export function DangerZoneCard({
                 <Drawer open={isDeleteDialogOpen} onOpenChange={(open) => {
                     if (!open) onCloseDeleteDialog();
                 }}>
-                    <DrawerContent className="outline-hidden px-6 pb-6 gap-6">
+                    <DrawerContent className="outline-hidden px-6 gap-6">
                         <DrawerHeader className="p-0 pb-6 text-center">
                             <DrawerTitle>Delete Account</DrawerTitle>
                             <DrawerDescription className="text-sm text-foreground/70 mt-2">
@@ -121,7 +121,7 @@ export function DangerZoneCard({
                             </DrawerDescription>
                         </DrawerHeader>
 
-                        <div className="flex flex-col gap-2 w-full pb-6">
+                        <div className="flex flex-col gap-2 w-full">
                             <label htmlFor="confirm-email-drawer"
                                    className="text-sm font-medium text-foreground text-left">
                                 Please type in your email to confirm.

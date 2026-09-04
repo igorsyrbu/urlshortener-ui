@@ -74,7 +74,7 @@ export function ImportThemeDialog({open, onOpenChange, value, onValueChange, onI
 
     return (
         <Drawer open={open} onOpenChange={onOpenChange}>
-            <DrawerContent className="outline-hidden px-6 pb-6 gap-6">
+            <DrawerContent className="outline-hidden px-6 gap-6">
                 <DrawerClose className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
                     <XIcon className="size-4"/>
                     <span className="sr-only">Close</span>
@@ -85,7 +85,7 @@ export function ImportThemeDialog({open, onOpenChange, value, onValueChange, onI
                         Paste four comma-separated hex colors: background, cards, accent, danger.
                     </DrawerDescription>
                 </DrawerHeader>
-                <div className="flex flex-col gap-2 w-full pb-6">
+                <div className="flex flex-col gap-2 w-full">
                     <Input
                         value={value}
                         onChange={(event) => onValueChange(event.target.value)}

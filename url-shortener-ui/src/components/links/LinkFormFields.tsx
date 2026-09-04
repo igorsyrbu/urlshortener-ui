@@ -10,17 +10,22 @@ import {
     GLOW_FADE_DELAY_MS,
     KEY_AVAILABILITY_CHECK_DEBOUNCE_MS,
     SHORT_KEY_TAKEN_MESSAGE,
+    URL_CLEANER_SUCCESS_DURATION_MS,
 } from "@/lib/constants";
 import type {LongUrlTitleResponse, RandomKeyResponse} from "@/lib/api-types";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useDebounce} from "@/lib/hooks/useDebounce";
+import {useUrlCleaner} from "@/lib/hooks/useUrlCleaner";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {usePreferencesStore} from "@/lib/store/preferences";
 import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import {type GlowState, ShortKeyConflictError} from "@/components/links/create-link-types";
 import {FormScreenContent} from "@/components/links/LinkFormMainScreen";
 import {TagsScreenContent} from "@/components/links/LinkFormTagsScreen";
+import {TrackerReviewScreen} from "@/components/links/TrackerReviewScreen";
 import {ALLOWED_TAG_COLORS} from "@/lib/tag-constants";
 import {logger} from "@/lib/logger";
+import {buildFinalUrl, buildTrackerEntries} from "@/lib/url-cleaner-utils";
 
 interface LinkFormFieldsProps {
     title: string;
@@ -34,6 +39,7 @@ interface LinkFormFieldsProps {
     submittingLabel: string;
     onCancel: () => void;
     enableTitleSuggestion?: boolean;
+    enableUrlCleaner?: boolean;
 }
 
 const EMPTY_TAG_IDS: string[] = [];
@@ -65,9 +71,10 @@ export function LinkFormFields({
                                    submittingLabel,
                                    onCancel,
                                    enableTitleSuggestion = false,
+                                   enableUrlCleaner = false,
                                }: LinkFormFieldsProps) {
     const isDesktop = useIsDesktop();
-    const [activeScreen, setActiveScreen] = useState<"form" | "tags">("form");
+    const [activeScreen, setActiveScreen] = useState<"form" | "tags" | "review">("form");
     const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
 
     const [longUrl, setLongUrl] = useState(initialLongUrl);
@@ -89,6 +96,18 @@ export function LinkFormFields({
     const [tagSearch, setTagSearch] = useState("");
     const [createTagLoading, setCreateTagLoading] = useState(false);
     const [tagError, setTagError] = useState<string | null>(null);
+    const [cleanedTrackerCount, setCleanedTrackerCount] = useState<number | null>(null);
+    const [keptTrackers, setKeptTrackers] = useState<Set<string>>(new Set());
+    const [appliedUrl, setAppliedUrl] = useState<string | null>(null);
+
+    const trackerMode = usePreferencesStore((state) => state.trackerMode);
+
+    const shouldEnableCleaner =
+        Boolean(enableUrlCleaner) && trackerMode !== "disabled" && !urlError && longUrl !== appliedUrl;
+    const { result: cleanerResult } = useUrlCleaner({
+        enabled: shouldEnableCleaner,
+        url: longUrl,
+    });
 
     const filteredTags = tags
         .filter((t) => t.name.toLowerCase().includes(tagSearch.toLowerCase()))
@@ -106,6 +125,11 @@ export function LinkFormFields({
         setSelectedTagIds(initialTagIds);
         setUrlError(null);
         setKeyError(null);
+        setCleanedTrackerCount(null);
+        setKeptTrackers(new Set());
+        setAppliedUrl(null);
+        setActiveScreen("form");
+        setSlideDirection(-1);
         hasUserEditedKeyRef.current = false;
     }, [initialLongUrl, initialTitle, initialTagIds]);
 
@@ -115,6 +139,12 @@ export function LinkFormFields({
             setKeyError(null);
         }
     }, [initialKey]);
+
+    useEffect(() => {
+        if (cleanedTrackerCount === null) return;
+        const timer = setTimeout(() => setCleanedTrackerCount(null), URL_CLEANER_SUCCESS_DURATION_MS);
+        return () => clearTimeout(timer);
+    }, [cleanedTrackerCount]);
 
     const fetchRandomKey = useCallback(async (force: boolean): Promise<string | null> => {
         if (pendingKeyRequestRef.current) {
@@ -206,9 +236,94 @@ export function LinkFormFields({
         };
     }, [debouncedKey, initialKey]);
 
+    const trackerEntries = React.useMemo(
+        () => (cleanerResult ? buildTrackerEntries(longUrl, cleanerResult.removedParams) : []),
+        [longUrl, cleanerResult],
+    );
+
+    const displayCleanerResult =
+        trackerMode !== "suggest" || (appliedUrl !== null && longUrl === appliedUrl) ? null : cleanerResult;
+
+    useEffect(() => {
+        if (trackerMode !== "auto-clean") return;
+        if (!cleanerResult) return;
+        if (appliedUrl !== null && longUrl === appliedUrl) return;
+        if (cleanerResult.url === longUrl) return;
+        const removedCount = cleanerResult.removedParams.length;
+        if (removedCount === 0) return;
+
+        setLongUrl(cleanerResult.url);
+        setAppliedUrl(cleanerResult.url);
+        setCleanedTrackerCount(removedCount);
+        setUrlError(null);
+        if (activeScreen === "review") {
+            setSlideDirection(-1);
+            setActiveScreen("form");
+        }
+    }, [cleanerResult, trackerMode, longUrl, appliedUrl, activeScreen]);
+
     const handleUrlChange = (value: string) => {
         setLongUrl(value);
         if (urlError) setUrlError(null);
+        if (cleanedTrackerCount !== null) setCleanedTrackerCount(null);
+        if (appliedUrl !== null) setAppliedUrl(null);
+        if (activeScreen === "review") {
+            setSlideDirection(-1);
+            setActiveScreen("form");
+        }
+    };
+
+    const handleCleanUrl = () => {
+        if (!cleanerResult) return;
+        const removedCount = cleanerResult.removedParams.length;
+        setLongUrl(cleanerResult.url);
+        setAppliedUrl(cleanerResult.url);
+        setCleanedTrackerCount(removedCount);
+        setUrlError(null);
+    };
+
+    const handleReviewUrl = () => {
+        if (!cleanerResult) return;
+        setKeptTrackers(new Set());
+        setSlideDirection(1);
+        setActiveScreen("review");
+    };
+
+    const handleToggleTracker = (key: string) => {
+        setKeptTrackers((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) {
+                next.delete(key);
+            } else {
+                next.add(key);
+            }
+            return next;
+        });
+    };
+
+    const handleBackReview = () => {
+        setSlideDirection(-1);
+        setActiveScreen("form");
+    };
+
+    const handleApplyReview = () => {
+        if (!cleanerResult) {
+            setSlideDirection(-1);
+            setActiveScreen("form");
+            return;
+        }
+        const finalUrl = buildFinalUrl(longUrl, cleanerResult.url, trackerEntries, keptTrackers);
+        const removedCount = trackerEntries.length - keptTrackers.size;
+        setLongUrl(finalUrl);
+        setAppliedUrl(finalUrl);
+        if (removedCount > 0) {
+            setCleanedTrackerCount(removedCount);
+        } else {
+            setCleanedTrackerCount(null);
+        }
+        setUrlError(null);
+        setSlideDirection(-1);
+        setActiveScreen("form");
     };
 
     const handleUrlBlur = () => {
@@ -372,6 +487,8 @@ export function LinkFormFields({
                             isDesktop={isDesktop}
                             longUrl={longUrl}
                             urlError={urlError}
+                            cleanerResult={displayCleanerResult}
+                            cleanedTrackerCount={cleanedTrackerCount}
                             titleText={titleText}
                             glowState={glowState}
                             isLoadingTitle={isLoadingTitle}
@@ -389,6 +506,8 @@ export function LinkFormFields({
                             onCancel={onCancel}
                             onUrlChange={handleUrlChange}
                             onUrlBlur={handleUrlBlur}
+                            onCleanUrl={handleCleanUrl}
+                            onReviewUrl={handleReviewUrl}
                             onTitleChange={setTitleText}
                             onSuggestTitle={fetchTitle}
                             onKeyChange={handleKeyChange}
@@ -402,7 +521,7 @@ export function LinkFormFields({
                             onSubmit={handleSubmit}
                         />
                     </motion.div>
-                ) : (
+                ) : activeScreen === "tags" ? (
                     <motion.div
                         key="tags"
                         custom={slideDirection}
@@ -436,6 +555,26 @@ export function LinkFormFields({
                             }}
                             onSubmit={handleSubmit}
                             onCancel={onCancel}
+                        />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="review"
+                        custom={slideDirection}
+                        variants={slideVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{duration: 0.2, ease: "easeInOut"}}
+                        className="w-full"
+                    >
+                        <TrackerReviewScreen
+                            cleanedUrl={cleanerResult?.url ?? longUrl}
+                            entries={trackerEntries}
+                            kept={keptTrackers}
+                            onToggle={handleToggleTracker}
+                            onBack={handleBackReview}
+                            onApply={handleApplyReview}
                         />
                     </motion.div>
                 )}

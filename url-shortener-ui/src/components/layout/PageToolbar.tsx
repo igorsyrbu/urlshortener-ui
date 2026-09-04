@@ -94,7 +94,7 @@ export function PageToolbar({
                                 <div className="flex flex-col mt-3">
                                     <button
                                         onClick={() => onShowArchivedChange?.(!showArchived)}
-                                        className="flex w-full items-center gap-3.5 px-6 py-2.5 text-sm font-medium transition-colors outline-hidden select-none hover:bg-muted/10 active:bg-muted/20 text-foreground"
+                                        className="flex w-full items-center gap-3.5 px-6 py-3.5 text-sm font-medium transition-colors outline-hidden select-none hover:bg-muted/10 active:bg-muted/20 text-foreground"
                                     >
                                         <Archive className="size-5 shrink-0"/>
                                         <span className="flex-1 text-left">Show archived links</span>

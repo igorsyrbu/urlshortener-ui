@@ -4,6 +4,10 @@ import * as React from "react"
 import {Drawer as DrawerPrimitive} from "vaul"
 
 import {cn} from "@/lib/utils"
+import {
+    DRAWER_CONTENT_SAFE_AREA_BOTTOM_CLASS,
+    DRAWER_CONTENT_SAFE_AREA_BOTTOM_MOBILE_MENU_CLASS,
+} from "@/lib/constants"
 
 function Drawer({
                     shouldScaleBackground = true,
@@ -79,8 +83,8 @@ function DrawerContent({
                 <div className={cn(
                     "flex flex-col flex-1",
                     mobileMenuSpacing
-                        ? "pb-[calc(2.25rem+env(safe-area-inset-bottom,0))]"
-                        : "pb-[calc(1.5rem+env(safe-area-inset-bottom,0))]"
+                        ? DRAWER_CONTENT_SAFE_AREA_BOTTOM_MOBILE_MENU_CLASS
+                        : DRAWER_CONTENT_SAFE_AREA_BOTTOM_CLASS
                 )}>
                     {children}
                 </div>

@@ -306,7 +306,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
     return (
         <>
             <Drawer open={open} onOpenChange={onOpenChange}>
-                <DrawerContent className="outline-hidden px-6 pb-6 gap-4">
+                <DrawerContent className="outline-hidden px-6 gap-4">
                     <DrawerTitle className="sr-only">QR Code</DrawerTitle>
                     <DrawerDescription className="sr-only">View and download QR code for this link</DrawerDescription>
                     <DrawerHeader className="p-0 text-center">

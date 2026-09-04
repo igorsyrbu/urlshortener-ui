@@ -25,11 +25,13 @@ export const API_ENDPOINTS = {
     TAGS: "/tags",
     ANALYTICS: "/analytics",
     LONG_URL_TITLE: "/longurl/title",
+    URL_CLEANER: "/urlcleaner",
     USERS_ME: "/users/me",
     USERS_ME_NAME: "/users/me/name",
     USERS_SESSIONS: "/users/sessions",
     USERS_SESSIONS_CURRENT: "/users/sessions/current",
     USERS_SESSIONS_OTHER: "/users/sessions/other",
+    USERS_PREFERENCES: "/users/preferences",
     TOKEN_REFRESH: "/token/refresh",
     OTT_GENERATE: "/ott/generate",
     OTT_LOGIN: "/ott/login",
@@ -46,6 +48,34 @@ export const COPY_FEEDBACK_DURATION_MS = 2000;
 export const GLOW_FADE_DELAY_MS = 1000;
 export const AUTH_REDIRECT_DELAY_MS = 1000;
 export const KEY_AVAILABILITY_CHECK_DEBOUNCE_MS = 600;
+export const URL_CLEANER_DEBOUNCE_MS = 500;
+export const URL_CLEANER_SUCCESS_DURATION_MS = 3000;
+
+export const URL_CLEANER_TOOLTIP = "Removes tracking parameters like UTMs, click IDs, affiliate tags, and referral tags. Double-check if you rely on any of these";
+
+// ---------------------------------------------------------------------------
+// Tracker-detection preferences
+// ---------------------------------------------------------------------------
+
+export const TRACKER_MODE = {
+    DISABLED: "disabled",
+    SUGGEST: "suggest",
+    AUTO_CLEAN: "auto-clean",
+} as const;
+
+export type TrackerModeConstant = (typeof TRACKER_MODE)[keyof typeof TRACKER_MODE];
+
+export const TRACKER_MODE_LABELS: Record<TrackerModeConstant, string> = {
+    [TRACKER_MODE.DISABLED]: "Disable",
+    [TRACKER_MODE.SUGGEST]: "Suggest",
+    [TRACKER_MODE.AUTO_CLEAN]: "Auto-clean",
+};
+
+export const TRACKER_MODE_DESCRIPTIONS: Record<TrackerModeConstant, string> = {
+    [TRACKER_MODE.DISABLED]: "Never check for trackers.",
+    [TRACKER_MODE.SUGGEST]: "Detect trackers and show a suggestion to clean them.",
+    [TRACKER_MODE.AUTO_CLEAN]: "Automatically remove trackers as you type.",
+};
 
 export const MAGIC_LINK_COOLDOWN_INTERVAL_MS = 1000;
 export const MAGIC_LINK_COOLDOWN_STORAGE_KEY = "magicLinkCooldownByEmail";
@@ -92,6 +122,17 @@ export const DEFAULT_PAGE_SIZE = 20;
 export const DEFAULT_PERIOD_DAYS = 30;
 
 export const ALLOWED_YEARS = [2026] as const;
+
+// ---------------------------------------------------------------------------
+// Drawer / Bottom sheet — safe area
+// ---------------------------------------------------------------------------
+
+/** Default bottom padding for bottom sheets — includes iPhone home-indicator safe area. */
+export const DRAWER_CONTENT_SAFE_AREA_BOTTOM_CLASS = "pb-[calc(1.5rem+env(safe-area-inset-bottom,0))]";
+
+/** Larger bottom padding variant for drawers with extra chrome (e.g. mobile menu). */
+export const DRAWER_CONTENT_SAFE_AREA_BOTTOM_MOBILE_MENU_CLASS =
+    "pb-[calc(2.25rem+env(safe-area-inset-bottom,0))]";
 
 // ---------------------------------------------------------------------------
 // UI helpers

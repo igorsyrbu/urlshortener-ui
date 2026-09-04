@@ -60,6 +60,7 @@ export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkMod
             initialKey={link?.key ?? extractKeyFromShortUrl(link?.shortUrl ?? "")}
             initialTagIds={link?.tagIds ? [...link.tagIds] : undefined}
             onSubmit={handleSubmit}
+            enableUrlCleaner
         />
     );
 }

@@ -12,6 +12,7 @@ import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS, CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD} from "@/lib/constants";
 import {ShortKeyConflictError, type ShortLinkData} from "@/components/links/create-link-types";
 import {logger} from "@/lib/logger";
+import {cn} from "@/lib/utils";
 
 type ViewState = "form" | "success";
 
@@ -82,7 +83,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
                         key="form"
                         exit={{opacity: 0, scale: 0.95}}
                         transition={{duration: 0.2}}
-                        className="p-6"
+                        className={cn(isDesktop ? "p-6" : "px-6 pt-6")}
                     >
                         {isDesktop && (
                             <DialogHeader className="mb-4">
@@ -97,6 +98,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
                             submittingLabel="Creating..."
                             onCancel={() => onOpenChange(false)}
                             enableTitleSuggestion
+                            enableUrlCleaner
                         />
                     </motion.div>
                 ) : null}

@@ -151,6 +151,12 @@ export interface LongUrlTitleResponse {
   faviconDomain: string | null;
 }
 
+export interface UrlCleanerResponse {
+  url: string;
+  removedParams: string[];
+  completeProviderSkipped: boolean;
+}
+
 export interface ApiErrorResponse {
   error: string;
   message?: string;

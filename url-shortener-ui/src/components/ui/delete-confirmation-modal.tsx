@@ -186,7 +186,7 @@ export function DeleteConfirmationModal({
 
     return (
         <Drawer open={open} onOpenChange={onOpenChange}>
-            <DrawerContent className="outline-hidden px-6 pb-6 gap-4">
+            <DrawerContent className="outline-hidden px-6 gap-4">
                 <DrawerHeader className="p-0 text-center">
                     <DrawerTitle>{title}</DrawerTitle>
                 </DrawerHeader>
