@@ -31,7 +31,7 @@ export const API_ENDPOINTS = {
     USERS_SESSIONS: "/users/sessions",
     USERS_SESSIONS_CURRENT: "/users/sessions/current",
     USERS_SESSIONS_OTHER: "/users/sessions/other",
-    USERS_PREFERENCES: "/users/preferences",
+    USERS_ME_PREFERENCES: "/users/me/preferences",
     TOKEN_REFRESH: "/token/refresh",
     OTT_GENERATE: "/ott/generate",
     OTT_LOGIN: "/ott/login",
@@ -58,9 +58,9 @@ export const URL_CLEANER_TOOLTIP = "Removes tracking parameters like UTMs, click
 // ---------------------------------------------------------------------------
 
 export const TRACKER_MODE = {
-    DISABLED: "disabled",
-    SUGGEST: "suggest",
-    AUTO_CLEAN: "auto-clean",
+    DISABLED: "DISABLE",
+    SUGGEST: "SUGGEST",
+    AUTO_CLEAN: "AUTO_CLEAN",
 } as const;
 
 export type TrackerModeConstant = (typeof TRACKER_MODE)[keyof typeof TRACKER_MODE];

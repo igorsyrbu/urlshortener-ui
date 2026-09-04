@@ -36,6 +36,30 @@ export class UsersController {
     res.status(200).json({ message: "Other sessions terminated" });
   }
 
+  static async getPreferences(req: Request, res: Response) {
+    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
+    try {
+      res.json(usersService.getPreferences(uuid));
+    } catch {
+      res.status(404).json({ error: "Preferences not found" });
+    }
+  }
+
+  static async updatePreferences(req: Request, res: Response) {
+    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
+    const { urlCleanerMode } = req.body ?? {};
+    try {
+      const updated = usersService.updatePreferences(uuid, urlCleanerMode);
+      if (!updated) {
+        res.status(400).json({ error: "Invalid or missing urlCleanerMode. Expected DISABLE, SUGGEST or AUTO_CLEAN." });
+        return;
+      }
+      res.json(updated);
+    } catch {
+      res.status(404).json({ error: "Preferences not found" });
+    }
+  }
+
   static async deleteSession(req: Request, res: Response) {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { id } = req.params;

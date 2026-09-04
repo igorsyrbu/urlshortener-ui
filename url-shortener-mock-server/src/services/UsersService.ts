@@ -17,6 +17,16 @@ export interface Session {
   current: boolean;
 }
 
+export type UrlCleanerMode = "DISABLE" | "SUGGEST" | "AUTO_CLEAN";
+
+export interface UserPreferences {
+  urlCleanerMode: UrlCleanerMode;
+}
+
+export const URL_CLEANER_MODES: readonly UrlCleanerMode[] = ["DISABLE", "SUGGEST", "AUTO_CLEAN"] as const;
+
+export const DEFAULT_URL_CLEANER_MODE: UrlCleanerMode = "SUGGEST";
+
 class UsersService {
   getUser(uuid: string) {
     return memoryStore.getUserState(uuid).user;
@@ -40,6 +50,19 @@ class UsersService {
   deleteOtherSessions(uuid: string) {
     const userState = memoryStore.getUserState(uuid);
     userState.sessions = userState.sessions.filter((s) => s.current);
+  }
+
+  getPreferences(uuid: string): UserPreferences {
+    return memoryStore.getUserState(uuid).preferences;
+  }
+
+  updatePreferences(uuid: string, mode: unknown): UserPreferences | null {
+    if (typeof mode !== "string" || !(URL_CLEANER_MODES as readonly string[]).includes(mode)) {
+      return null;
+    }
+    const preferences = memoryStore.getUserState(uuid).preferences;
+    preferences.urlCleanerMode = mode as UrlCleanerMode;
+    return preferences;
   }
 
   deleteSession(uuid: string, id: string): boolean {

@@ -157,6 +157,12 @@ export interface UrlCleanerResponse {
   completeProviderSkipped: boolean;
 }
 
+export type UrlCleanerMode = "DISABLE" | "SUGGEST" | "AUTO_CLEAN";
+
+export interface UserPreferences {
+  urlCleanerMode: UrlCleanerMode;
+}
+
 export interface ApiErrorResponse {
   error: string;
   message?: string;

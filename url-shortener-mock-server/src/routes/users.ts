@@ -8,6 +8,10 @@ router.get("/users/me", authentication, UsersController.getCurrentUser);
 
 router.put("/users/me/name", authentication, UsersController.updateCurrentUserName);
 
+router.get("/users/me/preferences", authentication, UsersController.getPreferences);
+
+router.put("/users/me/preferences", authentication, UsersController.updatePreferences);
+
 router.get("/users/sessions", authentication, UsersController.getSessions);
 
 router.delete("/users/sessions/current", authentication, UsersController.deleteCurrentSession);

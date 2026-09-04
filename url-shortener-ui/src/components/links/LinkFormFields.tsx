@@ -10,6 +10,7 @@ import {
     GLOW_FADE_DELAY_MS,
     KEY_AVAILABILITY_CHECK_DEBOUNCE_MS,
     SHORT_KEY_TAKEN_MESSAGE,
+    TRACKER_MODE,
     URL_CLEANER_SUCCESS_DURATION_MS,
 } from "@/lib/constants";
 import type {LongUrlTitleResponse, RandomKeyResponse} from "@/lib/api-types";
@@ -102,8 +103,15 @@ export function LinkFormFields({
 
     const trackerMode = usePreferencesStore((state) => state.trackerMode);
 
+    useEffect(() => {
+        void usePreferencesStore.getState().fetchPreferences();
+    }, []);
+
     const shouldEnableCleaner =
-        Boolean(enableUrlCleaner) && trackerMode !== "disabled" && !urlError && longUrl !== appliedUrl;
+        Boolean(enableUrlCleaner) &&
+        (trackerMode === TRACKER_MODE.SUGGEST || trackerMode === TRACKER_MODE.AUTO_CLEAN) &&
+        !urlError &&
+        longUrl !== appliedUrl;
     const { result: cleanerResult } = useUrlCleaner({
         enabled: shouldEnableCleaner,
         url: longUrl,
@@ -242,10 +250,10 @@ export function LinkFormFields({
     );
 
     const displayCleanerResult =
-        trackerMode !== "suggest" || (appliedUrl !== null && longUrl === appliedUrl) ? null : cleanerResult;
+        trackerMode !== TRACKER_MODE.SUGGEST || (appliedUrl !== null && longUrl === appliedUrl) ? null : cleanerResult;
 
     useEffect(() => {
-        if (trackerMode !== "auto-clean") return;
+        if (trackerMode !== TRACKER_MODE.AUTO_CLEAN) return;
         if (!cleanerResult) return;
         if (appliedUrl !== null && longUrl === appliedUrl) return;
         if (cleanerResult.url === longUrl) return;

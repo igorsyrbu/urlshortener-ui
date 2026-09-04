@@ -4,7 +4,7 @@ import usersData from "../data/users.json";
 import sessionsData from "../data/sessions.json";
 import { ShortLink } from "./ShortLinksService";
 import { Tag } from "./TagsService";
-import { User, Session } from "./UsersService";
+import { User, Session, UserPreferences, DEFAULT_URL_CLEANER_MODE } from "./UsersService";
 
 export interface UserState {
   links: ShortLink[];
@@ -12,6 +12,7 @@ export interface UserState {
   tagAssociations: Map<string, string[]>; // linkId -> tagIds
   user: User;
   sessions: Session[];
+  preferences: UserPreferences;
 }
 
 export class MemoryStore {
@@ -100,6 +101,7 @@ export class MemoryStore {
       tagAssociations,
       user,
       sessions,
+      preferences: { urlCleanerMode: DEFAULT_URL_CLEANER_MODE },
     };
   }
 }
