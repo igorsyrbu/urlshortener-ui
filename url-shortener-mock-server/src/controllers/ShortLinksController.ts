@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { shortLinksService } from "../services/ShortLinksService";
 import { fetchOpenGraph } from "../services/OpenGraphService";
+import { cleanUrl } from "../services/UrlCleanerService";
 import { AuthenticatedRequest } from "../middleware/authentication";
 
 export class ShortLinksController {
@@ -96,6 +97,19 @@ export class ShortLinksController {
       ogImageUrl: og.ogImageUrl || null,
       faviconDomain: domain,
     });
+  }
+
+  static cleanUrl(req: Request, res: Response): void {
+    const { url } = req.body ?? {};
+    if (typeof url !== "string" || !url.trim()) {
+      res.status(400).json({ error: "URL is required" });
+      return;
+    }
+    try {
+      res.json(cleanUrl(url));
+    } catch {
+      res.status(400).json({ error: "Invalid URL" });
+    }
   }
 
   static async getLongUrlTitle(req: Request, res: Response): Promise<void> {
