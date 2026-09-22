@@ -96,7 +96,7 @@ export function parseCustomColorsInput(input: string): CustomColors | null {
     return {background, card, accent, destructive};
 }
 
-export function readableForeground(background: string): string {
+function readableForeground(background: string): string {
     const lightContrast = wcagContrast(background, READABLE_LIGHT);
     const darkContrast = wcagContrast(background, READABLE_DARK);
     if (Math.max(lightContrast, darkContrast) >= MIN_TEXT_CONTRAST) {

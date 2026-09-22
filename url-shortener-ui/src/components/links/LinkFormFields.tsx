@@ -7,6 +7,7 @@ import {generateTitleFromHostname} from "@/lib/utils";
 import {getDomain, getShortKeyValidationError, isValidUrl, normalizeUrl} from "@/lib/url-utils";
 import {
     API_ENDPOINTS,
+    DEFAULT_LINK_TITLE,
     GLOW_FADE_DELAY_MS,
     KEY_AVAILABILITY_CHECK_DEBOUNCE_MS,
     SHORT_KEY_TAKEN_MESSAGE,
@@ -44,6 +45,11 @@ interface LinkFormFieldsProps {
 }
 
 const EMPTY_TAG_IDS: string[] = [];
+
+function resolveLinkTitle(value: string): string {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : DEFAULT_LINK_TITLE;
+}
 
 const slideVariants = {
     enter: (direction: number) => ({
@@ -441,7 +447,8 @@ export function LinkFormFields({
 
         setIsSubmitting(true);
         try {
-            await onSubmit(normalized, titleText, resolvedKey, selectedTagIds);
+            const resolvedTitle = resolveLinkTitle(titleText);
+            await onSubmit(normalized, resolvedTitle, resolvedKey, selectedTagIds);
         } catch (err) {
             if (err instanceof ShortKeyConflictError) {
                 setKeyError(err.message);

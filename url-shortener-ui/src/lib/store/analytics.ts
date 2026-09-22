@@ -43,7 +43,6 @@ interface AnalyticsStore {
     loading: boolean;
     isLocationLoading: boolean;
     isDeviceLoading: boolean;
-    error: string | null;
     locationTab: LocationTab;
     deviceTab: DeviceTab;
     hasFetched: boolean;
@@ -187,7 +186,6 @@ export const useAnalyticsStore = create<AnalyticsStore>((set, get) => ({
     loading: true,
     isLocationLoading: false,
     isDeviceLoading: false,
-    error: null,
     locationTab: "countries",
     deviceTab: "devices",
     hasFetched: false,
@@ -227,7 +225,7 @@ export const useAnalyticsStore = create<AnalyticsStore>((set, get) => ({
         const {period, customDateRange, hasFetched} = get();
         if (!force && hasFetched) return;
 
-        set({loading: true, isLocationLoading: true, isDeviceLoading: true, error: null, hasFetched: true});
+        set({loading: true, isLocationLoading: true, isDeviceLoading: true, hasFetched: true});
 
         const queryParams = buildQueryParams(period, customDateRange);
 

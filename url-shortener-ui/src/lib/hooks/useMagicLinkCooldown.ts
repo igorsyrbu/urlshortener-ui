@@ -7,7 +7,6 @@ interface UseMagicLinkCooldownResult {
     remainingSeconds: number;
     isCooldownActive: boolean;
     startCooldown: (retryAfterSeconds: number) => void;
-    clearCooldown: () => void;
 }
 
 type CooldownStore = Record<string, number>;
@@ -106,6 +105,5 @@ export function useMagicLinkCooldown(email: string): UseMagicLinkCooldownResult 
         remainingSeconds,
         isCooldownActive: remainingSeconds > 0,
         startCooldown,
-        clearCooldown,
     };
 }

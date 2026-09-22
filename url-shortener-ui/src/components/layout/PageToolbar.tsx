@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import {Archive, MoreVertical} from "lucide-react";
+import {Archive, Download, MoreVertical, TableProperties} from "lucide-react";
 import {cn} from "@/lib/utils";
 import {Kbd} from "@/components/ui/kbd";
 import {SearchBar} from "@/components/layout/SearchBar";
@@ -10,18 +10,25 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {Switch} from "@/components/ui/switch";
 import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/components/ui/drawer";
+import {
+    EXPORT_AS_CSV_LABEL,
+    IMPORT_FROM_CSV_LABEL,
+} from "@/components/links/import-export-constants";
 
 interface PageToolbarProps {
     showOptions?: boolean;
     showArchived?: boolean;
     onShowArchivedChange?: (value: boolean) => void;
+    showImportExport?: boolean;
+    onImportCsvClick?: () => void;
+    onExportCsvClick?: () => void;
     searchValue?: string;
     onSearchChange?: (value: string) => void;
-    onSearchClear?: () => void;
     placeholder?: string;
     className?: string;
 }
@@ -33,14 +40,26 @@ export function PageToolbar({
                                 showOptions = false,
                                 showArchived = false,
                                 onShowArchivedChange,
-                                 searchValue,
-                                 onSearchChange,
-                                 onSearchClear,
-                                 placeholder,
-                                 className
+                                showImportExport = false,
+                                onImportCsvClick,
+                                onExportCsvClick,
+                                searchValue,
+                                onSearchChange,
+                                placeholder,
+                                className
                             }: PageToolbarProps) {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const isDesktop = useIsDesktop();
+
+    const handleMobileImportClick = (): void => {
+        setIsDrawerOpen(false);
+        onImportCsvClick?.();
+    };
+
+    const handleMobileExportClick = (): void => {
+        setIsDrawerOpen(false);
+        onExportCsvClick?.();
+    };
 
     return (
         <div className={cn("flex items-center gap-2 sm:gap-4", className)}>
@@ -48,7 +67,6 @@ export function PageToolbar({
                 <SearchBar
                     value={searchValue}
                     onChange={onSearchChange}
-                    onClear={onSearchClear}
                     placeholder={placeholder}
                 />
             </div>
@@ -77,6 +95,23 @@ export function PageToolbar({
                                 <span className="flex-1">Show archived links</span>
                                 <Switch size="sm" readOnly checked={showArchived} className="ml-3"/>
                             </DropdownMenuItem>
+                            {showImportExport && (
+                                <>
+                                    <DropdownMenuSeparator/>
+                                    <DropdownMenuItem onSelect={() => onImportCsvClick?.()}>
+                                        <div className="w-7 flex items-center justify-center shrink-0">
+                                            <TableProperties className="size-4"/>
+                                        </div>
+                                        <span className="flex-1">{IMPORT_FROM_CSV_LABEL}</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => onExportCsvClick?.()}>
+                                        <div className="w-7 flex items-center justify-center shrink-0">
+                                            <Download className="size-4"/>
+                                        </div>
+                                        <span className="flex-1">{EXPORT_AS_CSV_LABEL}</span>
+                                    </DropdownMenuItem>
+                                </>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 ) : (
@@ -100,6 +135,27 @@ export function PageToolbar({
                                         <span className="flex-1 text-left">Show archived links</span>
                                         <Switch readOnly checked={showArchived}/>
                                     </button>
+                                    {showImportExport && (
+                                        <>
+                                            <div className="hairline-divider my-1"/>
+                                            <button
+                                                onClick={handleMobileImportClick}
+                                                className="flex w-full items-center gap-3.5 px-6 py-3.5 text-sm font-medium transition-colors outline-hidden select-none hover:bg-muted/10 active:bg-muted/20 text-foreground"
+                                            >
+                                                <TableProperties className="size-5 shrink-0"/>
+                                                <span
+                                                    className="flex-1 text-left">{IMPORT_FROM_CSV_LABEL}</span>
+                                            </button>
+                                            <button
+                                                onClick={handleMobileExportClick}
+                                                className="flex w-full items-center gap-3.5 px-6 py-3.5 text-sm font-medium transition-colors outline-hidden select-none hover:bg-muted/10 active:bg-muted/20 text-foreground"
+                                            >
+                                                <Download className="size-5 shrink-0"/>
+                                                <span
+                                                    className="flex-1 text-left">{EXPORT_AS_CSV_LABEL}</span>
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </DrawerContent>
                         </Drawer>

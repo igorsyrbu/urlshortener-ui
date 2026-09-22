@@ -232,6 +232,24 @@ export class TagsService {
   }
 
   /**
+   * Finds a tag by exact name, or creates it with a random allowed color.
+   * Used by CSV import, which auto-creates missing tags.
+   */
+  public findOrCreateTagByName(uuid: string, name: string): Tag {
+    const userState = memoryStore.getUserState(uuid);
+    const existing = userState.tags.find((tag) => tag.name === name);
+    if (existing) {
+      return existing;
+    }
+    const color = ALLOWED_COLORS[Math.floor(Math.random() * ALLOWED_COLORS.length)];
+    const created = this.createTag(uuid, { name, color });
+    if (!created) {
+      throw new Error(`Failed to auto-create tag "${name}"`);
+    }
+    return created;
+  }
+
+  /**
    * Deletes a tag and removes all its associations.
    */
   public deleteTag(uuid: string, id: string): boolean {

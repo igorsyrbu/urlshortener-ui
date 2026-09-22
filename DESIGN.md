@@ -125,3 +125,31 @@ The `QrCodeModal` generation settings in [`src/components/links/QrCodeModal.tsx`
 - Never add manual `env(safe-area-inset-bottom)` or `pb-[calc(...)]` on outer `DrawerContent` (`className="px-6 pb-6"` → use `px-6`) or on inner content (`px-6 pb-6` → `px-6` / `pt-6`). Inner forms should use `px-6` / `gap-*` / `mt-4` for layout; bottom inset comes only from the wrapper.
 - Minimum spacing bottom ↔ last button is the wrapper's `1.5rem` + iPhone safe area (≈24px + 34px on home-indicator devices). For menu drawers use `mobileMenuSpacing`.
 - New drawers must import the constants above, never hardcode `1.5rem` / `2.25rem` / `0.75rem` literals.
+
+---
+
+## 6. Motion & Micro-animations
+
+### Library Choice
+* **`framer-motion` for JS-driven motion** (`motion`, `AnimatePresence`, `useMotionValue` / `useSpring`, and the imperative `animate()` used by `GlowingEffect`). It is already a dependency — do not introduce new animation libraries.
+* **Tailwind `transition-*` utilities for simple state changes** (hover, active, disabled, open/close styling).
+
+### Timing Scale
+* **`0.15–0.2s` — micro feedback:** fades, form field reveals, success states, switch toggles (`duration-200 ease-in-out`).
+* **`0.3s` — layout motion:** height-auto reveals (`CreateLinkModal`), chart layout shifts.
+* **`0.4s` — data entrances:** chart initial renders.
+* **Springs for physical motion:** stiff `stiffness: 400, damping: 25` (dropzone lift) vs. laggy `stiffness: 300, damping: 20` (cursor magnetism that trails behind). Ease `easeInOut` for reveals.
+
+### What May Animate
+* **Transform and opacity only** — never layout properties (width, height, margin). Motion layers must be `pointer-events-none` + `aria-hidden` and must not shift siblings.
+* **Hover/active:** `transition-colors` by default; `transition-all` only where size or transform intentionally changes (buttons, cards). Press feedback: `active:scale-95` on primary actions.
+* **Mount/unmount transitions** go through `AnimatePresence`; rapidly toggling states (e.g. drag-over) bind `animate` directly to avoid flicker.
+* **High-frequency updates** (e.g. cursor tracking during file drag) must use motion values + springs, never `setState` per event.
+
+### Loader Conventions
+* **Spinners:** `Loader2` / `LoaderIcon` with `animate-spin`; use the shared `ButtonSpinner` inside buttons.
+* **Skeletons:** `animate-pulse` blocks.
+
+### Gotchas
+* **Always pair `duration-*` with an explicit `transition-*` scope.** A bare `duration-200` activates transitions on *all* properties (CSS initial `transition-property: all`) — this once animated a dialog's width swap and reflowed its text mid-transition. Size-changing surfaces get `transition-none`; open/close keyframe animations (`animate-in` / `animate-out`) are unaffected by it.
+* **Looping / infinite animations should respect `prefers-reduced-motion`.** Nothing in the codebase does yet — this is the standard going forward, not a description of the status quo.

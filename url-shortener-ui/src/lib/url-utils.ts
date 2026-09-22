@@ -44,12 +44,8 @@ export function normalizeUrl(value: string): string {
 // Short link key validation
 // ---------------------------------------------------------------------------
 
-export const SHORT_KEY_MAX_LENGTH = 30;
+const SHORT_KEY_MAX_LENGTH = 30;
 const SHORT_KEY_REGEX = /^[A-Za-z0-9-]+$/;
-
-export function isValidShortKey(value: string): boolean {
-    return SHORT_KEY_REGEX.test(value) && value.length <= SHORT_KEY_MAX_LENGTH;
-}
 
 export function getShortKeyValidationError(value: string): string | null {
     const trimmed = value.trim();

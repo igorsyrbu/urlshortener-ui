@@ -42,7 +42,6 @@ interface LinkCardProps {
     onEdit: (link: LinkItem) => void;
     onDelete: (link: LinkItem) => void;
     onQrCode: (link: LinkItem) => void;
-    onArchiveToggle?: (link: LinkItem) => void;
     onArchiveRequest?: (link: LinkItem) => void;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
@@ -105,7 +104,6 @@ export function LinkCard({
                              onEdit,
                              onDelete,
                              onQrCode,
-                             onArchiveToggle,
                              onArchiveRequest,
                              onMouseEnter,
                              onMouseLeave
@@ -243,8 +241,8 @@ export function LinkCard({
                                 QR Code
                                 <Kbd className={SHORTCUT_KEY_CLASS}>Q</Kbd>
                             </DropdownMenuItem>
-                            {(onArchiveToggle || onArchiveRequest) && (
-                                <DropdownMenuItem onClick={() => (onArchiveRequest ?? onArchiveToggle)?.(link)}>
+                            {onArchiveRequest && (
+                                <DropdownMenuItem onClick={() => onArchiveRequest(link)}>
                                     {link.isActive ? (
                                         <Archive className="size-4 mr-2"/>
                                     ) : (
@@ -287,11 +285,11 @@ export function LinkCard({
                                     icon: QrCode,
                                     onClick: () => onQrCode(link),
                                 },
-                                ...((onArchiveToggle || onArchiveRequest) ? [
+                                ...((onArchiveRequest) ? [
                                     {
                                         label: link.isActive ? "Archive" : "Unarchive",
                                         icon: link.isActive ? Archive : ArchiveRestore,
-                                        onClick: () => (onArchiveRequest ?? onArchiveToggle)?.(link),
+                                        onClick: () => onArchiveRequest(link),
                                     },
                                 ] : []),
                                 {

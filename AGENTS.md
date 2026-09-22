@@ -200,9 +200,27 @@ if (response.status === HTTP_TOO_MANY_REQUESTS) { ...
 
 ---
 
-## 6. What Not to Do
+## 6. Text Truncation & Overflow
+
+User-provided strings (file names, URLs, titles, error reasons) can be arbitrarily long and must never break
+layout — in desktop dialogs and mobile drawers alike.
+
+- Truncate single-line text with `truncate` (ellipsis) and expose the full value via the `title` attribute for
+  hover / long-press.
+- `truncate` only works when every ancestor down the flex/grid chain can shrink: add `min-w-0` to each flex or grid
+  parent between the constrained container and the truncated element. One missing `min-w-0` silently disables
+  truncation and lets content blow out the layout.
+- For unbreakable content that must stay fully visible (table cells with long tokens, error reasons), prefer
+  `break-all` with a fixed table layout (`table-fixed` + `<colgroup>`) over truncation.
+- Always verify with adversarially long strings (200+ characters, no spaces) in both desktop and mobile layouts.
+
+---
+
+## 7. What Not to Do
 
 | Do not                                                | Reason                                                      |
+|-------------------------------------------------------|-------------------------------------------------------------|
+| Render user-provided text without truncation handling | Long strings break layout on desktop and mobile; see section 6 |
 |-------------------------------------------------------|-------------------------------------------------------------|
 | Add `"use client"` to every component                 | Defeats the purpose of the App Router and SSR benefits      |
 | Fetch data inside `useEffect` for initial loads       | Server Components handle this more efficiently              |

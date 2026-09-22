@@ -31,7 +31,6 @@ interface DeleteConfirmationModalProps {
     loading: boolean;
     title: string;
     description: string;
-    warningText?: string;
     previewContent?: React.ReactNode;
     confirmLabel?: string;
     confirmLoadingLabel?: string;
@@ -104,7 +103,6 @@ export function DeleteConfirmationModal({
                                             loading,
                                             title,
                                             description,
-                                            warningText,
                                             previewContent,
                                             confirmLabel = "Delete",
                                             confirmLoadingLabel = "Deleting...",
@@ -130,9 +128,6 @@ export function DeleteConfirmationModal({
                     <DialogDescription className="text-sm text-foreground">{description}</DialogDescription>
                 ) : (
                     <DrawerDescription className="text-sm text-foreground">{description}</DrawerDescription>
-                )}
-                {warningText && (
-                    <p className="text-sm font-semibold text-foreground">{warningText}</p>
                 )}
             </div>
 

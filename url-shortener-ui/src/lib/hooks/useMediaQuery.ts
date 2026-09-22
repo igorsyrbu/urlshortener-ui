@@ -3,7 +3,7 @@
 import {useEffect, useState} from "react";
 import {MOBILE_BREAKPOINT_PX} from "@/lib/constants";
 
-export function useMediaQuery(query: string): boolean {
+function useMediaQuery(query: string): boolean {
     const [value, setValue] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
 

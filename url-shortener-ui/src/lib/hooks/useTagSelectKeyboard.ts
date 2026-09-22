@@ -17,7 +17,6 @@ interface UseTagSelectKeyboardReturn {
     handleSearchChange: (value: string) => void;
     filteredTags: TagItem[];
     showCreateOption: boolean;
-    totalItems: number;
     handleKeyDown: (e: React.KeyboardEvent) => void;
 }
 
@@ -104,7 +103,6 @@ export function useTagSelectKeyboard({
         handleSearchChange,
         filteredTags,
         showCreateOption,
-        totalItems,
         handleKeyDown,
     };
 }

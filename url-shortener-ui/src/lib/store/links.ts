@@ -9,17 +9,14 @@ interface LinkStore {
     links: LinkItem[];
     loading: boolean;
     error: string | null;
-    page: number;
-    hasMore: boolean;
     showArchived: boolean;
     searchQuery: string;
     fetchLinks: (page?: number) => Promise<void>;
-    setLinks: (links: LinkItem[]) => void;
     clearError: () => void;
     setShowArchived: (show: boolean) => void;
     setSearchQuery: (query: string) => void;
     hydrateShowArchived: () => void;
-    toggleLinkActive: (id: string, isActive: boolean) => Promise<void>;
+    setLinkArchived: (id: string, archived: boolean) => Promise<void>;
 }
 
 function mapResponseToLinkItem(item: ShortLinkDTO): LinkItem {
@@ -38,8 +35,6 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
     links: [],
     loading: false,
     error: null,
-    page: 0,
-    hasMore: true,
     showArchived: false,
     searchQuery: "",
 
@@ -66,8 +61,6 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
 
                 set((state) => ({
                     links: page === 0 ? mapped : [...state.links, ...mapped],
-                    page: data.number,
-                    hasMore: !data.last,
                 }));
             } else {
                 set({error: `Failed to fetch links: ${res.status}`});
@@ -80,7 +73,6 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
         }
     },
 
-    setLinks: (links) => set({links}),
     clearError: () => set({error: null}),
 
     setShowArchived: (show) => {
@@ -105,19 +97,35 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
         }
     },
 
-    toggleLinkActive: async (id, isActive) => {
+    setLinkArchived: async (id, archived) => {
+        const link = get().links.find((item) => item.id === id);
+        if (!link) {
+            set({error: `Failed to update archive status: link not found`});
+            return;
+        }
+        if (!link.key) {
+            set({error: `Failed to update archive status: missing key`});
+            return;
+        }
         try {
             const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS, {
                 method: "PUT",
-                body: JSON.stringify({id, isActive}),
+                body: JSON.stringify({
+                    id: link.id,
+                    title: link.title,
+                    longUrl: link.longUrl,
+                    key: link.key,
+                    isActive: !archived,
+                    tagIds: [...(link.tagIds ?? [])],
+                }),
             });
             if (res.ok) {
                 await get().fetchLinks(0);
             } else {
-                set({error: `Failed to toggle link status: ${res.status}`});
+                set({error: `Failed to update archive status: ${res.status}`});
             }
         } catch (error) {
-            logger.error("Error toggling link active state", error);
+            logger.error("Error updating link archive status", error);
             set({error: error instanceof Error ? error.message : "Unknown error occurred"});
         }
     },

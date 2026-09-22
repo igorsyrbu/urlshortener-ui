@@ -6,13 +6,13 @@ import {PaletteMode, ThemeTokenMap, TOKEN_CSS_VAR_NAMES} from "@/lib/themes/them
 
 const THEME_SELECTION_VERSION = 2;
 
-export interface PresetThemeSelection {
+interface PresetThemeSelection {
     v: number;
     kind: "preset";
     paletteId: string;
 }
 
-export interface CustomThemeSelection {
+interface CustomThemeSelection {
     v: number;
     kind: "custom";
     colors: CustomColors;

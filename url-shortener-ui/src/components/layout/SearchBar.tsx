@@ -11,10 +11,9 @@ interface SearchBarProps {
     className?: string;
     value?: string;
     onChange?: (value: string) => void;
-    onClear?: () => void;
 }
 
-export function SearchBar({placeholder = "Search...", className, value, onChange, onClear}: SearchBarProps) {
+export function SearchBar({placeholder = "Search...", className, value, onChange}: SearchBarProps) {
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -36,7 +35,6 @@ export function SearchBar({placeholder = "Search...", className, value, onChange
 
     const handleClear = () => {
         onChange?.("");
-        onClear?.();
         inputRef.current?.focus();
     };
 

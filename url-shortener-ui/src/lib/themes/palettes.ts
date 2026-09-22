@@ -11,14 +11,14 @@ export interface PaletteSwatch {
     foreground: string;
 }
 
-export interface PaletteCustomColors {
+interface PaletteCustomColors {
     background: string;
     card: string;
     primary: string;
     destructive: string;
 }
 
-export interface PaletteMeta {
+interface PaletteMeta {
     id: string;
     name: string;
     swatch: Record<PaletteMode, PaletteSwatch>;

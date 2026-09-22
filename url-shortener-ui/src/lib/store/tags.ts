@@ -1,7 +1,6 @@
 import {create} from "zustand";
 import {fetchWithAuth} from "@/lib/api";
 import {TagItem} from "@/lib/types";
-import {ALLOWED_TAG_COLORS} from "@/lib/tag-constants";
 import {fetchTagsResponse} from "@/lib/store/fetch-tags-common";
 
 interface TagStore {
@@ -9,10 +8,8 @@ interface TagStore {
     loading: boolean;
     error: string | null;
     searchQuery: string;
-    fetchTags: (params?: { withLinksCount?: boolean; size?: number }) => Promise<void>;
-    getTagById: (id: string) => TagItem | undefined;
+    fetchTags: (params?: { size?: number }) => Promise<void>;
     setSearchQuery: (query: string) => void;
-    clearError: () => void;
 }
 
 export const useTagStoreWithoutCount = create<TagStore>((set, get) => ({
@@ -42,11 +39,7 @@ export const useTagStoreWithoutCount = create<TagStore>((set, get) => ({
         }
     },
 
-    getTagById: (id) => get().tags.find((tag) => tag.id === id),
-
     setSearchQuery: (query) => set({searchQuery: query}),
-
-    clearError: () => set({error: null}),
 }));
 
 

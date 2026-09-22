@@ -6,6 +6,8 @@ import {EditLinkModal} from "@/components/links/EditLinkModal";
 import {DeleteLinkModal} from "@/components/links/DeleteLinkModal";
 import {ArchiveLinkModal} from "@/components/links/ArchiveLinkModal";
 import {QrCodeModal} from "@/components/links/QrCodeModal";
+import {ImportCsvModal} from "@/components/links/ImportCsvModal";
+import {ExportCsvModal} from "@/components/links/ExportCsvModal";
 import {LinkCard} from "@/components/links/LinkCard";
 import {LinkCardSkeletonList} from "@/components/links/LinkCardSkeleton";
 import {EmptyLinksState} from "@/components/links/EmptyLinksState";
@@ -31,7 +33,7 @@ export default function LinksPage() {
         clearError,
         showArchived,
         setShowArchived,
-        toggleLinkActive,
+        setLinkArchived,
         hydrateShowArchived,
         searchQuery
     } = useLinkStore();
@@ -43,6 +45,8 @@ export default function LinksPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isQrCodeModalOpen, setIsQrCodeModalOpen] = useState(false);
     const [linkForQrCode, setLinkForQrCode] = useState<LinkItem | null>(null);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [hoveredLinkId, setHoveredLinkId] = useState<string | null>(null);
     const [archiveModalLink, setArchiveModalLink] = useState<LinkItem | null>(null);
     const [isArchiving, setIsArchiving] = useState(false);
@@ -110,15 +114,11 @@ export default function LinksPage() {
         fetchLinks(0);
     };
 
-    const handleArchiveToggle = (link: LinkItem) => {
-        toggleLinkActive(link.id, !link.isActive);
-    };
-
     const handleArchiveConfirm = async () => {
         if (!archiveModalLink) return;
         setIsArchiving(true);
         try {
-            await toggleLinkActive(archiveModalLink.id, !archiveModalLink.isActive);
+            await setLinkArchived(archiveModalLink.id, archiveModalLink.isActive);
             setArchiveModalLink(null);
         } finally {
             setIsArchiving(false);
@@ -161,11 +161,22 @@ export default function LinksPage() {
         setIsQrCodeModalOpen(true);
     };
 
+    const handleImportCsvClick = (): void => {
+        setIsImportModalOpen(true);
+    };
+
+    const handleExportCsvClick = (): void => {
+        setIsExportModalOpen(true);
+    };
+
     const toolbar = (
         <PageToolbar
             showOptions
             showArchived={showArchived}
             onShowArchivedChange={handleShowArchivedChange}
+            showImportExport
+            onImportCsvClick={handleImportCsvClick}
+            onExportCsvClick={handleExportCsvClick}
             searchValue={searchInput}
             onSearchChange={setSearchInput}
             placeholder="Search by URL or title"
@@ -214,7 +225,6 @@ export default function LinksPage() {
                                 onEdit={handleEdit}
                                 onDelete={handleDeleteClick}
                                 onQrCode={handleQrCode}
-                                onArchiveToggle={handleArchiveToggle}
                                 onArchiveRequest={(link) => setArchiveModalLink(link)}
                                 onMouseEnter={() => setHoveredLinkId(link.id)}
                                 onMouseLeave={() => setHoveredLinkId(null)}
@@ -235,7 +245,6 @@ export default function LinksPage() {
                     onOpenChange={setDeleteModalOpen}
                     onConfirm={confirmDelete}
                     loading={isDeleting}
-                    linkTitle={linkToDelete?.title}
                     shortUrl={linkToDelete?.shortUrl}
                     longUrl={linkToDelete?.longUrl}
                 />
@@ -252,6 +261,16 @@ export default function LinksPage() {
                     link={archiveModalLink}
                     onConfirm={handleArchiveConfirm}
                     loading={isArchiving}
+                />
+
+                <ImportCsvModal
+                    open={isImportModalOpen}
+                    onOpenChange={setIsImportModalOpen}
+                />
+
+                <ExportCsvModal
+                    open={isExportModalOpen}
+                    onOpenChange={setIsExportModalOpen}
                 />
             </PageContainer>
         </TooltipProvider>

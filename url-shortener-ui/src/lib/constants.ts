@@ -5,11 +5,6 @@
 export const ROUTES = {
     LOGIN: "/login",
     LINKS: "/links",
-    DASHBOARD: "/dashboard",
-    INSPECT: "/inspect",
-    ANALYTICS: "/analytics",
-    SETTINGS: "/settings",
-    REPORT_ABUSE: "/report-abuse",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -19,6 +14,8 @@ export const ROUTES = {
 export const API_ENDPOINTS = {
     SHORTLINKS: "/shortlinks",
     SHORTLINKS_RANDOM: "/shortlinks/random",
+    SHORTLINKS_EXPORT: "/shortlinks/export",
+    SHORTLINKS_IMPORT: "/shortlinks/import",
     SHORTLINKS_EXISTS: (key: string) => `/shortlinks/${key}/exists`,
     SHORTLINKS_BY_IDS: "/shortlinks/byIds",
     SHORTLINKS_PREVIEW: (key: string) => `/public/preview/${key}`,
@@ -34,9 +31,7 @@ export const API_ENDPOINTS = {
     USERS_ME_PREFERENCES: "/users/me/preferences",
     TOKEN_REFRESH: "/token/refresh",
     OTT_GENERATE: "/ott/generate",
-    OTT_LOGIN: "/ott/login",
     AUTH_CODE_EXCHANGE: "/auth/code/exchange",
-    OAUTH2_GOOGLE: "/oauth2/authorization/google",
     ABUSE_REPORT: "/public/abuse/report",
 } as const;
 
@@ -63,7 +58,7 @@ export const TRACKER_MODE = {
     AUTO_CLEAN: "AUTO_CLEAN",
 } as const;
 
-export type TrackerModeConstant = (typeof TRACKER_MODE)[keyof typeof TRACKER_MODE];
+type TrackerModeConstant = (typeof TRACKER_MODE)[keyof typeof TRACKER_MODE];
 
 export const TRACKER_MODE_LABELS: Record<TrackerModeConstant, string> = {
     [TRACKER_MODE.DISABLED]: "Disable",
@@ -108,6 +103,22 @@ export const SCROLL_DELTA_THRESHOLD = 8;
 
 export const CONFETTI_PARTICLE_COUNT = 30;
 export const CONFETTI_SPREAD = 50;
+
+// ---------------------------------------------------------------------------
+// Links import / export
+// ---------------------------------------------------------------------------
+
+/** Max data rows (excluding header and blank lines) accepted per CSV import. */
+export const MAX_IMPORT_DATA_ROWS = 1000;
+
+/** Filename prefix for CSV exports; full name is `<prefix>-YYYY-MM-DD.csv`. */
+export const EXPORT_FILENAME_PREFIX = "shortlinks-export";
+
+/** Delay before a single automatic retry when export hits rate limiting. */
+export const EXPORT_RATE_LIMIT_RETRY_DELAY_MS = 1500;
+
+/** Max destination URL length accepted by the export search filter. */
+export const EXPORT_SEARCH_MAX_LENGTH = 2048;
 
 // ---------------------------------------------------------------------------
 // Pagination

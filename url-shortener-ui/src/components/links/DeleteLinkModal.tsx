@@ -9,7 +9,6 @@ interface DeleteLinkModalProps {
     onOpenChange: (open: boolean) => void;
     onConfirm: () => void;
     loading: boolean;
-    linkTitle?: string;
     shortUrl?: string;
     longUrl?: string;
 }
@@ -52,7 +51,7 @@ export function LinkPreviewCard({shortUrl, longUrl}: LinkPreviewCardProps) {
     );
 }
 
-export function DeleteLinkModal({linkTitle, shortUrl, longUrl, ...props}: DeleteLinkModalProps) {
+export function DeleteLinkModal({shortUrl, longUrl, ...props}: DeleteLinkModalProps) {
     const handle = getHandleFromShortUrl(shortUrl);
     const previewContent =
         shortUrl && longUrl ? <LinkPreviewCard shortUrl={shortUrl} longUrl={longUrl}/> : undefined;

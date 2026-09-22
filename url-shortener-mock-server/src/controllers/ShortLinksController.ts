@@ -37,7 +37,11 @@ export class ShortLinksController {
 
   static async updateShortLink(req: Request, res: Response): Promise<void> {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
-    const { id, ...dto } = req.body;
+    const { id, ...dto } = req.body ?? {};
+    if (typeof id !== "string" || !id.trim()) {
+      res.status(400).json({ error: "id must not be blank" });
+      return;
+    }
     const result = shortLinksService.updateLink(uuid, id, dto);
 
     if (!result.ok) {
@@ -50,6 +54,28 @@ export class ShortLinksController {
 
   static getRandomKey(req: Request, res: Response): void {
     res.json({ key: shortLinksService.generateRandomKey() });
+  }
+
+  static exportShortLinks(req: Request, res: Response): void {
+    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
+    const showArchived = req.query.showArchived === "true";
+    const search = req.query.search as string | undefined;
+    res.setHeader("Content-Type", "text/csv;charset=UTF-8");
+    res.send(shortLinksService.exportLinksCsv(uuid, showArchived, search));
+  }
+
+  static importShortLinks(req: Request, res: Response): void {
+    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
+    const csvText = typeof req.body === "string" ? req.body : "";
+    const generateTakenKeys = req.query.generateTakenKeys === "true";
+    const result = shortLinksService.importLinksCsv(uuid, csvText, generateTakenKeys);
+
+    if (!result.ok) {
+      res.status(400).json({ detail: result.error });
+      return;
+    }
+
+    res.json({ imported: result.imported, failed: result.failed });
   }
 
   static keyExists(req: Request, res: Response): void {
