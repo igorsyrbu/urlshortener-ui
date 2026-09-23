@@ -68,6 +68,397 @@
       "longUrl": "https://orbstack.dev",
       "isActive": true,
       "tagIds": []
+    },
+    {
+      "id": "01000000-0000-4000-8000-000000000001",
+      "title": "React",
+      "shortUrl": "https://sho.rt/react",
+      "longUrl": "https://react.dev",
+      "isActive": true,
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "02000000-0000-4000-8000-000000000002",
+      "title": "TypeScript Handbook",
+      "shortUrl": "https://sho.rt/typescript",
+      "longUrl": "https://www.typescriptlang.org/docs/handbook/intro.html",
+      "isActive": true,
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "03000000-0000-4000-8000-000000000003",
+      "title": "Spring Framework",
+      "shortUrl": "https://sho.rt/spring-framework",
+      "longUrl": "https://spring.io/projects/spring-framework",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "04000000-0000-4000-8000-000000000004",
+      "title": "Kotlin Docs",
+      "shortUrl": "https://sho.rt/kotlin",
+      "longUrl": "https://kotlinlang.org/docs/home.html",
+      "isActive": true,
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "05000000-0000-4000-8000-000000000005",
+      "title": "Go",
+      "shortUrl": "https://sho.rt/golang",
+      "longUrl": "https://go.dev/doc/",
+      "isActive": true,
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "06000000-0000-4000-8000-000000000006",
+      "title": "The Rust Book",
+      "shortUrl": "https://sho.rt/rust-book",
+      "longUrl": "https://doc.rust-lang.org/book/",
+      "isActive": true,
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "07000000-0000-4000-8000-000000000007",
+      "title": "Python Docs",
+      "shortUrl": "https://sho.rt/python",
+      "longUrl": "https://docs.python.org/3/",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "08000000-0000-4000-8000-000000000008",
+      "title": "Node.js",
+      "shortUrl": "https://sho.rt/nodejs",
+      "longUrl": "https://nodejs.org/en/docs",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "09000000-0000-4000-8000-000000000009",
+      "title": "Tailwind CSS",
+      "shortUrl": "https://sho.rt/tailwindcss",
+      "longUrl": "https://tailwindcss.com/docs",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000010",
+      "title": "shadcn/ui",
+      "shortUrl": "https://sho.rt/shadcn-ui",
+      "longUrl": "https://ui.shadcn.com/docs",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "11000000-0000-4000-8000-000000000011",
+      "title": "Framer Motion",
+      "shortUrl": "https://sho.rt/framer-motion",
+      "longUrl": "https://motion.dev",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "12000000-0000-4000-8000-000000000012",
+      "title": "Recharts",
+      "shortUrl": "https://sho.rt/recharts",
+      "longUrl": "https://recharts.github.io/en-US/",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "13000000-0000-4000-8000-000000000013",
+      "title": "Radix UI",
+      "shortUrl": "https://sho.rt/radix-ui",
+      "longUrl": "https://www.radix-ui.com/primitives",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "14000000-0000-4000-8000-000000000014",
+      "title": "PostgreSQL Docs",
+      "shortUrl": "https://sho.rt/postgres",
+      "longUrl": "https://www.postgresql.org/docs/",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "15000000-0000-4000-8000-000000000015",
+      "title": "Redis",
+      "shortUrl": "https://sho.rt/redis",
+      "longUrl": "https://redis.io/docs/latest/",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "16000000-0000-4000-8000-000000000016",
+      "title": "Docker Docs",
+      "shortUrl": "https://sho.rt/docker",
+      "longUrl": "https://docs.docker.com/",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "17000000-0000-4000-8000-000000000017",
+      "title": "Kubernetes Docs",
+      "shortUrl": "https://sho.rt/k8s",
+      "longUrl": "https://kubernetes.io/docs/home/",
+      "isActive": true,
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "18000000-0000-4000-8000-000000000018",
+      "title": "Apache Kafka",
+      "shortUrl": "https://sho.rt/kafka",
+      "longUrl": "https://kafka.apache.org/documentation/",
+      "isActive": true,
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "19000000-0000-4000-8000-000000000019",
+      "title": "Prisma",
+      "shortUrl": "https://sho.rt/prisma",
+      "longUrl": "https://www.prisma.io/docs",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000020",
+      "title": "Flyway",
+      "shortUrl": "https://sho.rt/flyway",
+      "longUrl": "https://documentation.red-gate.com/fd",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "21000000-0000-4000-8000-000000000021",
+      "title": "OpenAI API Docs",
+      "shortUrl": "https://sho.rt/openai-api",
+      "longUrl": "https://platform.openai.com/docs/overview",
+      "isActive": true,
+      "tagIds": [
+        "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a"
+      ]
+    },
+    {
+      "id": "22000000-0000-4000-8000-000000000022",
+      "title": "Hugging Face",
+      "shortUrl": "https://sho.rt/huggingface",
+      "longUrl": "https://huggingface.co/docs",
+      "isActive": true,
+      "tagIds": [
+        "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a"
+      ]
+    },
+    {
+      "id": "23000000-0000-4000-8000-000000000023",
+      "title": "LangChain",
+      "shortUrl": "https://sho.rt/langchain",
+      "longUrl": "https://python.langchain.com/docs/introduction/",
+      "isActive": true,
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "24000000-0000-4000-8000-000000000024",
+      "title": "GitHub",
+      "shortUrl": "https://sho.rt/github",
+      "longUrl": "https://github.com",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "25000000-0000-4000-8000-000000000025",
+      "title": "GitLab",
+      "shortUrl": "https://sho.rt/gitlab",
+      "longUrl": "https://about.gitlab.com",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "26000000-0000-4000-8000-000000000026",
+      "title": "Stack Overflow",
+      "shortUrl": "https://sho.rt/stackoverflow",
+      "longUrl": "https://stackoverflow.com",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "27000000-0000-4000-8000-000000000027",
+      "title": "MDN Web Docs",
+      "shortUrl": "https://sho.rt/mdn",
+      "longUrl": "https://developer.mozilla.org",
+      "isActive": true,
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "28000000-0000-4000-8000-000000000028",
+      "title": "DevDocs",
+      "shortUrl": "https://sho.rt/devdocs",
+      "longUrl": "https://devdocs.io",
+      "isActive": true,
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "29000000-0000-4000-8000-000000000029",
+      "title": "Martin Fowler",
+      "shortUrl": "https://sho.rt/martin-fowler",
+      "longUrl": "https://martinfowler.com",
+      "isActive": true,
+      "tagIds": [
+        "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"
+      ]
+    },
+    {
+      "id": "30000000-0000-4000-8000-000000000030",
+      "title": "Refactoring",
+      "shortUrl": "https://sho.rt/refactoring",
+      "longUrl": "https://refactoring.com",
+      "isActive": true,
+      "tagIds": [
+        "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"
+      ]
+    },
+    {
+      "id": "31000000-0000-4000-8000-000000000031",
+      "title": "OWASP Top 10",
+      "shortUrl": "https://sho.rt/owasp-top10",
+      "longUrl": "https://owasp.org/www-project-top-ten/",
+      "isActive": true,
+      "tagIds": [
+        "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a"
+      ]
+    },
+    {
+      "id": "32000000-0000-4000-8000-000000000032",
+      "title": "Twelve-Factor App",
+      "shortUrl": "https://sho.rt/twelve-factor",
+      "longUrl": "https://12factor.net",
+      "isActive": true,
+      "tagIds": [
+        "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"
+      ]
+    },
+    {
+      "id": "33000000-0000-4000-8000-000000000033",
+      "title": "HTTP Status Codes",
+      "shortUrl": "https://sho.rt/http-statuses",
+      "longUrl": "https://httpstatuses.com",
+      "isActive": true,
+      "tagIds": [
+        "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"
+      ]
+    },
+    {
+      "id": "34000000-0000-4000-8000-000000000034",
+      "title": "Regex101",
+      "shortUrl": "https://sho.rt/regex101",
+      "longUrl": "https://regex101.com",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "35000000-0000-4000-8000-000000000035",
+      "title": "Excalidraw",
+      "shortUrl": "https://sho.rt/excalidraw",
+      "longUrl": "https://excalidraw.com",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "36000000-0000-4000-8000-000000000036",
+      "title": "tRPC",
+      "shortUrl": "https://sho.rt/trpc",
+      "longUrl": "https://trpc.io/docs",
+      "isActive": true,
+      "tagIds": [
+        "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e"
+      ]
+    },
+    {
+      "id": "37000000-0000-4000-8000-000000000037",
+      "title": "Zustand",
+      "shortUrl": "https://sho.rt/zustand",
+      "longUrl": "https://zustand.docs.pmnd.rs/getting-started/introduction",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "38000000-0000-4000-8000-000000000038",
+      "title": "Vite",
+      "shortUrl": "https://sho.rt/vite",
+      "longUrl": "https://vite.dev",
+      "isActive": true,
+      "tagIds": [
+        "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+      ]
+    },
+    {
+      "id": "39000000-0000-4000-8000-000000000039",
+      "title": "Atom (sunset)",
+      "shortUrl": "https://sho.rt/atom",
+      "longUrl": "https://atom.io",
+      "isActive": false,
+      "tagIds": [
+        "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b"
+      ]
     }
   ]
 }

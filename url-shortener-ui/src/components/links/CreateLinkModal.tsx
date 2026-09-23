@@ -1,6 +1,7 @@
 "use client";
 
 import {useState} from "react";
+import {useRouter} from "next/navigation";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/components/ui/drawer";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
@@ -9,7 +10,7 @@ import {AnimatePresence, motion} from "framer-motion";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
 import {CreateLinkSuccess} from "@/components/links/CreateLinkSuccess";
 import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS, CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD} from "@/lib/constants";
+import {API_ENDPOINTS, CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD, ROUTES} from "@/lib/constants";
 import {ShortKeyConflictError, type ShortLinkData} from "@/components/links/create-link-types";
 import {logger} from "@/lib/logger";
 import {cn} from "@/lib/utils";
@@ -29,6 +30,7 @@ const CONFETTI_ORIGIN_Y = 0.6;
 
 function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
     const isDesktop = useIsDesktop();
+    const router = useRouter();
     const [viewState, setViewState] = useState<ViewState>("form");
     const [shortLink, setShortLink] = useState<ShortLinkData | null>(null);
     const {fetchLinks} = useLinkStore();
@@ -44,7 +46,8 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
             origin: {y: CONFETTI_ORIGIN_Y},
         });
 
-        fetchLinks();
+        router.push(ROUTES.LINKS, {scroll: false});
+        fetchLinks(0);
     };
 
     const handleFormSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {

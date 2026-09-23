@@ -11,6 +11,9 @@ interface LinkStore {
     error: string | null;
     showArchived: boolean;
     searchQuery: string;
+    currentPage: number;
+    totalElements: number;
+    totalPages: number;
     fetchLinks: (page?: number) => Promise<void>;
     clearError: () => void;
     setShowArchived: (show: boolean) => void;
@@ -37,15 +40,19 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
     error: null,
     showArchived: false,
     searchQuery: "",
+    currentPage: 0,
+    totalElements: 0,
+    totalPages: 0,
 
-    fetchLinks: async (page = 0) => {
+    fetchLinks: async (page?: number) => {
+        const requestedPage = Math.max(0, page ?? get().currentPage);
         if (get().loading) return;
 
         set({loading: true, error: null});
         try {
             const {showArchived, searchQuery} = get();
             const params = new URLSearchParams();
-            params.set("page", String(page));
+            params.set("page", String(requestedPage));
             params.set("size", String(DEFAULT_PAGE_SIZE));
             params.set("showArchived", String(showArchived));
             if (searchQuery) {
@@ -59,9 +66,12 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
                 const data: PageDTO<ShortLinkDTO> = await res.json();
                 const mapped = data.content.map(mapResponseToLinkItem);
 
-                set((state) => ({
-                    links: page === 0 ? mapped : [...state.links, ...mapped],
-                }));
+                set({
+                    links: mapped,
+                    currentPage: data.number ?? requestedPage,
+                    totalElements: data.totalElements ?? mapped.length,
+                    totalPages: data.totalPages ?? 1,
+                });
             } else {
                 set({error: `Failed to fetch links: ${res.status}`});
             }
@@ -120,7 +130,7 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
                 }),
             });
             if (res.ok) {
-                await get().fetchLinks(0);
+                await get().fetchLinks();
             } else {
                 set({error: `Failed to update archive status: ${res.status}`});
             }

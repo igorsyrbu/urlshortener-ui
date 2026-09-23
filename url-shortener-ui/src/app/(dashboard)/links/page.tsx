@@ -1,6 +1,7 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {Suspense, useCallback, useEffect, useState} from "react";
+import {useRouter, useSearchParams} from "next/navigation";
 import {fetchWithAuth} from "@/lib/api";
 import {EditLinkModal} from "@/components/links/EditLinkModal";
 import {DeleteLinkModal} from "@/components/links/DeleteLinkModal";
@@ -10,6 +11,7 @@ import {ImportCsvModal} from "@/components/links/ImportCsvModal";
 import {ExportCsvModal} from "@/components/links/ExportCsvModal";
 import {LinkCard} from "@/components/links/LinkCard";
 import {LinkCardSkeletonList} from "@/components/links/LinkCardSkeleton";
+import {LinksPagination} from "@/components/links/LinksPagination";
 import {EmptyLinksState} from "@/components/links/EmptyLinksState";
 import {NoLinksFoundState} from "@/components/links/NoLinksFoundState";
 import {TooltipProvider} from "@/components/ui/tooltip";
@@ -19,16 +21,33 @@ import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {PageToolbar} from "@/components/layout/PageToolbar";
-import {API_ENDPOINTS} from "@/lib/constants";
+import {API_ENDPOINTS, DEFAULT_PAGE_SIZE, ROUTES} from "@/lib/constants";
+import {buildLinksPageUrl, parseLinksPageParam} from "@/lib/pagination";
 import {logger} from "@/lib/logger";
 import {isModalOpen} from "@/lib/utils";
 import {useDebounce} from "@/lib/hooks/useDebounce";
 
-export default function LinksPage() {
+const LINKS_LIST_TOP_ID = "links-list-top";
+
+function scrollLinksToTop(): void {
+    const scroller = document.querySelector("main");
+    if (scroller) {
+        scroller.scrollTo({top: 0, behavior: "smooth"});
+        return;
+    }
+    document.getElementById(LINKS_LIST_TOP_ID)?.scrollIntoView({behavior: "smooth", block: "start"});
+}
+
+function LinksPageContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const urlPage = parseLinksPageParam(searchParams.get("page"));
     const {
         links,
         loading,
         error,
+        currentPage,
+        totalElements,
         fetchLinks,
         clearError,
         showArchived,
@@ -57,19 +76,38 @@ export default function LinksPage() {
         hydrateShowArchived();
     }, [hydrateShowArchived]);
 
+    const resetUrlToFirstPage = useCallback((): void => {
+        if (useLinkStore.getState().currentPage > 0) {
+            router.push(ROUTES.LINKS, {scroll: false});
+        }
+    }, [router]);
+
+    const syncPageAfterRemoval = async (): Promise<void> => {
+        const store = useLinkStore.getState();
+        if (store.links.length === 0 && store.totalElements > 0 && store.currentPage > 0) {
+            const previousPage = store.currentPage - 1;
+            router.push(buildLinksPageUrl(previousPage), {scroll: false});
+            await store.fetchLinks(previousPage);
+        }
+    };
+
     useEffect(() => {
         const trimmed = debouncedSearch.trim();
         const store = useLinkStore.getState();
         if (store.searchQuery !== trimmed) {
             store.setSearchQuery(trimmed);
+            resetUrlToFirstPage();
             store.fetchLinks(0);
         }
-    }, [debouncedSearch]);
+    }, [debouncedSearch, resetUrlToFirstPage]);
 
     useEffect(() => {
-        fetchLinks();
+        fetchLinks(urlPage);
+    }, [urlPage, fetchLinks]);
+
+    useEffect(() => {
         fetchTags();
-    }, [fetchLinks, fetchTags]);
+    }, [fetchTags]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -101,17 +139,39 @@ export default function LinksPage() {
                 }
             } else {
                 setShowArchived(!showArchived);
+                resetUrlToFirstPage();
                 fetchLinks(0);
             }
         };
 
         document.addEventListener("keydown", handleKeyDown, true);
         return () => document.removeEventListener("keydown", handleKeyDown, true);
-    }, [hoveredLinkId, showArchived, fetchLinks, setShowArchived, archiveModalLink]);
+    }, [hoveredLinkId, showArchived, fetchLinks, setShowArchived, archiveModalLink, resetUrlToFirstPage]);
 
     const handleShowArchivedChange = (value: boolean) => {
         setShowArchived(value);
+        resetUrlToFirstPage();
         fetchLinks(0);
+    };
+
+    const handlePreviousPage = (): void => {
+        if (currentPage <= 0 || loading) {
+            return;
+        }
+        const previousPage = currentPage - 1;
+        router.push(buildLinksPageUrl(previousPage), {scroll: false});
+        scrollLinksToTop();
+        fetchLinks(previousPage);
+    };
+
+    const handleNextPage = (): void => {
+        if (loading || (currentPage + 1) * DEFAULT_PAGE_SIZE >= totalElements) {
+            return;
+        }
+        const nextPage = currentPage + 1;
+        router.push(buildLinksPageUrl(nextPage), {scroll: false});
+        scrollLinksToTop();
+        fetchLinks(nextPage);
     };
 
     const handleArchiveConfirm = async () => {
@@ -120,6 +180,7 @@ export default function LinksPage() {
         try {
             await setLinkArchived(archiveModalLink.id, archiveModalLink.isActive);
             setArchiveModalLink(null);
+            await syncPageAfterRemoval();
         } finally {
             setIsArchiving(false);
         }
@@ -138,9 +199,11 @@ export default function LinksPage() {
                 method: "DELETE",
             });
             if (res.ok) {
-                fetchLinks();
+                const store = useLinkStore.getState();
+                await store.fetchLinks(store.currentPage);
                 setDeleteModalOpen(false);
                 setLinkToDelete(null);
+                await syncPageAfterRemoval();
             } else {
                 logger.error("Failed to delete link", undefined, {status: res.status, linkId: linkToDelete.id});
             }
@@ -196,7 +259,7 @@ export default function LinksPage() {
 
     return (
         <TooltipProvider>
-            <PageContainer>
+            <PageContainer className={totalElements > 0 ? "pb-0" : undefined}>
                 {toolbar}
 
                 {error && (
@@ -217,20 +280,35 @@ export default function LinksPage() {
                 {!loading && links.length === 0 ? (
                     searchQuery !== "" ? <NoLinksFoundState/> : <EmptyLinksState/>
                 ) : (
-                    <div className="grid grid-cols-1 gap-3">
-                        {links.map((link) => (
-                            <LinkCard
-                                key={link.id}
-                                link={link}
-                                onEdit={handleEdit}
-                                onDelete={handleDeleteClick}
-                                onQrCode={handleQrCode}
-                                onArchiveRequest={(link) => setArchiveModalLink(link)}
-                                onMouseEnter={() => setHoveredLinkId(link.id)}
-                                onMouseLeave={() => setHoveredLinkId(null)}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div id={LINKS_LIST_TOP_ID} className="grid grid-cols-1 gap-3">
+                            {links.map((link) => (
+                                <LinkCard
+                                    key={link.id}
+                                    link={link}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDeleteClick}
+                                    onQrCode={handleQrCode}
+                                    onArchiveRequest={(link) => setArchiveModalLink(link)}
+                                    onMouseEnter={() => setHoveredLinkId(link.id)}
+                                    onMouseLeave={() => setHoveredLinkId(null)}
+                                />
+                            ))}
+                        </div>
+                        {totalElements > 0 && (
+                            <>
+                                <LinksPagination
+                                    page={currentPage}
+                                    pageSize={DEFAULT_PAGE_SIZE}
+                                    totalElements={totalElements}
+                                    isLoading={loading}
+                                    onPrevious={handlePreviousPage}
+                                    onNext={handleNextPage}
+                                />
+                                <div aria-hidden="true" className="-mt-4 h-14 md:h-10 lg:h-8"/>
+                            </>
+                        )}
+                    </>
                 )}
 
                 <EditLinkModal
@@ -277,3 +355,14 @@ export default function LinksPage() {
     );
 }
 
+export default function LinksPage() {
+    return (
+        <Suspense fallback={
+            <PageContainer>
+                <LinkCardSkeletonList count={5}/>
+            </PageContainer>
+        }>
+            <LinksPageContent/>
+        </Suspense>
+    );
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import {useState} from "react";
+import {useRouter} from "next/navigation";
 import {ArrowRight, CheckCircle2, CircleX, Link2, TableProperties} from "lucide-react";
 import {toast} from "sonner";
 import {Button} from "@/components/ui/button";
@@ -14,7 +15,7 @@ import {Switch} from "@/components/ui/switch";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useLinkStore} from "@/lib/store/links";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
-import {MAX_IMPORT_DATA_ROWS} from "@/lib/constants";
+import {MAX_IMPORT_DATA_ROWS, ROUTES} from "@/lib/constants";
 import {type ImportResult, precheckCsv, TransferError, uploadLinksImport,} from "@/lib/link-transfer";
 import {logger} from "@/lib/logger";
 import {
@@ -126,6 +127,7 @@ function ImportResultsBody({result, layout}: { result: ImportResult; layout: "ta
 
 export function ImportCsvModal({open, onOpenChange}: ImportCsvModalProps) {
     const isDesktop = useIsDesktop();
+    const router = useRouter();
     const [viewState, setViewState] = useState<ImportViewState>("idle");
     const [file, setFile] = useState<File | null>(null);
     const [result, setResult] = useState<ImportResult | null>(null);
@@ -179,6 +181,7 @@ export function ImportCsvModal({open, onOpenChange}: ImportCsvModalProps) {
             setResult(importResult);
             setViewState("results");
             if (importResult.imported > 0) {
+                router.push(ROUTES.LINKS, {scroll: false});
                 fetchLinks(0);
                 fetchTags();
             }
