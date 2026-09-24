@@ -27,8 +27,13 @@ export function LinksPagination({
     const hasNext = end < totalElements;
 
     return (
-        <div
-            className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-30 flex justify-center px-4 lg:left-60">
+        <>
+            <div
+                aria-hidden="true"
+                className="pointer-events-none fixed inset-x-0 bottom-0 z-10 h-20 bg-linear-to-t from-sidebar via-sidebar/60 to-transparent backdrop-blur-md mask-[linear-gradient(to_top,black,transparent)] lg:hidden"
+            />
+            <div
+                className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-30 flex justify-center px-4 lg:left-60">
             <nav
                 aria-label="Links pagination"
                 className="pointer-events-auto inline-flex max-w-full items-center gap-1 rounded-xl border-[0.5px] border-border bg-background/90 px-2 py-1 shadow-sm backdrop-blur-md"
@@ -65,6 +70,7 @@ export function LinksPagination({
                     <ChevronRight className="size-4"/>
                 </Button>
             </nav>
-        </div>
+            </div>
+        </>
     );
 }
