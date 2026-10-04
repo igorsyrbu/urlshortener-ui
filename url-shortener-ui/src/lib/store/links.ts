@@ -65,12 +65,13 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
             if (res.ok) {
                 const data: PageDTO<ShortLinkDTO> = await res.json();
                 const mapped = data.content.map(mapResponseToLinkItem);
+                const pagination = data.page ?? data;
 
                 set({
                     links: mapped,
-                    currentPage: data.number ?? requestedPage,
-                    totalElements: data.totalElements ?? mapped.length,
-                    totalPages: data.totalPages ?? 1,
+                    currentPage: pagination.number ?? requestedPage,
+                    totalElements: pagination.totalElements ?? mapped.length,
+                    totalPages: pagination.totalPages ?? 1,
                 });
             } else {
                 set({error: `Failed to fetch links: ${res.status}`});

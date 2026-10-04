@@ -14,13 +14,14 @@ export interface ShortLink {
 
 export interface Page<T> {
   content: T[];
-  totalPages: number;
-  totalElements: number;
+  page: PageMetadata;
+}
+
+export interface PageMetadata {
   size: number;
   number: number;
-  first: boolean;
-  last: boolean;
-  empty: boolean;
+  totalElements: number;
+  totalPages: number;
 }
 
 export interface CreateShortLinkDto {
@@ -198,13 +199,12 @@ export class ShortLinksService {
 
     return {
       content: content.map((link) => this.enrichLinkWithTags(uuid, link)),
-      totalPages: Math.ceil(totalElements / size),
-      totalElements,
-      size,
-      number: page,
-      first: page === 0,
-      last: startIndex + size >= totalElements,
-      empty: content.length === 0,
+      page: {
+        size,
+        number: page,
+        totalElements,
+        totalPages: Math.ceil(totalElements / size),
+      },
     };
   }
 

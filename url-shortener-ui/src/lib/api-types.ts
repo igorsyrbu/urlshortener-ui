@@ -1,12 +1,16 @@
-export interface PageDTO<T> {
-  content: T[];
+export interface PageMetadataDTO {
   totalPages: number;
   totalElements: number;
   size: number;
   number: number;
-  first: boolean;
-  last: boolean;
-  empty: boolean;
+}
+
+export interface PageDTO<T> extends Partial<PageMetadataDTO> {
+  content: T[];
+  page?: PageMetadataDTO;
+  first?: boolean;
+  last?: boolean;
+  empty?: boolean;
 }
 
 export interface ShortLinkDTO {
@@ -64,4 +68,3 @@ export type UrlCleanerMode = "DISABLE" | "SUGGEST" | "AUTO_CLEAN";
 export interface UserPreferences {
   urlCleanerMode: UrlCleanerMode;
 }
-
