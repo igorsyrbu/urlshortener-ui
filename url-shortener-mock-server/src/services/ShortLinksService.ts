@@ -61,6 +61,15 @@ export interface CsvColumnIndexes {
   tags: number;
 }
 
+export interface PreparedCsvImport {
+  columns: CsvColumnIndexes;
+  rows: string[][];
+}
+
+export type PrepareCsvImportResult =
+  | {ok: true; input: PreparedCsvImport}
+  | {ok: false; error: string};
+
 const CONFLICT_MESSAGE = "This short link is already taken.";
 
 export class ShortLinksService {
@@ -430,13 +439,14 @@ export class ShortLinksService {
 
   /**
    * Imports links from raw CSV text. Unknown/extra columns are ignored;
-   * every row creates a new active link. Returns per-row failures instead
+   * rows without a usable destination fail individually instead of
+   * rejecting the whole file. Returns per-row failures instead
    * of throwing, except for fail-fast validation of the whole file.
    * When generateTakenKeys is set, rows whose key is taken (or reserved,
    * which is never exposed to the user) get a fresh random key instead
    * of landing in `failed`.
    */
-  public importLinksCsv(uuid: string, csvText: string, generateTakenKeys: boolean = false): ImportLinksResult {
+  public prepareCsvImport(csvText: string): PrepareCsvImportResult {
     const lines = csvText.split(/\r?\n/).filter((line) => line.trim().length > 0);
     if (lines.length === 0) {
       return { ok: false, error: "Empty file: a header row is required." };
@@ -463,21 +473,17 @@ export class ShortLinksService {
         error: `Too many rows: maximum ${ShortLinksService.IMPORT_RULES.MAX_ROWS} data rows per import.`,
       };
     }
-    const hasDestination = dataLines.some(
-      (line) => (parseCsvLine(line)[columns.destinationUrl] ?? "").trim().length > 0,
-    );
-    if (!hasDestination) {
-      return { ok: false, error: "'Destination URL' is required: at least one row must have a value." };
-    }
+    const rows = dataLines.map(parseCsvLine).filter((fields) => !isBlankRow(fields, columns));
+    return {ok: true, input: {columns, rows}};
+  }
 
+  public importLinksCsv(uuid: string, csvText: string, generateTakenKeys: boolean = false): ImportLinksResult {
+    const prepared = this.prepareCsvImport(csvText);
+    if (!prepared.ok) return prepared;
     const failed: CsvImportFailure[] = [];
     let imported = 0;
-    for (const line of dataLines) {
-      const fields = parseCsvLine(line);
-      if (isBlankRow(fields, columns)) {
-        continue;
-      }
-      const failure = this.importCsvRow(uuid, fields, columns, generateTakenKeys);
+    for (const fields of prepared.input.rows) {
+      const failure = this.importCsvRow(uuid, fields, prepared.input.columns, generateTakenKeys);
       if (failure === null) {
         imported++;
       } else {
@@ -494,7 +500,7 @@ export class ShortLinksService {
    * both are regenerated when generateTakenKeys is set, and both
    * report as "Key is already taken." otherwise (no key name).
    */
-  private importCsvRow(
+  public importCsvRow(
     uuid: string,
     fields: string[],
     columns: CsvColumnIndexes,

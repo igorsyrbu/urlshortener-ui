@@ -79,6 +79,7 @@ beyond what is strictly needed for rendering.
 - Co-locate component-specific files (styles, tests, sub-components) alongside the component.
 - Shared, reusable components live in `components/`. Page-specific components live inside their route folder.
 - Utility functions live in `lib/` or `utils/`. Constants live in `constants/` or a dedicated file.
+- Shared test helpers and factories live in `*-utils.ts` files.
 - Keep `app/` clean — only route segments, layouts, pages, loading, and error files belong there.
 
 ---

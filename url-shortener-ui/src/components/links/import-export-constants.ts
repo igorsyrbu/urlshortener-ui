@@ -55,6 +55,20 @@ export function buildTooManyRowsMessage(limit: number): string {
 }
 
 export const IMPORT_FAILED_MESSAGE = "Import failed. Please try again.";
+export const IMPORT_PROGRESS_ARIA_LABEL = "Import progress";
+export const VIEW_IMPORT_PROGRESS_LABEL = "View import progress";
+export const IMPORT_PROGRESS_TITLE = "Importing links…";
+export const IMPORT_PROCESSED_TITLE = "Processing complete";
+export const IMPORT_PROGRESS_UNAVAILABLE_TITLE = "Progress updates unavailable";
+export const IMPORT_PROGRESS_UNAVAILABLE_HINT = "The import may still be running or may have finished. Refresh your links to see the latest results.";
+export const IMPORT_PROCESSING_HINT = "You can close this window. Your import will continue in the background.";
+export const IMPORT_PROCESSED_HINT = "All rows have been processed. Check your links for the imported results.";
+export const REFRESH_LINKS_LABEL = "Refresh links";
+export const CLOSE_LABEL = "Close";
+
+export function buildImportProgressMessage(processedRows: number, totalRows: number): string {
+    return `${processedRows} of ${totalRows} rows processed`;
+}
 export const EXPORT_SUCCESS_MESSAGE = "Links exported successfully.";
 export const EXPORT_FAILED_MESSAGE = "Export failed. Please try again.";
 export const EXPORT_RATE_LIMITED_MESSAGE = "Export is rate limited. Please wait a moment and try again.";

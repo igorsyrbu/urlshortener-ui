@@ -9,6 +9,7 @@ router.get("/shortlinks", authentication, ShortLinksController.getShortLinks);
 router.get("/shortlinks/random", authentication, ShortLinksController.getRandomKey);
 router.get("/shortlinks/export", authentication, ShortLinksController.exportShortLinks);
 router.post("/shortlinks/import", authentication, ShortLinksController.importShortLinks);
+router.get("/shortlinks/import/updates", authentication, ShortLinksController.getImportUpdates);
 router.get("/shortlinks/byIds", authentication, ShortLinksController.getShortLinksByIds);
 router.get("/shortlinks/:key/exists", authentication, ShortLinksController.keyExists);
 router.post("/shortlinks", authentication, ShortLinksController.createShortLink);

@@ -18,6 +18,7 @@ import {TooltipProvider} from "@/components/ui/tooltip";
 import {Button} from "@/components/ui/button";
 import {useLinkStore} from "@/lib/store/links";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {IMPORT_TRACKING_STATUS, useImportTracker} from "@/lib/store/import";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {PageToolbar} from "@/components/layout/PageToolbar";
@@ -75,6 +76,11 @@ function LinksPageContent() {
     useEffect(() => {
         hydrateShowArchived();
     }, [hydrateShowArchived]);
+
+    useEffect(() => {
+        useImportTracker.getState().ensureDiscovery();
+        return () => { useImportTracker.getState().stopTracking(); };
+    }, []);
 
     const resetUrlToFirstPage = useCallback((): void => {
         if (useLinkStore.getState().currentPage > 0) {
@@ -225,6 +231,9 @@ function LinksPageContent() {
     };
 
     const handleImportCsvClick = (): void => {
+        if (useImportTracker.getState().status === IMPORT_TRACKING_STATUS.COMPLETED) {
+            useImportTracker.getState().reset();
+        }
         setIsImportModalOpen(true);
     };
 

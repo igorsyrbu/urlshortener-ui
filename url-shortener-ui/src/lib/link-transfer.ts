@@ -6,7 +6,7 @@ import {
     EXPORT_SEARCH_MAX_LENGTH,
     MAX_IMPORT_DATA_ROWS,
 } from "@/lib/constants";
-import type {ImportResponseDTO} from "@/lib/api-types";
+import type {LinkImportJobDTO} from "@/lib/api-types";
 import {logger} from "@/lib/logger";
 
 export interface ExportFilters {
@@ -171,32 +171,34 @@ export async function downloadLinksExport(
     triggerBlobDownload(blob, buildExportFilename());
 }
 
-export function buildImportUrl(generateTakenKeys: boolean): string {
-    if (!generateTakenKeys) {
-        return API_ENDPOINTS.SHORTLINKS_IMPORT;
-    }
+export function buildImportUrl(generateTakenKeys: boolean, fileName?: string): string {
     const params = new URLSearchParams();
-    params.set("generateTakenKeys", "true");
-    return `${API_ENDPOINTS.SHORTLINKS_IMPORT}?${params}`;
+    if (generateTakenKeys) params.set("generateTakenKeys", "true");
+    if (fileName) params.set("fileName", fileName);
+    const query = params.toString();
+    return query ? `${API_ENDPOINTS.SHORTLINKS_IMPORT}?${query}` : API_ENDPOINTS.SHORTLINKS_IMPORT;
 }
 
 export interface UploadLinksImportOptions {
     generateTakenKeys?: boolean;
+    fileName?: string;
+    signal?: AbortSignal;
 }
 
 export async function uploadLinksImport(
     csvText: string,
     options: UploadLinksImportOptions = {},
-): Promise<ImportResult> {
+): Promise<LinkImportJobDTO> {
     let res: Response;
     try {
-        res = await fetchWithAuth(buildImportUrl(options.generateTakenKeys ?? false), {
+        res = await fetchWithAuth(buildImportUrl(options.generateTakenKeys ?? false, options.fileName), {
             method: "POST",
             headers: {
                 "Content-Type": "text/csv;charset=UTF-8",
                 Accept: "application/json",
             },
             body: csvText,
+            signal: options.signal,
         });
     } catch (error) {
         logger.error("Error uploading links import", error);
@@ -205,6 +207,5 @@ export async function uploadLinksImport(
     if (!res.ok) {
         await throwTransferError(res, "Links import request failed");
     }
-    const data: ImportResponseDTO = await res.json();
-    return {imported: data.imported, failed: data.failed ?? []};
+    return res.json();
 }

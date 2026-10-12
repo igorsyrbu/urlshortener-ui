@@ -3,6 +3,7 @@ import { shortLinksService } from "../services/ShortLinksService";
 import { fetchOpenGraph } from "../services/OpenGraphService";
 import { cleanUrl } from "../services/UrlCleanerService";
 import { AuthenticatedRequest } from "../middleware/authentication";
+import { importJobsService } from "../services/ImportJobsService";
 
 export class ShortLinksController {
   static async getShortLinks(req: Request, res: Response): Promise<void> {
@@ -68,14 +69,29 @@ export class ShortLinksController {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const csvText = typeof req.body === "string" ? req.body : "";
     const generateTakenKeys = req.query.generateTakenKeys === "true";
-    const result = shortLinksService.importLinksCsv(uuid, csvText, generateTakenKeys);
+    const fileName = typeof req.query.fileName === "string" ? req.query.fileName : undefined;
+    const result = importJobsService.submit(uuid, csvText, generateTakenKeys, fileName);
 
     if (!result.ok) {
-      res.status(400).json({ detail: result.error });
+      res.status(result.status).json({ detail: result.error });
       return;
     }
 
-    res.json({ imported: result.imported, failed: result.failed });
+    res.json(result.job);
+  }
+
+  static getImportUpdates(req: Request, res: Response): void {
+    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+    const unsubscribe = importJobsService.subscribe(uuid, {
+      onProgress: (progress) => { res.write(`event: progress\ndata: ${JSON.stringify(progress)}\n\n`); },
+      onClose: () => { res.end(); },
+    });
+    res.on("close", unsubscribe);
   }
 
   static keyExists(req: Request, res: Response): void {

@@ -63,6 +63,26 @@ export interface ImportResponseDTO {
   failed: ImportFailureDTO[];
 }
 
+export type LinkImportJobStatus = "QUEUED" | "PROCESSING" | "COMPLETED";
+
+export interface LinkImportProgressDTO {
+  processedRows: number;
+  totalRows: number;
+}
+
+export interface LinkImportJobDTO extends LinkImportProgressDTO {
+  id: string;
+  fileName: string | null;
+  generateTakenKeys: boolean;
+  succeededRows: number;
+  failedRows: number;
+  status: LinkImportJobStatus;
+  createdTimestamp: string;
+  startedTimestamp: string | null;
+  completedTimestamp: string | null;
+  expiresTimestamp: string | null;
+}
+
 export type UrlCleanerMode = "DISABLE" | "SUGGEST" | "AUTO_CLEAN";
 
 export interface UserPreferences {

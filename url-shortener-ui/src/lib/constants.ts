@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
     SHORTLINKS_RANDOM: "/shortlinks/random",
     SHORTLINKS_EXPORT: "/shortlinks/export",
     SHORTLINKS_IMPORT: "/shortlinks/import",
+    SHORTLINKS_IMPORT_UPDATES: "/shortlinks/import/updates",
     SHORTLINKS_EXISTS: (key: string) => `/shortlinks/${key}/exists`,
     SHORTLINKS_BY_IDS: "/shortlinks/byIds",
     SHORTLINKS_PREVIEW: (key: string) => `/public/preview/${key}`,
