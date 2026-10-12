@@ -3,6 +3,7 @@ import express from "express";
 import { cors } from "./middleware/cors";
 import { delay } from "./middleware/delay";
 import { errorSimulation } from "./middleware/errorSimulation";
+import { jsonErrors } from "./middleware/jsonErrors";
 import authRoutes from "./routes/auth";
 import usersRoutes from "./routes/users";
 import shortLinksRoutes from "./routes/shortlinks";
@@ -16,7 +17,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 app.use(cors);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.text({ type: "text/csv" }));
+app.use(express.text({ type: "text/csv", limit: "100kb" }));
 app.use(delay);
 app.use(errorSimulation);
 
@@ -26,6 +27,7 @@ app.use(shortLinksRoutes);
 app.use(analyticsRoutes);
 app.use(tagsRoutes);
 app.use(abuseRoutes);
+app.use(jsonErrors);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
