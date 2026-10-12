@@ -19,6 +19,7 @@ beyond what is strictly needed for rendering.
 - **Language:** TypeScript
 - **Styling:** Follow whatever CSS solution is already in use in the project (Tailwind, CSS Modules, styled-components,
   etc.)
+- **Testing:** Vitest + jsdom + React Testing Library + `@testing-library/user-event` (UI); `node:test` (mock server)
 
 ---
 
@@ -217,12 +218,89 @@ layout — in desktop dialogs and mobile drawers alike.
 
 ---
 
-## 7. What Not to Do
+## 7. Testing
+
+Every change to logic (stores, hooks, `lib/` utilities, API handling) or to user-facing behaviour must ship with tests.
+Tests follow the same clean-code, naming, TypeScript and no-magic-values rules as production code.
+
+### Running
+
+| Command (from `url-shortener-ui/`) | Purpose                                                   |
+|------------------------------------|-----------------------------------------------------------|
+| `pnpm test`                        | Vitest in watch mode                                      |
+| `pnpm test:run`                    | Single run (CI, pre-push)                                 |
+| `pnpm test:coverage`               | Coverage report (`coverage/index.html`)                   |
+| `pnpm type-check`                  | Type-checks app **and** test files (`tsconfig.test.json`) |
+
+`pnpm test` at the repository root runs the UI and mock-server suites once.
+
+### Location & Naming
+
+- Co-locate tests with the code under test: `Foo.tsx` → `Foo.test.tsx`, `url-utils.ts` → `url-utils.test.ts`.
+- `src/test/` holds only shared infrastructure: `setup.ts` and `*-utils.ts` factories/helpers
+  (e.g. `createImportJob()` in `import-utils.ts`). Create a factory there as soon as a fixture is needed by more than one
+  test file; never copy fixtures between files.
+- `describe` names the unit or behaviour area (`"LinksPagination"`, `"import session lifecycle"`).
+- `it` states the observable behaviour in plain present tense, without a `should` prefix:
+  `it("disables the submit button while the request is pending")`.
+- Mock-server tests live next to the service/middleware they cover and use `node:test` + `node:assert/strict`.
+
+### What to Test
+
+- **Behaviour, not implementation.** Assert on what the user sees (text, roles, enabled/disabled state) or on the public
+  contract (store state, hook return value, request sent). Never assert on internal state, private helpers, CSS classes
+  used purely for styling, or the number of renders.
+- Cover the **happy path, every error/empty branch, and boundaries** (0, 1, max, invalid input, long strings).
+- **One behaviour per test.** Several `expect`s are fine when they describe the same outcome.
+- Do not test third-party libraries or thin shadcn wrappers in `components/ui/` unless the project added logic to them.
+- No snapshot tests — they are brittle and do not express intent.
+
+### Writing Tests
+
+- Structure every test as **Arrange → Act → Assert**, separated by blank lines when the test is longer than a few lines.
+- Query elements the way users find them, in this priority: `getByRole` (with `name`) → `getByLabelText` →
+  `getByPlaceholderText` → `getByText` → `getByTestId`. `container.querySelector` is a last resort.
+- Use `userEvent.setup()` for interactions; use `fireEvent` only for events `user-event` cannot produce.
+- Use `findBy*` / `waitFor` for async UI; never `setTimeout`-based sleeps.
+- Use `vi.useFakeTimers()` for debounce/cooldown/polling logic and restore real timers in `afterEach`.
+- Import labels, messages, endpoints and enums from the source constants instead of re-typing string literals.
+- Keep tests readable: extract repeated arrange steps into named helpers with explicit return types
+  (`renderLinksToolbar()`, `mockAcceptedJob()`).
+
+### Mocking
+
+- Mock at the **boundary** only: `@/lib/api` (`fetchWithAuth`), `next/navigation`, browser APIs, timers. Do not mock the
+  module under test or its own pure helpers.
+- Use `vi.mocked(fn)` for typed access to mocks — never `as ReturnType<typeof vi.fn>` or `as any`.
+- Declare mock functions shared between `vi.mock` factories and tests with `vi.hoisted`.
+- Build `Response` objects with `Response.json(body, init)` / `new Response(...)` instead of hand-rolled objects.
+- Reset Zustand stores between tests (`useStore.setState(initialState)` or an exported `reset…ForTests()` helper) so
+  tests never depend on execution order.
+- Mocks, spies, stubbed globals/envs, `localStorage` and `sessionStorage` are reset automatically after each test
+  (`vitest.config.ts` + `src/test/setup.ts`); do not repeat that cleanup by hand.
+- `src/test/setup.ts` provides jsdom polyfills needed by Radix/Recharts (`ResizeObserver`, pointer capture,
+  `scrollIntoView`, `matchMedia`, Web Storage). Add new global polyfills there, never inside individual tests.
+- Web Storage is an in-memory instance, so spy on the instance (`vi.spyOn(localStorage, "setItem")`), not on
+  `Storage.prototype`.
+- The global `next/navigation` mock returns a referentially stable router. Override it per file with `vi.mock` +
+  `vi.hoisted` when a test needs to assert on navigation or control `useSearchParams`/`usePathname`.
+- Desktop vs. mobile (Dialog vs. Drawer): call `stubDesktopViewport()` / `stubMobileViewport()` from
+  `src/test/viewport-utils.ts` so the real `useMediaQuery` hooks run. Mock `@/lib/hooks/useMediaQuery` instead only when
+  a test must flip the layout within a single render. Cover both layouts with `describe.each` when behaviour differs.
+- Reuse the existing helpers in `src/test/` before writing new ones: `link-utils.ts` (`createShortLink`,
+  `createLinkItem`, `createPage`), `tag-utils.ts`, `import-utils.ts`, `csv-utils.ts`, `link-form-utils.ts`
+  (`routeFetchWithAuth` — route a mocked `fetchWithAuth` by endpoint), `turnstile-utils.tsx`, `next-themes-utils.ts`,
+  `palette-utils.tsx`, `analytics-utils.tsx`, `user-session-utils.ts`, `page-toolbar-utils.ts`.
+- Tests that exercise error paths should `vi.mock("@/lib/logger")` and assert on `logger.error` where the log is part of
+  the contract, so expected failures do not pollute the test output.
+
+---
+
+## 8. What Not to Do
 
 | Do not                                                | Reason                                                      |
 |-------------------------------------------------------|-------------------------------------------------------------|
 | Render user-provided text without truncation handling | Long strings break layout on desktop and mobile; see section 6 |
-|-------------------------------------------------------|-------------------------------------------------------------|
 | Add `"use client"` to every component                 | Defeats the purpose of the App Router and SSR benefits      |
 | Fetch data inside `useEffect` for initial loads       | Server Components handle this more efficiently              |
 | Create new colour or spacing values                   | Breaks design consistency                                   |
@@ -233,3 +311,6 @@ layout — in desktop dialogs and mobile drawers alike.
 | Use route-level `loading.tsx` for loading states      | Causes full-page layout shifts and flickering; prefer component-level skeletons |
 | Hardcode strings that appear more than once           | Should be a constant or come from a translation/config file |
 | Use `console.log` / `console.error` for logging       | Use the `logger` from `@/lib/logger` instead — it works in dev and will send to monitoring in production |
+| Ship logic changes without tests                      | Regressions go unnoticed; see section 7                     |
+| Assert on implementation details or use snapshots     | Tests break on refactors without catching real bugs         |
+| Cast mocks with `as ReturnType<typeof vi.fn>`         | Use `vi.mocked()` for type-safe mocks                       |

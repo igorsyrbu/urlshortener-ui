@@ -8,16 +8,27 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    include: ['**/*.{test,spec}.{ts,tsx}'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    clearMocks: true,
+    restoreMocks: true,
+    unstubGlobals: true,
+    unstubEnvs: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      include: ['src/**/*.{ts,tsx}'],
       exclude: [
-        'node_modules/',
-        'src/test/',
+        'src/test/**',
+        'src/**/*.{test,spec}.{ts,tsx}',
+        'src/components/ui/**',
         '**/*.d.ts',
-        '**/*.config.*',
       ],
+      thresholds: {
+        statements: 90,
+        branches: 85,
+        functions: 88,
+        lines: 90,
+      },
     },
   },
   resolve: {
@@ -26,4 +37,3 @@ export default defineConfig({
     },
   },
 });
-

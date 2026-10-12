@@ -38,7 +38,7 @@ function mockUpdatesStream(stream: { response: Response; fail: (error: unknown) 
 }
 
 describe("shared import tracker", () => {
-    beforeEach(() => { vi.clearAllMocks(); resetImportTrackerForTests(); });
+    beforeEach(() => { resetImportTrackerForTests(); });
     afterEach(() => { vi.useRealTimers(); resetImportTrackerForTests(); });
 
     it("tracks a submission, ignores backwards snapshots, and refreshes once on completion", async () => {

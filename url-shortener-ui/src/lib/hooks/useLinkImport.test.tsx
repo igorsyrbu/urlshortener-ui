@@ -4,6 +4,7 @@ import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {IMPORT_SESSION_STATE, useLinkImport} from "@/lib/hooks/useLinkImport";
 import {IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
+import {createCsvFile} from "@/test/csv-utils";
 import {createImportJob} from "@/test/import-utils";
 
 const mocks = vi.hoisted(() => ({refreshLinks: vi.fn(), refreshTags: vi.fn(), push: vi.fn()}));
@@ -11,12 +12,6 @@ vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("next/navigation", () => ({useRouter: () => ({push: mocks.push})}));
 vi.mock("@/lib/store/links", () => ({useLinkStore: {getState: () => ({fetchLinks: mocks.refreshLinks})}}));
 vi.mock("@/lib/store/tags", () => ({useTagStoreWithoutCount: {getState: () => ({fetchTags: mocks.refreshTags})}}));
-
-function createCsvFile(): File {
-    const file = new File([], "links.csv", {type: "text/csv"});
-    Object.defineProperty(file, "text", {value: async () => "Destination URL\nhttps://example.com"});
-    return file;
-}
 
 function sendProgress(controller: ReadableStreamDefaultController<Uint8Array>, processedRows: number): void {
     controller.enqueue(new TextEncoder().encode(`event: progress\ndata: ${JSON.stringify({processedRows, totalRows: 10})}\n\n`));
@@ -35,7 +30,7 @@ function mockAcceptedJob(): ReadableStreamDefaultController<Uint8Array> {
 }
 
 describe("import session lifecycle", () => {
-    beforeEach(() => { vi.clearAllMocks(); resetImportTrackerForTests(); });
+    beforeEach(() => { resetImportTrackerForTests(); });
     afterEach(() => { resetImportTrackerForTests(); });
 
     it("shows progress, completes on the final event, and refreshes links and tags once", async () => {

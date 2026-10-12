@@ -1,0 +1,166 @@
+import {act, render, screen, waitFor} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import TagsPage from "./page";
+import {fetchWithAuth} from "@/lib/api";
+import {API_ENDPOINTS} from "@/lib/constants";
+import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
+import {useUIStore} from "@/lib/store/ui";
+import {createPage} from "@/test/link-utils";
+import {createTag} from "@/test/tag-utils";
+
+vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
+vi.mock("@/lib/hooks/useMediaQuery", () => ({useIsDesktop: () => true, useIsMobile: () => false}));
+
+const SEARCH_DEBOUNCE_MS = 500;
+const SEARCH_PLACEHOLDER = "Search...";
+
+function mockTagsResponse(tags = [createTag()]): void {
+    vi.mocked(fetchWithAuth).mockImplementation(async () => Response.json(createPage(tags)));
+}
+
+function requestedUrls(): string[] {
+    return vi.mocked(fetchWithAuth).mock.calls.map(([url]) => String(url));
+}
+
+describe("tags page", () => {
+    beforeEach(() => {
+        vi.useFakeTimers({shouldAdvanceTime: true});
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+        useTagStoreWithCount.setState({tags: [], loading: false, error: null, searchQuery: ""});
+        useTagStoreWithoutCount.setState({tags: [], error: null});
+        useUIStore.setState({isCreateTagModalOpen: false});
+    });
+
+    it("lists the tags returned by the API with their link counts", async () => {
+        mockTagsResponse([
+            createTag({id: "tag-1", name: "Marketing", linkCount: 3}),
+            createTag({id: "tag-2", name: "Sales", linkCount: 1}),
+        ]);
+
+        render(<TagsPage/>);
+
+        expect(await screen.findByText("Marketing")).toBeInTheDocument();
+        expect(screen.getByText("Sales")).toBeInTheDocument();
+        expect(screen.getByText("3 links")).toBeInTheDocument();
+        expect(screen.getByText("1 link")).toBeInTheDocument();
+    });
+
+    it("requests tags together with their link counts", async () => {
+        mockTagsResponse();
+
+        render(<TagsPage/>);
+
+        await screen.findByText("Marketing");
+        expect(requestedUrls()[0]).toBe(`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=20`);
+    });
+
+    it("shows the empty state when the user has no tags", async () => {
+        mockTagsResponse([]);
+
+        render(<TagsPage/>);
+
+        expect(await screen.findByText("Your tags will live here")).toBeInTheDocument();
+    });
+
+    it("opens the create tag modal from the empty state", async () => {
+        const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        mockTagsResponse([]);
+        render(<TagsPage/>);
+
+        await user.click(await screen.findByRole("button", {name: "Create Tag"}));
+
+        expect(useUIStore.getState().isCreateTagModalOpen).toBe(true);
+    });
+
+    it("searches the API only after the typing pause", async () => {
+        const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        mockTagsResponse();
+        render(<TagsPage/>);
+        await screen.findByText("Marketing");
+        vi.mocked(fetchWithAuth).mockClear();
+
+        await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "  mark  ");
+        expect(fetchWithAuth).not.toHaveBeenCalled();
+        act(() => {
+            vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
+        });
+
+        await waitFor(() => expect(requestedUrls()).toEqual([`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=20&search=mark`]));
+    });
+
+    it("shows the no results state when a search matches no tags", async () => {
+        const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        mockTagsResponse();
+        render(<TagsPage/>);
+        await screen.findByText("Marketing");
+        mockTagsResponse([]);
+
+        await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "zzz");
+        act(() => {
+            vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
+        });
+
+        expect(await screen.findByText("No tags found")).toBeInTheDocument();
+        expect(screen.queryByText("Your tags will live here")).not.toBeInTheDocument();
+    });
+
+    it("shows the failure and lets the user dismiss it", async () => {
+        const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: 500}));
+        render(<TagsPage/>);
+
+        expect(await screen.findByText("Failed to fetch tags: 500")).toBeInTheDocument();
+        await user.click(screen.getByRole("button", {name: "Dismiss"}));
+
+        expect(screen.queryByText("Failed to fetch tags: 500")).not.toBeInTheDocument();
+    });
+
+    it("deletes a tag after the user confirms its name", async () => {
+        const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        mockTagsResponse([createTag({id: "tag-1", name: "Marketing"}), createTag({id: "tag-2", name: "Sales"})]);
+        render(<TagsPage/>);
+        await screen.findByText("Marketing");
+        vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: 204}));
+
+        await user.click(screen.getAllByRole("button", {name: "More actions for tag"})[0]);
+        await user.click(await screen.findByRole("menuitem", {name: /Delete/}));
+        await user.type(await screen.findByPlaceholderText("Type the tag name here"), "Marketing");
+        await user.click(screen.getByRole("button", {name: "Delete tag"}));
+
+        await waitFor(() => expect(screen.queryByText("Marketing")).not.toBeInTheDocument());
+        expect(fetchWithAuth).toHaveBeenCalledWith(`${API_ENDPOINTS.TAGS}/tag-1`, {method: "DELETE"});
+        expect(screen.getByText("Sales")).toBeInTheDocument();
+    });
+
+    it("shows the failure message when deletion fails", async () => {
+        const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        mockTagsResponse([createTag({name: "Marketing"})]);
+        render(<TagsPage/>);
+        await screen.findByText("Marketing");
+        vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: 500}));
+
+        await user.click(screen.getByRole("button", {name: "More actions for tag"}));
+        await user.click(await screen.findByRole("menuitem", {name: /Delete/}));
+        await user.type(await screen.findByPlaceholderText("Type the tag name here"), "Marketing");
+        await user.click(screen.getByRole("button", {name: "Delete tag"}));
+
+        expect(await screen.findByText("Failed to delete tag: 500")).toBeInTheDocument();
+    });
+
+    it("opens the edit form for the chosen tag", async () => {
+        const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        mockTagsResponse([createTag({name: "Marketing"})]);
+        render(<TagsPage/>);
+        await screen.findByText("Marketing");
+
+        await user.click(screen.getByRole("button", {name: "More actions for tag"}));
+        await user.click(await screen.findByRole("menuitem", {name: /Edit/}));
+
+        expect(await screen.findByLabelText("Name")).toHaveValue("Marketing");
+    });
+});

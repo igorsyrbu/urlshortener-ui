@@ -29,4 +29,14 @@ describe("json error middleware", () => {
     assert.equal(response.statusCode(), 500);
     assert.deepEqual(response.body(), {detail: "Unexpected mock server error"});
   });
+
+  it("delegates to the default handler when the response has already started", () => {
+    const response = createResponse();
+    (response.res as {headersSent: boolean}).headersSent = true;
+    const error = new Error("late failure");
+    let forwardedError: unknown = null;
+    jsonErrors(error, {} as Request, response.res, (forwarded) => { forwardedError = forwarded; });
+    assert.equal(forwardedError, error);
+    assert.equal(response.statusCode(), 0);
+  });
 });

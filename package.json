@@ -18,6 +18,7 @@
     "build": "pnpm --filter=url-shortener-ui run build",
     "clean": "pnpm --filter=url-shortener-ui run clean",
     "lint": "pnpm --filter=url-shortener-ui run lint",
+    "test": "pnpm --filter=url-shortener-ui run test:run && pnpm --filter=@url-shortener/url-shortener-mock-server run test",
     "typecheck": "pnpm --filter=@url-shortener/url-shortener-mock-server run typecheck"
   },
   "dependencies": {

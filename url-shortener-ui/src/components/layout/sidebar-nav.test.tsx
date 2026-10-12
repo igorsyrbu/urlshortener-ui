@@ -1,0 +1,77 @@
+import type {ComponentProps, ReactElement} from "react";
+import {render, screen} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import {describe, expect, it, vi} from "vitest";
+import {SidebarNav} from "@/components/layout/sidebar-nav";
+
+const navigation = vi.hoisted(() => ({pathname: "/"}));
+
+vi.mock("next/navigation", () => ({usePathname: () => navigation.pathname}));
+vi.mock("next/link", () => ({
+    default: ({href, onClick, children, ...rest}: ComponentProps<"a"> & {href: string}): ReactElement => (
+        <a href={href} onClick={(event) => {
+            event.preventDefault();
+            onClick?.(event);
+        }} {...rest}>{children}</a>
+    ),
+}));
+
+const NAV_ITEMS = [
+    {name: "Dashboard", href: "/dashboard"},
+    {name: "Links", href: "/links"},
+    {name: "Analytics", href: "/analytics"},
+    {name: "Tags", href: "/tags"},
+    {name: "Settings", href: "/settings"},
+];
+
+function isHighlighted(link: HTMLElement): boolean {
+    return link.querySelector("span")?.classList.contains("font-bold") ?? false;
+}
+
+function renderAt(pathname: string, onNavigate?: () => void): void {
+    navigation.pathname = pathname;
+    render(<SidebarNav onNavigate={onNavigate}/>);
+}
+
+describe("SidebarNav", () => {
+    it.each(NAV_ITEMS)("links $name to $href", ({name, href}) => {
+        renderAt("/");
+
+        expect(screen.getByRole("link", {name})).toHaveAttribute("href", href);
+    });
+
+    it.each(NAV_ITEMS)("highlights only $name on $href", ({name, href}) => {
+        renderAt(href);
+
+        const highlighted = screen.getAllByRole("link").filter(isHighlighted);
+        expect(highlighted.map((link) => link.textContent)).toEqual([name]);
+    });
+
+    it("keeps a section highlighted on its nested routes", () => {
+        renderAt("/links/abc123/details");
+
+        expect(isHighlighted(screen.getByRole("link", {name: "Links"}))).toBe(true);
+    });
+
+    it("does not highlight a section whose name merely prefixes the current route", () => {
+        renderAt("/linksfoo");
+
+        expect(screen.getAllByRole("link").filter(isHighlighted)).toHaveLength(0);
+    });
+
+    it("highlights nothing on an unknown route", () => {
+        renderAt("/somewhere-else");
+
+        expect(screen.getAllByRole("link").filter(isHighlighted)).toHaveLength(0);
+    });
+
+    it("notifies the parent when a link is followed", async () => {
+        const user = userEvent.setup();
+        const onNavigate = vi.fn();
+        renderAt("/", onNavigate);
+
+        await user.click(screen.getByRole("link", {name: "Tags"}));
+
+        expect(onNavigate).toHaveBeenCalledOnce();
+    });
+});
