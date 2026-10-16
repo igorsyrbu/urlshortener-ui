@@ -109,7 +109,7 @@ Neither resets other stores (links, tags, preferences, import). Navigation is cl
 - Actions are routed through `SessionLogoutDialog`, driven by a `LogoutTarget` union: `{type: "single", id, isCurrent}` or `{type: "other"}`. It is a `Dialog` on desktop and a `Drawer` on mobile (`useIsDesktop`). Confirming closes the dialog immediately and runs the request.
 - Request map: current session `DELETE /users/sessions/current` (then sign-out as above); other session `DELETE /users/sessions/{id}`; all others `DELETE /users/sessions/other`. Success removes the rows locally and shows a success toast; failure shows an error toast.
 - `sessionActionLoading` (`id`, `"other"` or `null`) disables every action button while one request runs.
-- Dialog copy mentions how long a terminated session may stay valid: `getJwtTTL(accessToken)` in [`src/lib/utils.ts`](../../url-shortener-ui/src/lib/utils.ts) decodes `exp - iat` from the JWT payload, falling back to `DEFAULT_JWT_TTL_DISPLAY` ("1 hour").
+- Dialog copy mentions how long a terminated session may stay valid: `getJwtTTL(accessToken)` in [`src/lib/utils.ts`](../../url-shortener-ui/src/lib/utils.ts) decodes the base64url JWT payload and formats `exp - iat` (both must be numbers; `0` is valid), falling back to `DEFAULT_JWT_TTL_DISPLAY` ("1 hour") when the token cannot be decoded.
 
 ## Known limitations and existing exceptions
 

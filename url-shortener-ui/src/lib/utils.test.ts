@@ -14,6 +14,11 @@ function buildJwt(payload: Record<string, unknown>): string {
     return `header.${btoa(JSON.stringify(payload))}.signature`;
 }
 
+function buildBase64UrlJwt(payload: Record<string, unknown>): string {
+    const base64Url = btoa(JSON.stringify(payload)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    return `header.${base64Url}.signature`;
+}
+
 function buildJwtLasting(durationMinutes: number): string {
     return buildJwt({iat: ISSUED_AT, exp: ISSUED_AT + minutes(durationMinutes)});
 }
@@ -53,6 +58,17 @@ describe("getJwtTTL", () => {
         const token = buildJwt({iat: ISSUED_AT, exp: ISSUED_AT + minutes(10) + 59});
 
         expect(getJwtTTL(token)).toBe("10 minutes");
+    });
+
+    it("decodes a base64url payload that contains - or _ and has no padding", () => {
+        const token = buildBase64UrlJwt({iat: ISSUED_AT, exp: ISSUED_AT + minutes(90), sub: "~~~?"});
+
+        expect(token).toMatch(/[-_]/);
+        expect(getJwtTTL(token)).toBe("1 hours 30 minutes");
+    });
+
+    it("accepts a token issued at the epoch (iat 0)", () => {
+        expect(getJwtTTL(buildJwt({iat: 0, exp: minutes(30)}))).toBe("30 minutes");
     });
 
     it.each([

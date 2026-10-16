@@ -213,18 +213,28 @@ export function buildFinalUrl(
 
         return finalUrl.toString();
     } catch {
-        const keptQuery = keptEntries.filter((e) => e.location === "query").map((e) => e.display).join("&");
-        const keptPathSegments = keptEntries
-            .filter((e) => e.location === "path")
-            .map((e) => `/${e.display}`);
-        let base = cleanedUrl.split("?")[0] ?? cleanedUrl;
-        if (keptPathSegments.length > 0) {
-            base = base.replace(/\/$/, "") + keptPathSegments.join("");
-        }
-        if (keptQuery) {
-            const hasQ = cleanedUrl.includes("?") || base.includes("?");
-            return `${base}${hasQ ? "&" : "?"}${keptQuery}`;
-        }
-        return base;
+        return assembleUnparsableUrl(cleanedUrl, keptEntries);
     }
+}
+
+function splitAt(value: string, separator: string): [string, string] {
+    const index = value.indexOf(separator);
+    return index === -1 ? [value, ""] : [value.slice(0, index), value.slice(index)];
+}
+
+function assembleUnparsableUrl(cleanedUrl: string, keptEntries: TrackerEntry[]): string {
+    const [withoutHash, hash] = splitAt(cleanedUrl, "#");
+    const [path, cleanedQuery] = splitAt(withoutHash, "?");
+    const keptPathSegments = keptEntries
+        .filter((e) => e.location === "path")
+        .map((e) => `/${e.display}`);
+    const finalPath = keptPathSegments.length > 0
+        ? path.replace(/\/$/, "") + keptPathSegments.join("")
+        : path;
+    const queryParts = [
+        cleanedQuery.slice(1),
+        ...keptEntries.filter((e) => e.location === "query").map((e) => e.display),
+    ].filter(Boolean);
+    const query = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+    return `${finalPath}${query}${hash}`;
 }

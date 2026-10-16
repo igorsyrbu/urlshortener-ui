@@ -5,10 +5,18 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
 }
 
+const BASE64_BLOCK_LENGTH = 4;
+
+function decodeBase64Url(value: string): string {
+    const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+    const paddedLength = Math.ceil(base64.length / BASE64_BLOCK_LENGTH) * BASE64_BLOCK_LENGTH;
+    return atob(base64.padEnd(paddedLength, "="));
+}
+
 export function getJwtTTL(token: string): string | null {
     try {
-        const {iat, exp} = JSON.parse(atob(token.split(".")[1]));
-        if (!iat || !exp) throw new Error("Missing iat or exp claims");
+        const {iat, exp} = JSON.parse(decodeBase64Url(token.split(".")[1]));
+        if (typeof iat !== "number" || typeof exp !== "number") throw new Error("Missing iat or exp claims");
 
         const totalMinutes = Math.floor((exp - iat) / 60);
         const minutes = totalMinutes % 60;

@@ -55,6 +55,7 @@ describe("normalizeUrl", () => {
         ["an https URL", "https://example.com"],
         ["an http URL", "http://example.com"],
         ["an upper-case scheme", "HTTPS://example.com"],
+        ["a non-web scheme", "ftp://example.com"],
         ["a word without a dot", "localhost"],
         ["text starting with a symbol", ".example.com"],
         ["an empty string", ""],
@@ -68,6 +69,10 @@ describe("normalizeUrl", () => {
 
     it("does not validate its output", () => {
         expect(normalizeUrl("hello world.foo")).toBe("https://hello world.foo");
+    });
+
+    it("leaves a non-web URL for validation to reject", () => {
+        expect(isValidUrl(normalizeUrl("ftp://example.com"))).toBe(false);
     });
 });
 

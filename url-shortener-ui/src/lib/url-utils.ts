@@ -20,6 +20,7 @@ export function isValidUrl(value: string): boolean {
 }
 
 const BARE_DOMAIN_REGEX = /^[a-zA-Z0-9]/;
+const URL_SCHEME_REGEX = /^[a-z][a-z0-9+.-]*:\/\//i;
 
 /**
  * Normalizes a raw user input string into a proper URL.
@@ -30,7 +31,7 @@ export function normalizeUrl(value: string): string {
     const trimmed = value.trim();
 
     if (
-        !/^https?:\/\//i.test(trimmed) &&
+        !URL_SCHEME_REGEX.test(trimmed) &&
         BARE_DOMAIN_REGEX.test(trimmed) &&
         trimmed.includes(".")
     ) {

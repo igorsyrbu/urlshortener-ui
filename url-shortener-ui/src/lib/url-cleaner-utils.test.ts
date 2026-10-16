@@ -172,4 +172,20 @@ describe("buildFinalUrl", () => {
 
         expect(finalUrl).toBe("/shop/ref=abc");
     });
+
+    it("starts the query with ? in the string fallback when the cleaned URL had a query", () => {
+        const queryEntry = createEntry({key: "tag", value: "x"});
+
+        const finalUrl = buildFinalUrl("not a url", "/shop?id=1", [queryEntry], new Set(["tag"]));
+
+        expect(finalUrl).toBe("/shop?id=1&tag=x");
+    });
+
+    it("keeps the hash after the query in the string fallback", () => {
+        const queryEntry = createEntry({key: "tag", value: "x"});
+
+        const finalUrl = buildFinalUrl("not a url", "/shop#top", [queryEntry], new Set(["tag"]));
+
+        expect(finalUrl).toBe("/shop?tag=x#top");
+    });
 });
