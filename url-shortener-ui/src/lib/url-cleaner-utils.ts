@@ -33,6 +33,15 @@ function extractQueryParamMap(urlString: string): Map<string, string> {
     return map;
 }
 
+function decodePathValue(value: string): string {
+    try {
+        return decodeURIComponent(value);
+    } catch {
+        // A malformed escape sequence (URIError) is shown as typed rather than dropping the tracker.
+        return value;
+    }
+}
+
 function extractPathParamValue(pathname: string, key: string): string | null {
     // Path trackers live in pathname (e.g. /dp/B001/ref=abc), not searchParams.
     const segments = pathname.split("/");
@@ -40,22 +49,22 @@ function extractPathParamValue(pathname: string, key: string): string | null {
         const seg = segments[i];
         if (!seg) continue;
         if (seg.startsWith(`${key}=`)) {
-            return seg.slice(key.length + 1);
+            return decodePathValue(seg.slice(key.length + 1));
         }
         if (seg === key && i + 1 < segments.length) {
             const next = segments[i + 1];
             if (next && !next.includes("=")) {
-                return next;
+                return decodePathValue(next);
             }
         }
     }
     try {
         const re = new RegExp(`/${key}=([^/&?#]+)`);
         const m = pathname.match(re);
-        if (m) return decodeURIComponent(m[1]);
+        if (m) return decodePathValue(m[1]);
         const re2 = new RegExp(`/${key}/([^/&?#]+)`);
         const m2 = pathname.match(re2);
-        if (m2) return decodeURIComponent(m2[1]);
+        if (m2) return decodePathValue(m2[1]);
     } catch {
         // ignore
     }

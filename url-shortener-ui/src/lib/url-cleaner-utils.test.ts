@@ -69,6 +69,22 @@ describe("buildTrackerEntries", () => {
         expect(entries).toEqual([{key, value, display: `${key}=${value}`, location: "path"}]);
     });
 
+    it.each([
+        ["a key=value segment", "https://example.com/shop/ref=a%20b"],
+        ["a key/value segment pair", "https://example.com/shop/ref/a%20b"],
+        ["a key=value segment followed by more parameters", "https://example.com/shop/ref=a%20b&x=1"],
+    ])("decodes the value of %s the same way", (_name, url) => {
+        const [entry] = buildTrackerEntries(url, ["ref"]);
+
+        expect(entry.value).toMatch(/^a b/);
+    });
+
+    it("keeps a malformed escape sequence as typed instead of throwing", () => {
+        const entries = buildTrackerEntries("https://example.com/shop/ref=%E0%A4%A", ["ref"]);
+
+        expect(entries).toEqual([{key: "ref", value: "%E0%A4%A", display: "ref=%E0%A4%A", location: "path"}]);
+    });
+
     it("works with a relative or malformed URL", () => {
         const entries = buildTrackerEntries("/shop/ref=abc?x=1#frag", ["ref"]);
 
