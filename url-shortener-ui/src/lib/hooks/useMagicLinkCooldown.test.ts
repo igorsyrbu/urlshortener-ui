@@ -149,8 +149,7 @@ describe("useMagicLinkCooldown", () => {
         expect(storedCooldowns()).toEqual({});
     });
 
-    // Skipped: timer is not cleared on unmount (vi.getTimerCount() stays 1).
-    it.skip("stops ticking after unmount", () => {
+    it("stops ticking after unmount", () => {
         const {result, unmount} = renderHook(() => useMagicLinkCooldown(EMAIL));
         act(() => { result.current.startCooldown(COOLDOWN_SECONDS); });
 

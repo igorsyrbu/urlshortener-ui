@@ -94,21 +94,24 @@ describe("portal return flag", () => {
     });
 
     it("does not interrupt portal opening when storage writes fail", () => {
-        vi.spyOn(localStorage, "setItem").mockImplementation(throwStorageUnavailable);
+        const setItem = vi.spyOn(localStorage, "setItem").mockImplementation(throwStorageUnavailable);
 
         expect(() => markPortalOpened(PORTAL_TTL_SECONDS)).not.toThrow();
+        expect(setItem).toHaveBeenCalled();
     });
 
     it("skips refresh when storage reads fail", () => {
-        vi.spyOn(localStorage, "getItem").mockImplementation(throwStorageUnavailable);
+        const getItem = vi.spyOn(localStorage, "getItem").mockImplementation(throwStorageUnavailable);
 
         expect(consumePortalReturn()).toBe(false);
+        expect(getItem).toHaveBeenCalled();
     });
 
     it("skips refresh when storage removal fails", () => {
         markPortalOpened(PORTAL_TTL_SECONDS);
-        vi.spyOn(localStorage, "removeItem").mockImplementation(throwStorageUnavailable);
+        const removeItem = vi.spyOn(localStorage, "removeItem").mockImplementation(throwStorageUnavailable);
 
         expect(consumePortalReturn()).toBe(false);
+        expect(removeItem).toHaveBeenCalled();
     });
 });

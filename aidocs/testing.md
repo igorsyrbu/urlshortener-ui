@@ -22,7 +22,7 @@ Every change to logic (stores, hooks, `lib/` utilities, API handling) or to user
 
 UI scripts set `NODE_OPTIONS=--no-deprecation` (see [`package.json`](../url-shortener-ui/package.json)).
 
-Counts, measured on 2026-10-16: 135 UI test files (1655 passed, 4 skipped) and 25 mock-server test files (400 passed). Treat these as a snapshot, not a contract.
+Counts, measured on 2026-10-16 on Node 24 and 26: 136 UI test files (1,666 passed, none skipped) and 25 mock-server test files (400 passed). Treat these as a snapshot, not a contract. Do not add `it.skip`; fix the test or the code.
 
 ## Vitest configuration
 
@@ -41,7 +41,7 @@ Defined in [`vitest.config.ts`](../url-shortener-ui/vitest.config.ts):
 - `afterEach`: RTL `cleanup()`, then `localStorage.clear()` and `sessionStorage.clear()`.
 - Globally mocks `next/navigation` with a referentially stable router (`push`, `replace`, `back`, `forward`, `refresh`, `prefetch` as `vi.fn()`), `usePathname` returning `/` and `useSearchParams` returning empty params.
 - Defines `window.matchMedia` (always `matches: false`).
-- Installs an in-memory `Storage` for `localStorage`/`sessionStorage` when the global one is not usable (Node 25+ exposes an experimental global that shadows jsdom).
+- Always replaces `localStorage`/`sessionStorage` with an in-memory `Storage` (`InMemoryStorage`). Node 25+ shadows jsdom's storage with an experimental global, and jsdom's own `Storage` cannot be spied on per instance, so without this the same test behaves differently per Node version.
 - Polyfills `ResizeObserver`, `IntersectionObserver`, pointer-capture methods, `scrollIntoView` and `document.elementFromPoint` (needed by `input-otp`).
 
 Add new global polyfills here, never inside individual tests.
@@ -80,7 +80,7 @@ Add new global polyfills here, never inside individual tests.
 - Build `Response` objects with `Response.json(body, init)` / `new Response(...)` instead of hand-rolled objects.
 - Reset Zustand stores between tests (`useStore.setState(initialState)` or an exported `reset...ForTests()` helper such as `resetImportTrackerForTests()` in [`src/lib/store/import.ts`](../url-shortener-ui/src/lib/store/import.ts)) so tests never depend on execution order. Store design: [state-management](state-management.md).
 - Mocks, spies, stubbed globals/envs, `localStorage` and `sessionStorage` are reset automatically after each test (config + setup file above).
-- Web Storage is an in-memory instance, so spy on the instance (`vi.spyOn(localStorage, "setItem")`), not on `Storage.prototype`.
+- Web Storage is an in-memory instance, so spy on the instance (`vi.spyOn(localStorage, "setItem")`), not on `Storage.prototype`. A test that simulates a failure through a spy also asserts the spy was called (`expect(setItem).toHaveBeenCalled()`); otherwise it passes even when the failure path never runs (see `billing-portal-return.test.ts`).
 - The global `next/navigation` mock returns a referentially stable router. Override it per file with `vi.mock` + `vi.hoisted` when a test needs to assert on navigation or control `useSearchParams`/`usePathname`.
 - Desktop vs. mobile (Dialog vs. Drawer, see [coding-patterns](coding-patterns.md)): call `stubDesktopViewport()` / `stubMobileViewport()` from [`src/test/viewport-utils.ts`](../url-shortener-ui/src/test/viewport-utils.ts) so the real `useMediaQuery` hooks run. Mock `@/lib/hooks/useMediaQuery` instead only when a test must flip the layout within a single render. Cover both layouts with `describe.each` when behaviour differs.
 - Tests that exercise error paths should `vi.mock("@/lib/logger")` and assert on `logger.error` where the log is part of the contract, so expected failures do not pollute the test output.

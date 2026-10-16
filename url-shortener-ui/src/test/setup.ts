@@ -68,12 +68,10 @@ class InMemoryStorage implements Storage {
   }
 }
 
-// Node 25+ exposes an experimental global localStorage that is undefined without --localstorage-file
-// and shadows the jsdom implementation, so storage-backed code would silently break in tests.
+// Always replace Web Storage: Node 25+ shadows jsdom's implementation with an undefined experimental global, and
+// jsdom's own Storage cannot be spied on per instance, so tests would behave differently per Node version.
 for (const storageName of ['localStorage', 'sessionStorage'] as const) {
-  if (typeof globalThis[storageName]?.getItem !== 'function') {
-    Object.defineProperty(globalThis, storageName, { configurable: true, value: new InMemoryStorage() });
-  }
+  Object.defineProperty(globalThis, storageName, { configurable: true, value: new InMemoryStorage() });
 }
 
 class NoopResizeObserver implements ResizeObserver {

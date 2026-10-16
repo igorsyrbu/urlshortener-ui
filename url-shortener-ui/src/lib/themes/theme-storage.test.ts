@@ -99,8 +99,7 @@ describe("theme selection storage", () => {
         expect(logger.error).toHaveBeenCalledWith("Failed to load theme selection from localStorage", expect.any(SyntaxError));
     });
 
-    // Skipped: logger.error mock receives no calls when storage is unavailable.
-    it.skip("logs instead of throwing when storage is unavailable", () => {
+    it("logs instead of throwing when storage is unavailable", () => {
         const storageError = new Error("denied");
         vi.spyOn(localStorage, "getItem").mockImplementation(() => { throw storageError; });
         vi.spyOn(localStorage, "setItem").mockImplementation(() => { throw storageError; });

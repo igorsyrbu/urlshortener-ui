@@ -185,8 +185,7 @@ describe("link store archived preference", () => {
         expect(localStorage.getItem(SHOW_ARCHIVED_STORAGE_KEY)).toBe("true");
     });
 
-    // Skipped: logger.error mock receives no call when the write rejects.
-    it.skip("still updates the state and logs when localStorage rejects the write", () => {
+    it("still updates the state and logs when localStorage rejects the write", () => {
         vi.spyOn(localStorage, "setItem").mockImplementation(() => { throw new Error("quota"); });
 
         useLinkStore.getState().setShowArchived(true);
@@ -218,8 +217,7 @@ describe("link store archived preference", () => {
         expect(useLinkStore.getState().showArchived).toBe(false);
     });
 
-    // Skipped: logger.error mock receives no call when the read rejects.
-    it.skip("logs and keeps the default when localStorage cannot be read", () => {
+    it("logs and keeps the default when localStorage cannot be read", () => {
         vi.spyOn(localStorage, "getItem").mockImplementation(() => { throw new Error("denied"); });
 
         useLinkStore.getState().hydrateShowArchived();
