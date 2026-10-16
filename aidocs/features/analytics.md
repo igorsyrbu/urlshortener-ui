@@ -32,8 +32,8 @@ Related: [state-management](../state-management.md) · [api-layer](../api-layer.
 
 - Presets in `PeriodSelector`: `P7D` (default store value), `P30D`, `P90D` (ISO-8601 durations sent as `period`). `Custom` is a fourth option with `period === "custom"`.
 - `setPeriod(period)` stores the value and calls `fetchAnalytics(true)`. `setCustomDateRange(range)` stores the range and, only when both `from` and `to` are set, switches `period` to `"custom"` and refetches.
-- The previous-period window for the badge is computed client-side: `end = today - N days`, `start = end - N days` where N is the number parsed from the period (`DEFAULT_PERIOD_DAYS` = 30 as fallback). Dates are formatted with `toISOString().split("T")[0]` (UTC date).
-- Custom range query uses `start`/`end` with the same UTC date formatting.
+- The previous-period window for the badge is computed client-side: `end = today - N days`, `start = end - N days` where N is the number parsed from the period (`DEFAULT_PERIOD_DAYS` = 30 as fallback). All dates are local calendar days formatted with `formatLocalIsoDate` from [`src/lib/date-utils.ts`](../../url-shortener-ui/src/lib/date-utils.ts) (`YYYY-MM-DD`), never `toISOString()`, which would shift them by a day outside UTC.
+- Custom range query uses `start`/`end` with the same local calendar-day formatting, so the picked days are the days sent.
 
 ### Custom range: desktop vs mobile
 
@@ -48,7 +48,7 @@ Related: [state-management](../state-management.md) · [api-layer](../api-layer.
 | Component | Role |
 |---|---|
 | `ComparisonBadge` | Hidden for `custom` or when `previousTotalClicks === null`. Percent = change vs previous; when previous is 0 it shows +100% if current > 0, else 0%. Green with `TrendingUp` when >= 0, destructive with `TrendingDown` otherwise. Text: "vs last N days" |
-| `ClicksTimeSeriesChart` | Recharts `AreaChart`; empty `timeSeries` shows "Gathering chart data..."; Y axis uses integer ticks `0..max` when max <= 4 (`LOW_CLICKS_THRESHOLD`), compact `k`/`M` formatting otherwise |
+| `ClicksTimeSeriesChart` | Recharts `AreaChart`; API `date` strings are parsed as local days (`parseLocalIsoDate`) for both the axis labels (`formatShortDayLabel`) and the drag-zoom range; empty `timeSeries` shows "Gathering chart data..."; Y axis uses integer ticks `0..max` when max <= 4 (`LOW_CLICKS_THRESHOLD`), compact `k`/`M` formatting otherwise |
 | `AnalyticsCard` | Card frame with either a title or tab buttons (controlled via `isActive`/`onTabChange`) and a "Clicks" column header |
 | `HorizontalBarChart` | Shared Recharts bar chart for all four breakdowns; bar value = clicks, tooltip shows percentage of `totalClicks`; each tab supplies a `renderLabel` |
 | `TopLinksTab` | Sorted by clicks desc; label is `details.shortUrl` or the raw `shortLinkId`; favicon via `LinkFavicon` when `details.longUrl` exists, otherwise `FaviconPlaceholder` |
@@ -73,12 +73,10 @@ Bar colours come from `CHART_COLORS` in `lib/constants.ts`; chart/theme details 
 
 All are observations; they are not templates and not permission for drive-by changes.
 
-- Observation: `PeriodSelector` computes its desktop `MAX_DATE` (today) once at module load, so a tab left open past midnight keeps yesterday as the last selectable day until reload.
 - Observation: `loading` is cleared only when the total-clicks request returns a number. If that request fails or returns a non-number, `loading` stays true; with an empty `timeSeries` the page keeps showing the skeleton.
 - Observation: no request-race protection. Changing the period quickly can let an older response overwrite a newer one, since each response writes unconditionally.
 - Observation: on a period change, `fetchAnalytics(true)` refetches only the active location/device tab. The inactive tab (e.g. Continents) keeps its previous-period array and `setLocationTab` will not refetch it because the array is non-empty, so it can show stale data.
 - Observation: `useAnalyticsStore` is subscribed to as a whole in the page, so any slice update re-renders the page.
-- Observation: custom/previous dates are formatted in UTC via `toISOString()`, while calendar selections are local-midnight dates; in time zones ahead of UTC the sent `start`/`end` can fall one day earlier than the selected day.
 - Observation: the mock server returns fixed prior totals for `start`/`end` requests without `groupBy` (see [mock-server](../mock-server.md)), so the comparison badge values in dev are canned.
 - Observation: country flags load from the external `FLAG_SERVICE_URL`; the page degrades to the pin icon if it is unreachable.
 - Tests: see [testing](../testing.md); `src/test/analytics-utils.tsx` holds shared analytics fixtures.

@@ -4,6 +4,7 @@ import type {DateRange} from "react-day-picker";
 import {LinkItem} from "@/lib/types";
 import {API_ENDPOINTS, DEFAULT_PERIOD_DAYS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
+import {formatLocalIsoDate} from "@/lib/date-utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,9 +58,7 @@ interface AnalyticsStore {
 
 function buildQueryParams(period: string, customDateRange: DateRange | undefined): string {
     if (period === "custom" && customDateRange?.from && customDateRange?.to) {
-        const startStr = customDateRange.from.toISOString().split("T")[0];
-        const endStr = customDateRange.to.toISOString().split("T")[0];
-        return `?start=${startStr}&end=${endStr}`;
+        return `?start=${formatLocalIsoDate(customDateRange.from)}&end=${formatLocalIsoDate(customDateRange.to)}`;
     }
     return `?period=${period}`;
 }
@@ -77,9 +76,7 @@ function buildPreviousPeriodParams(period: string): string | null {
     const startDate = new Date(endDate);
     startDate.setDate(startDate.getDate() - days);
 
-    const startStr = startDate.toISOString().split("T")[0];
-    const endStr = endDate.toISOString().split("T")[0];
-    return `?start=${startStr}&end=${endStr}`;
+    return `?start=${formatLocalIsoDate(startDate)}&end=${formatLocalIsoDate(endDate)}`;
 }
 
 function fetchTotalClicks(

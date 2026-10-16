@@ -1,9 +1,11 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
+import {formatLocalIsoDate} from "@/lib/date-utils";
 import {logger} from "@/lib/logger";
 import {useAnalyticsStore} from "@/lib/store/analytics";
 import {createLinkItem} from "@/test/link-utils";
+import {FAR_FROM_UTC_TIME_ZONES} from "@/test/time-zone-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn(), warn: vi.fn(), info: vi.fn()}}));
@@ -46,10 +48,6 @@ function mockAnalyticsApi(routes: Routes = {}): void {
 
 function requestedUrls(): string[] {
     return vi.mocked(fetchWithAuth).mock.calls.map(([url]) => url);
-}
-
-function isoDay(date: Date): string {
-    return date.toISOString().split("T")[0];
 }
 
 async function settleRequests(): Promise<void> {
@@ -123,7 +121,7 @@ describe("analytics store fetching", () => {
 
         const periodEnd = new Date(NOW.getTime() - 7 * MS_PER_DAY);
         const periodStart = new Date(NOW.getTime() - 14 * MS_PER_DAY);
-        expect(requestedUrls()).toContain(`${API_ENDPOINTS.ANALYTICS}?start=${isoDay(periodStart)}&end=${isoDay(periodEnd)}`);
+        expect(requestedUrls()).toContain(`${API_ENDPOINTS.ANALYTICS}?start=${formatLocalIsoDate(periodStart)}&end=${formatLocalIsoDate(periodEnd)}`);
     });
 
     it("does not fetch again once data has been fetched unless forced", async () => {
@@ -293,13 +291,13 @@ describe("analytics store period selection", () => {
 
         const previousEnd = new Date(NOW.getTime() - 30 * MS_PER_DAY);
         const previousStart = new Date(NOW.getTime() - 60 * MS_PER_DAY);
-        expect(requestedUrls()).toContain(`${API_ENDPOINTS.ANALYTICS}?start=${isoDay(previousStart)}&end=${isoDay(previousEnd)}`);
+        expect(requestedUrls()).toContain(`${API_ENDPOINTS.ANALYTICS}?start=${formatLocalIsoDate(previousStart)}&end=${formatLocalIsoDate(previousEnd)}`);
     });
 
     it("switches to a custom period and queries explicit dates once the range is complete", async () => {
         mockAnalyticsApi();
-        const from = new Date("2026-09-01T00:00:00Z");
-        const to = new Date("2026-09-15T00:00:00Z");
+        const from = new Date(2026, 8, 1);
+        const to = new Date(2026, 8, 15);
 
         useAnalyticsStore.getState().setCustomDateRange({from, to});
         await settleRequests();
@@ -386,5 +384,39 @@ describe("analytics store tabs", () => {
         await settleRequests();
 
         expect(fetchWithAuth).toHaveBeenCalledOnce();
+    });
+});
+
+describe.each([
+    {timeZone: FAR_FROM_UTC_TIME_ZONES[0], previousStart: "2026-09-29", previousEnd: "2026-10-06"},
+    {timeZone: FAR_FROM_UTC_TIME_ZONES[1], previousStart: "2026-09-28", previousEnd: "2026-10-05"},
+])("analytics store dates in $timeZone", ({timeZone, previousStart, previousEnd}) => {
+    beforeEach(() => {
+        vi.stubEnv("TZ", timeZone);
+        vi.useFakeTimers({toFake: ["Date"]});
+        vi.setSystemTime(NOW);
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+        useAnalyticsStore.setState(initialState, true);
+    });
+
+    it("sends the picked local calendar days for a custom range", async () => {
+        mockAnalyticsApi();
+
+        useAnalyticsStore.getState().setCustomDateRange({from: new Date(2026, 8, 1), to: new Date(2026, 8, 15)});
+        await settleRequests();
+
+        expect(requestedUrls()).toContain(`${API_ENDPOINTS.ANALYTICS}?start=2026-09-01&end=2026-09-15`);
+    });
+
+    it("computes the comparison window from the local date of today", async () => {
+        mockAnalyticsApi();
+
+        useAnalyticsStore.getState().setPeriod("P7D");
+        await settleRequests();
+
+        expect(requestedUrls()).toContain(`${API_ENDPOINTS.ANALYTICS}?start=${previousStart}&end=${previousEnd}`);
     });
 });

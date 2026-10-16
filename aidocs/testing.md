@@ -103,6 +103,7 @@ Add new global polyfills here, never inside individual tests.
 | [`user-session-utils.ts`](../url-shortener-ui/src/test/user-session-utils.ts) | `createUserSession` | Session list fixtures |
 | [`billing-utils.ts`](../url-shortener-ui/src/test/billing-utils.ts) | `createBillingSubscriptionDto` | Billing subscription DTO fixture |
 | [`page-toolbar-utils.ts`](../url-shortener-ui/src/test/page-toolbar-utils.ts) | `getOptionsTrigger` | Locate the toolbar options trigger |
+| [`time-zone-utils.ts`](../url-shortener-ui/src/test/time-zone-utils.ts) | `FAR_FROM_UTC_TIME_ZONES` | Run date logic under UTC+14 and UTC-7/-8 with `describe.each` + `vi.stubEnv("TZ", timeZone)` (Node applies it immediately; vitest restores it). Every test of code that turns dates into strings or back uses it |
 | [`viewport-utils.ts`](../url-shortener-ui/src/test/viewport-utils.ts) | `stubDesktopViewport`, `stubMobileViewport` | Stub `matchMedia` by viewport width (derived from `MOBILE_BREAKPOINT_PX`) |
 
 Shared fixtures should be extended here when a second test file needs them.

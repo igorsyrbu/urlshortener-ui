@@ -7,6 +7,7 @@ import {AnimatePresence, motion} from "framer-motion";
 import {AnalyticsDailyClick} from "@/lib/store/analytics";
 import {DateRange} from "react-day-picker";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
+import {formatShortDayLabel, parseLocalIsoDate} from "@/lib/date-utils";
 
 interface ClicksTimeSeriesChartProps {
     timeSeries: AnalyticsDailyClick[];
@@ -79,14 +80,11 @@ function TimeSeriesAreaChart({timeSeries, onZoom, dragEnabled}: TimeSeriesAreaCh
     const containerRef = useRef<HTMLDivElement>(null);
     const [drag, setDrag] = useState<DragState | null>(null);
 
-    const chartData = timeSeries.map((item) => {
-        const d = new Date(item.date);
-        return {
-            date: d.toLocaleDateString(undefined, {month: "short", day: "numeric"}),
-            rawDate: item.date,
-            clicks: item.clicks,
-        };
-    });
+    const chartData = timeSeries.map((item) => ({
+        date: formatShortDayLabel(item.date),
+        rawDate: item.date,
+        clicks: item.clicks,
+    }));
 
     const maxClicks = Math.max(...chartData.map((d) => d.clicks), 0);
 
@@ -112,7 +110,7 @@ function TimeSeriesAreaChart({timeSeries, onZoom, dragEnabled}: TimeSeriesAreaCh
         setDrag(null);
 
         if (lo !== hi) {
-            onZoom({from: new Date(chartData[lo].rawDate), to: new Date(chartData[hi].rawDate)});
+            onZoom({from: parseLocalIsoDate(chartData[lo].rawDate), to: parseLocalIsoDate(chartData[hi].rawDate)});
         }
     };
 

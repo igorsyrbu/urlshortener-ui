@@ -1,13 +1,15 @@
 import {render, screen, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type {DateRange} from "react-day-picker";
-import {afterAll, describe, expect, it, vi} from "vitest";
+import {afterAll, afterEach, describe, expect, it, vi} from "vitest";
 import {PeriodSelector} from "@/components/analytics/PeriodSelector";
 import {stubDesktopViewport, stubMobileViewport} from "@/test/viewport-utils";
 
-vi.hoisted(() => {
+const {TEST_NOW} = vi.hoisted(() => {
+    const testNow = new Date(2026, 9, 12, 15, 30);
     vi.useFakeTimers({toFake: ["Date"]});
-    vi.setSystemTime(new Date(2026, 9, 12, 15, 30));
+    vi.setSystemTime(testNow);
+    return {TEST_NOW: testNow};
 });
 
 afterAll(() => {
@@ -97,6 +99,24 @@ describe("PeriodSelector on desktop", () => {
         await user.click(screen.getByRole("button", {name: dayOf(12)}));
 
         expect(onCustomDateRangeChange).toHaveBeenCalledExactlyOnceWith({from: new Date(2026, 9, 10), to: new Date(2026, 9, 12)});
+    });
+});
+
+describe("PeriodSelector after midnight", () => {
+    afterEach(() => {
+        vi.setSystemTime(TEST_NOW);
+    });
+
+    it("lets the user pick the new day when the page was loaded the day before", async () => {
+        stubDesktopViewport();
+        vi.setSystemTime(new Date(2026, 9, 13, 0, 5));
+        const {user, onCustomDateRangeChange} = renderSelector();
+        await openCalendar(user);
+
+        await user.click(screen.getByRole("button", {name: dayOf(12)}));
+        await user.click(screen.getByRole("button", {name: dayOf(13)}));
+
+        expect(onCustomDateRangeChange).toHaveBeenCalledExactlyOnceWith({from: new Date(2026, 9, 12), to: new Date(2026, 9, 13)});
     });
 });
 

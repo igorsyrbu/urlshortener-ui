@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {ClicksTimeSeriesChart} from "@/components/analytics/ClicksTimeSeriesChart";
 import type {AnalyticsDailyClick} from "@/lib/store/analytics";
+import {FAR_FROM_UTC_TIME_ZONES} from "@/test/time-zone-utils";
 import {stubDesktopViewport, stubMobileViewport} from "@/test/viewport-utils";
 
 const CHART_LEFT_PX = 0;
@@ -63,7 +64,7 @@ describe("ClicksTimeSeriesChart", () => {
 
         await dragAcross(user, 1, 3);
 
-        expect(onZoom).toHaveBeenCalledExactlyOnceWith({from: new Date("2026-10-02"), to: new Date("2026-10-04")});
+        expect(onZoom).toHaveBeenCalledExactlyOnceWith({from: new Date(2026, 9, 2), to: new Date(2026, 9, 4)});
     });
 
     it("orders the zoom range when dragging right to left", async () => {
@@ -74,7 +75,7 @@ describe("ClicksTimeSeriesChart", () => {
 
         await dragAcross(user, 4, 0);
 
-        expect(onZoom).toHaveBeenCalledExactlyOnceWith({from: new Date("2026-10-01"), to: new Date("2026-10-05")});
+        expect(onZoom).toHaveBeenCalledExactlyOnceWith({from: new Date(2026, 9, 1), to: new Date(2026, 9, 5)});
     });
 
     it("clamps drags that leave the plot area to the first and last day", async () => {
@@ -89,7 +90,7 @@ describe("ClicksTimeSeriesChart", () => {
             {keys: "[/MouseLeft]"},
         ]);
 
-        expect(onZoom).toHaveBeenCalledExactlyOnceWith({from: new Date("2026-10-01"), to: new Date("2026-10-05")});
+        expect(onZoom).toHaveBeenCalledExactlyOnceWith({from: new Date(2026, 9, 1), to: new Date(2026, 9, 5)});
     });
 
     it("does not zoom when the pointer is released on the day it was pressed", async () => {
@@ -129,5 +130,23 @@ describe("ClicksTimeSeriesChart", () => {
         await dragAcross(user, 0, 4);
 
         expect(onZoom).not.toHaveBeenCalled();
+    });
+});
+
+describe.each(FAR_FROM_UTC_TIME_ZONES)("ClicksTimeSeriesChart zoom in %s", (timeZone) => {
+    beforeEach(() => {
+        vi.stubEnv("TZ", timeZone);
+        mockChartBounds();
+    });
+
+    it("zooms to the local calendar days of the dragged data points", async () => {
+        stubDesktopViewport();
+        const user = userEvent.setup();
+        const onZoom = vi.fn();
+        render(<ClicksTimeSeriesChart timeSeries={WEEK_OF_CLICKS} onZoom={onZoom}/>);
+
+        await dragAcross(user, 1, 3);
+
+        expect(onZoom).toHaveBeenCalledExactlyOnceWith({from: new Date(2026, 9, 2), to: new Date(2026, 9, 4)});
     });
 });

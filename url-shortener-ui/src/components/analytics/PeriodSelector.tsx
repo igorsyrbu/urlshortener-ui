@@ -7,6 +7,7 @@ import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {DateRange} from "react-day-picker";
 import {useIsMobile} from "@/lib/hooks/useMediaQuery";
 import {FIRST_ANALYTICS_YEAR} from "@/lib/constants";
+import {getTodayAtMidnight} from "@/lib/date-utils";
 import {DateRangeDrawer} from "@/components/analytics/DateRangeDrawer";
 
 interface PeriodSelectorProps {
@@ -27,28 +28,13 @@ const PRESET_PERIODS: PeriodOption[] = [
     {value: "P90D", label: "90d"},
 ];
 
-function todayAtMidnight(): Date {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-}
-
 const activeClasses = "bg-muted text-foreground";
 const inactiveClasses = "text-muted-foreground hover:text-foreground";
 
 const MIN_DATE = new Date(FIRST_ANALYTICS_YEAR, 0, 1);
-const MAX_DATE = todayAtMidnight();
 
-const disabledDays = [
-    {before: MIN_DATE},
-    {after: MAX_DATE},
-];
-
-function isDateDisabled(dateToCheck: Date): boolean {
-    return disabledDays.some((matcher) => {
-        if (matcher.before !== undefined && dateToCheck < matcher.before) return true;
-        return matcher.after !== undefined && dateToCheck > matcher.after;
-    });
+function isDateDisabled(dateToCheck: Date, today: Date): boolean {
+    return dateToCheck < MIN_DATE || dateToCheck > today;
 }
 
 export function PeriodSelector({
@@ -60,13 +46,15 @@ export function PeriodSelector({
     const [date, setDate] = useState<DateRange | undefined>(customDateRange);
     const isMobile = useIsMobile();
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const today = getTodayAtMidnight();
+    const disabledDays = [{before: MIN_DATE}, {after: today}];
 
     useEffect(() => {
         setDate(customDateRange);
     }, [customDateRange]);
 
     const handleCalendarSelect = (_range: DateRange | undefined, selectedDay: Date) => {
-        if (isDateDisabled(selectedDay)) {
+        if (isDateDisabled(selectedDay, today)) {
             return;
         }
 
@@ -81,7 +69,7 @@ export function PeriodSelector({
                 newRange.to = temp;
             }
 
-            if (isDateDisabled(newRange.from) || isDateDisabled(newRange.to)) {
+            if (isDateDisabled(newRange.from, today) || isDateDisabled(newRange.to, today)) {
                 setDate(undefined);
                 return;
             }
@@ -146,7 +134,7 @@ export function PeriodSelector({
                             numberOfMonths={2}
                             weekStartsOn={1}
                             startMonth={MIN_DATE}
-                            endMonth={todayAtMidnight()}
+                            endMonth={today}
                             disabled={disabledDays}
                         />
                     </PopoverContent>

@@ -15,7 +15,7 @@ import {IosWheelPicker, type WheelPickerItem} from "@/components/ui/ios-wheel-pi
 import {cn} from "@/lib/utils";
 import {ChevronDown, ChevronLeft, ChevronRight} from "lucide-react";
 import {FIRST_ANALYTICS_YEAR} from "@/lib/constants";
-import {getSelectableAnalyticsYears} from "@/lib/date-utils";
+import {getSelectableAnalyticsYears, getTodayAtMidnight} from "@/lib/date-utils";
 
 const MONTHS = [
     "January",
@@ -42,14 +42,8 @@ interface DateRangeDrawerProps {
     period: string;
 }
 
-function todayAtMidnight(): Date {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-}
-
 function getDefaultRange(period: string): DateRange {
-    const today = todayAtMidnight();
+    const today = getTodayAtMidnight();
     if (period === "custom") {
         const from = new Date(today);
         from.setDate(from.getDate() - 6);
@@ -74,7 +68,7 @@ export function DateRangeDrawer({
     const [displayYear, setDisplayYear] = useState<number>(() => new Date().getFullYear());
     const [showWheelPicker, setShowWheelPicker] = useState(false);
     const bounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-    const today = todayAtMidnight();
+    const today = getTodayAtMidnight();
     const currentYear = today.getFullYear();
     const allowedYears = getSelectableAnalyticsYears(currentYear);
 
@@ -195,7 +189,7 @@ export function DateRangeDrawer({
     );
 
     const disabledDays = useMemo(() => {
-        const today = todayAtMidnight();
+        const today = getTodayAtMidnight();
         return [{after: today}];
     }, []);
 
