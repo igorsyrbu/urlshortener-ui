@@ -1,316 +1,67 @@
-# AGENTS.md — Frontend Development Guidelines
-
-This file defines the rules and expectations for AI agents contributing to this Next.js frontend project. All generated
-or modified code must comply with these guidelines without exception.
-
----
-
-## Scope
-
-These rules apply **exclusively to the frontend** — the Next.js application. There is no Next.js backend in this
-project. Do not generate API routes, server actions that act as a backend layer, or any server-side business logic
-beyond what is strictly needed for rendering.
-
----
-
-## Project Stack
-
-- **Framework:** Next.js (App Router)
-- **Language:** TypeScript
-- **Styling:** Follow whatever CSS solution is already in use in the project (Tailwind, CSS Modules, styled-components,
-  etc.)
-- **Testing:** Vitest + jsdom + React Testing Library + `@testing-library/user-event` (UI); `node:test` (mock server)
-
----
-
-## 1. Follow Existing Theme & Styling
-
-- **Never introduce new design tokens.** Colors, spacing, font sizes, border radii, shadows, and breakpoints must come
-  from the existing theme — whether that is a Tailwind config, a CSS variables file, a design system, or a theme
-  provider.
-- **Never hardcode visual values** (`color: #3b82f6`, `padding: 12px`, etc.). Always reference existing tokens or
-  utility classes.
-- **Match the component style already in the codebase.** If components use Tailwind utility classes, use Tailwind. If
-  they use CSS Modules, use CSS Modules. Do not mix styling approaches.
-- **Reuse existing UI components** before creating new ones. Check `components/` (or the project's equivalent) for
-  buttons, inputs, modals, cards, etc., before building from scratch.
-- **Respect dark mode / theming** if it is already set up. New components must support the same theme variants as
-  existing ones.
-
----
-
-## 2. Next.js Best Practices (Vercel / App Router)
-
-### Rendering Strategy
-
-- Default to **Server Components**. Only add `"use client"` when the component genuinely requires browser APIs, event
-  listeners, or React state/effects.
-- Keep `"use client"` boundaries as **small and deep** in the tree as possible — push interactivity to leaf components.
-- Use **`error.tsx`** files at appropriate route segments to handle error states declaratively.
-  **No route-level `loading.tsx`** — prefer component-level loading states (skeletons, spinners) to avoid full-page layout shifts and flickering.
-- Use **`Suspense`** boundaries around async components for granular loading states.
-
-### Data Fetching
-
-- Fetch data in **Server Components** using `async/await` directly — do not use `useEffect` + `fetch` for initial data
-  loading.
-- Use Next.js **`fetch` with caching options** (`cache: 'force-cache'`, `next: { revalidate: N }`) intentionally and
-  explicitly.
-- Avoid fetching the same data in multiple places; lift fetches to the highest relevant Server Component and pass data
-  down as props.
-
-### Routing & Navigation
-
-- Use the **App Router** (`app/` directory) exclusively. Do not use the Pages Router.
-- Use the `<Link>` component from `next/link` for all internal navigation — never raw `<a>` tags for internal routes.
-- Use **Route Groups** `(group)/` to organise related routes without affecting the URL structure.
-- Use **Dynamic Segments** (`[slug]`, `[id]`) and **`generateStaticParams`** for statically pre-rendered dynamic routes
-  where applicable.
-
-### Performance
-
-- Use **`next/image`** for all images. Always provide `width`, `height`, and meaningful `alt` text.
-- Use **`next/font`** to load fonts — never link to external font CDNs in markup.
-- Lazy-load heavy client components with `dynamic(() => import(...), { ssr: false })` where appropriate.
-- Avoid unnecessary re-renders: stabilise callbacks with `useCallback` and memoize expensive derived values with
-  `useMemo` when there is a measurable reason to do so — not by default.
-
-### File & Folder Structure
-
-- Co-locate component-specific files (styles, tests, sub-components) alongside the component.
-- Shared, reusable components live in `components/`. Page-specific components live inside their route folder.
-- Utility functions live in `lib/` or `utils/`. Constants live in `constants/` or a dedicated file.
-- Shared test helpers and factories live in `*-utils.ts` files.
-- Keep `app/` clean — only route segments, layouts, pages, loading, and error files belong there.
-
----
-
-## 3. Clean Code Principles
-
-### Function Size & Responsibility
-
-- **Functions must do one thing.** If a function is doing multiple distinct things, split it.
-- **Keep functions short** — aim for under 30 lines. If a function exceeds ~40 lines, it is a strong signal it needs to
-  be broken down.
-- **No deeply nested logic.** Use early returns (guard clauses) to flatten conditionals instead of nesting `if/else`
-  blocks.
-
-```ts
-// ❌ Avoid
-function processUser(user: User) {
-    if (user) {
-        if (user.isActive) {
-            if (user.role === 'admin') {
-                // ... 30 more lines
-            }
-        }
-    }
-}
-
-// ✅ Prefer
-function processUser(user: User) {
-    if (!user || !user.isActive){
-        return;
-    }
-    if (user.role !== 'admin') {
-       return;
-    }
-    processAdminUser(user);
-}
-```
-
-### Naming
-
-- **Names must be intention-revealing.** A reader should understand what a variable, function, or component does without
-  needing a comment.
-- Boolean variables and props should read as questions: `isLoading`, `hasError`, `canSubmit`.
-- Event handlers must be prefixed with `handle`: `handleSubmit`, `handleInputChange`.
-- Avoid abbreviations and single-letter names outside of short loop counters or well-known conventions (`e` for event is
-  acceptable, `x` for a user object is not).
-
-### Components
-
-- **One component per file.** Do not define multiple exported components in the same file.
-- **Keep JSX readable.** If a JSX block grows beyond ~50 lines, extract logical sub-sections into named sub-components
-  or helper render functions.
-- **Props interfaces must be explicit.** Always define a typed `Props` interface — never use inline `{ prop: string }`
-  typing on function arguments for components.
-
-```ts
-// ❌ Avoid
-export function Card({title, count}: { title: string; count: number }) {
-}
-
-// ✅ Prefer
-interface CardProps {
-    title: string;
-    count: number;
-}
-
-export function Card({title, count}: CardProps) {
-}
-```
-
-### Comments
-
-- **Do not comment what the code does — comment why** if the reasoning is not obvious.
-- Remove commented-out code. Use version control for history.
-- Avoid `// TODO` comments unless accompanied by issue reference.
-
-### No Magic Values
-
-- Never use unexplained literals in logic (`status === 3`, `timeout(5000)`). Extract them into named constants.
-
-```ts
-// ❌ Avoid
-if (response.status === 429) { ...
-}
-
-// ✅ Prefer
-const HTTP_TOO_MANY_REQUESTS = 429;
-if (response.status === HTTP_TOO_MANY_REQUESTS) { ...
-}
-```
-
-### DRY — Don't Repeat Yourself
-
-- If the same logic or JSX pattern appears more than twice, extract it into a shared utility or component.
-- Duplication in styling (repeated class name strings) should be extracted into a shared constant or a component
-  variant.
-
----
-
-## 4. TypeScript
-
-- **`any` is forbidden.** Use `unknown` and narrow the type, or define a proper interface.
-- All function parameters and return types must be explicitly typed unless the return type is trivially inferred (e.g.,
-  a simple arrow function returning a primitive).
-- Prefer `interface` for object shapes and `type` for unions, intersections, and aliases.
-- Avoid type assertions (`as SomeType`) unless genuinely unavoidable, and add a comment explaining why.
-
----
-
-## 5. Logging
-
-- **Never use `console.log`, `console.error`, `console.warn`, or `console.info` directly.**
-- Import the shared logger from `@/lib/logger`:
-  ```ts
-  import {logger} from "@/lib/logger";
-  ```
-- Use its typed methods: `logger.error(message, error?, context?)`, `logger.warn(message, context?)`, `logger.info(message, context?)`.
-- The logger prints to the dev console in development and will route to an error monitoring service in production.
-
----
-
-## 6. Text Truncation & Overflow
-
-User-provided strings (file names, URLs, titles, error reasons) can be arbitrarily long and must never break
-layout — in desktop dialogs and mobile drawers alike.
-
-- Truncate single-line text with `truncate` (ellipsis) and expose the full value via the `title` attribute for
-  hover / long-press.
-- `truncate` only works when every ancestor down the flex/grid chain can shrink: add `min-w-0` to each flex or grid
-  parent between the constrained container and the truncated element. One missing `min-w-0` silently disables
-  truncation and lets content blow out the layout.
-- For unbreakable content that must stay fully visible (table cells with long tokens, error reasons), prefer
-  `break-all` with a fixed table layout (`table-fixed` + `<colgroup>`) over truncation.
-- Always verify with adversarially long strings (200+ characters, no spaces) in both desktop and mobile layouts.
-
----
-
-## 7. Testing
-
-Every change to logic (stores, hooks, `lib/` utilities, API handling) or to user-facing behaviour must ship with tests.
-Tests follow the same clean-code, naming, TypeScript and no-magic-values rules as production code.
-
-### Running
-
-| Command (from `url-shortener-ui/`) | Purpose                                                   |
-|------------------------------------|-----------------------------------------------------------|
-| `pnpm test`                        | Vitest in watch mode                                      |
-| `pnpm test:run`                    | Single run (CI, pre-push)                                 |
-| `pnpm test:coverage`               | Coverage report (`coverage/index.html`)                   |
-| `pnpm type-check`                  | Type-checks app **and** test files (`tsconfig.test.json`) |
-
-`pnpm test` at the repository root runs the UI and mock-server suites once.
-
-### Location & Naming
-
-- Co-locate tests with the code under test: `Foo.tsx` → `Foo.test.tsx`, `url-utils.ts` → `url-utils.test.ts`.
-- `src/test/` holds only shared infrastructure: `setup.ts` and `*-utils.ts` factories/helpers
-  (e.g. `createImportJob()` in `import-utils.ts`). Create a factory there as soon as a fixture is needed by more than one
-  test file; never copy fixtures between files.
-- `describe` names the unit or behaviour area (`"LinksPagination"`, `"import session lifecycle"`).
-- `it` states the observable behaviour in plain present tense, without a `should` prefix:
-  `it("disables the submit button while the request is pending")`.
-- Mock-server tests live next to the service/middleware they cover and use `node:test` + `node:assert/strict`.
-
-### What to Test
-
-- **Behaviour, not implementation.** Assert on what the user sees (text, roles, enabled/disabled state) or on the public
-  contract (store state, hook return value, request sent). Never assert on internal state, private helpers, CSS classes
-  used purely for styling, or the number of renders.
-- Cover the **happy path, every error/empty branch, and boundaries** (0, 1, max, invalid input, long strings).
-- **One behaviour per test.** Several `expect`s are fine when they describe the same outcome.
-- Do not test third-party libraries or thin shadcn wrappers in `components/ui/` unless the project added logic to them.
-- No snapshot tests — they are brittle and do not express intent.
-
-### Writing Tests
-
-- Structure every test as **Arrange → Act → Assert**, separated by blank lines when the test is longer than a few lines.
-- Query elements the way users find them, in this priority: `getByRole` (with `name`) → `getByLabelText` →
-  `getByPlaceholderText` → `getByText` → `getByTestId`. `container.querySelector` is a last resort.
-- Use `userEvent.setup()` for interactions; use `fireEvent` only for events `user-event` cannot produce.
-- Use `findBy*` / `waitFor` for async UI; never `setTimeout`-based sleeps.
-- Use `vi.useFakeTimers()` for debounce/cooldown/polling logic and restore real timers in `afterEach`.
-- Import labels, messages, endpoints and enums from the source constants instead of re-typing string literals.
-- Keep tests readable: extract repeated arrange steps into named helpers with explicit return types
-  (`renderLinksToolbar()`, `mockAcceptedJob()`).
-
-### Mocking
-
-- Mock at the **boundary** only: `@/lib/api` (`fetchWithAuth`), `next/navigation`, browser APIs, timers. Do not mock the
-  module under test or its own pure helpers.
-- Use `vi.mocked(fn)` for typed access to mocks — never `as ReturnType<typeof vi.fn>` or `as any`.
-- Declare mock functions shared between `vi.mock` factories and tests with `vi.hoisted`.
-- Build `Response` objects with `Response.json(body, init)` / `new Response(...)` instead of hand-rolled objects.
-- Reset Zustand stores between tests (`useStore.setState(initialState)` or an exported `reset…ForTests()` helper) so
-  tests never depend on execution order.
-- Mocks, spies, stubbed globals/envs, `localStorage` and `sessionStorage` are reset automatically after each test
-  (`vitest.config.ts` + `src/test/setup.ts`); do not repeat that cleanup by hand.
-- `src/test/setup.ts` provides jsdom polyfills needed by Radix/Recharts (`ResizeObserver`, pointer capture,
-  `scrollIntoView`, `matchMedia`, Web Storage). Add new global polyfills there, never inside individual tests.
-- Web Storage is an in-memory instance, so spy on the instance (`vi.spyOn(localStorage, "setItem")`), not on
-  `Storage.prototype`.
-- The global `next/navigation` mock returns a referentially stable router. Override it per file with `vi.mock` +
-  `vi.hoisted` when a test needs to assert on navigation or control `useSearchParams`/`usePathname`.
-- Desktop vs. mobile (Dialog vs. Drawer): call `stubDesktopViewport()` / `stubMobileViewport()` from
-  `src/test/viewport-utils.ts` so the real `useMediaQuery` hooks run. Mock `@/lib/hooks/useMediaQuery` instead only when
-  a test must flip the layout within a single render. Cover both layouts with `describe.each` when behaviour differs.
-- Reuse the existing helpers in `src/test/` before writing new ones: `link-utils.ts` (`createShortLink`,
-  `createLinkItem`, `createPage`), `tag-utils.ts`, `import-utils.ts`, `csv-utils.ts`, `link-form-utils.ts`
-  (`routeFetchWithAuth` — route a mocked `fetchWithAuth` by endpoint), `turnstile-utils.tsx`, `next-themes-utils.ts`,
-  `palette-utils.tsx`, `analytics-utils.tsx`, `user-session-utils.ts`, `page-toolbar-utils.ts`.
-- Tests that exercise error paths should `vi.mock("@/lib/logger")` and assert on `logger.error` where the log is part of
-  the contract, so expected failures do not pollute the test output.
-
----
-
-## 8. What Not to Do
-
-| Do not                                                | Reason                                                      |
-|-------------------------------------------------------|-------------------------------------------------------------|
-| Render user-provided text without truncation handling | Long strings break layout on desktop and mobile; see section 6 |
-| Add `"use client"` to every component                 | Defeats the purpose of the App Router and SSR benefits      |
-| Fetch data inside `useEffect` for initial loads       | Server Components handle this more efficiently              |
-| Create new colour or spacing values                   | Breaks design consistency                                   |
-| Write functions longer than ~40 lines                 | Violates single responsibility; hard to test and understand |
-| Use `any` in TypeScript                               | Undermines type safety                                      |
-| Add a new UI component without checking if one exists | Leads to duplication and inconsistency                      |
-| Use `<a>` for internal links                          | Bypasses Next.js client-side navigation                     |
-| Use route-level `loading.tsx` for loading states      | Causes full-page layout shifts and flickering; prefer component-level skeletons |
-| Hardcode strings that appear more than once           | Should be a constant or come from a translation/config file |
-| Use `console.log` / `console.error` for logging       | Use the `logger` from `@/lib/logger` instead — it works in dev and will send to monitoring in production |
-| Ship logic changes without tests                      | Regressions go unnoticed; see section 7                     |
-| Assert on implementation details or use snapshots     | Tests break on refactors without catching real bugs         |
-| Cast mocks with `as ReturnType<typeof vi.fn>`         | Use `vi.mocked()` for type-safe mocks                       |
+# AGENTS.md
+
+Rules for AI agents and contributors. Details, explanations and examples live in [`aidocs/`](aidocs/README.md).
+
+## Project facts
+
+- `url-shortener-ui/`: Next.js 16 App Router, React 19 with the React Compiler, TypeScript (strict), Zustand 5,
+  Tailwind CSS v4 + shadcn/Radix, Vitest 4 + React Testing Library. Client-rendered against an external REST API.
+- `url-shortener-mock-server/`: Express 4 + TypeScript stand-in for that API, tested with `node:test`.
+- pnpm workspace, Node >= 22. There is no CI workflow; every check runs locally.
+
+## Verify commands (repository root)
+
+| Purpose | Command |
+|---|---|
+| Install | `pnpm install` |
+| Dev (UI on :3000 + mock on :8080) | `pnpm dev` |
+| Build | `pnpm build` |
+| Tests (UI + mock server) | `pnpm test` |
+| Type-check | `pnpm --filter=url-shortener-ui type-check && pnpm typecheck` |
+| Lint | `pnpm lint` (not green yet: pre-existing `react-hooks` errors; add no new findings) |
+
+## Required reading
+
+Read [aidocs/README.md](aidocs/README.md), then the guides for your task before changing code.
+
+| Task | Read |
+|---|---|
+| Any change (first time) | [architecture](aidocs/architecture.md), [coding-patterns](aidocs/coding-patterns.md) |
+| Feature / UI work | [coding-patterns](aidocs/coding-patterns.md), [styling-and-theming](aidocs/styling-and-theming.md), the feature guide below |
+| Pages, links, redirects, shortcuts | [routing-and-navigation](aidocs/routing-and-navigation.md) |
+| Stores, persisted state | [state-management](aidocs/state-management.md) |
+| API integration, new endpoint | [api-layer](aidocs/api-layer.md), [mock-server](aidocs/mock-server.md) |
+| Styling, theming, long user text | [styling-and-theming](aidocs/styling-and-theming.md), [`DESIGN.md`](DESIGN.md) |
+| Env vars, build config, scripts, dependencies | [configuration](aidocs/configuration.md) |
+| Tests (every logic or behaviour change) | [testing](aidocs/testing.md) |
+| Mock server | [mock-server](aidocs/mock-server.md), [testing](aidocs/testing.md) |
+| Login, sessions | [features/auth](aidocs/features/auth.md) |
+| Links, tags, import/export, inspect, report abuse | [features/links-and-tags](aidocs/features/links-and-tags.md) |
+| Analytics | [features/analytics](aidocs/features/analytics.md) |
+| Settings, billing | [features/billing-and-settings](aidocs/features/billing-and-settings.md) |
+
+## Mandatory rules
+
+1. The UI is client-rendered: no SSR, no server-side data fetching, no new API routes or server actions. The few
+   existing server-side files are listed exceptions in [architecture](aidocs/architecture.md#rendering-model).
+2. Data flows component -> hook / store / `lib/*-api.ts` -> `fetchWithAuth` (`@/lib/api`). Authenticated requests
+   never use raw `fetch`; endpoint paths come from `API_ENDPOINTS`. `lib/` never imports from `app/` or `components/`.
+3. Every API change on the UI side is mirrored in the mock server (and its tests) in the same change.
+4. No new design tokens and no hardcoded colours or sizes: use the existing tokens and utilities. Every surface works
+   in light and dark mode and in every palette.
+5. Reuse `components/ui` and `components/layout` before creating a component. One exported component per file, with
+   an explicit `Props` interface.
+6. User-provided text never breaks layout: `truncate` + `title` (and `min-w-0` on every flex/grid ancestor), or
+   `break-all` where the full value must stay visible.
+7. No `any`. Type assertions only when unavoidable, with a comment saying why.
+8. Naming: event handlers `handle*`, booleans `is*` / `has*` / `can*`, intention-revealing names. Functions stay
+   under ~40 lines, use guard clauses, and contain no magic values; a string used twice becomes a constant.
+9. Log only through `logger` from `@/lib/logger`; never `console.*`.
+10. Internal navigation uses `next/link` or the router, never a raw `<a>`. No route-level `loading.tsx`. Images use
+    `next/image`, fonts use `next/font`.
+11. Every change to logic or user-facing behaviour ships with tests that follow [testing](aidocs/testing.md):
+    behaviour over implementation, mocks only at boundaries, `vi.mocked`, no snapshots.
+12. Code listed under "Known limitations and existing exceptions" in a guide is not a template. Do not copy it and do
+    not change it as a drive-by.
+13. Keep the docs true: when a change alters behaviour or a pattern described in `aidocs/`, update the owning guide in
+    the same commit. Comments explain why, never what.

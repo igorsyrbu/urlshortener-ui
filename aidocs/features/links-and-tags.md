@@ -1,0 +1,177 @@
+# Links, Tags, Import/Export and Public Link Pages
+
+> User flows and non-trivial logic for the links list, the create/edit link form, URL cleaner, archive/delete/QR, CSV import and export, the tags page, and the public `/inspect/[key]` and `/report-abuse` pages; read before changing any of them. Paths are relative to `url-shortener-ui/` unless stated otherwise.
+
+Related: [architecture.md](../architecture.md) · [routing-and-navigation.md](../routing-and-navigation.md) · [state-management.md](../state-management.md) · [api-layer.md](../api-layer.md) · [coding-patterns.md](../coding-patterns.md) · [styling-and-theming.md](../styling-and-theming.md) · [testing.md](../testing.md) · [mock-server.md](../mock-server.md) · [auth.md](auth.md)
+
+## Links page
+
+Route `/links` ([`src/app/(dashboard)/links/page.tsx`](../../url-shortener-ui/src/app/(dashboard)/links/page.tsx)), a client page wrapped in `Suspense` (it reads `useSearchParams`).
+
+| Concern | Where | Behaviour |
+|---|---|---|
+| List state | [`src/lib/store/links.ts`](../../url-shortener-ui/src/lib/store/links.ts) `useLinkStore` | `links`, `loading`, `error`, `showArchived`, `searchQuery`, `currentPage`, `totalElements`, `totalPages` |
+| Fetch | `fetchLinks(page?)` | `GET /shortlinks?page&size=20&showArchived&search`; maps `ShortLinkDTO` to `LinkItem` (empty title becomes `DEFAULT_LINK_TITLE`); reads pagination from `data.page ?? data` |
+| Page in URL | [`src/lib/pagination.ts`](../../url-shortener-ui/src/lib/pagination.ts) | `?page=N` is **1-based** in the URL, 0-based in the store; page 1 has no query string. Invalid values parse to page 0 |
+| Search | `useDebounce(searchInput, 500)` | On a changed trimmed value: `setSearchQuery`, reset URL to page 1, `fetchLinks(0)`. Placeholder "Search by URL or title" |
+| Archived toggle | `showArchived` | Persisted in `localStorage` key `showArchived` (`SHOW_ARCHIVED_STORAGE_KEY`); `hydrateShowArchived()` runs in an effect after mount |
+| Tags for badges | `useTagStoreWithoutCount.fetchTags()` | `LinkCard` resolves `link.tagIds` against that store |
+| States | page | Skeletons (`LinkCardSkeletonList`) while first load; `EmptyLinksState` (no links) or `NoLinksFoundState` (search with no match); dismissible error banner |
+| Pagination | `LinksPagination` | Floating bar, `Previous`/`Next`, label like `1-20 of 57 links`; buttons call `router.push(buildLinksPageUrl(n), {scroll:false})`, scroll `main` to top and `fetchLinks(n)`. A change of `urlPage` also triggers `fetchLinks(urlPage)` in an effect |
+
+Notes on `fetchLinks`: it returns immediately if `loading` is already true, so overlapping calls are dropped, not queued (see [State management](../state-management.md)). Mutating flows therefore call it after the previous request finished.
+
+### Link card
+
+[`src/components/links/LinkCard.tsx`](../../url-shortener-ui/src/components/links/LinkCard.tsx): favicon (or archive icon when `!isActive`), title (truncated), short URL with copy button (`COPY_FEEDBACK_DURATION_MS`), destination hostname with full URL tooltip, tag badges (first tag plus `+N` with a hover popover; icon-only on mobile), and an actions menu (`DropdownMenu` on desktop, `ActionDrawer` on mobile via `useIsDesktop`): Edit, QR Code, Archive/Unarchive, Delete.
+
+Keyboard shortcuts (desktop, no modal open, focus not in an input):
+
+- On a hovered or menu-open card: `E` edit, `Q` QR code, `D` delete (each card registers its own `keydown` listener and checks `:hover`).
+- `A` (registered in the page, capture phase): with a hovered card opens the archive modal; with no hover toggles the "show archived" filter and refetches page 1.
+- `isModalOpen()` from [`src/lib/utils.ts`](../../url-shortener-ui/src/lib/utils.ts) prevents shortcuts while a dialog is open.
+
+`LinkFavicon` loads `https://www.google.com/s2/favicons?sz&domain` through `next/image` with `unoptimized`. It falls back to a link icon for non-public hosts (`.local`, `.internal`, private IP ranges), for hosts without a dot, on load error, and when the returned image is 16 px or smaller (the service's placeholder globe). Failed domains are remembered in a module-level `Set` for the page lifetime. The host is allowed in `next.config.ts` (see [Configuration](../configuration.md)).
+
+### Archive and delete
+
+- Archive: `ArchiveLinkModal` (shared `DeleteConfirmationModal`, default variant). `setLinkArchived(id, archived)` in the store sends a full `PUT /shortlinks` with `isActive: !archived` and the existing title, URL, key and tag ids, then refetches the current page. Failures set `error` in the store (shown in the banner).
+- Delete: `DeleteLinkModal` requires typing the short-link handle (the path of `shortUrl`) as confirmation. `confirmDelete` in the page calls `DELETE /shortlinks/{id}` directly through `fetchWithAuth`, refetches the current page and closes the modal.
+- After archive or delete, `syncPageAfterRemoval` steps back one page (URL and fetch) when the current page became empty while `totalElements > 0`.
+
+### QR code
+
+`QrCodeModal` ([`src/components/links/QrCodeModal.tsx`](../../url-shortener-ui/src/components/links/QrCodeModal.tsx)) lazy-loads `qr-code-styling` once per page lifetime (module-level cache). A 500 px preview is cached per link id; a 2048 px instance is built on demand for download or copy. Actions: download PNG or SVG (file name `<key>-qrcode`), copy as PNG image or SVG text (uses `ClipboardItem` when supported). Dots are black on a white background on purpose (scan reliability), so this component is a documented exception to theme tokens; do not "fix" it to use theme colours.
+
+## Create and edit link form
+
+Entry points: the dashboard header button and `EmptyLinksState` open `CreateLinkModal` through `useUIStore.isCreateModalOpen` (mounted in the dashboard layout, so it works from any dashboard page; on `/tags` the same header button opens the tag modal instead). Editing opens `EditLinkModal` from the card.
+
+Component chain:
+
+```
+CreateLinkModal (Dialog | Drawer) -> LinkFormFields (state machine) -> FormScreenContent | TagsScreenContent | TrackerReviewScreen
+EditLinkModal -> LinkFormModal (Dialog | Drawer) -> LinkFormFields
+```
+
+[`src/components/links/LinkFormFields.tsx`](../../url-shortener-ui/src/components/links/LinkFormFields.tsx) owns all form state and the screen machine. Create and edit differ only by props: `autoGenerateKey`, `enableTitleSuggestion`, `enableUrlCleaner`, `initial*`, and the `onSubmit(longUrl, title, key, tagIds)` callback supplied by the modal.
+
+### Screens
+
+`activeScreen` is `"form" | "tags" | "review"`, animated with a horizontal slide (`slideDirection` is +1 forward, -1 back).
+
+| Screen | Reached by | Leaves by |
+|---|---|---|
+| `form` | default; after Back/Apply; on URL validation or key-conflict error | submit, or "Select tags" (mobile only), or "Review" in the tracker banner |
+| `tags` | mobile only: tap the tags field (desktop uses the inline `TagSelect` popover, so this screen is unreachable there) | Back arrow, or its own submit button |
+| `review` | "Review" in `UrlCleanerBanner` | Back, Apply, or editing the URL (which returns to `form`) |
+
+Create adds a second state in `CreateLinkModal`: `viewState` `"form"` then `"success"`. On a `2xx` it stores the new link, switches to `CreateLinkSuccess` (copyable short URL, "Done"), fires `canvas-confetti` (dynamically imported), pushes `/links` and refetches page 1.
+
+Edit closes the modal on success (`LinkFormModal.handleSubmit`) and the page refetches the current page (`onSuccess`).
+
+### Fields and validation
+
+- **Destination URL**: `normalizeUrl` prepends `https://` to bare domains; `isValidUrl` accepts only `http:` and `https:`. Normalisation and validation run on blur and on submit (see [`src/lib/url-utils.ts`](../../url-shortener-ui/src/lib/url-utils.ts)). Desktop auto-focuses the empty field.
+- **Key** (`ShortLinkKeyField`, prefix `MOCKED_SHORT_DOMAIN`): format rule `^[A-Za-z0-9-]+$`, max 30 (`getShortKeyValidationError`). Create fetches a random key from `GET /shortlinks/random` on open. A ref (`hasUserEditedKeyRef`) records manual edits so late random-key responses never overwrite what the user typed; the shuffle button and clearing the field (blur on an empty key) force a new random key. Only one random-key request runs at a time (`pendingKeyRequestRef`); submit awaits a pending one.
+- **Availability**: after `KEY_AVAILABILITY_CHECK_DEBOUNCE_MS` (600 ms) a user-edited, valid key that differs from the initial key triggers `GET /shortlinks/{key}/exists` (`200` is taken, `404` is free, cancelled on change). A taken key sets `SHORT_KEY_TAKEN_MESSAGE` and disables submit.
+- **Title**: empty title falls back to `DEFAULT_LINK_TITLE` on submit. Create enables "suggest title" (`GET /longurl/title?url=`); on empty or failed response it derives a title from the hostname with a short glow animation.
+- **Tags**: see [Tag selection](#tag-selection).
+- **Conflict handling**: a `409` from `POST`/`PUT /shortlinks` throws `ShortKeyConflictError`; the form sets the key error and returns to the `form` screen. Any other failure is logged and rethrown, leaving the submit button re-enabled.
+- Form state is reset when the `initialLongUrl`, `initialTitle` or `initialTagIds` props change (switching which link is edited).
+
+### URL cleaner and tracker review
+
+Enabled when `enableUrlCleaner` and the user's preference `trackerMode` is `SUGGEST` or `AUTO_CLEAN` (`usePreferencesStore`, loaded from `GET /users/me/preferences` on form mount; `null` or `DISABLE` turns the cleaner off; the preference is edited in settings, see [Billing and settings](billing-and-settings.md)).
+
+1. `useUrlCleaner` ([`src/lib/hooks/useUrlCleaner.ts`](../../url-shortener-ui/src/lib/hooks/useUrlCleaner.ts)) debounces the URL by `URL_CLEANER_DEBOUNCE_MS` (500 ms), skips invalid URLs and URLs already requested, and posts `POST /urlcleaner {url}` with an `AbortController`. It exposes a result only when `removedParams` is non-empty, the cleaned URL differs, and `completeProviderSkipped` is false. `401/403/400` and other failures yield no banner.
+2. `SUGGEST`: `UrlCleanerBanner` shows "N trackers detected" with **Clean** (apply the cleaned URL) and **Review**.
+3. `AUTO_CLEAN`: the cleaned URL is applied automatically and `UrlCleanerSuccessBanner` reports the count for `URL_CLEANER_SUCCESS_DURATION_MS`.
+4. Review screen: `buildTrackerEntries` ([`src/lib/url-cleaner-utils.ts`](../../url-shortener-ui/src/lib/url-cleaner-utils.ts)) turns `removedParams` into chips (query or path trackers, including a nested `q=` URL). The user toggles chips to **keep** specific trackers; `buildFinalUrl` rebuilds the URL, preserving original parameter order and path segments, and falls back to string assembly if URL parsing fails. Apply sets the URL and counts removed trackers.
+5. `appliedUrl` records the URL produced by a cleaning action so it is not re-suggested; any manual edit clears it.
+
+## Tag selection
+
+- Desktop: `TagSelect` popover (`components/links/TagSelect.tsx`) with search, multi-select, sorted by name, and a "Create" row when the search has no exact match. Keyboard logic lives in `useTagSelectKeyboard`: Arrow Up/Down wrap around, `Enter` toggles the active row or creates, `Escape` closes; typing a new name pre-highlights the create row.
+- Mobile: the tags field opens the `tags` screen (`TagsScreenContent`, same search and create behaviour, with its own submit button).
+- Inline creation uses a random colour from `ALLOWED_TAG_COLORS` ([`src/lib/tag-constants.ts`](../../url-shortener-ui/src/lib/tag-constants.ts)) and `useTagMutations().createTag`; the new tag is auto-selected. Failure shows "Failed to create tag".
+- Selected tags show at most 4 badges plus `+N`.
+
+## Tags page
+
+Route `/tags` ([`src/app/(dashboard)/tags/page.tsx`](../../url-shortener-ui/src/app/(dashboard)/tags/page.tsx)).
+
+- Two separate stores: `useTagStoreWithCount` (`withLinksCount=true`, used by this page) and `useTagStoreWithoutCount` (`withLinksCount=false`, used by forms, cards and the links page). Both fetch `GET /tags?size=20[&search]` and accept either `{content: [...]}` or a plain array (`fetchTagsResponse`).
+- Mutations live in `useTagMutations` ([`src/lib/hooks/useTagMutations.ts`](../../url-shortener-ui/src/lib/hooks/useTagMutations.ts)): `createTag` (`POST /tags`), `updateTag` (`PUT /tags`), `deleteTag` (`DELETE /tags/{id}`). Each writes the result into **both** stores (create prepends, update replaces, delete filters) and on failure sets the same `error` message in both and rethrows.
+- Search: same 500 ms debounce pattern as links; `store.setSearchQuery` then `fetchTags()`.
+- UI: `TagCard` (colour badge, name, `N link(s)` badge when `linkCount > 0`, menu with `E` edit and `D` delete shortcuts), `EmptyTagsState` / `NoTagsFoundState`, `TagCardSkeletonList`. Create and edit use `TagFormModal` (name `maxLength` 50, `TagColorPicker` over the 8 `ALLOWED_TAG_COLORS`, Dialog on desktop and Drawer on mobile; `CreateTagModal` passes `resetOnClose`). Delete uses `DeleteTagModal`; the description says the tag is removed from all associated links.
+- When any tag request fails the page replaces its whole content with an error banner (toolbar included) until **Dismiss** is clicked.
+
+## CSV import
+
+Entry: the toolbar options menu on `/links` (`PageToolbar`) opens `ImportCsvModal`; the modal is a Dialog on desktop and a non-dismissible-while-uploading Drawer on mobile. All import logic is split between a store and a hook:
+
+| Piece | File | Role |
+|---|---|---|
+| Tracker store | [`src/lib/store/import.ts`](../../url-shortener-ui/src/lib/store/import.ts) `useImportTracker` | Status machine, progress, SSE subscription lifecycle |
+| Hook | [`src/lib/hooks/useLinkImport.ts`](../../url-shortener-ui/src/lib/hooks/useLinkImport.ts) | Pre-check, upload, maps tracker state to an `ImportSession` for the UI |
+| Transfer helpers | [`src/lib/link-transfer.ts`](../../url-shortener-ui/src/lib/link-transfer.ts) | `precheckCsv`, `uploadLinksImport`, `TransferError`, `parseProblemDetail` |
+| SSE client | [`src/lib/import-progress.ts`](../../url-shortener-ui/src/lib/import-progress.ts), [`src/lib/server-sent-events.ts`](../../url-shortener-ui/src/lib/server-sent-events.ts) | Stream reading, reconnect, validation |
+| Pass-through | [`src/app/api/shortlinks/import/updates/route.ts`](../../url-shortener-ui/src/app/api/shortlinks/import/updates/route.ts) | Streams the backend SSE response without buffering |
+
+Upload flow: choose a file in `ImportCsvDropzone` (click or drag; `accept=".csv,text/csv"`) and optionally enable "Generate new keys for taken ones" (`generateTakenKeys`). `handleImport` refuses to start unless the tracker is `idle`, reads the file text and runs `precheckCsv` (non-blank lines minus the header; zero rows gives "file is empty", more than `MAX_IMPORT_DATA_ROWS` = 1000 gives "too many rows"), then `POST /shortlinks/import?generateTakenKeys&fileName` with `Content-Type: text/csv`. Errors surface as toasts. The server answers with a `LinkImportJobDTO`; `trackSubmission(job)` takes over.
+
+### Tracker state machine
+
+`status` is one of `idle`, `discovering`, `active`, `reconnecting`, `interrupted`, `completed`.
+
+```
+idle --ensureDiscovery--> discovering --first progress--> active <--> reconnecting
+idle --trackSubmission(job)--> active           active/reconnecting --stream ends--> completed
+interrupted <-- non-retryable stream error (from any tracking state)
+completed/idle --reset / stopTracking--> idle
+```
+
+- `ensureDiscovery()` runs when `/links` mounts (and `stopTracking()` on unmount). It opens the SSE stream to find an import already running (started in another tab or before a reload). An empty stream returns the tracker to `idle`.
+- `trackSubmission(job)` after an upload: a job already `COMPLETED` goes straight to `completed`; otherwise it starts the stream in `active`.
+- Progress events carry only `processedRows` and `totalRows`. `parseImportProgress` rejects malformed counters; `applyTrackedProgress` ignores regressions; a changed `totalRows` is treated as a different job and aborts the stream. The stream is terminal when `processedRows === totalRows`.
+- Reconnects and stream timeouts are handled by `subscribeToDiscoveredImport` ([API layer](../api-layer.md#sse-client-import-progress)); a non-retryable error ends in `interrupted`.
+- On completion `refreshLinksAndTagsOnce()` refetches links (page 1) and tags once per run. Per-row success counts are not known from SSE; the "N imported, M failed" line appears only when the upload response itself was already `COMPLETED`.
+- A generation counter and `AbortController` in the module make late callbacks from a replaced stream harmless. `resetImportTrackerForTests()` is the test reset helper (see [Testing](../testing.md)).
+
+### UI states
+
+`useLinkImport` maps the tracker to `ImportSession.state` (`processing`, `reconnecting`, `interrupted`, `completed`). `ImportProgressBody` shows a spinner or check, file name (truncated), `N of M rows processed`, percentage and a progress bar. Footer buttons: Cancel/Import (idle), Close (running; "You can close this window", the import continues), Refresh links (interrupted), Import more and Done (completed). Closing the modal never stops tracking; `reset()` only acts when status is `completed` or `idle`.
+
+While an import is ongoing (`discovering`, `active`, `reconnecting`, **or `interrupted`**) the toolbar disables the import menu item, and shows `ImportRadialProgress` (clickable, reopens the modal) while progress is known and the stream is not interrupted.
+
+## CSV export
+
+`ExportCsvModal` (Dialog or Drawer). The "Apply current filters" switch (default on) exports with `showArchived` and the trimmed search (max `EXPORT_SEARCH_MAX_LENGTH` 2048 chars) from `useLinkStore`; off exports non-archived links without search. `downloadLinksExport` calls `GET /shortlinks/export` with `Accept: text/csv`, retries **once** after `EXPORT_RATE_LIMIT_RETRY_DELAY_MS` (1500 ms) on `429`, turns the body into a blob and downloads `shortlinks-export-YYYY-MM-DD.csv` through a temporary anchor. Failures: rate limit toast, `TransferError` message (from the problem body via `parseProblemDetail`), or a generic toast. Labels and messages are centralised in [`src/components/links/import-export-constants.ts`](../../url-shortener-ui/src/components/links/import-export-constants.ts).
+
+## Inspect page (`/inspect/[key]`)
+
+[`src/app/inspect/[key]/page.tsx`](../../url-shortener-ui/src/app/inspect/[key]/page.tsx) is a public page meant for people who received a short link and want to see where it goes.
+
+- It is an **async server component** and performs a server-side fetch: `GET {SERVER_API_BASE_URL}/public/preview/{key}` with `cache: "no-store"` (the only page that does; this is an explicit exception to the client-rendered model described in [Architecture](../architecture.md)). `404` redirects to `/`; any other non-OK response is logged and rethrown, which lands on the root `error.tsx` boundary.
+- It renders `InspectLinkPreviewCard` (OG image, favicon and hostname, title, description clamped to 2 lines), the full destination URL (scrollable, `break-all`) and a "Report this link" button linking to `/report-abuse?shortUrl=<encoded short URL>`.
+- `OgImage` loads the image through the third-party proxy `https://wsrv.nl`, falls back to the original URL on error or after 2 s without load, and finally to a "Preview unavailable" placeholder. It uses a raw `<img>` (remote, user-controlled URLs).
+
+## Report abuse page
+
+[`src/app/(legal)/report-abuse/page.tsx`](../../url-shortener-ui/src/app/(legal)/report-abuse/page.tsx) is public and has no auth. It is an async server component that only reads the `shortUrl` search param and the Turnstile env vars and passes them to the client `ReportAbuseForm` (no data fetching).
+
+- Fields: link URL (prefilled from `?shortUrl`), reason (one of 7 `ABUSE_REASONS`), reporter email (required), optional description (max `ABUSE_DESCRIPTION_MAX_LENGTH` 2000, counter shown). Client validation: `isValidUrl`, a reason selected, an email present.
+- Submit: `POST {SERVER_API_BASE_URL}/public/abuse/report` as form-urlencoded, with `cf-turnstile-response` when Turnstile is on (`TurnstileWidget` from the auth components). Responses: `201` shows `ReportAbuseSuccess` (copyable report id, "Report another link"); `429` shows a retry message using `Retry-After`; `422` shows the server `message` or `error`; other failures show a generic message; a thrown fetch shows a network error. See [Mock server](../mock-server.md) for the simulated backend.
+
+## Known limitations and existing exceptions
+
+- Observation: the server-side inspect fetch and the direct-to-backend abuse post are existing exceptions to the client-rendered model; see [Architecture](../architecture.md#known-limitations-and-existing-exceptions). Do not extend server-side fetching to other pages.
+- Observation: tag stores fetch with a fixed `size=20` and the UI has no tag pagination, so only the first 20 tags appear in `TagSelect`, link badges and the tags page.
+- Observation: `fetchLinks` and `fetchTags` drop calls made while a request is in flight, so a rapid second change (for example a page click during a search refetch) can be ignored.
+- Observation: delete failure in `confirmDelete` is only logged; the modal stays open without a user-visible error.
+- Observation: `ImportResultsCards` and `ImportResultsTable` and `ImportFailure`/`ImportResponseDTO` types exist but no component renders them; the shipped flow shows counts only.
+- Observation: `LinkFormFields.tsx` is about 600 lines with a very wide props surface on `FormScreenContent`; `LinkCard` and `QrCodeModal` are also large. Existing exceptions to the size guidance in [Coding patterns](../coding-patterns.md); do not copy, do not split as a drive-by.
+- Observation: `TagSelect` and `TagCard` contain raw colour utility classes (`text-red-500`, etc.) and `QrCodeModal` hardcodes black/white. These are existing exceptions to [Styling and theming](../styling-and-theming.md); the QR colours are intentional.
+- Observation: `LinkFormFields` re-initialises when `initialTagIds` changes reference; `EditLinkModal` builds that array with a spread on each render, so correct behaviour depends on the React Compiler memoising it.
+- Observation: `OgImage` depends on the external `wsrv.nl` proxy and uses a raw `<img>`.
