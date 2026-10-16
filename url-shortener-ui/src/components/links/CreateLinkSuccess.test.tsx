@@ -2,7 +2,7 @@ import {render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {describe, expect, it, vi} from "vitest";
 import {CreateLinkSuccess} from "@/components/links/CreateLinkSuccess";
-import {COPY_FAILED_LOG_MESSAGE} from "@/lib/constants";
+import {COPY_FAILED_LOG_MESSAGE, ICON_BUTTON_LABELS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 
 const SHORT_URL = "https://sho.rt/abc123";
@@ -25,7 +25,7 @@ describe("CreateLinkSuccess", () => {
         const user = userEvent.setup();
         renderSuccess();
 
-        await user.click(screen.getByRole("button", {name: "Copy to clipboard"}));
+        await user.click(screen.getByRole("button", {name: ICON_BUTTON_LABELS.COPY_SHORT_LINK}));
 
         expect(await navigator.clipboard.readText()).toBe(SHORT_URL);
     });
@@ -37,7 +37,7 @@ describe("CreateLinkSuccess", () => {
         const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined);
         renderSuccess();
 
-        await user.click(screen.getByRole("button", {name: "Copy to clipboard"}));
+        await user.click(screen.getByRole("button", {name: ICON_BUTTON_LABELS.COPY_SHORT_LINK}));
 
         expect(logError).toHaveBeenCalledWith(COPY_FAILED_LOG_MESSAGE, clipboardError);
     });

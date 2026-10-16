@@ -5,6 +5,7 @@ import {SidebarUserMenu} from "@/components/layout/sidebar-user-menu";
 import {fetchWithAuth} from "@/lib/api";
 import {logger} from "@/lib/logger";
 import {useAuthStore} from "@/lib/store/auth";
+import {ICON_BUTTON_LABELS} from "@/lib/constants";
 
 const mediaQuery = vi.hoisted(() => ({isDesktop: true}));
 const navigation = vi.hoisted(() => {
@@ -48,6 +49,17 @@ describe.each([
     beforeEach(() => {
         mediaQuery.isDesktop = isDesktop;
         vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: 204}));
+    });
+
+    it("can be opened from the keyboard", async () => {
+        const user = userEvent.setup();
+        renderMenu();
+
+        await user.tab();
+        expect(screen.getByRole("button", {name: ICON_BUTTON_LABELS.ACCOUNT_MENU})).toHaveFocus();
+        await user.keyboard("{Enter}");
+
+        expect(await screen.findByText(USER.email)).toBeInTheDocument();
     });
 
     it("shows the user name and email once opened", async () => {

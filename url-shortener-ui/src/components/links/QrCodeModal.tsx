@@ -21,7 +21,7 @@ import {Button} from "@/components/ui/button";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Check, Copy, Download, FileImage, FileType, Loader2} from "lucide-react";
 import {LinkItem} from "@/lib/types";
-import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
+import {COPY_FEEDBACK_DURATION_MS, ICON_BUTTON_LABELS} from "@/lib/constants";
 import type QRCodeStylingType from "qr-code-styling";
 import {logger} from "@/lib/logger";
 import {ActionDrawer} from "@/components/ui/action-drawer";
@@ -254,7 +254,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
                             <div className="flex items-center gap-2 shrink-0">
                                 <DropdownMenu open={isDownloadOpen} onOpenChange={handleDownloadMenuOpenChange}>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon"
+                                        <Button variant="ghost" size="icon" aria-label={ICON_BUTTON_LABELS.DOWNLOAD_QR}
                                                 className="h-8 w-8 text-muted-foreground hover:text-foreground">
                                             <Download className="h-4 w-4"/>
                                         </Button>
@@ -271,7 +271,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
 
                                 <DropdownMenu open={isCopyOpen} onOpenChange={handleCopyMenuOpenChange}>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon"
+                                        <Button variant="ghost" size="icon" aria-label={ICON_BUTTON_LABELS.COPY_QR}
                                                 className="h-8 w-8 text-muted-foreground hover:text-foreground">
                                             {copied ? <Check className="h-4 w-4 text-success"/> :
                                                 <Copy className="h-4 w-4"/>}
@@ -323,7 +323,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
                                     size="icon"
                                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                     onClick={() => setIsDownloadOpen(true)}
-                                    aria-label="Download QR code"
+                                    aria-label={ICON_BUTTON_LABELS.DOWNLOAD_QR}
                                 >
                                     <Download className="h-4 w-4"/>
                                 </Button>
@@ -332,7 +332,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
                                     size="icon"
                                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                     onClick={() => setIsCopyOpen(true)}
-                                    aria-label="Copy QR code"
+                                    aria-label={ICON_BUTTON_LABELS.COPY_QR}
                                 >
                                     {copied ? <Check className="h-4 w-4 text-success"/> : <Copy className="h-4 w-4"/>}
                                 </Button>

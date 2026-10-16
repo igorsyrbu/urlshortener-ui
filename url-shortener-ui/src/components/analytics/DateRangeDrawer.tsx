@@ -14,7 +14,7 @@ import {IosWheelPicker, type WheelPickerItem} from "@/components/ui/ios-wheel-pi
 
 import {cn} from "@/lib/utils";
 import {ChevronDown, ChevronLeft, ChevronRight} from "lucide-react";
-import {FIRST_ANALYTICS_YEAR} from "@/lib/constants";
+import {FIRST_ANALYTICS_YEAR, ICON_BUTTON_LABELS} from "@/lib/constants";
 import {getSelectableAnalyticsYears, getTodayAtMidnight} from "@/lib/date-utils";
 
 const MONTHS = [
@@ -234,6 +234,7 @@ export function DateRangeDrawer({
                             <button
                                 type="button"
                                 onClick={handlePrevMonth}
+                                aria-label={ICON_BUTTON_LABELS.PREVIOUS_MONTH}
                                 disabled={isPrevDisabled}
                                 aria-disabled={isPrevDisabled}
                                 className="p-1 text-primary hover:text-primary/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-primary"
@@ -243,6 +244,7 @@ export function DateRangeDrawer({
                             <button
                                 type="button"
                                 onClick={handleNextMonth}
+                                aria-label={ICON_BUTTON_LABELS.NEXT_MONTH}
                                 disabled={isNextDisabled}
                                 aria-disabled={isNextDisabled}
                                 className="p-1 text-primary hover:text-primary/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-primary"

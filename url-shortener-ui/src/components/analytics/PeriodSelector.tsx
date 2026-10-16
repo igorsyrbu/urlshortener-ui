@@ -6,7 +6,7 @@ import {Calendar as CalendarIcon} from "lucide-react";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {DateRange} from "react-day-picker";
 import {useIsMobile} from "@/lib/hooks/useMediaQuery";
-import {FIRST_ANALYTICS_YEAR} from "@/lib/constants";
+import {FIRST_ANALYTICS_YEAR, FOCUS_RING_CLASS} from "@/lib/constants";
 import {getTodayAtMidnight} from "@/lib/date-utils";
 import {DateRangeDrawer} from "@/components/analytics/DateRangeDrawer";
 
@@ -91,7 +91,7 @@ export function PeriodSelector({
                 <button
                     key={preset.value}
                     onClick={() => onPeriodChange(preset.value)}
-                    className={`outline-none focus:outline-none focus-visible:ring-0 flex-1 sm:flex-none px-2 sm:px-3 py-1.5 rounded-md transition-colors text-center ${period === preset.value ? activeClasses : inactiveClasses}`}
+                    className={`outline-none ${FOCUS_RING_CLASS} flex-1 sm:flex-none px-2 sm:px-3 py-1.5 rounded-md transition-colors text-center ${period === preset.value ? activeClasses : inactiveClasses}`}
                 >
                     {preset.label}
                 </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import {useState} from "react";
+import {FOCUS_RING_CLASS} from "@/lib/constants";
 import {Download, Info} from "lucide-react";
 import {toast} from "sonner";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
@@ -95,7 +96,7 @@ export function ExportCsvModal({open, onOpenChange}: ExportCsvModalProps) {
                                         setIsTooltipOpen((v) => !v);
                                     }}
                                     onBlur={() => setIsTooltipOpen(false)}
-                                    className="inline-flex size-4 translate-y-px items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none"
+                                    className={`inline-flex size-4 translate-y-px items-center justify-center rounded-full text-muted-foreground hover:text-foreground outline-none ${FOCUS_RING_CLASS}`}
                                 >
                                     <Info className="size-4"/>
                                 </button>

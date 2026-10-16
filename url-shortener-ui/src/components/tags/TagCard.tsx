@@ -12,7 +12,8 @@ import {
 import {Kbd} from "@/components/ui/kbd";
 import {Badge} from "@/components/ui/badge";
 import {TagItem} from "@/lib/types";
-import {MORE_ACTIONS_BUTTON_CLASS, SHORTCUT_KEY_CLASS} from "@/lib/constants";
+import {cn} from "@/lib/utils";
+import {FOCUS_RING_CLASS, MORE_ACTIONS_BUTTON_CLASS, SHORTCUT_KEY_CLASS} from "@/lib/constants";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {ActionDrawer} from "@/components/ui/action-drawer";
 import {isModalOpen} from "@/lib/utils";
@@ -67,7 +68,7 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
         <div
             ref={cardRef}
             tabIndex={0}
-            className="group flex items-center p-3 md:p-4 rounded-xl bg-card border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-3 outline-none"
+            className={cn("group flex items-center p-3 md:p-4 rounded-xl bg-card border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-3 outline-none", FOCUS_RING_CLASS)}
         >
             <div className="flex-1 min-w-0 flex items-center gap-3">
                 <Badge

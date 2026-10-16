@@ -42,6 +42,25 @@ export const API_ENDPOINTS = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Accessibility
+// ---------------------------------------------------------------------------
+
+/** Visible keyboard-focus ring for custom focusable elements; same tokens as `Button` and `Input`. */
+export const FOCUS_RING_CLASS = "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";
+
+/** Accessible names of icon-only controls. */
+export const ICON_BUTTON_LABELS = {
+    OPTIONS_MENU: "More options",
+    SUGGEST_TITLE: "Suggest a title from the page",
+    DOWNLOAD_QR: "Download QR code",
+    COPY_QR: "Copy QR code",
+    COPY_SHORT_LINK: "Copy short link",
+    PREVIOUS_MONTH: "Previous month",
+    NEXT_MONTH: "Next month",
+    ACCOUNT_MENU: "Account menu",
+} as const;
+
+// ---------------------------------------------------------------------------
 // Clipboard
 // ---------------------------------------------------------------------------
 

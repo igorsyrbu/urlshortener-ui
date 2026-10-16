@@ -5,6 +5,7 @@ import {Input} from "@/components/ui/input";
 import {Check, Copy} from "lucide-react";
 import {motion} from "framer-motion";
 import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
+import {ICON_BUTTON_LABELS} from "@/lib/constants";
 
 interface CreateLinkSuccessProps {
     shortUrl: string;
@@ -43,7 +44,8 @@ export function CreateLinkSuccess({shortUrl, onClose}: CreateLinkSuccessProps) {
                     size="icon"
                     className="shrink-0 transition-colors"
                     onClick={handleCopy}
-                    title="Copy to clipboard"
+                    aria-label={ICON_BUTTON_LABELS.COPY_SHORT_LINK}
+                    title={ICON_BUTTON_LABELS.COPY_SHORT_LINK}
                 >
                     {isCopied ? <Check className="h-4 w-4 text-success"/> : <Copy className="h-4 w-4"/>}
                 </Button>

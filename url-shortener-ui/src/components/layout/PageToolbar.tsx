@@ -1,6 +1,7 @@
 "use client";
 
 import {useState, type ReactNode} from "react";
+import {FOCUS_RING_CLASS, ICON_BUTTON_LABELS} from "@/lib/constants";
 import {AnimatePresence, motion, useReducedMotion, type Transition} from "framer-motion";
 import {Archive, Download, LoaderCircle, MoreVertical, TableProperties} from "lucide-react";
 import {cn} from "@/lib/utils";
@@ -38,7 +39,7 @@ interface PageToolbarProps {
 }
 
 const OPTIONS_BUTTON_CLASS =
-    "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-[0.5px] border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none";
+    `flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-[0.5px] border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground outline-none ${FOCUS_RING_CLASS}`;
 
 function isImportOngoing(status: ImportTrackingStatus): boolean {
     // An interrupted stream never confirms the job is gone, so keep the
@@ -93,7 +94,7 @@ function renderDesktopOptionsMenu(props: DesktopOptionsMenuProps): ReactNode {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <button className={OPTIONS_BUTTON_CLASS}>
+                <button type="button" aria-label={ICON_BUTTON_LABELS.OPTIONS_MENU} className={OPTIONS_BUTTON_CLASS}>
                     <MoreVertical className="size-5"/>
                 </button>
             </DropdownMenuTrigger>
@@ -151,6 +152,8 @@ function renderMobileOptionsMenu(props: MobileOptionsMenuProps): ReactNode {
     return (
         <>
             <button
+                type="button"
+                aria-label={ICON_BUTTON_LABELS.OPTIONS_MENU}
                 onClick={() => props.onDrawerOpenChange(true)}
                 className={OPTIONS_BUTTON_CLASS}
             >

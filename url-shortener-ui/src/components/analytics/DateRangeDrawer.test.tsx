@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type {DateRange} from "react-day-picker";
 import {afterAll, afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {DateRangeDrawer} from "@/components/analytics/DateRangeDrawer";
-import {FIRST_ANALYTICS_YEAR} from "@/lib/constants";
+import {FIRST_ANALYTICS_YEAR, ICON_BUTTON_LABELS} from "@/lib/constants";
 
 const {TEST_NOW} = vi.hoisted(() => {
     const testNow = new Date(2026, 9, 12, 15, 30);
@@ -32,11 +32,9 @@ function dayOf(day: number): RegExp {
     return new RegExp(`October ${day}(st|nd|rd|th),`);
 }
 
-// The month arrows have no accessible name, so they are located relative to the month label.
 function getMonthNavigationButton(direction: "previous" | "next"): HTMLElement {
-    const monthLabel = screen.getByRole("button", {name: /^[A-Z][a-z]+ \d{4}$/});
-    const [previous, next] = monthLabel.nextElementSibling?.querySelectorAll("button") ?? [];
-    return direction === "previous" ? previous : next;
+    const name = direction === "previous" ? ICON_BUTTON_LABELS.PREVIOUS_MONTH : ICON_BUTTON_LABELS.NEXT_MONTH;
+    return screen.getByRole("button", {name});
 }
 
 function renderDrawer({open = true, period = "P30D", initialRange}: DrawerOptions = {}): RenderedDrawer {

@@ -5,6 +5,7 @@ import {Input} from "@/components/ui/input";
 import {GlowingEffect} from "@/components/ui/glowing-effect";
 import {Loader2, Wand2} from "lucide-react";
 import type {GlowState} from "@/components/links/create-link-types";
+import {ICON_BUTTON_LABELS} from "@/lib/constants";
 
 interface CreateLinkTitleFieldProps {
     inputId: string;
@@ -39,6 +40,8 @@ export function CreateLinkTitleField({
                         className="h-6 w-6 text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary"
                         onClick={onSuggestTitle}
                         disabled={!canSuggestTitle || isLoadingTitle}
+                        aria-label={ICON_BUTTON_LABELS.SUGGEST_TITLE}
+                        aria-busy={isLoadingTitle}
                     >
                         {isLoadingTitle ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin"/>

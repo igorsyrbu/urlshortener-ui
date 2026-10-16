@@ -5,7 +5,7 @@ import { Info, ShieldAlert } from "lucide-react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { URL_CLEANER_TOOLTIP } from "@/lib/constants";
+import {URL_CLEANER_TOOLTIP, FOCUS_RING_CLASS} from "@/lib/constants";
 
 interface UrlCleanerBannerProps {
     trackerCount: number;
@@ -29,7 +29,7 @@ export function UrlCleanerBanner({ trackerCount, onClean, onReview }: UrlCleaner
                             aria-label="About tracker removal"
                             onClick={() => setOpen((v) => !v)}
                             onBlur={() => setOpen(false)}
-                            className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none translate-y-px"
+                            className={`inline-flex size-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground outline-none translate-y-px ${FOCUS_RING_CLASS}`}
                         >
                             <Info className="size-4" />
                         </button>

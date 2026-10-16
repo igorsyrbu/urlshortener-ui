@@ -18,6 +18,7 @@ import {createImportJob} from "@/test/import-utils";
 import {getQueriesOfRequestsTo, getRequestsTo, parseRequestBody, routeFetchWithAuth} from "@/test/link-form-utils";
 import {createPage, createShortLink} from "@/test/link-utils";
 import {createTag} from "@/test/tag-utils";
+import {getOptionsTrigger} from "@/test/page-toolbar-utils";
 import type {ShortLinkDTO} from "@/lib/api-types";
 
 const mocks = vi.hoisted(() => ({
@@ -82,12 +83,6 @@ function openUpdatesStream(): void {
         options?.signal?.addEventListener("abort", () => { streamController?.error(new DOMException("Aborted", "AbortError")); }, {once: true});
         return new Response(stream, {headers: {"Content-Type": "text/event-stream"}});
     });
-}
-
-function getOptionsTrigger(): HTMLElement {
-    const trigger = screen.getAllByRole("button").find((button) => !button.hasAttribute("aria-label"));
-    if (!trigger) throw new Error("Options trigger not found");
-    return trigger;
 }
 
 async function openLinkActions(user: ReturnType<typeof userEvent.setup>, linkIndex: number): Promise<void> {

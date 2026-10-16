@@ -34,6 +34,8 @@ import {
 } from "@/components/ui/drawer";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {Button} from "@/components/ui/button";
+import {cn} from "@/lib/utils";
+import {FOCUS_RING_CLASS, ICON_BUTTON_LABELS} from "@/lib/constants";
 
 interface SidebarUserMenuProps {
     onNavigate?: () => void;
@@ -67,8 +69,10 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
     };
 
     const triggerElement = (
-        <div
-            className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-sidebar-accent/50 focus:outline-none">
+        <button
+            type="button"
+            aria-label={ICON_BUTTON_LABELS.ACCOUNT_MENU}
+            className={cn("flex w-full cursor-pointer items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-sidebar-accent/50 outline-none", FOCUS_RING_CLASS)}>
             <Avatar className="size-8 shrink-0 border border-sidebar-border bg-sidebar-accent">
                 <AvatarImage
                     src={user?.pictureUrl || undefined}
@@ -83,7 +87,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
             <div className="flex flex-col justify-center overflow-hidden text-sm">
                 <p className="truncate text-sidebar-foreground">{user?.name || user?.email}</p>
             </div>
-        </div>
+        </button>
     );
 
     return (

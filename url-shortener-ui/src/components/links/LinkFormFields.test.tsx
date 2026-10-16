@@ -1,4 +1,4 @@
-import {render, screen, waitFor, within} from "@testing-library/react";
+import {render, screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
@@ -11,6 +11,7 @@ import {
     SHORT_KEY_TAKEN_MESSAGE,
     TRACKER_MODE,
     URL_CLEANER_DEBOUNCE_MS,
+    ICON_BUTTON_LABELS,
 } from "@/lib/constants";
 import {usePreferencesStore} from "@/lib/store/preferences";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
@@ -86,9 +87,7 @@ function getSubmitButton(): HTMLElement {
 }
 
 function getSuggestTitleButton(): HTMLElement {
-    const titleLabelRow = screen.getByText("Title").parentElement;
-    if (!titleLabelRow) throw new Error("Title label row not found");
-    return within(titleLabelRow).getByRole("button");
+    return screen.getByRole("button", {name: ICON_BUTTON_LABELS.SUGGEST_TITLE});
 }
 
 function mockPreferences(mode: string): () => Response {
