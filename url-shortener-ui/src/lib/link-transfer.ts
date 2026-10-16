@@ -89,7 +89,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function pickDetailField(record: Record<string, unknown>): string | null {
-    for (const key of ["detail", "message", "title"]) {
+    for (const key of ["detail", "message", "title", "error"]) {
         const value = record[key];
         if (typeof value === "string" && value.trim()) {
             return value.trim();

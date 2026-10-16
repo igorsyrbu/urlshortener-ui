@@ -71,6 +71,7 @@ There is no single error type; conventions by area:
 | Stores | Set `error: string` in state (`"Failed to fetch links: <status>"` or the thrown message), log with `logger.error` for thrown errors; components render the message. Details in [state-management.md](state-management.md) |
 | Billing | `BillingApiError(status, message, retryAfterSeconds)` thrown by `billing-api.ts`; each billing hook maps `status` to a message from `BILLING_COPY` (400, 404, 409, 422, 429) |
 | CSV import/export | `TransferError(message, status)` from `link-transfer.ts`; message extracted by `parseProblemDetail` |
+| Tag mutations | `useTagMutations` rejects with a readable message; `TagFormModal` shows it inline, the tags page toasts delete failures. The list stores' `error` is never written by a mutation |
 | Forms (create/edit link) | Component handler throws a typed error (`ShortKeyConflictError` on 409) or generic `Error`; the form shows it |
 | Login / report abuse | Inline `if (response.status === 429)` branches in the component |
 
@@ -82,7 +83,7 @@ Rules for new code:
 
 ### Error body shape
 
-`parseProblemDetail(bodyText, status)` in [`src/lib/link-transfer.ts`](../url-shortener-ui/src/lib/link-transfer.ts) reads the first non-empty string among `detail`, `message`, `title` of a JSON body (problem-details style). A non-JSON body is used verbatim when 200 characters or fewer; otherwise, or when empty, the message is `Request failed: <status>`. The mock server answers framework errors with `{detail}` and some controller errors with `{error}` (see [mock-server.md](mock-server.md)).
+`parseProblemDetail(bodyText, status)` in [`src/lib/link-transfer.ts`](../url-shortener-ui/src/lib/link-transfer.ts) reads the first non-empty string among `detail`, `message`, `title`, `error` of a JSON body (problem-details style). A non-JSON body is used verbatim when 200 characters or fewer; otherwise, or when empty, the message is `Request failed: <status>`. The mock server answers framework errors with `{detail}` and some controller errors with `{error}` (see [mock-server.md](mock-server.md)).
 
 ### Rate limits and `Retry-After`
 
@@ -145,6 +146,6 @@ Non-OK responses throw `BillingApiError` with a generic message; the hooks in `s
 - Observation: callers parked in `failedQueue` are released with `null` when the refresh fails, and then continue to send their request without an `Authorization` header (the refreshing caller performs the login redirect). Existing exception, not a template.
 - Observation: `SERVER_API_BASE_URL` is a `NEXT_PUBLIC_` variable, so it is bundled into client code, and `ReportAbuseForm` uses it for a direct cross-origin request instead of the `/api` rewrite.
 - Observation: `src/components/layout/sidebar-user-menu.tsx` calls `fetchWithAuth("/users/sessions/current")` with a literal path instead of `API_ENDPOINTS.USERS_SESSIONS_CURRENT`, and `src/app/(dashboard)/settings/general/page.tsx` builds `/users/sessions/${id}` inline. Existing exceptions, not templates.
-- Observation: `useTagMutations` and several component handlers (`CreateLinkModal`, `EditLinkModal`, `LinkFormFields`, `ProfileCard`, the settings general page) call `fetchWithAuth` directly in components or hooks rather than through a `lib/*-api.ts` module; error bodies are surfaced differently in each (raw text in tag mutations, status text elsewhere).
+- Observation: `useTagMutations` and several component handlers (`CreateLinkModal`, `EditLinkModal`, `LinkFormFields`, `ProfileCard`, the settings general page) call `fetchWithAuth` directly in components or hooks rather than through a `lib/*-api.ts` module; error bodies are surfaced differently in each (`parseProblemDetail` in tag mutations, status text elsewhere).
 - Observation: status literals `401`, `403`, `400`, `409`, `422`, `429` appear inline in `useUrlCleaner`, `login/page.tsx`, `ReportAbuseForm`, `CreateLinkModal`, `EditLinkModal`, contrary to the named-constants rule in [coding-patterns.md](coding-patterns.md). Existing exceptions, not templates.
 - Observation: `API_ENDPOINTS` has no entry for `/ott/login` and `/oauth2/authorization/google`; they are inline strings in `OttLoginForm` and `login/page.tsx`.

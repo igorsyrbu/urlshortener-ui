@@ -23,7 +23,7 @@ import {Input} from "@/components/ui/input";
 import {EnterKbd} from "@/components/ui/enter-kbd";
 import {TagColorPicker} from "@/components/tags/TagColorPicker";
 import {BadgeVariant} from "@/components/ui/badge";
-import {ALLOWED_TAG_COLORS} from "@/lib/tag-constants";
+import {ALLOWED_TAG_COLORS, TAG_SAVE_FAILED_MESSAGE} from "@/lib/tag-constants";
 
 interface TagFormModalProps {
     open: boolean;
@@ -51,6 +51,7 @@ export function TagFormModal({
     const [name, setName] = useState(initialName);
     const [selectedColor, setSelectedColor] = useState<BadgeVariant>(initialColor);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const isDesktop = useIsDesktop();
 
@@ -59,6 +60,7 @@ export function TagFormModal({
             setName(initialName);
             setSelectedColor(initialColor);
             setIsSubmitting(false);
+            setSubmitError(null);
         }
     }, [open, initialName, initialColor]);
 
@@ -74,10 +76,12 @@ export function TagFormModal({
         if (!name.trim()) return;
 
         setIsSubmitting(true);
+        setSubmitError(null);
         try {
             await onSubmit(name.trim(), selectedColor);
             onOpenChange(false);
-        } catch {
+        } catch (error) {
+            setSubmitError(error instanceof Error && error.message ? error.message : TAG_SAVE_FAILED_MESSAGE);
             setIsSubmitting(false);
         }
     };
@@ -108,11 +112,21 @@ export function TagFormModal({
                     ref={inputRef}
                     id="tag-name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                        setName(e.target.value);
+                        setSubmitError(null);
+                    }}
                     placeholder="Enter tag name"
                     required
                     maxLength={50}
+                    aria-invalid={submitError !== null}
+                    aria-describedby={submitError ? "tag-form-error" : undefined}
                 />
+                {submitError && (
+                    <p id="tag-form-error" role="alert" className="text-sm text-destructive break-all">
+                        {submitError}
+                    </p>
+                )}
             </div>
 
             <TagColorPicker

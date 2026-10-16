@@ -57,8 +57,9 @@ describe("CreateTagModal", () => {
         await user.type(screen.getByLabelText("Name"), "Sales");
         await user.click(screen.getByRole("button", {name: /^Create/}));
 
-        expect(await screen.findByRole("button", {name: /^Create/})).toBeEnabled();
+        expect(await screen.findByRole("alert")).toHaveTextContent("Tag already exists");
+        expect(screen.getByRole("button", {name: /^Create/})).toBeEnabled();
         expect(onOpenChange).not.toHaveBeenCalled();
-        expect(useTagStoreWithCount.getState().error).toBe("Tag already exists");
+        expect(useTagStoreWithCount.getState().error).toBeNull();
     });
 });

@@ -58,10 +58,24 @@ describe("useTagMutations", () => {
 
             await expect(result.current.createTag("Marketing", "blue")).rejects.toThrow("Tag already exists");
 
-            stores.forEach((store) => {
-                expect(store.getState().error).toBe("Tag already exists");
-                expect(store.getState().tags).toHaveLength(1);
-            });
+            stores.forEach((store) => expect(store.getState().tags).toHaveLength(1));
+        });
+
+        it("reads the message from a JSON error body", async () => {
+            vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({error: "Invalid tag data or duplicate name"}, {status: 400}));
+            const {result} = renderHook(() => useTagMutations());
+
+            await expect(result.current.createTag("Marketing", "blue")).rejects.toThrow(/^Invalid tag data or duplicate name$/);
+        });
+
+        it("leaves the list error of both stores untouched when it fails", async () => {
+            stores.forEach((store) => store.setState({error: null}));
+            vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response("Tag already exists", {status: 409}));
+            const {result} = renderHook(() => useTagMutations());
+
+            await expect(result.current.createTag("Marketing", "blue")).rejects.toThrow();
+
+            stores.forEach((store) => expect(store.getState().error).toBeNull());
         });
 
         it("falls back to the HTTP status when the error body is empty", async () => {
@@ -69,18 +83,6 @@ describe("useTagMutations", () => {
             const {result} = renderHook(() => useTagMutations());
 
             await expect(result.current.createTag("Marketing", "blue")).rejects.toThrow("Failed to create tag: 500");
-
-            expect(useTagStoreWithCount.getState().error).toBe("Failed to create tag: 500");
-        });
-
-        it("clears a previous error before sending the request", async () => {
-            stores.forEach((store) => store.setState({error: "old error"}));
-            vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(createTag()));
-            const {result} = renderHook(() => useTagMutations());
-
-            await result.current.createTag("Marketing", "blue");
-
-            stores.forEach((store) => expect(store.getState().error).toBeNull());
         });
 
         it("rethrows a network failure without touching the stores", async () => {
@@ -125,7 +127,7 @@ describe("useTagMutations", () => {
             await expect(result.current.updateTag("tag-1", "Sales", "green")).rejects.toThrow("Name taken");
 
             stores.forEach((store) => {
-                expect(store.getState().error).toBe("Name taken");
+                expect(store.getState().error).toBeNull();
                 expect(store.getState().tags).toEqual([original]);
             });
         });
@@ -167,7 +169,7 @@ describe("useTagMutations", () => {
             await expect(result.current.deleteTag("tag-1")).rejects.toThrow("Failed to delete tag: 403");
 
             stores.forEach((store) => {
-                expect(store.getState().error).toBe("Failed to delete tag: 403");
+                expect(store.getState().error).toBeNull();
                 expect(store.getState().tags).toHaveLength(1);
             });
         });

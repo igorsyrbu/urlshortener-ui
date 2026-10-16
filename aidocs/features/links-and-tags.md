@@ -102,10 +102,10 @@ Enabled when `enableUrlCleaner` and the user's preference `trackerMode` is `SUGG
 Route `/tags` ([`src/app/(dashboard)/tags/page.tsx`](../../url-shortener-ui/src/app/(dashboard)/tags/page.tsx)).
 
 - Two separate stores: `useTagStoreWithCount` (`withLinksCount=true`, used by this page) and `useTagStoreWithoutCount` (`withLinksCount=false`, used by forms, cards and the links page). Both fetch `GET /tags?size=20[&search]` and accept either `{content: [...]}` or a plain array (`fetchTagsResponse`).
-- Mutations live in `useTagMutations` ([`src/lib/hooks/useTagMutations.ts`](../../url-shortener-ui/src/lib/hooks/useTagMutations.ts)): `createTag` (`POST /tags`), `updateTag` (`PUT /tags`), `deleteTag` (`DELETE /tags/{id}`). Each writes the result into **both** stores (create prepends, update replaces, delete filters) and on failure sets the same `error` message in both and rethrows.
+- Mutations live in `useTagMutations` ([`src/lib/hooks/useTagMutations.ts`](../../url-shortener-ui/src/lib/hooks/useTagMutations.ts)): `createTag` (`POST /tags`), `updateTag` (`PUT /tags`), `deleteTag` (`DELETE /tags/{id}`). Each writes the result into **both** stores (create prepends, update replaces, delete filters) On failure they reject with a readable message (`parseProblemDetail` of the body, or `Failed to <action> tag: <status>`) and leave both stores untouched.
 - Search: same 500 ms debounce pattern as links; `store.setSearchQuery` then `fetchTags()`.
 - UI: `TagCard` (colour badge, name, `N link(s)` badge when `linkCount > 0`, menu with `E` edit and `D` delete shortcuts), `EmptyTagsState` / `NoTagsFoundState`, `TagCardSkeletonList`. Create and edit use `TagFormModal` (name `maxLength` 50, `TagColorPicker` over the 8 `ALLOWED_TAG_COLORS`, Dialog on desktop and Drawer on mobile; `CreateTagModal` passes `resetOnClose`). Delete uses `DeleteTagModal`; the description says the tag is removed from all associated links.
-- When any tag request fails the page replaces its whole content with an error banner (toolbar included) until **Dismiss** is clicked.
+- Errors: a failed create/edit is shown inline in `TagFormModal` (the modal stays open); a failed delete keeps the list and the dialog open and shows the `TAG_DELETE_FAILED_MESSAGE` toast. Only a failed **list load** puts the page into its error banner (toolbar included) until **Dismiss** is clicked.
 
 ## CSV import
 

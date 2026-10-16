@@ -1,16 +1,20 @@
 import {act, render, screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import {toast} from "sonner";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import TagsPage from "./page";
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
+import {logger} from "@/lib/logger";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
 import {useUIStore} from "@/lib/store/ui";
+import {TAG_DELETE_FAILED_MESSAGE} from "@/lib/tag-constants";
 import {createPage} from "@/test/link-utils";
 import {createTag} from "@/test/tag-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
+vi.mock("@/lib/logger", () => ({logger: {error: vi.fn(), warn: vi.fn(), info: vi.fn()}}));
 vi.mock("@/lib/hooks/useMediaQuery", () => ({useIsDesktop: () => true, useIsMobile: () => false}));
 
 const SEARCH_DEBOUNCE_MS = 500;
@@ -137,8 +141,9 @@ describe("tags page", () => {
         expect(screen.getByText("Sales")).toBeInTheDocument();
     });
 
-    it("shows the failure message when deletion fails", async () => {
+    it("keeps the tag list and shows a toast when deleting fails", async () => {
         const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        const showError = vi.spyOn(toast, "error");
         mockTagsResponse([createTag({name: "Marketing"})]);
         render(<TagsPage/>);
         await screen.findByText("Marketing");
@@ -149,7 +154,12 @@ describe("tags page", () => {
         await user.type(await screen.findByPlaceholderText("Type the tag name here"), "Marketing");
         await user.click(screen.getByRole("button", {name: "Delete tag"}));
 
-        expect(await screen.findByText("Failed to delete tag: 500")).toBeInTheDocument();
+        await waitFor(() => expect(showError).toHaveBeenCalledExactlyOnceWith(TAG_DELETE_FAILED_MESSAGE));
+        expect(logger.error).toHaveBeenCalledWith("Failed to delete tag", expect.any(Error), {tagId: "tag-1"});
+        // The delete dialog stays open on failure, so the page behind it is aria-hidden by Radix.
+        expect(screen.getByRole("button", {name: "More actions for tag", hidden: true})).toBeInTheDocument();
+        expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument();
+        expect(screen.queryByRole("button", {name: "Dismiss"})).not.toBeInTheDocument();
     });
 
     it("opens the edit form for the chosen tag", async () => {

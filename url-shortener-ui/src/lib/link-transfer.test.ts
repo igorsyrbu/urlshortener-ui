@@ -163,6 +163,7 @@ describe("parseProblemDetail", () => {
         ["detail", {detail: "Detailed reason", message: "m", title: "t"}, "Detailed reason"],
         ["message when detail is missing", {message: "Message text", title: "t"}, "Message text"],
         ["title when detail and message are missing", {title: "Title text"}, "Title text"],
+        ["error when the other fields are missing", {error: "Error text"}, "Error text"],
         ["the first non-blank field", {detail: "   ", message: "Message text"}, "Message text"],
         ["a trimmed value", {detail: "  padded  "}, "padded"],
     ])("prefers %s", (_name, body, expected) => {

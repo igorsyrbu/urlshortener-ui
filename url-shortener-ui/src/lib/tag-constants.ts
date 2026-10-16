@@ -10,3 +10,6 @@ export const ALLOWED_TAG_COLORS: BadgeVariant[] = [
     "purple",
     "gray",
 ];
+
+export const TAG_DELETE_FAILED_MESSAGE = "Couldn't delete the tag. Please try again.";
+export const TAG_SAVE_FAILED_MESSAGE = "Couldn't save the tag. Please try again.";

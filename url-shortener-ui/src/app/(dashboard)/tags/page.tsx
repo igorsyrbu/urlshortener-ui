@@ -14,6 +14,9 @@ import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
 import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import {TagItem} from "@/lib/types";
 import {useDebounce} from "@/lib/hooks/useDebounce";
+import {logger} from "@/lib/logger";
+import {TAG_DELETE_FAILED_MESSAGE} from "@/lib/tag-constants";
+import {toast} from "sonner";
 
 export default function TagsPage() {
     const {tags, loading, error, fetchTags, clearError, searchQuery} = useTagStoreWithCount();
@@ -51,8 +54,9 @@ export default function TagsPage() {
             await deleteTag(tagToDelete.id);
             setDeleteModalOpen(false);
             setTagToDelete(null);
-        } catch {
-            // error handled by store
+        } catch (error) {
+            logger.error("Failed to delete tag", error, {tagId: tagToDelete.id});
+            toast.error(TAG_DELETE_FAILED_MESSAGE);
         } finally {
             setIsDeleting(false);
         }

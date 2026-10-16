@@ -55,9 +55,10 @@ describe("EditTagModal", () => {
         await user.type(screen.getByLabelText("Name"), "x");
         await user.click(screen.getByRole("button", {name: /^Save/}));
 
-        expect(await screen.findByRole("button", {name: /^Save/})).toBeEnabled();
+        expect(await screen.findByRole("alert")).toHaveTextContent("Tag name already exists");
+        expect(screen.getByRole("button", {name: /^Save/})).toBeEnabled();
         expect(onOpenChange).not.toHaveBeenCalled();
-        expect(useTagStoreWithoutCount.getState().error).toBe("Tag name already exists");
+        expect(useTagStoreWithoutCount.getState().error).toBeNull();
     });
 
     it("does not call the API when there is no tag to edit", async () => {
