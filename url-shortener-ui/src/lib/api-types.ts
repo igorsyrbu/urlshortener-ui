@@ -52,17 +52,6 @@ export interface UrlCleanerResponse {
   completeProviderSkipped: boolean;
 }
 
-export interface ImportFailureDTO {
-  shortLink: string | null;
-  destinationUrl: string | null;
-  reason: string;
-}
-
-export interface ImportResponseDTO {
-  imported: number;
-  failed: ImportFailureDTO[];
-}
-
 export type LinkImportJobStatus = "QUEUED" | "PROCESSING" | "COMPLETED";
 
 export interface LinkImportProgressDTO {

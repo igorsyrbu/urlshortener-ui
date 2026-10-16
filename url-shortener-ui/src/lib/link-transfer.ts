@@ -14,17 +14,6 @@ export interface ExportFilters {
     search: string;
 }
 
-export interface ImportFailure {
-    shortLink: string | null;
-    destinationUrl: string | null;
-    reason: string;
-}
-
-export interface ImportResult {
-    imported: number;
-    failed: ImportFailure[];
-}
-
 export type CsvPrecheckResult =
     | { readonly status: "ok"; readonly rowCount: number }
     | { readonly status: "empty" }

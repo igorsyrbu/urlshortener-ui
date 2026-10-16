@@ -66,7 +66,7 @@ Check this catalogue and the feature folders before writing a new component. All
 | 6-digit code | `InputOTP*` (`input-otp.tsx`) |
 | Dropdown of choices | `Select*` (`select.tsx`); action menu: `DropdownMenu*` (`dropdown-menu.tsx`) |
 | On/off toggle | `Switch` (`switch.tsx`, hand-written, not Radix; `checked`, `onCheckedChange`, `size`, `readOnly`) |
-| Tab-like switcher | `SegmentedControl` (`segmented-control.tsx`; button mode or link mode when every option has `href`). `Tabs*` (`tabs.tsx`) exists but nothing imports it |
+| Tab-like switcher | `SegmentedControl` (`segmented-control.tsx`; button mode or link mode when every option has `href`). There is no Radix `Tabs` primitive |
 | Card surface | `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`, `CardAction` (`card.tsx`) |
 | Tag / status chip | `Badge` (`badge.tsx`; colour variants are the tag colours) and `TagBadge` (`components/tags/TagBadge.tsx`) |
 | Desktop modal | `Dialog*` (`dialog.tsx`) |

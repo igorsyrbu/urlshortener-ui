@@ -170,7 +170,6 @@ While an import is ongoing (`discovering`, `active`, `reconnecting`, **or `inter
 - Observation: tag stores fetch with a fixed `size=20` and the UI has no tag pagination, so only the first 20 tags appear in `TagSelect`, link badges and the tags page.
 - Observation: `fetchLinks` and `fetchTags` drop calls made while a request is in flight, so a rapid second change (for example a page click during a search refetch) can be ignored.
 - Observation: delete failure in `confirmDelete` is only logged; the modal stays open without a user-visible error.
-- Observation: `ImportResultsCards` and `ImportResultsTable` and `ImportFailure`/`ImportResponseDTO` types exist but no component renders them; the shipped flow shows counts only.
 - Observation: `LinkFormFields.tsx` is about 600 lines with a very wide props surface on `FormScreenContent`; `LinkCard` and `QrCodeModal` are also large. Existing exceptions to the size guidance in [Coding patterns](../coding-patterns.md); do not copy, do not split as a drive-by.
 - Observation: `TagSelect` and `TagCard` contain raw colour utility classes (`text-red-500`, etc.) and `QrCodeModal` hardcodes black/white. These are existing exceptions to [Styling and theming](../styling-and-theming.md); the QR colours are intentional.
 - Observation: `LinkFormFields` re-initialises when `initialTagIds` changes reference; `EditLinkModal` builds that array with a spread on each render, so correct behaviour depends on the React Compiler memoising it.

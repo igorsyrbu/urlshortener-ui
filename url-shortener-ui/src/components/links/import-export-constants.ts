@@ -29,8 +29,6 @@ export const EXPORT_FILTERED_HINT = "Only links matching the current search and 
 export const APPLY_FILTERS_TOOLTIP =
     "When enabled, the export includes only links matching your current search query and the “Show archived links” setting";
 
-export const IMPORT_SUCCESS_TITLE = "Import complete";
-export const IMPORT_NO_FAILURES_HINT = "All rows were imported successfully.";
 export const GENERATE_TAKEN_KEYS_LABEL = "Generate new keys for taken ones";
 export const GENERATE_TAKEN_KEYS_HINT =
     "When a short key is already taken, the link is created with a newly generated key instead of being skipped.";
@@ -43,10 +41,6 @@ export function buildImportSummaryMessage(imported: number, failedCount: number)
     const rowWord = failedCount === 1 ? "row" : "rows";
     return `${imported} ${linkWord} imported, ${failedCount} ${rowWord} failed.`;
 }
-
-export const RESULTS_SHORT_LINK_COLUMN = "Short link";
-export const RESULTS_DESTINATION_COLUMN = "Destination URL";
-export const RESULTS_REASON_COLUMN = "Reason";
 
 export const IMPORT_EMPTY_FILE_MESSAGE = "The selected file is empty. Choose a CSV file with a header row and at least one link.";
 

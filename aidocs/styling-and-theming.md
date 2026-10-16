@@ -101,7 +101,7 @@ User-provided strings (titles, URLs, file names, tag names, error reasons) can b
 
 - **Single-line text**: use `truncate` (ellipsis) and expose the full value through the `title` attribute (hover / long-press) or `OverflowTooltip` ([`components/ui/overflow-tooltip.tsx`](../url-shortener-ui/src/components/ui/overflow-tooltip.tsx), which opens a tooltip only when the text is actually clipped).
 - **`min-w-0` on every flex/grid ancestor**: `truncate` only works when every parent down the flex/grid chain between the constrained container and the text can shrink. One missing `min-w-0` silently disables truncation and blows out the layout. Reference: `LinkCard`, `TagCard`, `DeleteLinkModal`'s `LinkPreviewCard`.
-- **Unbreakable content that must stay visible** (long tokens, error reasons, confirmation values): prefer `break-all` and, in tables, a fixed layout (`table-fixed` + `<colgroup>`) over truncation. Reference: `ImportResultsTable` (truncating columns use `OverflowTooltip`, the reason column uses `break-all`), `DeleteConfirmationModal` (`break-all` on the value), `BillingSettings` error messages (`min-w-0 break-all`).
+- **Unbreakable content that must stay visible** (long tokens, error reasons, confirmation values): prefer `break-all` and, in tables, a fixed layout (`table-fixed` + `<colgroup>`) over truncation. No table exists in the app today; the rule applies to the first one added. Reference: `DeleteConfirmationModal` (`break-all` on the value), `BillingSettings` error messages (`min-w-0 break-all`).
 - Multi-line previews use `line-clamp-*` (`InspectLinkPreviewCard`).
 - **Verify with adversarial input**: 200+ characters without spaces, in both desktop (Dialog) and mobile (Drawer) layouts, including inside cards, tables and toolbars.
 
