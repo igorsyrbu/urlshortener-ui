@@ -50,7 +50,7 @@ OTP submit rules in `LoginOtpForm`: a code typed character by character is submi
 `useMagicLinkCooldown(email)` keeps `remainingSeconds` for the trimmed email.
 
 - Storage: one `localStorage` key, `magicLinkCooldownByEmail` (`MAGIC_LINK_COOLDOWN_STORAGE_KEY` in [`src/lib/constants.ts`](../../url-shortener-ui/src/lib/constants.ts)), holding `{ [email]: expiryEpochMs }`. Expired or malformed entries are dropped on every read.
-- A cooldown is started **only** by a `429` response carrying a positive integer `Retry-After` (`parseRetryAfter` in the page). A `429` without it shows "Too many attempts. Please try again later."
+- A cooldown is started **only** by a `429` response carrying a positive integer `Retry-After` (`parseRetryAfterSeconds` from `lib/retry-after.ts`). A `429` without it shows "Too many attempts. Please try again later."
 - The hook re-reads storage every `MAGIC_LINK_COOLDOWN_INTERVAL_MS` (1 s) while active, so the countdown survives reloads and is shared across tabs.
 - Locking: `isLocked = manuallyLocked && isCooldownActive`. `manuallyLocked` becomes true when a `429` arrives or when the user submits during an active cooldown; editing the email clears it. Until then, an active cooldown restored from storage does not disable the form; the first submit attempt locks it without any network call.
 - While locked, `MagicLinkCooldownMessage` replaces the status message and shows `m:ss`; the input and button are disabled.
@@ -113,7 +113,6 @@ Neither resets other stores (links, tags, preferences, import). Navigation is cl
 
 ## Known limitations and existing exceptions
 
-- Observation: `LoginPage` and the abuse form each define their own `parseRetryAfter` (the abuse copy lives in `components/abuse/report-abuse-utils.ts`). Existing duplication, not a template.
 - Observation: `LoginPage` is about 236 lines and mixes network calls with state (it calls `fetch` directly rather than using a store or hook). Existing exception, not a template.
 - Observation: a failed native post to `/api/ott/login` leaves the user on whatever the backend returned (the UI has no handler); a wrong OTP is therefore not reported inside the login card.
 - Observation: `/auth/exchange` has no retry or back-to-login action on failure, and its `setTimeout` redirect is not cleaned up on unmount.

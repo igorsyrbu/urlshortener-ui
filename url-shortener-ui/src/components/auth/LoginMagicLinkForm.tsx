@@ -5,6 +5,7 @@ import {Input} from "@/components/ui/input";
 import {ButtonSpinner} from "@/components/ui/button-spinner";
 import {Send} from "lucide-react";
 import React from "react";
+import {CAPTCHA_VERIFYING_LABEL} from "@/lib/constants";
 
 interface LoginMagicLinkFormProps {
     email: string;
@@ -60,7 +61,7 @@ export function LoginMagicLinkForm({
                 ) : isTurnstileVerifying ? (
                     <>
                         <ButtonSpinner className="text-primary-foreground"/>
-                        Verifying...
+                        {CAPTCHA_VERIFYING_LABEL}
                     </>
                 ) : (
                     <>

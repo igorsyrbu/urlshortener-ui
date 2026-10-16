@@ -16,15 +16,9 @@ import {LoginOAuthDivider} from "@/components/auth/LoginOAuthDivider";
 import {LoginGoogleSignInButton} from "@/components/auth/LoginGoogleSignInButton";
 import {useMagicLinkCooldown} from "@/lib/hooks/useMagicLinkCooldown";
 import {logger} from "@/lib/logger";
+import {parseRetryAfterSeconds} from "@/lib/retry-after";
 
 const OTP_CODE_LENGTH = 6;
-
-function parseRetryAfter(headers: Headers): number | null {
-    const value = headers.get("Retry-After");
-    if (!value) return null;
-    const seconds = parseInt(value, 10);
-    return Number.isFinite(seconds) && seconds > 0 ? seconds : null;
-}
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -112,7 +106,7 @@ export default function LoginPage() {
             });
 
             if (response.status === 429) {
-                const retryAfterSeconds = parseRetryAfter(response.headers);
+                const retryAfterSeconds = parseRetryAfterSeconds(response.headers);
                 if (retryAfterSeconds !== null) {
                     startCooldown(retryAfterSeconds);
                     setManuallyLocked(true);

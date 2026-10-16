@@ -59,6 +59,14 @@ describe("getBillingSubscription", () => {
         expect((failure as BillingApiError).status).toBe(429);
         expect((failure as BillingApiError).retryAfterSeconds).toBe(45);
     });
+
+    it.each(["0", "-5"])("reports no retry delay for the non-positive header value %s", async (value) => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(rateLimitedResponse(value));
+
+        const failure = await getBillingSubscription().catch((error: unknown) => error);
+
+        expect((failure as BillingApiError).retryAfterSeconds).toBeNull();
+    });
 });
 
 describe("createBillingCheckoutUrl", () => {

@@ -86,8 +86,11 @@ Rules for new code:
 
 ### Rate limits and `Retry-After`
 
-- Billing endpoints: header `X-Rate-Limit-Retry-After-Seconds` (`RATE_LIMIT_RETRY_AFTER_HEADER`), parsed by `readRetryAfterSeconds` into `BillingApiError.retryAfterSeconds`; `buildRateLimitedMessage` appends `Try again in <n>s.`
-- Magic link login: standard `Retry-After`, parsed in the login page and fed to `useMagicLinkCooldown` (see [features/auth.md](features/auth.md)).
+All retry headers are read by `parseRetryAfterSeconds(headers, headerName = "Retry-After")` in [`src/lib/retry-after.ts`](../url-shortener-ui/src/lib/retry-after.ts): a positive whole number of seconds, otherwise `null` (missing, zero, negative or HTTP-date values), so the UI never shows a non-positive delay.
+
+
+- Billing endpoints: header `X-Rate-Limit-Retry-After-Seconds` (`RATE_LIMIT_RETRY_AFTER_HEADER`), parsed by `parseRetryAfterSeconds(headers, RATE_LIMIT_RETRY_AFTER_HEADER)` into `BillingApiError.retryAfterSeconds`; `buildRateLimitedMessage` appends `Try again in <n>s.`
+- Magic link login and abuse reports: standard `Retry-After`, parsed with `parseRetryAfterSeconds`; login feeds it to `useMagicLinkCooldown` (see [features/auth.md](features/auth.md)).
 - CSV export: one automatic retry after `EXPORT_RATE_LIMIT_RETRY_DELAY_MS` when the first response is 429 (`fetchExportWithRetry`). Import uploads are not retried.
 - SSE reconnect treats 429 and 5xx as retryable (see below).
 

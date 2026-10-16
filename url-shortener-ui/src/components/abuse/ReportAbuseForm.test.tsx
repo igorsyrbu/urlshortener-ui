@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import {afterEach, describe, expect, it, vi, type Mock} from "vitest";
 import {ReportAbuseForm} from "@/components/abuse/ReportAbuseForm";
 import {SERVER_API_BASE_URL} from "@/lib/api";
-import {ABUSE_DESCRIPTION_MAX_LENGTH, ABUSE_REASON_LABELS, API_ENDPOINTS} from "@/lib/constants";
+import {ABUSE_DESCRIPTION_MAX_LENGTH, ABUSE_REASON_LABELS, API_ENDPOINTS, CAPTCHA_VERIFYING_LABEL} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import {getTurnstileProps, resetTurnstileMock} from "@/test/turnstile-utils";
 
@@ -283,7 +283,16 @@ describe("ReportAbuseForm captcha", () => {
         expect(sentBody(fetchMock).get("cf-turnstile-response")).toBe("token-123");
     });
 
-    it("drops the captcha token when it expires", async () => {
+    it("keeps submit disabled until the captcha is solved", () => {
+        renderForm({turnstileEnabled: true});
+
+        expect(screen.getByRole("button", {name: CAPTCHA_VERIFYING_LABEL})).toBeDisabled();
+        act(() => getTurnstileProps().onSuccess?.("token-123"));
+
+        expect(screen.getByRole("button", {name: "Submit report"})).toBeEnabled();
+    });
+
+    it("disables submit again and sends nothing once the captcha token expires", async () => {
         const user = userEvent.setup();
         const fetchMock = mockFetch(Response.json({id: "report-1"}, {status: 201}));
         renderForm({turnstileEnabled: true});
@@ -291,10 +300,10 @@ describe("ReportAbuseForm captcha", () => {
         act(() => getTurnstileProps().onExpire?.());
 
         await fillValidForm(user);
-        await submit(user);
+        await user.click(screen.getByRole("button", {name: CAPTCHA_VERIFYING_LABEL}));
 
-        await screen.findByText("Report received");
-        expect(sentBody(fetchMock).has("cf-turnstile-response")).toBe(false);
+        expect(screen.getByRole("button", {name: CAPTCHA_VERIFYING_LABEL})).toBeDisabled();
+        expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it("shows an error when the captcha fails", () => {

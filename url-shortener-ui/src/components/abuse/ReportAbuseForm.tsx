@@ -4,10 +4,10 @@ import {type SyntheticEvent, useCallback, useState} from "react";
 import {AlertCircle, LinkIcon} from "lucide-react";
 
 import {SERVER_API_BASE_URL} from "@/lib/api";
-import {ABUSE_DESCRIPTION_MAX_LENGTH, type AbuseReason, API_ENDPOINTS} from "@/lib/constants";
+import {ABUSE_DESCRIPTION_MAX_LENGTH, type AbuseReason, API_ENDPOINTS, CAPTCHA_VERIFYING_LABEL} from "@/lib/constants";
 import {isValidUrl} from "@/lib/url-utils";
 import {logger} from "@/lib/logger";
-import {parseRetryAfter} from "./report-abuse-utils";
+import {parseRetryAfterSeconds} from "@/lib/retry-after";
 import {ReasonSelect} from "./ReasonSelect";
 import {ReportAbuseSuccess} from "./ReportAbuseSuccess";
 import {TurnstileWidget} from "@/components/auth/TurnstileWidget";
@@ -108,7 +108,7 @@ export function ReportAbuseForm({turnstileEnabled, turnstileSiteKey, initialShor
             });
 
             if (response.status === 429) {
-                const retryAfter = parseRetryAfter(response.headers);
+                const retryAfter = parseRetryAfterSeconds(response.headers);
                 if (retryAfter) {
                     setErrorMessage(`Too many requests. Please try again in ${retryAfter} second${retryAfter === 1 ? "" : "s"}.`);
                 } else {
@@ -149,6 +149,9 @@ export function ReportAbuseForm({turnstileEnabled, turnstileSiteKey, initialShor
             />
         );
     }
+
+    const isTurnstileVerifying = turnstileEnabled && !turnstileToken;
+    const submitLabel = loading ? "Submitting..." : isTurnstileVerifying ? CAPTCHA_VERIFYING_LABEL : "Submit report";
 
     return (
         <div className="space-y-4">
@@ -248,10 +251,10 @@ export function ReportAbuseForm({turnstileEnabled, turnstileSiteKey, initialShor
 
                 <Button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || isTurnstileVerifying}
                     className="w-full sm:w-auto"
                 >
-                    {loading ? "Submitting..." : "Submit report"}
+                    {submitLabel}
                 </Button>
             </form>
 

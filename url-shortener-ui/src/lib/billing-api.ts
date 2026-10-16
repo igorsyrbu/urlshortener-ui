@@ -9,6 +9,7 @@ import {
     type BillingSubscription,
     type BillingSubscriptionDto,
 } from "@/lib/billing-constants";
+import {parseRetryAfterSeconds} from "@/lib/retry-after";
 
 export const HTTP_BAD_REQUEST = 400;
 export const HTTP_NOT_FOUND = 404;
@@ -37,15 +38,8 @@ export interface BillingPortalResult {
     expiresInSeconds: number | null;
 }
 
-function readRetryAfterSeconds(response: Response): number | null {
-    const raw = response.headers.get(RATE_LIMIT_RETRY_AFTER_HEADER);
-    if (raw === null) return null;
-    const parsed = Number.parseInt(raw, 10);
-    return Number.isNaN(parsed) ? null : parsed;
-}
-
 function throwBillingError(response: Response, fallbackMessage: string): never {
-    throw new BillingApiError(response.status, fallbackMessage, readRetryAfterSeconds(response));
+    throw new BillingApiError(response.status, fallbackMessage, parseRetryAfterSeconds(response.headers, RATE_LIMIT_RETRY_AFTER_HEADER));
 }
 
 function parseBillingUrlPayload(payload: unknown): string {
