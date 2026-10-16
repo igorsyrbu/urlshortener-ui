@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useSearchParams, useRouter} from "next/navigation";
 import {Card, CardContent, CardHeader, CardTitle, CardDescription} from "@/components/ui/card";
 import {Suspense} from "react";
@@ -17,13 +17,18 @@ function ExchangeProcessor() {
     const router = useRouter()
     const code = searchParams.get("code")
     const [error, setError] = useState<string | null>(null)
-    const {setAccessToken} = useAuthStore()
+    const exchangedCodeRef = useRef<string | null>(null)
 
     useEffect(() => {
         if (!code) {
             setError("No authorization code provided")
             return
         }
+        // The code is single-use: a re-run of this effect (StrictMode, new router identity) must not send it again.
+        if (exchangedCodeRef.current === code) {
+            return
+        }
+        exchangedCodeRef.current = code
 
         const exchangeCode = async () => {
             try {
@@ -38,7 +43,7 @@ function ExchangeProcessor() {
 
                 const data: AccessTokenContainer = await response.json();
 
-                setAccessToken(data.accessToken);
+                useAuthStore.getState().setAccessToken(data.accessToken);
 
                 setTimeout(() => {
                     router.push(ROUTES.LINKS);

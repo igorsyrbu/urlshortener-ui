@@ -6,6 +6,8 @@ import {API_ENDPOINTS} from "@/lib/constants";
 const BACKEND_URL = `${SERVER_API_BASE_URL}${API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES}`;
 const ROUTE_URL = "http://localhost:3000/api/shortlinks/import/updates";
 const PROGRESS_EVENT = "event: progress\ndata: {\"processedRows\":1,\"totalRows\":10}\n\n";
+const AUTHORIZED = {Authorization: "Bearer token"};
+const HTTP_UNAUTHORIZED = 401;
 
 function stubBackend(response: Response): Mock {
     const fetchMock = vi.fn().mockResolvedValue(response);
@@ -17,7 +19,7 @@ function sseResponse(): Response {
     return new Response(PROGRESS_EVENT, {status: 200, headers: {"Content-Type": "text/event-stream"}});
 }
 
-function requestWith(headers: Record<string, string> = {}, signal?: AbortSignal): Request {
+function requestWith(headers: Record<string, string> = AUTHORIZED, signal?: AbortSignal): Request {
     return new Request(ROUTE_URL, {headers, signal});
 }
 
@@ -60,7 +62,7 @@ describe("import updates route", () => {
         const fetchMock = stubBackend(sseResponse());
         const clientConnection = new AbortController();
 
-        const response = await GET(requestWith({}, clientConnection.signal));
+        const response = await GET(requestWith(AUTHORIZED, clientConnection.signal));
 
         const forwardedSignal: AbortSignal = fetchMock.mock.calls[0][1].signal;
         expect(forwardedSignal.aborted).toBe(false);
@@ -94,6 +96,30 @@ describe("import updates route", () => {
 
         expect(response.status).toBe(204);
         expect(response.headers.get("X-Accel-Buffering")).toBeNull();
+    });
+
+    it("rejects a request without credentials and does not call the backend", async () => {
+        const fetchMock = stubBackend(sseResponse());
+
+        const response = await GET(requestWith({}));
+
+        expect(response.status).toBe(HTTP_UNAUTHORIZED);
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("does not forward backend-only headers on an error response", async () => {
+        stubBackend(new Response("boom", {
+            status: 500,
+            headers: {"Content-Type": "text/plain", "Set-Cookie": "session=secret", "X-Backend-Node": "node-7"},
+        }));
+
+        const response = await GET(requestWith());
+
+        expect(response.status).toBe(500);
+        expect(response.headers.get("Content-Type")).toBe("text/plain");
+        expect(response.headers.get("Set-Cookie")).toBeNull();
+        expect(response.headers.get("X-Backend-Node")).toBeNull();
+        expect(await response.text()).toBe("boom");
     });
 
     it("propagates a backend connection failure", async () => {

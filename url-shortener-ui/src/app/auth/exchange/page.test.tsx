@@ -1,3 +1,4 @@
+import {StrictMode} from "react";
 import {act, render, screen} from "@testing-library/react";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import ExchangePage from "./page";
@@ -40,6 +41,33 @@ describe("auth code exchange page", () => {
 
         expect(screen.getByText("No authorization code provided")).toBeInTheDocument();
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("exchanges the code only once under StrictMode's double effect run", async () => {
+        const fetchMock = vi.fn().mockResolvedValue(Response.json({accessToken: "jwt"}));
+        vi.stubGlobal("fetch", fetchMock);
+        navigation.searchParams = new URLSearchParams("code=abc");
+
+        await act(async () => {
+            render(<StrictMode><ExchangePage/></StrictMode>);
+        });
+
+        expect(fetchMock).toHaveBeenCalledOnce();
+        expect(screen.queryByText("Exchange Failed")).not.toBeInTheDocument();
+    });
+
+    it("does not exchange the same code again when the router identity changes", async () => {
+        const fetchMock = vi.fn().mockResolvedValue(Response.json({accessToken: "jwt"}));
+        vi.stubGlobal("fetch", fetchMock);
+        navigation.searchParams = new URLSearchParams("code=abc");
+        const {rerender} = render(<ExchangePage/>);
+
+        navigation.router = {push: navigation.push};
+        await act(async () => {
+            rerender(<ExchangePage/>);
+        });
+
+        expect(fetchMock).toHaveBeenCalledOnce();
     });
 
     it("exchanges the encoded code with credentials", async () => {

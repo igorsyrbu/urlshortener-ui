@@ -68,7 +68,7 @@ Controlled by `NEXT_PUBLIC_ENABLE_TURNSTILE` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY
 `ExchangeProcessor` (inside `Suspense`, because it uses `useSearchParams`) reads `code`:
 
 1. No `code`: renders an "Error / No authorization code provided" card.
-2. Otherwise one effect calls `GET /api/auth/code/exchange?code=<encoded>` with `credentials: "include"` so the response can set the refresh cookie. Plain `fetch`, no `Authorization` header.
+2. Otherwise one effect calls, at most once per code (a ref guard survives StrictMode's double effect run and router identity changes, because the code is single-use), `GET /api/auth/code/exchange?code=<encoded>` with `credentials: "include"` so the response can set the refresh cookie. Plain `fetch`, no `Authorization` header.
 3. On success it stores `data.accessToken` via `useAuthStore().setAccessToken`, then after `AUTH_REDIRECT_DELAY_MS` (1000 ms) calls `router.push(ROUTES.LINKS)`.
 4. On failure it renders "Exchange Failed" with the error message and offers no retry or link back to `/login`.
 
