@@ -29,12 +29,12 @@ import {LinkItem, TagItem} from "@/lib/types";
 import {cn, isModalOpen} from "@/lib/utils";
 import {getDomain} from "@/lib/url-utils";
 import {
-    COPY_FEEDBACK_DURATION_MS,
     MORE_ACTIONS_BUTTON_CLASS,
     SHORTCUT_KEY_CLASS
 } from "@/lib/constants";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
+import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
 import {ActionDrawer} from "@/components/ui/action-drawer";
 
 interface LinkCardProps {
@@ -108,7 +108,7 @@ export function LinkCard({
                              onMouseEnter,
                              onMouseLeave
                          }: LinkCardProps) {
-    const [copied, setCopied] = useState(false);
+    const {isCopied, copy} = useCopyToClipboard();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
     const storeTags = useTagStoreWithoutCount((state) => state.tags);
@@ -122,11 +122,7 @@ export function LinkCard({
         [link.tagIds, storeTags],
     );
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(link.shortUrl);
-        setCopied(true);
-        setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION_MS);
-    };
+    const handleCopy = () => copy(link.shortUrl);
 
     const handleShortcut = useCallback((event: KeyboardEvent) => {
         if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
@@ -191,9 +187,9 @@ export function LinkCard({
                             onClick={handleCopy}
                             className="flex items-center justify-center size-5 text-muted-foreground hover:text-foreground transition-all shrink-0"
                             title="Copy Link"
-                            aria-label={copied ? "Link copied" : "Copy link to clipboard"}
+                            aria-label={isCopied ? "Link copied" : "Copy link to clipboard"}
                         >
-                            {copied ? (
+                            {isCopied ? (
                                 <Check className="size-3 text-success"/>
                             ) : (
                                 <Copy className="size-3"/>

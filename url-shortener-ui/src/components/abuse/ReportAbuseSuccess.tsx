@@ -1,9 +1,10 @@
 "use client";
 
-import {useCallback, useState} from "react";
 import {Check, CheckCircle2, Copy} from "lucide-react";
 import {Card, CardContent} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
+import {REPORT_ID_LABEL} from "@/lib/constants";
+import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
 
 interface ReportAbuseSuccessProps {
     reportId: string;
@@ -18,14 +19,9 @@ const WHAT_HAPPENS_NEXT = [
 ];
 
 export function ReportAbuseSuccess({reportId, shortUrl, onReset}: ReportAbuseSuccessProps) {
-    const [copied, setCopied] = useState(false);
+    const {isCopied, copy} = useCopyToClipboard();
 
-    const handleCopy = useCallback(() => {
-        navigator.clipboard.writeText(reportId).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        });
-    }, [reportId]);
+    const handleCopy = () => copy(reportId);
 
     return (
         <Card>
@@ -61,14 +57,16 @@ export function ReportAbuseSuccess({reportId, shortUrl, onReset}: ReportAbuseSuc
                         onClick={handleCopy}
                         className="gap-1.5"
                     >
-                        {copied ? (
+                        {isCopied ? (
                             <Check className="size-3.5 text-green-600"/>
                         ) : (
                             <Copy className="size-3.5"/>
                         )}
-                        {copied ? "Copied" : "Copy report ID"}
+                        {isCopied ? "Copied" : "Copy report ID"}
                     </Button>
-                    <span className="text-xs text-muted-foreground font-mono">{reportId} is a report id</span>
+                    <p className="max-w-full text-xs text-muted-foreground">
+                        {REPORT_ID_LABEL}: <span className="font-mono break-all">{reportId}</span>
+                    </p>
                 </div>
 
                 <Button variant="ghost" size="sm" onClick={onReset}>

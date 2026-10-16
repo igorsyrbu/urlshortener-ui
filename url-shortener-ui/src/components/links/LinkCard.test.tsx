@@ -2,7 +2,8 @@ import {act, fireEvent, render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {LinkCard} from "@/components/links/LinkCard";
-import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
+import {toast} from "sonner";
+import {COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import type {LinkItem} from "@/lib/types";
 import {createLinkItem} from "@/test/link-utils";
@@ -118,6 +119,18 @@ describe("LinkCard", () => {
             expect(screen.getByRole("button", {name: "Link copied"})).toBeInTheDocument();
             await act(() => vi.advanceTimersByTimeAsync(COPY_FEEDBACK_DURATION_MS));
             expect(screen.getByRole("button", {name: "Copy link to clipboard"})).toBeInTheDocument();
+        });
+
+        it("does not confirm and shows an error toast when copying fails", async () => {
+            const user = userEvent.setup();
+            const showError = vi.spyOn(toast, "error");
+            vi.spyOn(navigator.clipboard, "writeText").mockRejectedValue(new Error("denied"));
+            renderCard(createLinkItem({shortUrl: "https://sho.rt/abc"}));
+
+            await user.click(screen.getByRole("button", {name: "Copy link to clipboard"}));
+
+            expect(showError).toHaveBeenCalledExactlyOnceWith(COPY_FAILED_MESSAGE);
+            expect(screen.queryByRole("button", {name: "Link copied"})).not.toBeInTheDocument();
         });
     });
 

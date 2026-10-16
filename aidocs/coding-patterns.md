@@ -83,6 +83,7 @@ Check this catalogue and the feature folders before writing a new component. All
 | Page structure | `PageContainer`, `PageHeading`, `PageToolbar`, `SearchBar`, `NoResultsState` (`components/layout/`) |
 | No-results states | `NoLinksFoundState`, `NoTagsFoundState` (both wrap `NoResultsState`); first-use states: `EmptyLinksState`, `EmptyTagsState` |
 | Debounce, media query, indicator, keyboard | `useDebounce`, `useIsDesktop` / `useIsMobile`, `useSegmentedIndicator`, `useTagSelectKeyboard` in `lib/hooks/` |
+| Copy to clipboard | `useCopyToClipboard(failureMessage?)` in [`src/lib/hooks/useCopyToClipboard.ts`](../url-shortener-ui/src/lib/hooks/useCopyToClipboard.ts): returns `{isCopied, copy}`; awaits the write, shows "copied" for `COPY_FEEDBACK_DURATION_MS`, and on failure (including a missing `navigator.clipboard` on insecure origins) logs and shows an error toast. Never call `navigator.clipboard.writeText` directly for text (the QR image copy in `QrCodeModal` is the only other clipboard code) |
 
 Every `components/ui` file except the hand-written widgets (`switch`, `segmented-control`, `spinner`, `button-spinner`, `overflow-tooltip`, `action-drawer`, `delete-confirmation-modal`, `ios-wheel-picker`, `glowing-effect`, `kbd`, `enter-kbd`) follows the shadcn pattern: `data-slot` attributes, `cn()` for classes, cva for variants ([styling-and-theming.md](styling-and-theming.md)). `GlowingEffect` came from the Aceternity registry configured in `components.json`.
 
@@ -113,7 +114,7 @@ There is no form library. Forms are controlled React forms with local `useState`
 
 ## Toasts
 
-Use `toast.success(message)` / `toast.error(message)` from `sonner` for the outcome of a user action that has no inline place to show it (settings saves, session logout, CSV export, import failure, theme copy/import). The `Toaster` in the root layout restyles toasts with the `success`/`destructive` tokens. Conventions seen in code: messages are short sentences; failures are logged with `logger.error` where the catch site has an error object (e.g. `CustomThemeBuilder`); reusable messages are constants (`EXPORT_SUCCESS_MESSAGE`). Validation errors and request errors inside forms are shown inline, not as toasts. Only `success` and `error` toasts exist today; do not introduce other kinds without a reason.
+Use `toast.success(message)` / `toast.error(message)` from `sonner` for the outcome of a user action that has no inline place to show it (settings saves, session logout, CSV export, import failure, theme copy/import). The `Toaster` in the root layout restyles toasts with the `success`/`destructive` tokens. Conventions seen in code: messages are short sentences; failures are logged with `logger.error` where the catch site has an error object (e.g. `CustomThemeBuilder`); reusable messages are constants (`EXPORT_SUCCESS_MESSAGE`). Validation errors and request errors inside forms are shown inline, not as toasts. Copy failures are toasted by `useCopyToClipboard`; success feedback is the inline "copied" state, never shown before the write has resolved. Only `success` and `error` toasts exist today; do not introduce other kinds without a reason.
 
 ## TypeScript
 

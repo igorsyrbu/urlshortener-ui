@@ -16,8 +16,8 @@ import {
 import {getPresetCustomColors, normalizeCustomColorsToHex} from "@/lib/themes/palettes";
 import {PaletteMode} from "@/lib/themes/theme-tokens";
 import {usePalette} from "@/providers/palette-provider";
-import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
-import {logger} from "@/lib/logger";
+import {THEME_COPY_FAILED_MESSAGE} from "@/lib/settings-constants";
+import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
 
 interface ColorSlot {
     key: keyof CustomColors;
@@ -38,7 +38,7 @@ export function CustomThemeBuilder() {
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [importValue, setImportValue] = useState("");
     const [hasImportError, setHasImportError] = useState(false);
-    const [isCopied, setIsCopied] = useState(false);
+    const {isCopied, copy} = useCopyToClipboard(THEME_COPY_FAILED_MESSAGE);
 
     const mode: PaletteMode = resolvedTheme === "dark" ? "dark" : "light";
 
@@ -63,16 +63,7 @@ export function CustomThemeBuilder() {
         applyCustomColors(surpriseMe(mode), mode);
     };
 
-    const handleShare = async () => {
-        try {
-            await navigator.clipboard.writeText(serializeCustomColors(colors));
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), COPY_FEEDBACK_DURATION_MS);
-        } catch (error) {
-            logger.error("Failed to copy theme to clipboard", error);
-            toast.error("Failed to copy theme");
-        }
-    };
+    const handleShare = () => copy(serializeCustomColors(colors));
 
     const handleImportOpenChange = (open: boolean) => {
         setIsImportOpen(open);

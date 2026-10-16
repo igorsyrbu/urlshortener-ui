@@ -9,3 +9,5 @@ export const SETTINGS_SECTIONS = [
     {href: SETTINGS_ROUTES.GENERAL, label: SETTINGS_LABELS.GENERAL},
     {href: SETTINGS_ROUTES.BILLING, label: SETTINGS_LABELS.BILLING},
 ];
+
+export const THEME_COPY_FAILED_MESSAGE = "Failed to copy theme";

@@ -1,12 +1,10 @@
 "use client";
 
-import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Check, Copy} from "lucide-react";
 import {motion} from "framer-motion";
-import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
-import {logger} from "@/lib/logger";
+import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
 
 interface CreateLinkSuccessProps {
     shortUrl: string;
@@ -14,17 +12,9 @@ interface CreateLinkSuccessProps {
 }
 
 export function CreateLinkSuccess({shortUrl, onClose}: CreateLinkSuccessProps) {
-    const [isCopied, setIsCopied] = useState(false);
+    const {isCopied, copy} = useCopyToClipboard();
 
-    const handleCopy = async () => {
-        try {
-            await navigator.clipboard.writeText(shortUrl);
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), COPY_FEEDBACK_DURATION_MS);
-        } catch (err) {
-            logger.error("Failed to copy", err);
-        }
-    };
+    const handleCopy = () => copy(shortUrl);
 
     return (
         <motion.div

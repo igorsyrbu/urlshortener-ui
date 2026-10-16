@@ -2,7 +2,6 @@
 
 import React, {useEffect, useState} from "react";
 import {Check, Copy} from "lucide-react";
-import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
 import {Input} from "@/components/ui/input";
 import {
     Dialog,
@@ -12,7 +11,6 @@ import {
     DialogHeader,
     DialogTitle
 } from "@/components/ui/dialog";
-import {logger} from "@/lib/logger";
 import {
     Drawer,
     DrawerContent,
@@ -22,6 +20,7 @@ import {
     DrawerTitle
 } from "@/components/ui/drawer";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
+import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
 import {Button} from "@/components/ui/button";
 
 interface DeleteConfirmationModalProps {
@@ -54,17 +53,9 @@ function ConfirmationSection({
                                  onInputChange,
                                  disabled,
                              }: ConfirmationSectionProps) {
-    const [isCopied, setIsCopied] = useState(false);
+    const {isCopied, copy} = useCopyToClipboard();
 
-    const handleCopy = async () => {
-        try {
-            await navigator.clipboard.writeText(confirmationValue);
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), COPY_FEEDBACK_DURATION_MS);
-        } catch (err) {
-            logger.error("Failed to copy confirmation text", err);
-        }
-    };
+    const handleCopy = () => copy(confirmationValue);
 
     return (
         <div className="flex flex-col gap-2 w-full min-w-0 overflow-hidden">

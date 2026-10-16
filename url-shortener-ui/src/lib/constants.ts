@@ -42,6 +42,13 @@ export const API_ENDPOINTS = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Clipboard
+// ---------------------------------------------------------------------------
+
+export const COPY_FAILED_MESSAGE = "Couldn't copy to clipboard";
+export const COPY_FAILED_LOG_MESSAGE = "Failed to copy to clipboard";
+
+// ---------------------------------------------------------------------------
 // UI timing constants (milliseconds)
 // ---------------------------------------------------------------------------
 
@@ -231,3 +238,5 @@ export const ABUSE_REASON_LABELS: Record<AbuseReason, string> = {
 };
 
 export const ABUSE_DESCRIPTION_MAX_LENGTH = 2000;
+
+export const REPORT_ID_LABEL = "Report ID";
