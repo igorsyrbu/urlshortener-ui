@@ -12,6 +12,7 @@ import authRoutes from "./routes/auth";
 import shortLinksRoutes from "./routes/shortlinks";
 import tagsRoutes from "./routes/tags";
 import usersRoutes from "./routes/users";
+import billingRoutes from "./routes/billing";
 import { authService } from "./services/AuthService";
 import { memoryStore, type UserState } from "./services/MemoryStore";
 
@@ -64,6 +65,7 @@ export function createTestApp(): express.Express {
   app.use(analyticsRoutes);
   app.use(tagsRoutes);
   app.use(abuseRoutes);
+  app.use(billingRoutes);
   app.use(jsonErrors);
   return app;
 }

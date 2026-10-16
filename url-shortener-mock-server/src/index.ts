@@ -10,6 +10,7 @@ import shortLinksRoutes from "./routes/shortlinks";
 import analyticsRoutes from "./routes/analytics";
 import tagsRoutes from "./routes/tags";
 import abuseRoutes from "./routes/abuse";
+import billingRoutes from "./routes/billing";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "8080", 10);
@@ -27,6 +28,7 @@ app.use(shortLinksRoutes);
 app.use(analyticsRoutes);
 app.use(tagsRoutes);
 app.use(abuseRoutes);
+app.use(billingRoutes);
 app.use(jsonErrors);
 
 app.get("/health", (_req, res) => {

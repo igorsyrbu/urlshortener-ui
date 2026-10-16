@@ -23,10 +23,10 @@ function renderCard(overrides: Partial<CardProps> = {}): CardProps {
 }
 
 describe("CurrentSessionCard", () => {
-    it("shows a loading message while the session is loading", () => {
+    it("shows a loading skeleton while the session is loading", () => {
         renderCard({isLoading: true, session: undefined});
 
-        expect(screen.getByText("Loading current session...")).toBeInTheDocument();
+        expect(screen.getByRole("status", {name: "Loading sessions"})).toBeInTheDocument();
     });
 
     it("explains when the current session is unavailable", () => {

@@ -5,6 +5,7 @@
 export const ROUTES = {
     LOGIN: "/login",
     LINKS: "/links",
+    SETTINGS: "/settings",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -34,6 +35,10 @@ export const API_ENDPOINTS = {
     OTT_GENERATE: "/ott/generate",
     AUTH_CODE_EXCHANGE: "/auth/code/exchange",
     ABUSE_REPORT: "/public/abuse/report",
+    BILLING_SUBSCRIPTION: "/billing/subscription",
+    BILLING_SUBSCRIPTION_UPGRADE: "/billing/subscription/upgrade",
+    BILLING_CHECKOUT: "/billing/checkout",
+    BILLING_PORTAL: "/billing/portal",
 } as const;
 
 // ---------------------------------------------------------------------------

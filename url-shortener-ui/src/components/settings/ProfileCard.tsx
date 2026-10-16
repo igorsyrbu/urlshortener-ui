@@ -9,6 +9,7 @@ import {fetchWithAuth} from "@/lib/api";
 import {useAuthStore, UserProfile} from "@/lib/store/auth";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
+import {ProfileCardSkeleton} from "@/components/settings/ProfileCardSkeleton";
 
 export function ProfileCard() {
     const user = useAuthStore((state) => state.user);
@@ -58,6 +59,10 @@ export function ProfileCard() {
         }
     };
 
+    if (!user) {
+        return <ProfileCardSkeleton/>;
+    }
+
     return (
         <Card>
             <CardHeader>
@@ -65,27 +70,21 @@ export function ProfileCard() {
                 <CardDescription>Update your personal information.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {!user ? (
-                    <div className="text-sm text-muted-foreground">Loading profile...</div>
-                ) : (
-                    <>
-                        <div className="space-y-2 max-w-sm">
-                            <label htmlFor="email" className="text-sm font-medium leading-none">
-                                Email
-                            </label>
-                            <Input id="email" value={email} disabled className="bg-muted cursor-not-allowed"/>
-                        </div>
-                        <div className="space-y-2 max-w-sm">
-                            <label htmlFor="name" className="text-sm font-medium leading-none">
-                                Name
-                            </label>
-                            <Input id="name" value={name} onChange={(e) => setName(e.target.value)}/>
-                        </div>
-                    </>
-                )}
+                <div className="space-y-2 max-w-sm">
+                    <label htmlFor="email" className="text-sm font-medium leading-none">
+                        Email
+                    </label>
+                    <Input id="email" value={email} disabled className="bg-muted cursor-not-allowed"/>
+                </div>
+                <div className="space-y-2 max-w-sm">
+                    <label htmlFor="name" className="text-sm font-medium leading-none">
+                        Name
+                    </label>
+                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)}/>
+                </div>
             </CardContent>
             <CardFooter className="px-6">
-                <Button onClick={handleSaveName} disabled={isSaving || !user || !name?.trim()}>
+                <Button onClick={handleSaveName} disabled={isSaving || !name?.trim()}>
                     {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
             </CardFooter>

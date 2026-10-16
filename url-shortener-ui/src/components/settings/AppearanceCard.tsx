@@ -4,6 +4,7 @@ import {useEffect, useState} from "react";
 import {useTheme} from "next-themes";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {Monitor, Moon, Sun, LucideIcon} from "lucide-react";
+import {AppearanceCardSkeleton} from "@/components/settings/AppearanceCardSkeleton";
 
 interface ThemeOption {
     value: string;
@@ -24,6 +25,10 @@ export function AppearanceCard() {
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    if (!mounted) {
+        return <AppearanceCardSkeleton/>;
+    }
 
     return (
         <Card>

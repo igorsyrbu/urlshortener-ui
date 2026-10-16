@@ -15,15 +15,34 @@ function getRow(deviceText: string): HTMLElement {
     return row;
 }
 
+function renderList(overrides: Partial<Parameters<typeof OtherSessionsList>[0]> = {}): void {
+    const props: Parameters<typeof OtherSessionsList>[0] = {
+        sessions: SESSIONS,
+        isLoading: false,
+        sessionActionLoading: null,
+        onLogoutSession: vi.fn(),
+        ...overrides,
+    };
+    render(<OtherSessionsList {...props}/>);
+}
+
 describe("OtherSessionsList", () => {
-    it("renders nothing when there are no other sessions", () => {
-        const {container} = render(<OtherSessionsList sessions={[]} sessionActionLoading={null} onLogoutSession={vi.fn()}/>);
+    it("shows a loading skeleton while the sessions are loading", () => {
+        renderList({sessions: [], isLoading: true});
+
+        expect(screen.getByRole("status", {name: "Loading other sessions"})).toBeInTheDocument();
+        expect(screen.getByText("Active Sessions")).toBeInTheDocument();
+        expect(screen.queryByRole("button", {name: "Log out"})).not.toBeInTheDocument();
+    });
+
+    it("renders nothing when loading finished with no other sessions", () => {
+        const {container} = render(<OtherSessionsList sessions={[]} isLoading={false} sessionActionLoading={null} onLogoutSession={vi.fn()}/>);
 
         expect(container).toBeEmptyDOMElement();
     });
 
     it("lists every session with its device and location", () => {
-        render(<OtherSessionsList sessions={SESSIONS} sessionActionLoading={null} onLogoutSession={vi.fn()}/>);
+        renderList();
 
         expect(screen.getByText("Active Sessions")).toBeInTheDocument();
         expect(screen.getByText("iPhone (iOS)")).toBeInTheDocument();
@@ -34,7 +53,7 @@ describe("OtherSessionsList", () => {
     it("requests logout of the clicked session by id", async () => {
         const user = userEvent.setup();
         const onLogoutSession = vi.fn();
-        render(<OtherSessionsList sessions={SESSIONS} sessionActionLoading={null} onLogoutSession={onLogoutSession}/>);
+        renderList({onLogoutSession});
 
         await user.click(within(getRow("ThinkPad (Linux)")).getByRole("button", {name: "Log out"}));
 
@@ -42,14 +61,14 @@ describe("OtherSessionsList", () => {
     });
 
     it("shows progress on the session being logged out and disables every other action", () => {
-        render(<OtherSessionsList sessions={SESSIONS} sessionActionLoading="s1" onLogoutSession={vi.fn()}/>);
+        renderList({sessionActionLoading: "s1"});
 
         expect(within(getRow("iPhone (iOS)")).getByRole("button", {name: "Logging out..."})).toBeDisabled();
         expect(within(getRow("ThinkPad (Linux)")).getByRole("button", {name: "Log out"})).toBeDisabled();
     });
 
     it("disables every logout button while all other sessions are being terminated", () => {
-        render(<OtherSessionsList sessions={SESSIONS} sessionActionLoading="other" onLogoutSession={vi.fn()}/>);
+        renderList({sessionActionLoading: "other"});
 
         screen.getAllByRole("button", {name: "Log out"}).forEach((button) => expect(button).toBeDisabled());
     });

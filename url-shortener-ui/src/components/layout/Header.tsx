@@ -8,6 +8,7 @@ import {Button} from "@/components/ui/button";
 import {PageHeading} from "@/components/layout/PageHeading";
 import {usePathname} from "next/navigation";
 import {isModalOpen} from "@/lib/utils";
+import {ROUTES} from "@/lib/constants";
 
 interface HeaderProps {
     onCreateClick?: () => void;
@@ -23,9 +24,9 @@ export function Header({onCreateClick, onMenuClick, createLabel = "Create link"}
         "/tags": "Tags",
         "/dashboard": "Dashboard",
         "/analytics": "Analytics",
-        "/settings": "Settings",
+        [ROUTES.SETTINGS]: "Settings",
     };
-    const title = titles[pathname] ?? "";
+    const title = pathname.startsWith(`${ROUTES.SETTINGS}/`) ? titles[ROUTES.SETTINGS] : titles[pathname] ?? "";
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

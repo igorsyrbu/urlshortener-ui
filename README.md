@@ -153,6 +153,30 @@ Copy `.env.example` to `.env` in the `url-shortener-ui` directory to customize:
 | DELETE | `/users/sessions/other`   | -                   | Terminate all other active sessions |
 | DELETE | `/users/sessions/:id`     | Path variable: `id` | Terminate a specific active session |
 
+**Billing**
+
+All four billing endpoints require the signed-in user's bearer token. Billing state is isolated by sandbox UUID.
+
+| Method | Path                            | Query / Body Params                         | Description |
+|--------|---------------------------------|---------------------------------------------|-------------|
+| GET    | `/billing/subscription`          | -                                           | Current plan, subscription status, renewal/cancellation date, and pending yearly switch |
+| POST   | `/billing/checkout`              | Body: `{ billingPeriod: "MONTHLY" \| "YEARLY" }` | Create a hosted mock checkout URL; payment completion activates Pro |
+| POST   | `/billing/portal`                | No body                                     | Create a hosted mock customer portal URL with optional `expiresInSeconds` |
+| POST   | `/billing/subscription/upgrade`  | No body                                     | Schedule monthly-to-yearly billing at the current renewal date |
+
+Checkout returns `{ url }`; portal returns `{ url, expiresInSeconds? }`; scheduling returns
+`{ status: "scheduled", effectiveDate? }`. Subscription reads return `plan` (`FREE`/`PRO`),
+`cancelAtPeriodEnd`, and optional `status`, `currentPeriodEnd`, `pendingBillingPeriod`, and `pendingAppliesAt`.
+Portal and checkout URLs contain temporary session tokens, never the user's bearer token. Creating a URL does not
+change the subscription; checkout completion and portal actions simulate the provider updates.
+
+The mock returns 400 for an invalid checkout period, 409 for checkout while already Pro, 404 for a portal without
+billing history or an upgrade without a subscription, 409 for an upgrade that is already yearly/pending/canceling,
+and 422 for an inactive upgrade. The existing `x-mock-error: true` header simulates 500 failures. Subscription reads
+allow 60 requests per minute; each billing POST allows 10 requests per minute. Mock quotas use separate fixed windows
+per sandbox user and endpoint; the real backend uses IP-based buckets with continuous refill. A 429 exposes
+`X-Rate-Limit-Retry-After-Seconds` and `Retry-After` to browser clients.
+
 **Short Links**
 
 | Method | Path                | Query / Body Params                                       | Description                                |
@@ -213,6 +237,82 @@ Copy `.env.example` to `.env` in the `url-shortener-mock-server` directory to cu
 | `MOCK_DELAY`           | `0`                     | Artificial response delay (ms)               |
 | `MOCK_COOKIE_SAMESITE` | `lax`                   | `SameSite` for the `refresh_token` cookie    |
 | `MOCK_COOKIE_SECURE`   | `false`                 | Marks the `refresh_token` cookie as `Secure` |
+| `MOCK_BILLING_SCENARIO` | `free`                 | Initial billing scenario for each sandbox user |
+| `MOCK_BILLING_PORTAL_EXPIRY` | `reported`         | Portal expiry payload: `reported`, `omitted`, `invalid`, or `expired` |
+| `MOCK_BILLING_TRACE`   | `false`                 | Log billing API method, path, and status for return-refresh debugging |
+| `MOCK_PUBLIC_URL`      | `http://localhost:8080` | Optional public mock-server origin for hosted billing URLs |
+
+#### Mock Billing and Portal-Return Reproduction
+
+Run `pnpm dev` from the repository root to start the UI and mock server together. Open
+`http://localhost:3000`, sign in through the mock Google flow, and save the generated sandbox UUID. **Resume Session**
+with the same UUID reuses its in-memory billing state. A different UUID starts independently; restarting the mock
+server clears all billing state and hosted sessions.
+
+The default scenario is `free`. Visit `/settings/billing`, choose a billing cycle, click **Upgrade to Pro**, and click
+**Complete checkout** on the hosted mock page. This simulates payment and subscription activation, then redirects
+back to billing. No payment details are collected. For an immediate monthly Pro starting point, restart both apps with:
+
+```bash
+MOCK_BILLING_SCENARIO=pro-monthly pnpm dev
+```
+
+Available initial scenarios are `free`, `pro-monthly`, `pro-yearly`, `pro-pending`, `pro-canceling`, `trialing`,
+`past-due`, `canceled`, and `expired`. The last three resolve to Free but retain billing history. The **Manage
+subscription** button is shown only while the frontend resolves the account to Pro.
+
+To reset one signed-in sandbox without restarting the server, send the mock-only authenticated endpoint:
+
+```bash
+curl -X POST http://localhost:8080/mock/billing/scenario \
+  -H 'Authorization: Bearer <access-token-from-an-authenticated-Network-request>' \
+  -H 'Content-Type: application/json' \
+  --data '{"scenario":"pro-monthly","portalExpiryMode":"reported"}'
+```
+
+The response is the new subscription DTO. Reload the app after seeding to establish fresh frontend state. Seeding
+invalidates that user's previous hosted links. The endpoint accepts the scenarios above and an optional
+`portalExpiryMode`; it uses the bearer token's UUID, never a user ID supplied in the body. An existing portal also
+offers **Mock billing scenarios** with **Set scenario and return to billing** for changing its own sandbox.
+
+Click **Manage subscription** to create a fresh portal session and open it in a new tab. The hosted portal offers
+**Cancel yearly switch** when a change is pending, **Cancel subscription at renewal**, **Resume subscription** when
+canceling, and **End subscription immediately**. Actions update the mock state immediately; return to the original
+app tab or use **Close portal and return to app** to trigger the frontend's focus/visibility refresh. The **Return to
+billing** link navigates the portal tab to the app and creates fresh frontend state, so use the original tab when
+reproducing a stale return refresh.
+
+Hosted checkout and portal sessions normally expire after one hour. Checkout completion consumes its session.
+`expiresInSeconds` reports the remaining whole seconds, rounded down and clamped to zero, matching the backend's
+current countdown contract. `MOCK_BILLING_PORTAL_EXPIRY=omitted` removes the field; `invalid` returns a nonnumeric
+value; both exercise the UI's 10-minute return-flag fallback while the hosted portal remains valid for one hour.
+`expired` creates an expired portal session, returns zero seconds, and makes the hosted page respond with 410.
+All these modes can also be set
+with `portalExpiryMode` on the scenario endpoint. `MOCK_PUBLIC_URL` overrides the origin of generated hosted links
+when the mock server is behind a proxy or reachable at a different address.
+
+Use these regression checks to verify portal return refreshes and scheduled-switch cancellation:
+
+1. **Cancellation refresh in dev/Strict Mode.** Start with `pro-monthly`, reload billing, and open the
+   browser Network panel before clicking Manage. In the portal, cancel the subscription at renewal and return to the
+   original tab. Verify `POST /api/billing/portal` succeeds and a fresh `GET /api/billing/subscription` returns
+   `cancelAtPeriodEnd: true`. The original tab must change from **Renews on** to **Cancels on** without a full reload.
+   Previously Strict Mode effect cleanup left the mounted ref false, so the successful refresh was discarded.
+   Network paths have the `/api` prefix because Next.js proxies them to the mock server's unprefixed endpoints.
+2. **Clear a locally scheduled yearly switch after portal cancellation.** Start with `pro-monthly` and fresh frontend
+   state. Select **Yearly**, click **Switch to yearly**, and confirm. Open Manage, click **Cancel yearly switch**, and
+   return to the original tab. The next subscription response must omit the pending fields, the scheduled note must
+   disappear, and **Switch to yearly** must become available again without a reload. Previously the frontend retained
+   the local scheduling result after the backend cleared it. To also check production mode, stop `pnpm dev`, start
+   `MOCK_BILLING_SCENARIO=pro-monthly pnpm dev:mock` in one terminal, run `pnpm build` in another, then start the UI
+   with `pnpm --filter=url-shortener-ui start`; sign in and repeat the same steps.
+
+Use a single app tab for these reproductions. The return flag
+`localStorage["urlshortener:billing:portal-return"]` is shared by same-origin tabs and consumed by the first eligible
+focus/visibility event. Reading `null` after returning is expected and does not prove the flag was never written.
+The decisive evidence is the portal POST followed by the subscription GET and its response versus the visible text.
+Set `MOCK_BILLING_TRACE=true` before starting the mock server to also see these API requests in its terminal output;
+the trace excludes query strings, credentials, and hosted session URLs.
 
 #### Cross-Domain Deployment
 

@@ -4,6 +4,7 @@ import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import {cn} from "@/lib/utils"
+import {SEGMENTED_CONTROL_LABEL_CLASS_NAME, SEGMENTED_CONTROL_HOVER_CLASS_NAME} from "@/components/ui/segmented-control-styles"
 
 function Tabs({className, ...props}: React.ComponentProps<typeof TabsPrimitive.Root>) {
     return (
@@ -30,7 +31,9 @@ function TabsTrigger({className, ...props}: React.ComponentProps<typeof TabsPrim
         <TabsPrimitive.Trigger
             data-slot="tabs-trigger"
             className={cn(
-                "inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-soft outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50",
+                "inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium transition-colors data-[state=active]:bg-card data-[state=active]:hover:bg-card dark:data-[state=active]:hover:bg-card data-[state=active]:shadow-soft outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50",
+                SEGMENTED_CONTROL_LABEL_CLASS_NAME,
+                SEGMENTED_CONTROL_HOVER_CLASS_NAME,
                 className
             )}
             {...props}

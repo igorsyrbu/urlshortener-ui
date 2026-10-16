@@ -1,0 +1,152 @@
+"use client";
+
+import {useState, useEffect, useRef} from "react";
+import {useRouter} from "next/navigation";
+import {toast} from "sonner";
+import {fetchWithAuth} from "@/lib/api";
+import {useAuthStore} from "@/lib/store/auth";
+import {getJwtTTL} from "@/lib/utils";
+import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
+import {UserSession} from "@/lib/session-utils";
+import {ProfileCard} from "@/components/settings/ProfileCard";
+import {AppearanceCard} from "@/components/settings/AppearanceCard";
+import {ThemeCard} from "@/components/settings/ThemeCard";
+import {PreferencesCard} from "@/components/settings/PreferencesCard";
+import {CurrentSessionCard} from "@/components/settings/CurrentSessionCard";
+import {OtherSessionsList} from "@/components/settings/OtherSessionsList";
+import {DangerZoneCard} from "@/components/settings/DangerZoneCard";
+import {SessionLogoutDialog, LogoutTarget} from "@/components/settings/SessionLogoutDialog";
+import {logger} from "@/lib/logger";
+
+export default function GeneralSettingsPage() {
+    const router = useRouter();
+    const accessToken = useAuthStore((state) => state.accessToken);
+
+    const [sessions, setSessions] = useState<UserSession[]>([]);
+    const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+    const [sessionActionLoading, setSessionActionLoading] = useState<string | null>(null);
+    const [logoutTarget, setLogoutTarget] = useState<LogoutTarget>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const jwtTTL = accessToken ? getJwtTTL(accessToken) : null;
+
+    const fetched = useRef(false);
+
+    useEffect(() => {
+        if (fetched.current) return;
+        fetched.current = true;
+
+        async function fetchSessions(): Promise<void> {
+            try {
+                const res = await fetchWithAuth(API_ENDPOINTS.USERS_SESSIONS);
+                if (res.ok) {
+                    const data: UserSession[] = await res.json();
+                    data.sort((first, second) => (first.current === second.current ? 0 : first.current ? -1 : 1));
+                    setSessions(data);
+                }
+            } catch (error) {
+                logger.error("Failed to load sessions", error);
+            } finally {
+                setIsLoadingSessions(false);
+            }
+        }
+
+        void fetchSessions();
+    }, []);
+
+    const handleLogoutSession = async (id: string, isCurrent: boolean = false) => {
+        setSessionActionLoading(id);
+        try {
+            const endpoint = isCurrent ? API_ENDPOINTS.USERS_SESSIONS_CURRENT : `/users/sessions/${id}`;
+            const res = await fetchWithAuth(endpoint, {method: "DELETE"});
+
+            if (res.ok) {
+                if (isCurrent) {
+                    useAuthStore.getState().logout();
+                    router.replace(ROUTES.LOGIN);
+                } else {
+                    setSessions((prev) => prev.filter((s) => s.id !== id));
+                    toast.success("Session terminated successfully");
+                }
+            } else {
+                toast.error("Failed to terminate session");
+            }
+        } catch (error) {
+            logger.error("Error terminating session", error);
+            toast.error("An unexpected error occurred while terminating session");
+        } finally {
+            setSessionActionLoading(null);
+        }
+    };
+
+    const handleLogoutOther = async () => {
+        setSessionActionLoading("other");
+        try {
+            const res = await fetchWithAuth(API_ENDPOINTS.USERS_SESSIONS_OTHER, {method: "DELETE"});
+            if (res.ok) {
+                setSessions((prev) => prev.filter((s) => s.current));
+                toast.success("Successfully logged out of all other devices");
+            } else {
+                toast.error("Failed to terminate other sessions");
+            }
+        } catch (error) {
+            logger.error("Error terminating other sessions", error);
+            toast.error("An unexpected error occurred while terminating other sessions");
+        } finally {
+            setSessionActionLoading(null);
+        }
+    };
+
+    const handleLogoutConfirm = () => {
+        if (logoutTarget?.type === "single") {
+            handleLogoutSession(logoutTarget.id, logoutTarget.isCurrent);
+        } else if (logoutTarget?.type === "other") {
+            handleLogoutOther();
+        }
+        setLogoutTarget(null);
+    };
+
+    const currentSession = sessions.find((s) => s.current);
+    const otherSessions = sessions.filter((s) => !s.current);
+
+    return (
+        <div className="flex min-w-0 flex-col gap-4">
+            <ProfileCard/>
+            <AppearanceCard/>
+            <ThemeCard/>
+            <PreferencesCard/>
+
+            <div className="flex flex-col gap-6">
+                <CurrentSessionCard
+                    session={currentSession}
+                    isLoading={isLoadingSessions}
+                    hasOtherSessions={otherSessions.length > 0}
+                    isActionDisabled={sessionActionLoading !== null}
+                    isLoggingOut={sessionActionLoading === currentSession?.id}
+                    isTerminatingOther={sessionActionLoading === "other"}
+                    onLogout={() => setLogoutTarget({type: "single", id: currentSession!.id, isCurrent: true})}
+                    onTerminateOther={() => setLogoutTarget({type: "other"})}
+                />
+                <OtherSessionsList
+                    sessions={otherSessions}
+                    isLoading={isLoadingSessions}
+                    sessionActionLoading={sessionActionLoading}
+                    onLogoutSession={(id) => setLogoutTarget({type: "single", id, isCurrent: false})}
+                />
+            </div>
+
+            <DangerZoneCard
+                isDeleteDialogOpen={isDeleteDialogOpen}
+                onOpenDeleteDialog={() => setIsDeleteDialogOpen(true)}
+                onCloseDeleteDialog={() => setIsDeleteDialogOpen(false)}
+                onConfirmDelete={() => setIsDeleteDialogOpen(false)}
+            />
+
+            <SessionLogoutDialog
+                target={logoutTarget}
+                jwtTTL={jwtTTL}
+                onClose={() => setLogoutTarget(null)}
+                onConfirm={handleLogoutConfirm}
+            />
+        </div>
+    );
+}

@@ -3,6 +3,7 @@
 import {Card, CardContent} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {formatDeviceText, formatLocation, getIconForDevice, UserSession} from "@/lib/session-utils";
+import {SessionCardSkeleton} from "@/components/settings/SessionCardSkeleton";
 
 interface CurrentSessionCardProps {
     session: UserSession | undefined;
@@ -25,17 +26,17 @@ export function CurrentSessionCard({
                                        onLogout,
                                        onTerminateOther,
                                    }: CurrentSessionCardProps) {
+    if (isLoading) {
+        return <SessionCardSkeleton/>;
+    }
+
     return (
         <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
                 This Device
             </h3>
             <Card className="overflow-hidden border-border">
-                {isLoading ? (
-                    <CardContent className="px-4 pt-4 pb-0">
-                        <div className="text-sm text-muted-foreground">Loading current session...</div>
-                    </CardContent>
-                ) : session ? (
+                {session ? (
                     <CardContent className="p-0 -mt-6">
                         <SessionRow session={session} isCurrent isActionDisabled={isActionDisabled}
                                     isLoggingOut={isLoggingOut} onLogout={onLogout}/>

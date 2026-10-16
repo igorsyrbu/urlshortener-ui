@@ -44,6 +44,11 @@ const PROTECTED_ENDPOINTS: Array<[string, string]> = [
   ["PUT", "/tags"],
   ["DELETE", "/tags/some-id"],
   ["GET", "/analytics"],
+  ["GET", "/billing/subscription"],
+  ["POST", "/billing/checkout"],
+  ["POST", "/billing/portal"],
+  ["POST", "/billing/subscription/upgrade"],
+  ["POST", "/mock/billing/scenario"],
 ];
 
 describe("protected endpoints", () => {

@@ -22,7 +22,7 @@ describe("ThemeCard", () => {
     it("opens on the built-in palettes by default", () => {
         renderWithPalette(<ThemeCard/>);
 
-        expect(screen.getByRole("tab", {name: "Built-in"})).toHaveAttribute("aria-selected", "true");
+        expect(screen.getByRole("button", {name: "Built-in"})).toHaveAttribute("aria-pressed", "true");
         expect(screen.getByRole("button", {name: "Catppuccin"})).toBeInTheDocument();
     });
 
@@ -32,7 +32,7 @@ describe("ThemeCard", () => {
 
         renderWithPalette(<ThemeCard/>);
 
-        expect(screen.getByRole("tab", {name: "Custom"})).toHaveAttribute("aria-selected", "true");
+        expect(screen.getByRole("button", {name: "Custom"})).toHaveAttribute("aria-pressed", "true");
         expect(screen.getByRole("button", {name: "Surprise me"})).toBeInTheDocument();
     });
 
@@ -40,11 +40,21 @@ describe("ThemeCard", () => {
         const user = userEvent.setup();
         renderWithPalette(<ThemeCard/>);
 
-        await user.click(screen.getByRole("tab", {name: "Custom"}));
+        await user.click(screen.getByRole("button", {name: "Custom"}));
         expect(screen.getByRole("button", {name: "Surprise me"})).toBeInTheDocument();
-        await user.click(screen.getByRole("tab", {name: "Built-in"}));
+        await user.click(screen.getByRole("button", {name: "Built-in"}));
 
         expect(screen.getByRole("button", {name: "Catppuccin"})).toBeInTheDocument();
+    });
+
+    it("keeps the built-in palettes selected while the custom tab is hovered", async () => {
+        const user = userEvent.setup();
+        renderWithPalette(<ThemeCard/>);
+
+        await user.hover(screen.getByRole("button", {name: "Custom"}));
+
+        expect(screen.getByRole("button", {name: "Built-in"})).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("button", {name: "Custom"})).toHaveAttribute("aria-pressed", "false");
     });
 
     it("follows a custom theme saved from another browser tab", () => {
@@ -52,17 +62,17 @@ describe("ThemeCard", () => {
 
         syncCustomThemeFromAnotherTab();
 
-        expect(screen.getByRole("tab", {name: "Custom"})).toHaveAttribute("aria-selected", "true");
+        expect(screen.getByRole("button", {name: "Custom"})).toHaveAttribute("aria-pressed", "true");
     });
 
     it("keeps the tab the user picked when a custom theme arrives from another browser tab", async () => {
         const user = userEvent.setup();
         renderWithPalette(<ThemeCard/>);
-        await user.click(screen.getByRole("tab", {name: "Custom"}));
-        await user.click(screen.getByRole("tab", {name: "Built-in"}));
+        await user.click(screen.getByRole("button", {name: "Custom"}));
+        await user.click(screen.getByRole("button", {name: "Built-in"}));
 
         syncCustomThemeFromAnotherTab();
 
-        expect(screen.getByRole("tab", {name: "Built-in"})).toHaveAttribute("aria-selected", "true");
+        expect(screen.getByRole("button", {name: "Built-in"})).toHaveAttribute("aria-pressed", "true");
     });
 });

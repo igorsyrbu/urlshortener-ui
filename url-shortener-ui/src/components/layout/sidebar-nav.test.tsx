@@ -3,6 +3,7 @@ import {render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {describe, expect, it, vi} from "vitest";
 import {SidebarNav} from "@/components/layout/sidebar-nav";
+import {SETTINGS_ROUTES} from "@/lib/settings-constants";
 
 const navigation = vi.hoisted(() => ({pathname: "/"}));
 
@@ -57,6 +58,12 @@ describe("SidebarNav", () => {
         renderAt("/linksfoo");
 
         expect(screen.getAllByRole("link").filter(isHighlighted)).toHaveLength(0);
+    });
+
+    it.each(Object.values(SETTINGS_ROUTES))("keeps Settings highlighted on %s", (pathname) => {
+        renderAt(pathname);
+
+        expect(isHighlighted(screen.getByRole("link", {name: "Settings"}))).toBe(true);
     });
 
     it("highlights nothing on an unknown route", () => {

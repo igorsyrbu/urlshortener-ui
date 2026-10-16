@@ -32,11 +32,11 @@ describe("ProfileCard", () => {
         useAuthStore.setState({accessToken: null, user: null});
     });
 
-    it("shows a loading message and disables saving until the profile is available", () => {
+    it("shows a loading skeleton until the profile is available", () => {
         renderProfileCard(null);
 
-        expect(screen.getByText("Loading profile...")).toBeInTheDocument();
-        expect(screen.getByRole("button", {name: "Save Changes"})).toBeDisabled();
+        expect(screen.getByRole("status", {name: "Loading profile"})).toBeInTheDocument();
+        expect(screen.queryByRole("button", {name: "Save Changes"})).not.toBeInTheDocument();
     });
 
     it("shows the email as read-only and the name as editable", () => {

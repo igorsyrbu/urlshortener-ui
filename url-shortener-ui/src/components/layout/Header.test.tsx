@@ -2,6 +2,7 @@ import {fireEvent, render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {describe, expect, it, vi} from "vitest";
 import {Header} from "@/components/layout/Header";
+import {SETTINGS_ROUTES} from "@/lib/settings-constants";
 
 const navigation = vi.hoisted(() => ({pathname: "/links"}));
 
@@ -15,6 +16,7 @@ describe("Header", () => {
         {pathname: "/dashboard", title: "Dashboard"},
         {pathname: "/analytics", title: "Analytics"},
         {pathname: "/settings", title: "Settings"},
+        ...Object.values(SETTINGS_ROUTES).map((pathname) => ({pathname, title: "Settings"})),
     ])("titles the page $title on $pathname", ({pathname, title}) => {
         navigation.pathname = pathname;
 
