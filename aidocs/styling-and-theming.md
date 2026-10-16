@@ -15,7 +15,8 @@ The visual specification (default palette values, typography, spacing shells, ra
 5. **Respect theming.** Every new surface must work in light and dark and in every palette and custom theme. Using semantic tokens is what makes that automatic; do not branch on palette ids in components.
 6. **Never rely on a fixed surface colour** for contrast. Pair backgrounds and foregrounds from the same token family (`bg-primary` with `text-primary-foreground`).
 7. **User-provided text must never break layout.** See [Text truncation and overflow](#text-truncation-and-overflow).
-8. Documented intentional exceptions (rainbow `GlowingEffect`, categorical chart colours, black-on-white QR code) are specified in [DESIGN.md](../DESIGN.md) section 4. Do not "fix" them to brand colours.
+8. **Zoom stays enabled and text inputs stay at least 16px on mobile.** The root `viewport` export never sets `maximumScale` or `userScalable` (`app/layout.test.ts` guards it). iOS Safari zooms the page when a focused input's text is smaller than 16px, so `Input` and `Textarea` use `text-base md:text-sm`; do not pass `text-sm` (or smaller) through `className` on an editable input.
+9. Documented intentional exceptions (rainbow `GlowingEffect`, categorical chart colours, black-on-white QR code) are specified in [DESIGN.md](../DESIGN.md) section 4. Do not "fix" them to brand colours.
 
 ## Tailwind v4 setup
 

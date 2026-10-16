@@ -96,7 +96,7 @@ export function DangerZoneCard({
                                 placeholder={userEmail}
                                 value={confirmEmail}
                                 onChange={(e) => setConfirmEmail(e.target.value)}
-                                className="h-10 text-sm"
+                                className="h-10"
                             />
                         </div>
 
@@ -132,7 +132,7 @@ export function DangerZoneCard({
                                 placeholder={userEmail}
                                 value={confirmEmail}
                                 onChange={(e) => setConfirmEmail(e.target.value)}
-                                className="h-10 text-sm w-full"
+                                className="h-10 w-full"
                             />
                         </div>
 

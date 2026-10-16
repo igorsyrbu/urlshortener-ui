@@ -47,7 +47,7 @@ export function SearchBar({placeholder = "Search...", className, value, onChange
             </div>
             <Input
                 ref={inputRef}
-                className="block w-full truncate rounded-xl border-[0.5px] border-border bg-background dark:bg-background h-10 py-2 pr-8 text-sm text-foreground shadow-none transition-all placeholder:text-muted-foreground focus:bg-background dark:focus:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-background sm:pr-12 pl-9 sm:pl-10"
+                className="block w-full truncate rounded-xl border-[0.5px] border-border bg-background dark:bg-background h-10 py-2 pr-8 text-foreground shadow-none transition-all placeholder:text-muted-foreground focus:bg-background dark:focus:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-background sm:pr-12 pl-9 sm:pl-10"
                 placeholder={placeholder}
                 type="text"
                 value={value}

@@ -74,7 +74,7 @@ export function TagsScreenContent({
                     placeholder="Search or create tags..."
                     value={tagSearch}
                     onChange={(e) => onTagSearchChange(e.target.value)}
-                    className="pl-9 h-10 text-sm"
+                    className="pl-9 h-10"
                 />
             </div>
 
