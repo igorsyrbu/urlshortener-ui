@@ -6,13 +6,14 @@ Related: [architecture](architecture.md) · [routing-and-navigation](routing-and
 
 ## UI
 
-Env files: copy [`.env.example`](../url-shortener-ui/.env.example) to `.env` inside `url-shortener-ui/` (`.env*` is git-ignored except `.env.example`). The README table ([../README.md](../README.md), "Environment Variables" under `url-shortener-ui`) lists the same three variables.
+Env files: copy [`.env.example`](../url-shortener-ui/.env.example) to `.env` inside `url-shortener-ui/` (`.env*` is git-ignored except `.env.example`). The README table ([../README.md](../README.md), "Environment Variables" under `url-shortener-ui`) lists the same variables.
 
 | Variable | Default when unset | Effect |
 |---|---|---|
 | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8080` | Backend origin. Used (a) as the destination of the `/api/:path*` rewrite in `next.config.ts`, and (b) as `SERVER_API_BASE_URL` in [`src/lib/api.ts`](../url-shortener-ui/src/lib/api.ts), which is called directly by the SSE route handler, the inspect page and `ReportAbuseForm`. |
 | `NEXT_PUBLIC_ENABLE_TURNSTILE` | disabled | Turnstile is on only when the value is exactly the string `"true"`. Read in `login/page.tsx` and `(legal)/report-abuse/page.tsx`. |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `""` | Site key for the widget. If Turnstile is enabled and the key is empty, both pages throw `NEXT_PUBLIC_TURNSTILE_SITE_KEY is required when Turnstile is enabled`. |
+| `CSP_ENFORCE` | `false` | `"true"` sends the Content-Security-Policy as `Content-Security-Policy` (enforced); anything else sends `Content-Security-Policy-Report-Only` (violations reported in the console, nothing blocked). Read by `next.config.ts` at build/start time, not inlined into the client. |
 
 Facts that matter when changing them:
 
@@ -62,7 +63,13 @@ The request header `x-mock-error: true` simulates a 500 on any request (not an e
 | `output` | `standalone` | Production build emits a self-contained server. |
 | `rewrites()` | `/api/:path*` -> `${NEXT_PUBLIC_API_BASE_URL \|\| 'http://localhost:8080'}/:path*` | The browser's only path to the backend. The route handler `app/api/shortlinks/import/updates/route.ts` is a filesystem route, so it is served instead of the rewrite for that one path ([architecture](architecture.md#sse-pass-through-route-handler)). |
 
-There is no `middleware.ts`/`proxy.ts`, no custom headers and no `env` block.
+`poweredByHeader: false` drops `X-Powered-By`. `headers()` adds the security headers built in [`src/lib/security-headers.ts`](../url-shortener-ui/src/lib/security-headers.ts) to every route (`/:path*`) and `Referrer-Policy: no-referrer` to `/auth/:path*`:
+
+- Content-Security-Policy, Report-Only unless `CSP_ENFORCE=true`. `script-src` and `style-src` need `'unsafe-inline'` because every page is prerendered and carries inline flight/palette scripts (a nonce would force dynamic rendering); `'unsafe-eval'` and the absence of `upgrade-insecure-requests` are development-only. Allowed third parties: Turnstile (`script-src`, `frame-src`), any `https:` image, and the backend origin in `connect-src` while `ReportAbuseForm` calls it directly.
+- `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` (with `frame-ancestors 'none'`), `Referrer-Policy: strict-origin-when-cross-origin`, a `Permissions-Policy` denying camera, microphone, geolocation, payment and USB, and HSTS in production builds only.
+- A new third-party origin (script, frame, API, font) must be added to the policy in `security-headers.ts` and its test; check the browser console for `[Report Only]` violations after adding one.
+
+There is no `middleware.ts`/`proxy.ts` and no `env` block.
 
 - Observation: other remote images (OG images through `wsrv.nl` in `OgImage`, flags from `hatscripts.github.io` in `LocationIcon`) are plain `<img>` elements and so are not covered by `remotePatterns`. Existing exception - not a template; new images use `next/image` ([coding-patterns](coding-patterns.md)).
 
