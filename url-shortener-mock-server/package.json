@@ -2,6 +2,9 @@
   "name": "@url-shortener/url-shortener-mock-server",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
@@ -18,7 +21,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
-    "@types/node": "^20.11.0",
+    "@types/node": "^24",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }

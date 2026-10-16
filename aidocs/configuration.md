@@ -87,8 +87,8 @@ The only feature flag is Turnstile (`NEXT_PUBLIC_ENABLE_TURNSTILE`, see [UI](#ui
 
 ## Node, package manager and versions
 
-- Node: `engines.node` is `>=22` in `url-shortener-ui/package.json`; `.node-version` pins `22`. The README states Node `>= 22.0.0`.
-- Package manager: pnpm workspaces. Root `package.json` has no `packageManager` field and no `engines`; the README says pnpm `>= 9.0.0` (not enforced). [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) lists both packages and an `allowBuilds` block (esbuild and unrs-resolver allowed, sharp not).
+- Node: 24 (LTS). `engines.node` is `>=24` in the root, UI and mock-server `package.json`; [`.node-version`](../.node-version) at the repository root pins `24` for nvm, fnm, Volta and editors; both packages use `@types/node` `^24`. The README states Node `>= 24.0.0`. Development, tests and the production server (`output: standalone`) should all run the same major version.
+- Package manager: pnpm workspaces. Root `package.json` has no `packageManager` field; the README says pnpm `>= 9.0.0` (not enforced). The lockfile is written by pnpm 10 (`lockfileVersion: '9.0'`). Newer pnpm majors re-resolve unrelated peer dependencies when they rewrite it, so after a dependency change update it with `npx pnpm@10 install --lockfile-only` and check that `git diff pnpm-lock.yaml` touches only the packages you changed. [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) lists both packages and an `allowBuilds` block (esbuild and unrs-resolver allowed, sharp not).
 - Installed versions at the time of writing (from `node_modules`): Next 16.2.6, React 19.2.6, Zustand 5.0.13, Tailwind 4.3.0, Vitest 4.1.9, TypeScript 5.9.3. The mock server uses Express 4, `tsx`, `dotenv`, `node-html-parser`.
 - Observation: the root `package.json` also declares `workspaces` and an `overrides` block (pnpm reads `pnpm-workspace.yaml`, not `workspaces`) and a root `next` dependency (`^16.2.6`, the UI declares `^16.2.3`). Existing configuration - do not change as a drive-by.
 

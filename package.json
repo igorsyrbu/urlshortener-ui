@@ -2,6 +2,9 @@
   "name": "@url-shortener/root",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=24"
+  },
   "workspaces": [
     "url-shortener-ui",
     "url-shortener-mock-server"

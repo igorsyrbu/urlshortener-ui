@@ -7,7 +7,7 @@ Rules for AI agents and contributors. Details, explanations and examples live in
 - `url-shortener-ui/`: Next.js 16 App Router, React 19 with the React Compiler, TypeScript (strict), Zustand 5,
   Tailwind CSS v4 + shadcn/Radix, Vitest 4 + React Testing Library. Client-rendered against an external REST API.
 - `url-shortener-mock-server/`: Express 4 + TypeScript stand-in for that API, tested with `node:test`.
-- pnpm workspace, Node >= 22. There is no CI workflow; every check runs locally.
+- pnpm workspace, Node >= 24 (`.node-version` at the root). There is no CI workflow; every check runs locally.
 
 ## Verify commands (repository root)
 
