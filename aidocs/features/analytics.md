@@ -39,8 +39,8 @@ Related: [state-management](../state-management.md) · [api-layer](../api-layer.
 
 `PeriodSelector` switches on `useIsMobile()` (see the responsive pattern in [coding-patterns](../coding-patterns.md)).
 
-- Desktop: `Custom` opens a `Popover` with a 2-month range `Calendar` (week starts Monday). First click sets `from`; second click sets `to` (swapped if reversed) and calls `onCustomDateRangeChange`. Days before Jan 1 of `ALLOWED_YEARS[0]` or after today are disabled and ignored.
-- Mobile: `Custom` opens `DateRangeDrawer` ([`src/components/analytics/DateRangeDrawer.tsx`](../../url-shortener-ui/src/components/analytics/DateRangeDrawer.tsx)), a bottom drawer with a single-month calendar, prev/next month buttons, and an iOS-style wheel picker (month + year) toggled by the header. The second day tap applies the range (swapping if reversed) and closes the drawer. Navigation is limited to the months of `ALLOWED_YEARS`; selecting a future month in the wheel bounces back to the current month after 200 ms.
+- Desktop: `Custom` opens a `Popover` with a 2-month range `Calendar` (week starts Monday). First click sets `from`; second click sets `to` (swapped if reversed) and calls `onCustomDateRangeChange`. Days before Jan 1 of `FIRST_ANALYTICS_YEAR` or after today are disabled and ignored.
+- Mobile: `Custom` opens `DateRangeDrawer` ([`src/components/analytics/DateRangeDrawer.tsx`](../../url-shortener-ui/src/components/analytics/DateRangeDrawer.tsx)), a bottom drawer with a single-month calendar, prev/next month buttons, and an iOS-style wheel picker (month + year) toggled by the header. The second day tap applies the range (swapping if reversed) and closes the drawer. The year wheel and prev/next navigation cover `getSelectableAnalyticsYears(currentYear)` from [`src/lib/date-utils.ts`](../../url-shortener-ui/src/lib/date-utils.ts): every year from `FIRST_ANALYTICS_YEAR` (2026, `lib/constants.ts`) to the current year, computed from the clock at render so the pickers keep working across a new year. The drawer opens on the month of the range end (or today); selecting a future month in the wheel bounces back to the current month after 200 ms.
 - Chart drag-zoom (desktop only, `useIsDesktop`): mouse drag over the time series selects an index range and calls `onZoom` with `{from, to}` dates; this goes through `setCustomDateRange`, so zooming switches the page to `custom`. A drag with equal start/end indices does nothing; leaving the chart cancels the drag.
 
 ## Components
@@ -73,7 +73,7 @@ Bar colours come from `CHART_COLORS` in `lib/constants.ts`; chart/theme details 
 
 All are observations; they are not templates and not permission for drive-by changes.
 
-- Observation: `ALLOWED_YEARS` in `lib/constants.ts` is the hard-coded tuple `[2026]`. The desktop calendar lower bound, the drawer's year wheel and prev/next limits all derive from it, so ranges in other years cannot be picked until it is edited.
+- Observation: `PeriodSelector` computes its desktop `MAX_DATE` (today) once at module load, so a tab left open past midnight keeps yesterday as the last selectable day until reload.
 - Observation: `loading` is cleared only when the total-clicks request returns a number. If that request fails or returns a non-number, `loading` stays true; with an empty `timeSeries` the page keeps showing the skeleton.
 - Observation: no request-race protection. Changing the period quickly can let an older response overwrite a newer one, since each response writes unconditionally.
 - Observation: on a period change, `fetchAnalytics(true)` refetches only the active location/device tab. The inactive tab (e.g. Continents) keeps its previous-period array and `setLocationTab` will not refetch it because the array is non-empty, so it can show stale data.

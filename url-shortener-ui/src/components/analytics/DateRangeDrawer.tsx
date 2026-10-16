@@ -14,7 +14,8 @@ import {IosWheelPicker, type WheelPickerItem} from "@/components/ui/ios-wheel-pi
 
 import {cn} from "@/lib/utils";
 import {ChevronDown, ChevronLeft, ChevronRight} from "lucide-react";
-import {ALLOWED_YEARS} from "@/lib/constants";
+import {FIRST_ANALYTICS_YEAR} from "@/lib/constants";
+import {getSelectableAnalyticsYears} from "@/lib/date-utils";
 
 const MONTHS = [
     "January",
@@ -70,9 +71,12 @@ export function DateRangeDrawer({
                                 }: DateRangeDrawerProps) {
     const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(initialRange);
     const [displayMonth, setDisplayMonth] = useState(() => new Date().getMonth());
-    const [displayYear, setDisplayYear] = useState<number>(() => ALLOWED_YEARS[0]);
+    const [displayYear, setDisplayYear] = useState<number>(() => new Date().getFullYear());
     const [showWheelPicker, setShowWheelPicker] = useState(false);
     const bounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const today = todayAtMidnight();
+    const currentYear = today.getFullYear();
+    const allowedYears = getSelectableAnalyticsYears(currentYear);
 
     useEffect(() => {
         return () => {
@@ -108,15 +112,12 @@ export function DateRangeDrawer({
         }
     }, [displayYear]);
 
-    const handleYearChange = useCallback(
-        (index: number) => {
-            const year = ALLOWED_YEARS[index];
-            if (year !== undefined) {
-                setDisplayYear(year);
-            }
-        },
-        []
-    );
+    const handleYearChange = (index: number) => {
+        const year = allowedYears[index];
+        if (year !== undefined) {
+            setDisplayYear(year);
+        }
+    };
 
     const handleCalendarMonthChange = useCallback(
         (month: Date) => {
@@ -150,29 +151,29 @@ export function DateRangeDrawer({
         setShowWheelPicker((prev) => !prev);
     }, []);
 
-    const handlePrevMonth = useCallback(() => {
+    const handlePrevMonth = () => {
         const newMonth = displayMonth - 1;
         if (newMonth < 0) {
             const newYear = displayYear - 1;
-            if (!(ALLOWED_YEARS as readonly number[]).includes(newYear)) return;
+            if (!allowedYears.includes(newYear)) return;
             setDisplayMonth(11);
             setDisplayYear(newYear);
         } else {
             setDisplayMonth(newMonth);
         }
-    }, [displayMonth, displayYear]);
+    };
 
-    const handleNextMonth = useCallback(() => {
+    const handleNextMonth = () => {
         const newMonth = displayMonth + 1;
         if (newMonth > 11) {
             const newYear = displayYear + 1;
-            if (!(ALLOWED_YEARS as readonly number[]).includes(newYear)) return;
+            if (!allowedYears.includes(newYear)) return;
             setDisplayMonth(0);
             setDisplayYear(newYear);
         } else {
             setDisplayMonth(newMonth);
         }
-    }, [displayMonth, displayYear]);
+    };
 
     const monthItems = useMemo((): WheelPickerItem[] => {
         return MONTHS.map((name) => ({
@@ -181,17 +182,12 @@ export function DateRangeDrawer({
         }));
     }, []);
 
-    const yearItems = useMemo((): WheelPickerItem[] => {
-        return ALLOWED_YEARS.map((year) => ({
-            label: String(year),
-            disabled: false,
-        }));
-    }, []);
+    const yearItems: WheelPickerItem[] = allowedYears.map((year) => ({
+        label: String(year),
+        disabled: false,
+    }));
 
-    const yearIndex = useMemo(
-        () => ALLOWED_YEARS.indexOf(displayYear as (typeof ALLOWED_YEARS)[number]),
-        [displayYear]
-    );
+    const yearIndex = allowedYears.indexOf(displayYear);
 
     const displayMonthDate = useMemo(
         () => new Date(displayYear, displayMonth, 1),
@@ -203,8 +199,7 @@ export function DateRangeDrawer({
         return [{after: today}];
     }, []);
 
-    const today = todayAtMidnight();
-    const minAllowedDate = new Date(ALLOWED_YEARS[0], 0, 1);
+    const minAllowedDate = new Date(FIRST_ANALYTICS_YEAR, 0, 1);
     const maxAllowedDate = today;
 
     const isPrevDisabled = displayYear === minAllowedDate.getFullYear() && displayMonth === minAllowedDate.getMonth();

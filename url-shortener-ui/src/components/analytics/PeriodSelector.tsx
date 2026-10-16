@@ -6,7 +6,7 @@ import {Calendar as CalendarIcon} from "lucide-react";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {DateRange} from "react-day-picker";
 import {useIsMobile} from "@/lib/hooks/useMediaQuery";
-import {ALLOWED_YEARS} from "@/lib/constants";
+import {FIRST_ANALYTICS_YEAR} from "@/lib/constants";
 import {DateRangeDrawer} from "@/components/analytics/DateRangeDrawer";
 
 interface PeriodSelectorProps {
@@ -36,7 +36,7 @@ function todayAtMidnight(): Date {
 const activeClasses = "bg-muted text-foreground";
 const inactiveClasses = "text-muted-foreground hover:text-foreground";
 
-const MIN_DATE = new Date(ALLOWED_YEARS[0], 0, 1);
+const MIN_DATE = new Date(FIRST_ANALYTICS_YEAR, 0, 1);
 const MAX_DATE = todayAtMidnight();
 
 const disabledDays = [
@@ -145,7 +145,7 @@ export function PeriodSelector({
                             onSelect={handleCalendarSelect}
                             numberOfMonths={2}
                             weekStartsOn={1}
-                            startMonth={new Date(ALLOWED_YEARS[0], 0)}
+                            startMonth={MIN_DATE}
                             endMonth={todayAtMidnight()}
                             disabled={disabledDays}
                         />

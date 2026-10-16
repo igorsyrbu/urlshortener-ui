@@ -138,7 +138,8 @@ export const DEFAULT_PAGE_SIZE = 20;
 
 export const DEFAULT_PERIOD_DAYS = 30;
 
-export const ALLOWED_YEARS = [2026] as const;
+/** Earliest year with analytics data; the date pickers allow every year from this one to the current one. */
+export const FIRST_ANALYTICS_YEAR = 2026;
 
 // ---------------------------------------------------------------------------
 // Drawer / Bottom sheet — safe area

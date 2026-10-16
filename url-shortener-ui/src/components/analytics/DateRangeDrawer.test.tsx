@@ -1,12 +1,15 @@
 import {render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type {DateRange} from "react-day-picker";
-import {afterAll, describe, expect, it, vi} from "vitest";
+import {afterAll, afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {DateRangeDrawer} from "@/components/analytics/DateRangeDrawer";
+import {FIRST_ANALYTICS_YEAR} from "@/lib/constants";
 
-vi.hoisted(() => {
+const {TEST_NOW} = vi.hoisted(() => {
+    const testNow = new Date(2026, 9, 12, 15, 30);
     vi.useFakeTimers({toFake: ["Date"]});
-    vi.setSystemTime(new Date(2026, 9, 12, 15, 30));
+    vi.setSystemTime(testNow);
+    return {TEST_NOW: testNow};
 });
 
 afterAll(() => {
@@ -129,5 +132,51 @@ describe("DateRangeDrawer", () => {
         await user.click(screen.getByRole("button", {name: dayOf(7)}));
 
         expect(onDateRangeSelect).not.toHaveBeenCalled();
+    });
+
+    describe("after the first analytics year", () => {
+        const NEXT_YEAR = FIRST_ANALYTICS_YEAR + 1;
+
+        beforeEach(() => {
+            vi.setSystemTime(new Date(NEXT_YEAR, 0, 2, 9, 0));
+        });
+
+        afterEach(() => {
+            vi.setSystemTime(TEST_NOW);
+        });
+
+        it("opens on the current month of the new year", () => {
+            renderDrawer({period: "P7D"});
+
+            expect(screen.getByRole("button", {name: `January ${NEXT_YEAR}`})).toBeInTheDocument();
+        });
+
+        it("offers the current year in the year picker", () => {
+            renderDrawer();
+
+            expect(screen.getByText(String(NEXT_YEAR))).toBeInTheDocument();
+        });
+
+        it("steps forward from December into the new year", async () => {
+            const {user} = renderDrawer({
+                initialRange: {from: new Date(FIRST_ANALYTICS_YEAR, 11, 1), to: new Date(FIRST_ANALYTICS_YEAR, 11, 5)},
+            });
+
+            await user.click(getMonthNavigationButton("next"));
+
+            expect(screen.getByRole("button", {name: `January ${NEXT_YEAR}`})).toBeInTheDocument();
+        });
+
+        it("reports a range picked in the new year", async () => {
+            const {user, onDateRangeSelect} = renderDrawer({period: "P7D"});
+
+            await user.click(screen.getByRole("button", {name: /January 1st,/}));
+            await user.click(screen.getByRole("button", {name: /January 2nd,/}));
+
+            expect(onDateRangeSelect).toHaveBeenCalledExactlyOnceWith({
+                from: new Date(NEXT_YEAR, 0, 1),
+                to: new Date(NEXT_YEAR, 0, 2),
+            });
+        });
     });
 });
