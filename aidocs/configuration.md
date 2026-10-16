@@ -10,7 +10,7 @@ Env files: copy [`.env.example`](../url-shortener-ui/.env.example) to `.env` ins
 
 | Variable | Default when unset | Effect |
 |---|---|---|
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8080` | Backend origin. Used (a) as the destination of the `/api/:path*` rewrite in `next.config.ts`, and (b) as `SERVER_API_BASE_URL` in [`src/lib/api.ts`](../url-shortener-ui/src/lib/api.ts), which is called directly by the SSE route handler, the inspect page and `ReportAbuseForm`. |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8080` | Backend origin. Used (a) as the destination of the `/api/:path*` rewrite in `next.config.ts`, and (b) as `SERVER_API_BASE_URL` in [`src/lib/api.ts`](../url-shortener-ui/src/lib/api.ts), which is called directly by the server-side SSE route handler and the inspect page. |
 | `NEXT_PUBLIC_ENABLE_TURNSTILE` | disabled | Turnstile is on only when the value is exactly the string `"true"`. Read in `login/page.tsx` and `(legal)/report-abuse/page.tsx`. |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `""` | Site key for the widget. If Turnstile is enabled and the key is empty, both pages throw `NEXT_PUBLIC_TURNSTILE_SITE_KEY is required when Turnstile is enabled`. |
 | `CSP_ENFORCE` | `false` | `"true"` sends the Content-Security-Policy as `Content-Security-Policy` (enforced); anything else sends `Content-Security-Policy-Report-Only` (violations reported in the console, nothing blocked). Read by `next.config.ts` at build/start time, not inlined into the client. |
@@ -18,7 +18,7 @@ Env files: copy [`.env.example`](../url-shortener-ui/.env.example) to `.env` ins
 Facts that matter when changing them:
 
 - All three are `NEXT_PUBLIC_*`, so Next.js inlines them at build time; restart `next dev` or rebuild after changing them.
-- Browser API calls always use the relative base `API_BASE_URL = "/api"` ([api-layer](api-layer.md)), never `NEXT_PUBLIC_API_BASE_URL`. The rewrite forwards `/api/x` to `<backend>/x`, which keeps cookies same-origin. Only `SERVER_API_BASE_URL` consumers talk to the backend origin directly; `ReportAbuseForm` runs in the browser, so that request is cross-origin to the backend.
+- Browser API calls always use the relative base `API_BASE_URL = "/api"` ([api-layer](api-layer.md)), never `NEXT_PUBLIC_API_BASE_URL`. The rewrite forwards `/api/x` to `<backend>/x`, which keeps cookies same-origin. Only the server-side `SERVER_API_BASE_URL` consumers talk to the backend origin directly; the browser never does.
 - `.env.example` ships `NEXT_PUBLIC_ENABLE_TURNSTILE=true` with Cloudflare's always-pass test key `1x00000000000000000000AA` and documents the other dummy keys in comments. Never commit real keys. Set the flag to `false` for local work without Turnstile; tests set the env per test (see [testing](testing.md)).
 - The mock server does not verify Turnstile tokens.
 - `NODE_ENV` is read by [`src/lib/logger.ts`](../url-shortener-ui/src/lib/logger.ts) (minimum level `warn` in production, `debug` otherwise).
@@ -65,7 +65,7 @@ The request header `x-mock-error: true` simulates a 500 on any request (not an e
 
 `poweredByHeader: false` drops `X-Powered-By`. `headers()` adds the security headers built in [`src/lib/security-headers.ts`](../url-shortener-ui/src/lib/security-headers.ts) to every route (`/:path*`) and `Referrer-Policy: no-referrer` to `/auth/:path*`:
 
-- Content-Security-Policy, Report-Only unless `CSP_ENFORCE=true`. `script-src` and `style-src` need `'unsafe-inline'` because every page is prerendered and carries inline flight/palette scripts (a nonce would force dynamic rendering); `'unsafe-eval'` and the absence of `upgrade-insecure-requests` are development-only. Allowed third parties: Turnstile (`script-src`, `frame-src`), any `https:` image, and the backend origin in `connect-src` while `ReportAbuseForm` calls it directly.
+- Content-Security-Policy, Report-Only unless `CSP_ENFORCE=true`. `script-src` and `style-src` need `'unsafe-inline'` because every page is prerendered and carries inline flight/palette scripts (a nonce would force dynamic rendering); `'unsafe-eval'` and the absence of `upgrade-insecure-requests` are development-only. Allowed third parties: Turnstile (`script-src`, `frame-src`) and any `https:` image; `connect-src` is `'self'` only, because every browser request goes through `/api`.
 - `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` (with `frame-ancestors 'none'`), `Referrer-Policy: strict-origin-when-cross-origin`, a `Permissions-Policy` denying camera, microphone, geolocation, payment and USB, and HSTS in production builds only.
 - A new third-party origin (script, frame, API, font) must be added to the policy in `security-headers.ts` and its test; check the browser console for `[Report Only]` violations after adding one.
 

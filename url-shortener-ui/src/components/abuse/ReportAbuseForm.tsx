@@ -3,7 +3,7 @@
 import {type SyntheticEvent, useCallback, useState} from "react";
 import {AlertCircle, LinkIcon} from "lucide-react";
 
-import {SERVER_API_BASE_URL} from "@/lib/api";
+import {API_BASE_URL} from "@/lib/api";
 import {ABUSE_DESCRIPTION_MAX_LENGTH, type AbuseReason, API_ENDPOINTS, CAPTCHA_VERIFYING_LABEL} from "@/lib/constants";
 import {isValidUrl} from "@/lib/url-utils";
 import {logger} from "@/lib/logger";
@@ -101,7 +101,7 @@ export function ReportAbuseForm({turnstileEnabled, turnstileSiteKey, initialShor
             if (description) body.set("description", description);
             if (turnstileToken) body.set("cf-turnstile-response", turnstileToken);
 
-            const response = await fetch(`${SERVER_API_BASE_URL}${API_ENDPOINTS.ABUSE_REPORT}`, {
+            const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ABUSE_REPORT}`, {
                 method: "POST",
                 headers: {"Content-Type": "application/x-www-form-urlencoded"},
                 body: body.toString(),

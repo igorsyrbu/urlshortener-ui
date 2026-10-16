@@ -7,12 +7,10 @@ import {
     CSP_HEADER,
     CSP_REPORT_ONLY_HEADER,
     type SecurityHeadersOptions,
-    toOrigin,
     TURNSTILE_ORIGIN,
 } from "@/lib/security-headers";
 
-const API_ORIGIN = "https://api.example.com";
-const PRODUCTION: SecurityHeadersOptions = {isProduction: true, isCspEnforced: false, directApiOrigin: API_ORIGIN};
+const PRODUCTION: SecurityHeadersOptions = {isProduction: true, isCspEnforced: false};
 const DEVELOPMENT: SecurityHeadersOptions = {...PRODUCTION, isProduction: false};
 
 function directives(policy: string): Map<string, string[]> {
@@ -48,9 +46,8 @@ describe("content security policy", () => {
         expect(directives(buildContentSecurityPolicy(DEVELOPMENT)).get("script-src")).toContain("'unsafe-eval'");
     });
 
-    it("lets the browser call the API origin directly while the abuse form needs it", () => {
-        expect(directives(buildContentSecurityPolicy(PRODUCTION)).get("connect-src")).toEqual(["'self'", API_ORIGIN]);
-        expect(directives(buildContentSecurityPolicy({...PRODUCTION, directApiOrigin: null})).get("connect-src")).toEqual(["'self'"]);
+    it("lets the browser connect only to this origin (the backend is reached through /api)", () => {
+        expect(directives(buildContentSecurityPolicy(PRODUCTION)).get("connect-src")).toEqual(["'self'"]);
     });
 
     it("upgrades insecure requests only in production, so the local http backend keeps working", () => {
@@ -90,16 +87,6 @@ describe("security headers", () => {
 
     it("never sends a referrer from the sign-in routes", () => {
         expect(headerValue(AUTH_ROUTE_HEADERS, "Referrer-Policy")).toBe("no-referrer");
-    });
-});
-
-describe("toOrigin", () => {
-    it.each([
-        ["an absolute URL", "http://localhost:8080/api", "http://localhost:8080"],
-        ["a missing value", undefined, null],
-        ["a relative path", "/api", null],
-    ])("returns the origin of %s", (_name, url, expected) => {
-        expect(toOrigin(url)).toBe(expected);
     });
 });
 

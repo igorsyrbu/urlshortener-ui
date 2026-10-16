@@ -51,7 +51,7 @@ Requests that must not carry or refresh a token use plain `fetch`:
 | [`src/app/login/page.tsx`](../url-shortener-ui/src/app/login/page.tsx) | `POST /ott/generate` (magic link), pre-login |
 | [`src/components/abuse/ReportAbuseForm.tsx`](../url-shortener-ui/src/components/abuse/ReportAbuseForm.tsx) | Public endpoint, anonymous |
 
-The first three use `API_BASE_URL` (same-origin `/api`). `ReportAbuseForm` uses `SERVER_API_BASE_URL` (`NEXT_PUBLIC_API_BASE_URL`, default `http://localhost:8080`), i.e. a direct cross-origin browser call to the backend, so the backend must allow CORS for it. `OttLoginForm` and the Google login button use `API_BASE_URL` for a form `action` / redirect, not `fetch`.
+All of them use `API_BASE_URL` (same-origin `/api`), so the browser never calls the backend origin directly (the CSP's `connect-src 'self'` relies on this). `OttLoginForm` and the Google login button use `API_BASE_URL` for a form `action` / redirect, not `fetch`.
 
 ## DTOs and types
 
@@ -144,7 +144,7 @@ Non-OK responses throw `BillingApiError` with a generic message; the hooks in `s
 - Observation: [`src/app/inspect/[key]/page.tsx`](../url-shortener-ui/src/app/inspect/[key]/page.tsx) fetches `/public/preview/:key` on the server. Existing exception to the rule above, described in [architecture.md](architecture.md#known-limitations-and-existing-exceptions); not a template.
 - Observation: concurrent 401s are not coalesced. If a refresh is already running when a second request gets a 401, `retryOnUnauthorized` returns the 401 unchanged instead of waiting and replaying. Existing exception, not a template.
 - Observation: callers parked in `failedQueue` are released with `null` when the refresh fails, and then continue to send their request without an `Authorization` header (the refreshing caller performs the login redirect). Existing exception, not a template.
-- Observation: `SERVER_API_BASE_URL` is a `NEXT_PUBLIC_` variable, so it is bundled into client code, and `ReportAbuseForm` uses it for a direct cross-origin request instead of the `/api` rewrite.
+- Observation: `SERVER_API_BASE_URL` is a `NEXT_PUBLIC_` variable, so it is inlined at build time; its remaining consumers are server-side (the SSE route handler and the inspect page).
 - Observation: `src/components/layout/sidebar-user-menu.tsx` calls `fetchWithAuth("/users/sessions/current")` with a literal path instead of `API_ENDPOINTS.USERS_SESSIONS_CURRENT`, and `src/app/(dashboard)/settings/general/page.tsx` builds `/users/sessions/${id}` inline. Existing exceptions, not templates.
 - Observation: `useTagMutations` and several component handlers (`CreateLinkModal`, `EditLinkModal`, `LinkFormFields`, `ProfileCard`, the settings general page) call `fetchWithAuth` directly in components or hooks rather than through a `lib/*-api.ts` module; error bodies are surfaced differently in each (`parseProblemDetail` in tag mutations, status text elsewhere).
 - Observation: status literals `401`, `403`, `400`, `409`, `422`, `429` appear inline in `useUrlCleaner`, `login/page.tsx`, `ReportAbuseForm`, `CreateLinkModal`, `EditLinkModal`, contrary to the named-constants rule in [coding-patterns.md](coding-patterns.md). Existing exceptions, not templates.

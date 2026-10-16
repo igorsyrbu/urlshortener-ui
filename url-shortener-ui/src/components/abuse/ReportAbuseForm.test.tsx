@@ -2,7 +2,7 @@ import {act, render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {afterEach, describe, expect, it, vi, type Mock} from "vitest";
 import {ReportAbuseForm} from "@/components/abuse/ReportAbuseForm";
-import {SERVER_API_BASE_URL} from "@/lib/api";
+import {API_BASE_URL} from "@/lib/api";
 import {ABUSE_DESCRIPTION_MAX_LENGTH, ABUSE_REASON_LABELS, API_ENDPOINTS, CAPTCHA_VERIFYING_LABEL} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import {getTurnstileProps, resetTurnstileMock} from "@/test/turnstile-utils";
@@ -13,7 +13,7 @@ vi.mock("@/lib/logger", () => ({logger: {error: vi.fn()}}));
 const VALID_URL = "https://sho.rt/abc123";
 const VALID_EMAIL = "reporter@example.com";
 const TURNSTILE_SITE_KEY = "site-key";
-const REPORT_ENDPOINT = `${SERVER_API_BASE_URL}${API_ENDPOINTS.ABUSE_REPORT}`;
+const REPORT_ENDPOINT = `${API_BASE_URL}${API_ENDPOINTS.ABUSE_REPORT}`;
 
 interface RenderOptions {
     turnstileEnabled?: boolean;

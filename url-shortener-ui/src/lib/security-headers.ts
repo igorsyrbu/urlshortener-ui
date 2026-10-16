@@ -7,8 +7,6 @@ export interface SecurityHeadersOptions {
     isProduction: boolean;
     /** Enforce the policy instead of only reporting violations (`CSP_ENFORCE=true`). */
     isCspEnforced: boolean;
-    /** Origin the browser calls directly, outside the same-origin `/api` proxy (the abuse report form). */
-    directApiOrigin: string | null;
 }
 
 export interface Header {
@@ -16,29 +14,18 @@ export interface Header {
     value: string;
 }
 
-/** Returns the origin of an absolute URL, or null when the value is not one. */
-export function toOrigin(url: string | undefined): string | null {
-    if (!url) return null;
-    try {
-        return new URL(url).origin;
-    } catch {
-        return null;
-    }
-}
-
-export function buildContentSecurityPolicy({isProduction, directApiOrigin}: SecurityHeadersOptions): string {
+export function buildContentSecurityPolicy({isProduction}: SecurityHeadersOptions): string {
     // 'unsafe-inline': prerendered pages carry per-page inline flight scripts and the palette init script, which
     // cannot be hashed ahead of time; a nonce would force every page to render dynamically.
     // 'unsafe-eval' is development only (React Refresh and callstack reconstruction).
     const scriptSources = ["'self'", "'unsafe-inline'", TURNSTILE_ORIGIN, ...(isProduction ? [] : ["'unsafe-eval'"])];
-    const connectSources = ["'self'", ...(directApiOrigin ? [directApiOrigin] : [])];
     return [
         "default-src 'self'",
         `script-src ${scriptSources.join(" ")}`,
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: blob: https:",
         "font-src 'self'",
-        `connect-src ${connectSources.join(" ")}`,
+        "connect-src 'self'",
         `frame-src ${TURNSTILE_ORIGIN}`,
         "object-src 'none'",
         "base-uri 'self'",
