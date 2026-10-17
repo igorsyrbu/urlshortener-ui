@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {useCallback, useRef, type ReactNode} from "react";
 import {cn} from "@/lib/utils";
+import {LinkPendingIndicator} from "@/components/ui/link-pending-indicator";
 import {useSegmentedIndicator, type SegmentedIndicator} from "@/lib/hooks/useSegmentedIndicator";
 import {
     SEGMENTED_CONTROL_HOVER_CLASS_NAME,
@@ -91,6 +92,7 @@ export function SegmentedControl({options, value, onValueChange, ariaLabel, isDi
                             className={cn(OPTION_CLASS_NAME, SEGMENTED_CONTROL_LABEL_CLASS_NAME, !isSelected && SEGMENTED_CONTROL_HOVER_CLASS_NAME)}
                         >
                             {renderLabel(option)}
+                            <LinkPendingIndicator className="absolute right-1.5 top-1.5"/>
                         </Link>
                     );
                 })}

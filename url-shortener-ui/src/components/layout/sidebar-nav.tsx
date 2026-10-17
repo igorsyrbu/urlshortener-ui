@@ -6,6 +6,7 @@ import {cn} from "@/lib/utils";
 import {ChartBar, LayoutDashboard, Link as LinkIcon, Link as LogoIcon, Settings, Tag, type LucideIcon} from "lucide-react";
 import {FOCUS_RING_CLASS, ROUTES} from "@/lib/constants";
 import {SETTINGS_ROUTES} from "@/lib/settings-constants";
+import {LinkPendingIndicator} from "@/components/ui/link-pending-indicator";
 
 interface NavigationItem {
     name: string;
@@ -63,6 +64,7 @@ export function SidebarNav({onNavigate}: SidebarNavProps) {
                         >
                             <Icon className="size-5"/>
                             <span className={cn("text-sm", isActive ? "font-bold" : "font-medium")}>{item.name}</span>
+                            <LinkPendingIndicator className="ml-auto"/>
                         </Link>
                     );
                 })}

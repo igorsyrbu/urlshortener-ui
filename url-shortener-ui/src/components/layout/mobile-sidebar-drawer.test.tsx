@@ -18,6 +18,7 @@ vi.mock("next/link", () => ({
             onClick?.(event);
         }} {...rest}>{children}</a>
     ),
+    useLinkStatus: () => ({pending: false}),
 }));
 
 type MediaChangeListener = () => void;

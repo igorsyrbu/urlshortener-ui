@@ -5,7 +5,7 @@ import {describe, expect, it, vi} from "vitest";
 import {SidebarNav} from "@/components/layout/sidebar-nav";
 import {SETTINGS_ROUTES} from "@/lib/settings-constants";
 
-const navigation = vi.hoisted(() => ({pathname: "/"}));
+const navigation = vi.hoisted(() => ({pathname: "/", isLinkPending: false}));
 
 vi.mock("next/navigation", () => ({usePathname: () => navigation.pathname}));
 vi.mock("next/link", () => ({
@@ -15,6 +15,7 @@ vi.mock("next/link", () => ({
             onClick?.(event);
         }} {...rest}>{children}</a>
     ),
+    useLinkStatus: () => ({pending: navigation.isLinkPending}),
 }));
 
 const NAV_ITEMS = [
@@ -86,5 +87,18 @@ describe("SidebarNav", () => {
         await user.click(screen.getByRole("link", {name: "Tags"}));
 
         expect(onNavigate).toHaveBeenCalledOnce();
+    });
+
+    it.each([
+        {isLinkPending: false, state: "idle"},
+        {isLinkPending: true, state: "pending"},
+    ])("shows the pending marker in each item only while its navigation is pending ($state)", ({isLinkPending, state}) => {
+        navigation.isLinkPending = isLinkPending;
+        renderAt("/");
+
+        for (const link of screen.getAllByRole("link")) {
+            expect(link.querySelector("[data-state]")).toHaveAttribute("data-state", state);
+        }
+        navigation.isLinkPending = false;
     });
 });
