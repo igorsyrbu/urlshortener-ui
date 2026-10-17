@@ -69,6 +69,7 @@ Add new global polyfills here, never inside individual tests.
 - Use `userEvent.setup()` for interactions; use `fireEvent` only for events `user-event` cannot produce.
 - Use `findBy*` / `waitFor` for async UI; never `setTimeout`-based sleeps.
 - Use `vi.useFakeTimers()` for debounce/cooldown/polling logic and restore real timers in `afterEach`.
+- After a failed form submit, wait for focus to reach the first invalid field (`await waitFor(() => expect(field).toHaveFocus())`) before typing into another field. `focusElementById` moves focus one frame later, and under load that can happen between `user.type`'s click and its keystrokes, so the text lands in the wrong field.
 - Import labels, messages, endpoints and enums from the source constants instead of re-typing string literals.
 - Keep tests readable: extract repeated arrange steps into named helpers with explicit return types (`renderLinksToolbar()`, `mockAcceptedJob()`).
 
@@ -126,3 +127,4 @@ The mock server has its own suite; run it with `pnpm --filter=@url-shortener/url
 
 - Observation: `createTestApp()` in the mock server is a copy of the setup in `src/index.ts`, not an import of it, so the two can drift. Existing exception — not a template; do not refactor as a drive-by.
 - Observation: UI coverage thresholds are enforced only by `pnpm test:coverage`; `pnpm test:run` does not check them.
+- Observation: about 1 in 8 full runs ends with "Vitest caught 1 unhandled error" (`ReferenceError: window is not defined`) from an `input-otp` timer that fires after `src/app/login/page.test.tsx` has torn down its environment. All tests pass, but the run exits with code 1.

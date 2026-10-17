@@ -119,6 +119,7 @@ describe("ReportAbuseForm validation", () => {
         mockFetch(new Response(null, {status: 201}));
         renderForm();
         await submit(user);
+        await waitFor(() => expect(screen.getByLabelText("Link to report")).toHaveFocus());
 
         await user.type(screen.getByLabelText("Your email"), "a");
 
