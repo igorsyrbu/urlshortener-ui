@@ -56,7 +56,7 @@ The store loads four **sections**, each with its own status (`status.overview`, 
 | `ReferrersTab` | Favicon from `https://<hostname>`; `(direct)` or missing hostname gets a link icon |
 | `LocationTab` / `LocationIcon` | Countries: name via `Intl.DisplayNames`, flag image from `FLAG_SERVICE_URL` (external host) with a `MapPin` fallback on load error; continents use the pin |
 | `DeviceTab` | Icons from `public/icons/*.png` chosen by case-insensitive name match (`windows`, `mac`, `linux`, `ios`, `android`, `other`, else `unknown`) |
-| `AnalyticsPageSkeleton` | Full-page skeleton |
+| `AnalyticsPageSkeleton` | First-load skeleton, rendered inside `PageContainer` as a fragment so it shares the page's `gap-4`. Built from the same classes as the loaded page ([`analytics-layout.ts`](../../url-shortener-ui/src/components/analytics/analytics-layout.ts): period row, summary card, grid, card frame), so the selector row, summary card, chart and grid start at the same pixels as the loaded page (measured at 1280 px and 375 px). Each card skeleton reserves a five-bar chart body (`ANALYTICS_CARD_BODY_HEIGHT_CLASS`, `h-64` = 5 x 52 px bars - 4 px); cards with more rows grow downwards |
 
 Bar colours come from `CHART_COLORS` in `lib/constants.ts`; chart/theme details in [styling-and-theming](../styling-and-theming.md).
 
@@ -69,6 +69,7 @@ Bar colours come from `CHART_COLORS` in `lib/constants.ts`; chart/theme details 
 - **First load**: `AnalyticsPageSkeleton` until the overview has loaded once (`overviewLoadedAt === null`); if it fails, the period selector plus `AnalyticsError` ("Couldn't load analytics for this period." + Try again).
 - **Period change**: the previous numbers stay visible with `aria-busy="true"` on the summary card and grid; if the reload takes longer than 300 ms they dim (`opacity-60 delay-300`) and a small spinner with the screen-reader text "Updating analytics" fades in next to the selector (a fast reload shows neither, so nothing flashes); everything in the overview updates at once. If the reload fails, a banner says the numbers are from the previous selection and offers Try again.
 - **Sections**: tab components show their spinner while their section is `idle` or `loading` and they have no data (never "no data" before the first answer); a failed `topLinks`, `location` or `device` section shows "Couldn't load this section." with its own retry while the other cards keep their data. Referrers belong to the overview.
+- Every card placeholder (loading spinner, empty text, section error) uses the same `h-64` body as a five-bar chart, so a card does not change height when a five-row result replaces its spinner.
 - Empty states per card: "No top links data available.", "No referrer data active.", "No location data available for this period.", "No traffic to display." (devices), and "No clicks in this period." for the chart.
 
 ## Known limitations and existing exceptions

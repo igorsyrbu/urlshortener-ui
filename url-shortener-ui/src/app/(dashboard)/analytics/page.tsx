@@ -10,6 +10,7 @@ import {PageContainer} from "@/components/layout/PageContainer";
 import {AnalyticsBreakdownGrid} from "@/components/analytics/AnalyticsBreakdownGrid";
 import {AnalyticsError} from "@/components/analytics/AnalyticsError";
 import {AnalyticsPageSkeleton} from "@/components/analytics/AnalyticsSkeleton";
+import {ANALYTICS_PERIOD_ROW_CLASS, ANALYTICS_SUMMARY_CARD_CLASS} from "@/components/analytics/analytics-layout";
 import {Spinner} from "@/components/ui/spinner";
 import {ANALYTICS_COPY} from "@/lib/constants";
 import {cn} from "@/lib/utils";
@@ -60,7 +61,7 @@ export default function AnalyticsPage() {
 
     return (
         <PageContainer>
-            <div className="flex min-h-10 items-center justify-end gap-3">
+            <div className={ANALYTICS_PERIOD_ROW_CLASS}>
                 {isRefreshing && (
                     <span role="status" className={REFRESHING_SPINNER_CLASS}>
                         <Spinner size="sm"/>
@@ -84,7 +85,7 @@ export default function AnalyticsPage() {
                                         className="rounded-xl border-[0.5px] border-border bg-card p-4 sm:flex-row sm:justify-between sm:text-left"/>
                     )}
                     <div aria-busy={isRefreshing}
-                         className={cn("flex flex-col gap-6 rounded-xl border-[0.5px] border-border bg-card p-4 sm:p-6", refreshingClass)}>
+                         className={cn(ANALYTICS_SUMMARY_CARD_CLASS, refreshingClass)}>
                         <div>
                             <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Total Clicks</p>
                             <div className="mt-2 flex flex-wrap items-center gap-4">

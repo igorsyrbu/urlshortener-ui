@@ -1,5 +1,7 @@
 "use client";
 
+import {ANALYTICS_CARD_BODY_HEIGHT_CLASS} from "@/components/analytics/analytics-layout";
+import {cn} from "@/lib/utils";
 import {AnalyticsGroupedClick} from "@/lib/store/analytics";
 import {BarLabelProps, HorizontalBarChart} from "@/components/analytics/HorizontalBarChart";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
@@ -18,7 +20,7 @@ const DIRECT_REFERRER = "(direct)";
 export function ReferrersTab({referrers, isLoading, totalClicks}: ReferrersTabProps) {
     if (isLoading && (!referrers || referrers.length === 0)) {
         return (
-            <div className="flex flex-col items-center justify-center py-10 opacity-50 h-[250px]">
+            <div className={cn("flex flex-col items-center justify-center py-10 opacity-50", ANALYTICS_CARD_BODY_HEIGHT_CLASS)}>
                 <Spinner/>
                 <p className="mt-4 text-xs text-muted-foreground">Loading referrers...</p>
             </div>
@@ -28,7 +30,7 @@ export function ReferrersTab({referrers, isLoading, totalClicks}: ReferrersTabPr
     if (!referrers || referrers.length === 0) {
         return (
             <div
-                className="text-sm text-muted-foreground text-center flex flex-col items-center justify-center h-62.5">
+                className={cn("text-sm text-muted-foreground text-center flex flex-col items-center justify-center", ANALYTICS_CARD_BODY_HEIGHT_CLASS)}>
                 No referrer data active.
             </div>
         );

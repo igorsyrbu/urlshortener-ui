@@ -1,5 +1,7 @@
 "use client";
 
+import {ANALYTICS_CARD_BODY_HEIGHT_CLASS} from "@/components/analytics/analytics-layout";
+import {cn} from "@/lib/utils";
 import {AnalyticsGroupedClick} from "@/lib/store/analytics";
 import {BarLabelProps, HorizontalBarChart} from "@/components/analytics/HorizontalBarChart";
 import {getCountryName, LocationIcon} from "@/components/analytics/LocationIcon";
@@ -16,7 +18,7 @@ interface LocationTabProps {
 export function LocationTab({locationTab, data, isLoading, totalClicks}: LocationTabProps) {
     if (isLoading && (!data || data.length === 0)) {
         return (
-            <div className="flex flex-col gap-4 py-4 w-full h-62.5 items-center justify-center">
+            <div className={cn("flex flex-col gap-4 py-4 w-full items-center justify-center", ANALYTICS_CARD_BODY_HEIGHT_CLASS)}>
                 <Spinner/>
                 <span className="text-xs text-muted-foreground mr-1">Loading {locationTab}...</span>
             </div>
@@ -26,7 +28,7 @@ export function LocationTab({locationTab, data, isLoading, totalClicks}: Locatio
     if (!data || data.length === 0) {
         return (
             <div
-                className="text-sm text-muted-foreground text-center flex flex-col items-center justify-center h-62.5">
+                className={cn("text-sm text-muted-foreground text-center flex flex-col items-center justify-center", ANALYTICS_CARD_BODY_HEIGHT_CLASS)}>
                 No location data available for this period.
             </div>
         );

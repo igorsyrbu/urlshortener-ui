@@ -1,5 +1,7 @@
 "use client";
 
+import {ANALYTICS_CARD_BODY_HEIGHT_CLASS} from "@/components/analytics/analytics-layout";
+import {cn} from "@/lib/utils";
 import {AnalyticsGroupedClick} from "@/lib/store/analytics";
 import {BarLabelProps, HorizontalBarChart} from "@/components/analytics/HorizontalBarChart";
 import {Spinner} from "@/components/ui/spinner";
@@ -36,7 +38,7 @@ export function DeviceTab({deviceTab, data, isLoading, totalClicks}: DeviceTabPr
 
     if (isLoading && (!data || data.length === 0)) {
         return (
-            <div className="flex flex-col items-center justify-center py-10 opacity-50 h-[250px]">
+            <div className={cn("flex flex-col items-center justify-center py-10 opacity-50", ANALYTICS_CARD_BODY_HEIGHT_CLASS)}>
                 <Spinner/>
                 <p className="mt-4 text-xs text-muted-foreground">Loading {deviceTab}...</p>
             </div>
@@ -45,7 +47,7 @@ export function DeviceTab({deviceTab, data, isLoading, totalClicks}: DeviceTabPr
 
     if (!data || data.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-62.5 opacity-50">
+            <div className={cn("flex flex-col items-center justify-center opacity-50", ANALYTICS_CARD_BODY_HEIGHT_CLASS)}>
                 <div className="relative size-32 rounded-full border-12 border-muted"/>
                 <p className="mt-4 text-xs text-muted-foreground">No traffic to display.</p>
             </div>

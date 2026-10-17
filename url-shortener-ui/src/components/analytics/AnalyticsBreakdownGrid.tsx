@@ -3,6 +3,7 @@
 import React from "react";
 import {TooltipProvider} from "@/components/ui/tooltip";
 import {AnalyticsCard} from "@/components/analytics/AnalyticsCard";
+import {ANALYTICS_CARD_BODY_HEIGHT_CLASS, ANALYTICS_GRID_CLASS} from "@/components/analytics/analytics-layout";
 import {AnalyticsError} from "@/components/analytics/AnalyticsError";
 import {DeviceTab} from "@/components/analytics/DeviceTab";
 import {LocationTab} from "@/components/analytics/LocationTab";
@@ -27,8 +28,6 @@ function isSectionPending(status: SectionStatus): boolean {
     return status === "idle" || status === "loading";
 }
 
-const SECTION_ERROR_CLASS = "h-62.5";
-
 function isLocationTab(value: string): value is LocationTabValue {
     return value === "countries" || value === "continents";
 }
@@ -47,12 +46,12 @@ export function AnalyticsBreakdownGrid({className}: AnalyticsBreakdownGridProps)
         if (status[section] !== "error") return content;
         return (
             <AnalyticsError message={ANALYTICS_COPY.SECTION_FAILED} onRetry={() => retrySection(section)}
-                            className={SECTION_ERROR_CLASS}/>
+                            className={ANALYTICS_CARD_BODY_HEIGHT_CLASS}/>
         );
     }
 
     return (
-        <div className={cn("md:mt-2 grid grid-cols-1 gap-y-4 md:gap-y-6 gap-x-4 md:grid-cols-2 md:gap-x-5", className)}>
+        <div className={cn(ANALYTICS_GRID_CLASS, className)}>
             <AnalyticsCard title="Top Links">
                 {renderSection("topLinks",
                     <TopLinksTab topLinks={topLinks} isLoading={isSectionPending(status.topLinks)} totalClicks={totalClicks}/>)}

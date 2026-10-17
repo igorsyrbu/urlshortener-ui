@@ -1,5 +1,7 @@
 "use client";
 
+import {ANALYTICS_CARD_BODY_HEIGHT_CLASS} from "@/components/analytics/analytics-layout";
+import {cn} from "@/lib/utils";
 import {BarLabelProps, HorizontalBarChart} from "@/components/analytics/HorizontalBarChart";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
 import {Spinner} from "@/components/ui/spinner";
@@ -22,7 +24,7 @@ interface TopLinksTabProps {
 export function TopLinksTab({topLinks, isLoading, totalClicks}: TopLinksTabProps) {
     if (isLoading && (!topLinks || topLinks.length === 0)) {
         return (
-            <div className="flex flex-col items-center justify-center py-10 opacity-50 h-62.5">
+            <div className={cn("flex flex-col items-center justify-center py-10 opacity-50", ANALYTICS_CARD_BODY_HEIGHT_CLASS)}>
                 <Spinner/>
                 <p className="mt-4 text-xs text-muted-foreground">Loading top links...</p>
             </div>
@@ -32,7 +34,7 @@ export function TopLinksTab({topLinks, isLoading, totalClicks}: TopLinksTabProps
     if (!topLinks || topLinks.length === 0) {
         return (
             <div
-                className="text-sm text-muted-foreground text-center flex flex-col items-center justify-center h-[250px]">
+                className={cn("text-sm text-muted-foreground text-center flex flex-col items-center justify-center", ANALYTICS_CARD_BODY_HEIGHT_CLASS)}>
                 No top links data available.
             </div>
         );
