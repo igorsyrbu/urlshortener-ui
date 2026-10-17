@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {ClicksTimeSeriesChart} from "@/components/analytics/ClicksTimeSeriesChart";
 import type {AnalyticsDailyClick} from "@/lib/store/analytics";
+import {ANALYTICS_COPY} from "@/lib/constants";
 import {FAR_FROM_UTC_TIME_ZONES} from "@/test/time-zone-utils";
 import {stubDesktopViewport, stubMobileViewport} from "@/test/viewport-utils";
 
@@ -48,12 +49,12 @@ describe("ClicksTimeSeriesChart", () => {
         mockChartBounds();
     });
 
-    it("shows a placeholder while there is no data", () => {
+    it("says there were no clicks when the period has no data", () => {
         stubDesktopViewport();
 
         render(<ClicksTimeSeriesChart timeSeries={[]} onZoom={vi.fn()}/>);
 
-        expect(screen.getByText("Gathering chart data...")).toBeInTheDocument();
+        expect(screen.getByText(ANALYTICS_COPY.NO_CLICKS)).toBeInTheDocument();
     });
 
     it("zooms to the dragged day range on desktop", async () => {

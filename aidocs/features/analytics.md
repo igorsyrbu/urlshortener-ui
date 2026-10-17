@@ -47,7 +47,7 @@ The store loads four **sections**, each with its own status (`status.overview`, 
 | Component | Role |
 |---|---|
 | `ComparisonBadge` | Hidden for `custom` or when `previousTotalClicks === null`. Percent = change vs previous; when previous is 0 it shows +100% if current > 0, else 0%. Green with `TrendingUp` when >= 0, destructive with `TrendingDown` otherwise. Text: "vs last N days" |
-| `ClicksTimeSeriesChart` | Recharts `AreaChart`; API `date` strings are parsed as local days (`parseLocalIsoDate`) for both the axis labels (`formatShortDayLabel`) and the drag-zoom range; empty `timeSeries` shows "Gathering chart data..."; Y axis uses integer ticks `0..max` when max <= 4 (`LOW_CLICKS_THRESHOLD`), compact `k`/`M` formatting otherwise |
+| `ClicksTimeSeriesChart` | Recharts `AreaChart`; API `date` strings are parsed as local days (`parseLocalIsoDate`) for both the axis labels (`formatShortDayLabel`) and the drag-zoom range; empty `timeSeries` shows "No clicks in this period." (the chart only renders after the overview has loaded, so empty always means no data); the area animates once, on the chart's first draw, in `CHART_ANIMATION_MS` (400 ms instead of recharts' 1500 ms default) and not at all with `prefers-reduced-motion`, so a period change swaps the data without replaying it; the chart fades in with a CSS `motion-safe:animate-in` instead of framer-motion's exit/enter sequence; dragging re-renders only when the selection reaches another day; Y axis uses integer ticks `0..max` when max <= 4 (`LOW_CLICKS_THRESHOLD`), compact `k`/`M` formatting otherwise |
 | `AnalyticsCard` | Card frame with either a title or tab buttons (controlled via `isActive`/`onTabChange`) and a "Clicks" column header |
 | `AnalyticsBreakdownGrid` | The four cards; reads the store and swaps a failed section (`topLinks`, `location`, `device`) for `AnalyticsError` with its own retry |
 | `AnalyticsError` | Message + "Try again" button (`role="alert"`), used for the first-load error, the refresh banner and failed cards |
@@ -69,7 +69,7 @@ Bar colours come from `CHART_COLORS` in `lib/constants.ts`; chart/theme details 
 - **First load**: `AnalyticsPageSkeleton` until the overview has loaded once (`overviewLoadedAt === null`); if it fails, the period selector plus `AnalyticsError` ("Couldn't load analytics for this period." + Try again).
 - **Period change**: the previous numbers stay visible, dimmed (`opacity-60`) with `aria-busy="true"` on the summary card and grid, and a small spinner with the screen-reader text "Updating analytics" next to the selector; everything in the overview updates at once. If the reload fails, a banner says the numbers are from the previous selection and offers Try again.
 - **Sections**: tab components show their spinner while their section is `idle` or `loading` and they have no data (never "no data" before the first answer); a failed `topLinks`, `location` or `device` section shows "Couldn't load this section." with its own retry while the other cards keep their data. Referrers belong to the overview.
-- Empty states per card: "No top links data available.", "No referrer data active.", "No location data available for this period.", "No traffic to display." (devices), and "Gathering chart data..." for the chart.
+- Empty states per card: "No top links data available.", "No referrer data active.", "No location data available for this period.", "No traffic to display." (devices), and "No clicks in this period." for the chart.
 
 ## Known limitations and existing exceptions
 

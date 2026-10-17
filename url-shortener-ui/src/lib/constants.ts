@@ -198,6 +198,7 @@ export const ANALYTICS_COPY = {
     SECTION_FAILED: "Couldn't load this section.",
     RETRY: "Try again",
     UPDATING: "Updating analytics",
+    NO_CLICKS: "No clicks in this period.",
 } as const;
 
 /** Earliest year with analytics data; the date pickers allow every year from this one to the current one. */

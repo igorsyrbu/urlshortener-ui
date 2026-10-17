@@ -3,11 +3,11 @@
 import React, {useRef, useState} from "react";
 import {Area, AreaChart, CartesianGrid, ReferenceArea, XAxis, YAxis} from "recharts";
 import {ChartContainer, ChartTooltip, ChartTooltipContent} from "@/components/ui/chart";
-import {AnimatePresence, motion} from "framer-motion";
 import {AnalyticsDailyClick} from "@/lib/store/analytics";
 import {DateRange} from "react-day-picker";
-import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
+import {useIsDesktop, usePrefersReducedMotion} from "@/lib/hooks/useMediaQuery";
 import {formatShortDayLabel, parseLocalIsoDate} from "@/lib/date-utils";
+import {ANALYTICS_COPY} from "@/lib/constants";
 
 interface ClicksTimeSeriesChartProps {
     timeSeries: AnalyticsDailyClick[];
@@ -21,6 +21,8 @@ interface DragState {
 
 const LOW_CLICKS_THRESHOLD = 4;
 const YAXIS_WIDTH = 40;
+/** Recharts animates an area for 1500 ms by default; the chart should settle almost as soon as the data is there. */
+const CHART_ANIMATION_MS = 400;
 
 function formatYAxisTick(value: number): string {
     if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
@@ -47,25 +49,13 @@ export function ClicksTimeSeriesChart({timeSeries, onZoom}: ClicksTimeSeriesChar
 
     return (
         <div className="h-80 sm:h-96 mt-4 relative w-full">
-            <AnimatePresence mode="wait">
-                {(!timeSeries || timeSeries.length === 0) ? (
-                    <motion.div
-                        key="loading"
-                        initial={{opacity: 0}}
-                        animate={{opacity: 1}}
-                        exit={{opacity: 0}}
-                        className="absolute inset-0 flex items-center justify-center border-b border-border/50"
-                    >
-                        <p className="text-sm text-muted-foreground">Gathering chart data...</p>
-                    </motion.div>
-                ) : (
-                    <TimeSeriesAreaChart
-                        timeSeries={timeSeries}
-                        onZoom={onZoom}
-                        dragEnabled={isDesktop}
-                    />
-                )}
-            </AnimatePresence>
+            {timeSeries.length === 0 ? (
+                <div className="absolute inset-0 flex items-center justify-center border-b border-border/50">
+                    <p className="text-sm text-muted-foreground">{ANALYTICS_COPY.NO_CLICKS}</p>
+                </div>
+            ) : (
+                <TimeSeriesAreaChart timeSeries={timeSeries} onZoom={onZoom} dragEnabled={isDesktop}/>
+            )}
         </div>
     );
 }
@@ -79,6 +69,8 @@ interface TimeSeriesAreaChartProps {
 function TimeSeriesAreaChart({timeSeries, onZoom, dragEnabled}: TimeSeriesAreaChartProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [drag, setDrag] = useState<DragState | null>(null);
+    const [isFirstDraw, setIsFirstDraw] = useState(true);
+    const prefersReducedMotion = usePrefersReducedMotion();
 
     const chartData = timeSeries.map((item) => ({
         date: formatShortDayLabel(item.date),
@@ -99,7 +91,9 @@ function TimeSeriesAreaChart({timeSeries, onZoom, dragEnabled}: TimeSeriesAreaCh
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!drag || !dragEnabled) return;
-        setDrag((prev) => prev ? {...prev, endIndex: toIndex(e.clientX)} : null);
+        const endIndex = toIndex(e.clientX);
+        // Returning the same state skips the render, so recharts redraws only when the selection reaches another day.
+        setDrag((prev) => (prev && prev.endIndex !== endIndex ? {...prev, endIndex} : prev));
     };
 
     const handleMouseUp = () => {
@@ -120,14 +114,9 @@ function TimeSeriesAreaChart({timeSeries, onZoom, dragEnabled}: TimeSeriesAreaCh
     const refAreaX2 = hi !== null ? chartData[hi]?.date : undefined;
 
     return (
-        <motion.div
-            key="chart"
+        <div
             ref={containerRef}
-            initial={{opacity: 0, y: 10}}
-            animate={{opacity: 1, y: 0}}
-            exit={{opacity: 0, scale: 0.98}}
-            transition={{duration: 0.4}}
-            className="w-full h-full select-none"
+            className="w-full h-full select-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -166,6 +155,9 @@ function TimeSeriesAreaChart({timeSeries, onZoom, dragEnabled}: TimeSeriesAreaCh
                         fill="url(#fillClicks)"
                         fillOpacity={1}
                         strokeWidth={2}
+                        animationDuration={CHART_ANIMATION_MS}
+                        isAnimationActive={isFirstDraw && !prefersReducedMotion}
+                        onAnimationEnd={() => setIsFirstDraw(false)}
                     />
                     {refAreaX1 && refAreaX2 && refAreaX1 !== refAreaX2 && (
                         <ReferenceArea
@@ -178,6 +170,6 @@ function TimeSeriesAreaChart({timeSeries, onZoom, dragEnabled}: TimeSeriesAreaCh
                     )}
                 </AreaChart>
             </ChartContainer>
-        </motion.div>
+        </div>
     );
 }

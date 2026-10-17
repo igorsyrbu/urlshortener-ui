@@ -3,7 +3,6 @@
 import React from "react";
 import {Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis} from "recharts";
 import {ChartContainer, ChartTooltip} from "@/components/ui/chart";
-import {motion} from "framer-motion";
 
 interface BarChartDataItem {
     name: string;
@@ -62,7 +61,7 @@ export function HorizontalBarChart({
 
     return (
         <div className="w-full pt-1 pb-1 flex flex-col justify-start min-h-37.5">
-            <motion.div layout transition={{duration: 0.3}} className="w-full flex justify-start">
+            <div className="w-full flex justify-start">
                 <ChartContainer
                     config={chartConfig}
                     className="w-full -mt-3"
@@ -156,7 +155,7 @@ export function HorizontalBarChart({
                         </Bar>
                     </BarChart>
                 </ChartContainer>
-            </motion.div>
+            </div>
         </div>
     );
 }

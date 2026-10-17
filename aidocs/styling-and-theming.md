@@ -89,10 +89,11 @@ Page shell, spacing rhythm, radius hierarchy, shadows and breakpoints are specif
 
 Details and timing scale: [DESIGN.md](../DESIGN.md) section 6. What the code actually uses:
 
-- `framer-motion` for JS-driven motion (`AnimatePresence`, `motion.*`, `useReducedMotion`, imperative `animate()` in `GlowingEffect`) in `PageToolbar`, `SegmentedControl`, `CreateLinkModal`, `CreateLinkSuccess`, `LinkFormFields`, `ImportCsvDropzone`, `BillingPrice`, charts. Do not add another animation library.
+- `framer-motion` for JS-driven motion (`AnimatePresence`, `motion.*`, `useReducedMotion`, imperative `animate()` in `GlowingEffect`) in `PageToolbar`, `SegmentedControl`, `CreateLinkModal`, `CreateLinkSuccess`, `LinkFormFields`, `ImportCsvDropzone`, `BillingPrice`. Do not add another animation library. Prefer CSS (`tw-animate-css`, `transition-*`) for simple enter fades: the analytics charts use `motion-safe:animate-in motion-safe:fade-in` and no framer.
 - `tw-animate-css` classes for Radix/vaul open/close; plain `transition-*` utilities for hover and state changes. Pair every `duration-*` with an explicit `transition-*` scope (a bare `duration-*` animates all properties).
 - Loaders: `ButtonSpinner` in buttons, `Spinner` for block loaders, `animate-pulse` skeletons.
-- Reduced motion is honoured in `SegmentedControl`, `PageToolbar`, `BillingPrice` (`useReducedMotion`) and in the import progress components (`motion-reduce:*` utilities). Apply the same to new looping or large animations.
+- Reduced motion is honoured in `SegmentedControl`, `PageToolbar`, `BillingPrice` (`useReducedMotion`), in the import progress components (`motion-reduce:*` utilities) and in the analytics time-series chart (`usePrefersReducedMotion` from `lib/hooks/useMediaQuery.ts` turns the recharts animation off; `motion-safe:` for the fade).
+- Chart animations (recharts) run once, on first draw, and short (`CHART_ANIMATION_MS` = 400 ms); data updates swap without replaying (`isAnimationActive` off after `onAnimationEnd`). Apply the same to new looping or large animations.
 - `canvas-confetti` fires once on link creation (lazy import).
 
 ## Text truncation and overflow

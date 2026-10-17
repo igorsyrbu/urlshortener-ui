@@ -32,3 +32,7 @@ export function useIsDesktop(): boolean {
 export function useIsMobile(): boolean {
     return useMediaQuery(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`);
 }
+
+export function usePrefersReducedMotion(): boolean {
+    return useMediaQuery("(prefers-reduced-motion: reduce)");
+}
