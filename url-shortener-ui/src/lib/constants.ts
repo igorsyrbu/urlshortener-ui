@@ -63,6 +63,17 @@ export const API_ENDPOINTS = {
 export const MAIN_CONTENT_ID = "main-content";
 export const SKIP_TO_CONTENT_LABEL = "Skip to main content";
 
+export const LINKS_LOAD_COPY = {
+    LOAD_FAILED: "Couldn't load your links.",
+    REFRESH_FAILED: "Couldn't refresh your links. The list below may be out of date.",
+    DISMISS: "Dismiss",
+} as const;
+
+export const TAGS_LOAD_COPY = {
+    LOAD_FAILED: "Couldn't load your tags.",
+    REFRESH_FAILED: "Couldn't refresh your tags. The list below may be out of date.",
+} as const;
+
 export const LINK_ACTION_COPY = {
     ARCHIVE_FAILED: "Couldn't archive the link. It's back in the list.",
     UNARCHIVE_FAILED: "Couldn't restore the link from the archive.",
@@ -202,11 +213,16 @@ export const DEFAULT_PERIOD_DAYS = 30;
 /** Chart entry animations settle almost as soon as the data is there (recharts defaults to 1500 ms). */
 export const CHART_ANIMATION_MS = 400;
 
+export const TRY_AGAIN_LABEL = "Try again";
+
+/** Shared look of a load error that replaces a whole list (links, tags, analytics). */
+export const LIST_LOAD_ERROR_CLASS = "rounded-xl border-[0.5px] border-border bg-card p-10";
+
 export const ANALYTICS_COPY = {
     LOAD_FAILED: "Couldn't load analytics for this period.",
     REFRESH_FAILED: "Couldn't update analytics. The numbers below are from your previous selection.",
     SECTION_FAILED: "Couldn't load this section.",
-    RETRY: "Try again",
+    RETRY: TRY_AGAIN_LABEL,
     UPDATING: "Updating analytics",
     NO_CLICKS: "No clicks in this period.",
 } as const;

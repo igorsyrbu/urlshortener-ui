@@ -9,14 +9,13 @@ import {LazyClicksTimeSeriesChart} from "@/components/analytics/LazyClicksTimeSe
 import {loadAnalyticsCharts} from "@/components/analytics/load-analytics-charts";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {AnalyticsBreakdownGrid} from "@/components/analytics/AnalyticsBreakdownGrid";
-import {AnalyticsError} from "@/components/analytics/AnalyticsError";
+import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
 import {AnalyticsPageSkeleton} from "@/components/analytics/AnalyticsSkeleton";
 import {ANALYTICS_PERIOD_ROW_CLASS, ANALYTICS_SUMMARY_CARD_CLASS} from "@/components/analytics/analytics-layout";
 import {Spinner} from "@/components/ui/spinner";
-import {ANALYTICS_COPY} from "@/lib/constants";
+import {ANALYTICS_COPY, LIST_LOAD_ERROR_CLASS} from "@/lib/constants";
 import {cn} from "@/lib/utils";
 
-const LOAD_ERROR_CLASS = "rounded-xl border-[0.5px] border-border bg-card p-10";
 // A fast refresh would flash the dimming and the spinner on and off; both wait 300 ms (delay-300 delays the opacity
 // transition and the spinner's fade-in), so only a slow refresh shows them.
 const REFRESHING_DIM_CLASS = "opacity-60 delay-300";
@@ -79,11 +78,11 @@ export default function AnalyticsPage() {
             </div>
 
             {!hasOverview ? (
-                <AnalyticsError message={ANALYTICS_COPY.LOAD_FAILED} onRetry={handleRetryOverview} className={LOAD_ERROR_CLASS}/>
+                <ErrorWithRetry message={ANALYTICS_COPY.LOAD_FAILED} onRetry={handleRetryOverview} className={LIST_LOAD_ERROR_CLASS}/>
             ) : (
                 <>
                     {hasOverviewError && (
-                        <AnalyticsError message={ANALYTICS_COPY.REFRESH_FAILED} onRetry={handleRetryOverview}
+                        <ErrorWithRetry message={ANALYTICS_COPY.REFRESH_FAILED} onRetry={handleRetryOverview}
                                         className="rounded-xl border-[0.5px] border-border bg-card p-4 sm:flex-row sm:justify-between sm:text-left"/>
                     )}
                     <div aria-busy={isRefreshing}

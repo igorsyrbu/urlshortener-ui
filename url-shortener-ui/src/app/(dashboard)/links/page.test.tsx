@@ -9,7 +9,7 @@ import {
     IMPORT_FROM_CSV_LABEL,
     IMPORT_PROCESSED_TITLE,
 } from "@/components/links/import-export-constants";
-import {API_ENDPOINTS, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, ROUTES, SHOW_ARCHIVED_STORAGE_KEY} from "@/lib/constants";
+import {API_ENDPOINTS, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINKS_LOAD_COPY, ROUTES, SHOW_ARCHIVED_STORAGE_KEY, TRY_AGAIN_LABEL} from "@/lib/constants";
 import {toast} from "sonner";
 import {useLinkStore} from "@/lib/store/links";
 import {IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
@@ -159,15 +159,57 @@ describe("links page", () => {
             expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS)[0].get("page")).toBe("2");
         });
 
-        it("shows the error banner when links cannot be loaded and lets the user dismiss it", async () => {
-            const user = userEvent.setup();
+        it("shows an error with a retry instead of the empty state when the first load fails", async () => {
             mockApi({links: [], linksStatus: HTTP_SERVER_ERROR});
 
             render(<LinksPage/>);
 
-            expect(await screen.findByText(`Failed to fetch links: ${HTTP_SERVER_ERROR}`)).toBeInTheDocument();
-            await user.click(screen.getByRole("button", {name: "Dismiss"}));
-            expect(screen.queryByText(/Failed to fetch links/)).not.toBeInTheDocument();
+            expect(await screen.findByRole("alert")).toHaveTextContent(LINKS_LOAD_COPY.LOAD_FAILED);
+            expect(screen.queryByText(/create your first/i)).not.toBeInTheDocument();
+            expect(screen.getByPlaceholderText(SEARCH_PLACEHOLDER)).toBeInTheDocument();
+        });
+
+        it("loads the links again when the user retries after a failed first load", async () => {
+            const user = userEvent.setup();
+            mockApi({links: [], linksStatus: HTTP_SERVER_ERROR});
+            render(<LinksPage/>);
+            await screen.findByRole("alert");
+            mockApi({links: createLinks(1)});
+
+            await user.click(screen.getByRole("button", {name: TRY_AGAIN_LABEL}));
+
+            expect(await screen.findByRole("heading", {name: "Link 0"})).toBeInTheDocument();
+            expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        });
+
+        it("keeps the links and shows a dismissible notice when a refresh fails", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(1)});
+            render(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Link 0"});
+            mockApi({links: [], linksStatus: HTTP_SERVER_ERROR});
+
+            await act(() => useLinkStore.getState().fetchLinks(0));
+
+            expect(screen.getByRole("alert")).toHaveTextContent(LINKS_LOAD_COPY.REFRESH_FAILED);
+            expect(screen.getByRole("heading", {name: "Link 0"})).toBeInTheDocument();
+            await user.click(screen.getByRole("button", {name: LINKS_LOAD_COPY.DISMISS}));
+            expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        });
+    });
+
+    describe("dialogs", () => {
+        it("keeps an open dialog when the list goes back to loading with no links", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(1)});
+            render(<LinksPage/>);
+            await openLinkActions(user, 0);
+            await user.click(await screen.findByRole("menuitem", {name: /QR Code/}));
+            await screen.findByRole("dialog");
+
+            act(() => useLinkStore.setState({links: [], loading: true}));
+
+            expect(screen.getByRole("dialog")).toBeInTheDocument();
         });
     });
 

@@ -21,7 +21,8 @@ import {IMPORT_TRACKING_STATUS, useImportTracker} from "@/lib/store/import";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {PageToolbar} from "@/components/layout/PageToolbar";
-import {DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, ROUTES} from "@/lib/constants";
+import {DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, ROUTES} from "@/lib/constants";
+import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
 import {toast} from "sonner";
 import {buildLinksPageUrl, parseLinksPageParam} from "@/lib/pagination";
 import {isModalOpen} from "@/lib/utils";
@@ -253,68 +254,71 @@ function LinksPageContent() {
         />
     );
 
-    if (loading && links.length === 0) {
+    const handleRetryLoad = () => {
+        clearError();
+        void fetchLinks(currentPage);
+    };
+
+    const renderListBody = (): React.ReactNode => {
+        if (links.length === 0 && loading) return <LinkCardSkeletonList count={5}/>;
+        // A failed first load is an error, never the "create your first link" empty state.
+        if (links.length === 0 && error) {
+            return <ErrorWithRetry message={LINKS_LOAD_COPY.LOAD_FAILED} onRetry={handleRetryLoad} className={LIST_LOAD_ERROR_CLASS}/>;
+        }
+        if (links.length === 0) return searchQuery !== "" ? <NoLinksFoundState/> : <EmptyLinksState/>;
         return (
-            <TooltipProvider>
-                <PageContainer>
-                    {toolbar}
-                    <LinkCardSkeletonList count={5}/>
-                </PageContainer>
-            </TooltipProvider>
+            <>
+                <div id={LINKS_LIST_TOP_ID} className="grid grid-cols-1 gap-3">
+                    {links.map((link) => (
+                        <LinkCard
+                            key={link.id}
+                            link={link}
+                            onEdit={handleEdit}
+                            onDelete={handleDeleteClick}
+                            onQrCode={handleQrCode}
+                            onArchiveRequest={(link) => setArchiveModalLink(link)}
+                        />
+                    ))}
+                </div>
+                {totalElements > 0 && (
+                    <>
+                        <LinksPagination
+                            page={currentPage}
+                            pageSize={DEFAULT_PAGE_SIZE}
+                            totalElements={totalElements}
+                            isLoading={loading}
+                            onPrevious={handlePreviousPage}
+                            onNext={handleNextPage}
+                        />
+                        <div aria-hidden="true" className="-mt-4 h-14 md:h-10 lg:h-8"/>
+                    </>
+                )}
+            </>
         );
-    }
+    };
 
     return (
         <TooltipProvider>
-            <PageContainer className={totalElements > 0 ? "pb-0" : undefined}>
+            <PageContainer className={totalElements > 0 && links.length > 0 ? "pb-0" : undefined}>
                 {toolbar}
 
-                {error && (
+                {error && links.length > 0 && (
                     <div
-                        className="bg-destructive/10 text-destructive p-4 rounded-lg flex items-center justify-between">
-                        <span>{error}</span>
+                        role="alert"
+                        className="bg-destructive/10 text-destructive p-4 rounded-lg flex items-center justify-between gap-3">
+                        <span className="min-w-0">{LINKS_LOAD_COPY.REFRESH_FAILED}</span>
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => clearError()}
                             className="text-destructive hover:text-destructive hover:bg-destructive/20"
                         >
-                            Dismiss
+                            {LINKS_LOAD_COPY.DISMISS}
                         </Button>
                     </div>
                 )}
 
-                {!loading && links.length === 0 ? (
-                    searchQuery !== "" ? <NoLinksFoundState/> : <EmptyLinksState/>
-                ) : (
-                    <>
-                        <div id={LINKS_LIST_TOP_ID} className="grid grid-cols-1 gap-3">
-                            {links.map((link) => (
-                                <LinkCard
-                                    key={link.id}
-                                    link={link}
-                                    onEdit={handleEdit}
-                                    onDelete={handleDeleteClick}
-                                    onQrCode={handleQrCode}
-                                    onArchiveRequest={(link) => setArchiveModalLink(link)}
-                                />
-                            ))}
-                        </div>
-                        {totalElements > 0 && (
-                            <>
-                                <LinksPagination
-                                    page={currentPage}
-                                    pageSize={DEFAULT_PAGE_SIZE}
-                                    totalElements={totalElements}
-                                    isLoading={loading}
-                                    onPrevious={handlePreviousPage}
-                                    onNext={handleNextPage}
-                                />
-                                <div aria-hidden="true" className="-mt-4 h-14 md:h-10 lg:h-8"/>
-                            </>
-                        )}
-                    </>
-                )}
+                {renderListBody()}
 
                 <EditLinkModal
                     open={isEditModalOpen}
@@ -327,7 +331,6 @@ function LinksPageContent() {
                     open={deleteModalOpen}
                     onOpenChange={setDeleteModalOpen}
                     onConfirm={confirmDelete}
-                    loading={false}
                     shortUrl={linkToDelete?.shortUrl}
                     longUrl={linkToDelete?.longUrl}
                 />

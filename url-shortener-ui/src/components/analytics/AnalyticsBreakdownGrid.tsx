@@ -4,7 +4,7 @@ import React from "react";
 import {TooltipProvider} from "@/components/ui/tooltip";
 import {AnalyticsCard} from "@/components/analytics/AnalyticsCard";
 import {ANALYTICS_CARD_BODY_HEIGHT_CLASS, ANALYTICS_GRID_CLASS} from "@/components/analytics/analytics-layout";
-import {AnalyticsError} from "@/components/analytics/AnalyticsError";
+import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
 import {DeviceTab} from "@/components/analytics/DeviceTab";
 import {LocationTab} from "@/components/analytics/LocationTab";
 import {ReferrersTab} from "@/components/analytics/ReferrersTab";
@@ -45,7 +45,7 @@ export function AnalyticsBreakdownGrid({className}: AnalyticsBreakdownGridProps)
     function renderSection(section: AnalyticsSection, content: React.ReactNode): React.ReactNode {
         if (status[section] !== "error") return content;
         return (
-            <AnalyticsError message={ANALYTICS_COPY.SECTION_FAILED} onRetry={() => retrySection(section)}
+            <ErrorWithRetry message={ANALYTICS_COPY.SECTION_FAILED} onRetry={() => retrySection(section)}
                             className={ANALYTICS_CARD_BODY_HEIGHT_CLASS}/>
         );
     }

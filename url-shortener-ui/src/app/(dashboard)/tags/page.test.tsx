@@ -4,7 +4,7 @@ import {toast} from "sonner";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import TagsPage from "./page";
 import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS} from "@/lib/constants";
+import {API_ENDPOINTS, TAGS_LOAD_COPY, TRY_AGAIN_LABEL} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
@@ -113,15 +113,39 @@ describe("tags page", () => {
         expect(screen.queryByText("Your tags will live here")).not.toBeInTheDocument();
     });
 
-    it("shows the failure and lets the user dismiss it", async () => {
+    it("shows an error with a retry, and keeps the search field, when the first load fails", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: 500}));
+
+        render(<TagsPage/>);
+
+        expect(await screen.findByRole("alert")).toHaveTextContent(TAGS_LOAD_COPY.LOAD_FAILED);
+        expect(screen.getByPlaceholderText(SEARCH_PLACEHOLDER)).toBeInTheDocument();
+    });
+
+    it("loads the tags again when the user retries after a failed first load", async () => {
         const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
         vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: 500}));
         render(<TagsPage/>);
+        await screen.findByRole("alert");
+        mockTagsResponse([createTag({name: "Marketing"})]);
 
-        expect(await screen.findByText("Failed to fetch tags: 500")).toBeInTheDocument();
-        await user.click(screen.getByRole("button", {name: "Dismiss"}));
+        await user.click(screen.getByRole("button", {name: TRY_AGAIN_LABEL}));
 
-        expect(screen.queryByText("Failed to fetch tags: 500")).not.toBeInTheDocument();
+        expect(await screen.findByText("Marketing")).toBeInTheDocument();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("keeps the tags and the toolbar when a refresh fails", async () => {
+        mockTagsResponse([createTag({name: "Marketing"})]);
+        render(<TagsPage/>);
+        await screen.findByText("Marketing");
+        vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: 500}));
+
+        await act(() => useTagStoreWithCount.getState().fetchTags());
+
+        expect(screen.getByRole("alert")).toHaveTextContent(TAGS_LOAD_COPY.REFRESH_FAILED);
+        expect(screen.getByText("Marketing")).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(SEARCH_PLACEHOLDER)).toBeInTheDocument();
     });
 
     it("deletes a tag after the user confirms its name", async () => {
