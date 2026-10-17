@@ -85,7 +85,7 @@ Rules that follow from this:
 
 ### SSE pass-through route handler
 
-`GET /api/shortlinks/import/updates` ([`src/app/api/shortlinks/import/updates/route.ts`](../url-shortener-ui/src/app/api/shortlinks/import/updates/route.ts)) forwards the caller's `Authorization` header (401 without a backend call when it is missing) to the backend at `SERVER_API_BASE_URL + /shortlinks/import/updates` and streams the body back unchanged as `text/event-stream`. It exists so the stream is not buffered by the generic `/api/:path*` rewrite ([configuration](configuration.md#nextconfigts)). The body must be forwarded as a stream, never read into memory. Client side: [api-layer](api-layer.md) and [features/links-and-tags](features/links-and-tags.md).
+`GET /api/shortlinks/import/updates` ([`src/app/api/shortlinks/import/updates/route.ts`](../url-shortener-ui/src/app/api/shortlinks/import/updates/route.ts)) forwards the caller's `Authorization` header (401 without a backend call when it is missing) to the backend at `getBackendApiBaseUrl() + /shortlinks/import/updates` and streams the body back unchanged as `text/event-stream`. It exists so the stream is not buffered by the generic `/api/:path*` rewrite ([configuration](configuration.md#nextconfigts)). The body must be forwarded as a stream, never read into memory. Client side: [api-layer](api-layer.md) and [features/links-and-tags](features/links-and-tags.md).
 
 ## Main data flows (overview)
 
@@ -97,9 +97,9 @@ Rules that follow from this:
 
 ## Known limitations and existing exceptions
 
-- Observation: `src/app/inspect/[key]/page.tsx` is an async server component that calls `fetch` on `SERVER_API_BASE_URL` with `cache: "no-store"` and `redirect("/")`s on 404. This is server-side data fetching and contradicts the product decision above. Existing exception - not a template; do not copy it and do not change it as a drive-by.
+- Observation: `src/app/inspect/[key]/page.tsx` is an async server component that calls `fetch` on `getBackendApiBaseUrl()` with `cache: "no-store"` and `redirect("/")`s on 404. This is server-side data fetching and contradicts the product decision above. Existing exception - not a template; do not copy it and do not change it as a drive-by.
 - Observation: `src/app/(legal)/report-abuse/page.tsx` is an async server component that awaits `searchParams` and reads the Turnstile env vars; it makes no data fetch (the form posts from the browser). Existing exception - not a template.
-- Observation: the inspect page (server side) calls `SERVER_API_BASE_URL` directly, not the `/api` proxy. See [configuration](configuration.md#ui) and [features/links-and-tags](features/links-and-tags.md).
+- Observation: the inspect page (server side) calls the backend directly through `getBackendApiBaseUrl()`, not the `/api` proxy. See [configuration](configuration.md#ui) and [features/links-and-tags](features/links-and-tags.md).
 - Observation: `src/lib/types.ts`, `src/lib/tag-constants.ts` and `src/lib/hooks/useTagMutations.ts` import `BadgeVariant` from `@/components/ui/badge`, and `src/lib/hooks/useLinkImport.ts` imports from `@/components/links/import-export-constants`. This is `lib` depending on `components`, against the intended direction. Existing exception - not a template.
 - Observation: the `error.tsx` at `src/app/error.tsx` is a segment boundary, not `global-error.tsx`; there is no boundary for errors thrown in the root layout itself.
 - Observation: `src/lib/store/auth.ts` keeps the access token in memory only; any code that needs a token must go through `fetchWithAuth` so refresh and 401 handling apply (see [api-layer](api-layer.md)).

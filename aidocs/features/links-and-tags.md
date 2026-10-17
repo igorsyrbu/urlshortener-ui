@@ -153,7 +153,7 @@ While an import is ongoing (`discovering`, `active`, `reconnecting`, **or `inter
 
 [`src/app/inspect/[key]/page.tsx`](../../url-shortener-ui/src/app/inspect/[key]/page.tsx) is a public page meant for people who received a short link and want to see where it goes.
 
-- It is an **async server component** and performs a server-side fetch: `GET {SERVER_API_BASE_URL}/public/preview/{key}` with `cache: "no-store"` (the only page that does; this is an explicit exception to the client-rendered model described in [Architecture](../architecture.md)). `404` redirects to `/`; any other non-OK response is logged and rethrown, which lands on the root `error.tsx` boundary.
+- It is an **async server component** and performs a server-side fetch: `GET {getBackendApiBaseUrl()}/public/preview/{key}` with `cache: "no-store"` (the only page that does; this is an explicit exception to the client-rendered model described in [Architecture](../architecture.md)). `404` redirects to `/`; any other non-OK response is logged and rethrown, which lands on the root `error.tsx` boundary.
 - It renders `InspectLinkPreviewCard` (OG image, favicon and hostname, title, description clamped to 2 lines), the full destination URL (scrollable, `break-all`) and a "Report this link" button linking to `/report-abuse?shortUrl=<encoded short URL>`.
 - `OgImage` loads the image through the third-party proxy `https://wsrv.nl`, falls back to the original URL on error or after 2 s without load, and finally to a "Preview unavailable" placeholder. It uses a raw `<img>` (remote, user-controlled URLs).
 

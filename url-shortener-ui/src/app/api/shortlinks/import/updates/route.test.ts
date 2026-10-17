@@ -1,9 +1,9 @@
 import {describe, expect, it, vi, type Mock} from "vitest";
 import {GET} from "@/app/api/shortlinks/import/updates/route";
-import {SERVER_API_BASE_URL} from "@/lib/api";
+import {getBackendApiBaseUrl} from "@/lib/backend-url";
 import {API_ENDPOINTS} from "@/lib/constants";
 
-const BACKEND_URL = `${SERVER_API_BASE_URL}${API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES}`;
+const BACKEND_URL = `${getBackendApiBaseUrl()}${API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES}`;
 const ROUTE_URL = "http://localhost:3000/api/shortlinks/import/updates";
 const PROGRESS_EVENT = "event: progress\ndata: {\"processedRows\":1,\"totalRows\":10}\n\n";
 const AUTHORIZED = {Authorization: "Bearer token"};

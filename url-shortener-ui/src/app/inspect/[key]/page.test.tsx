@@ -1,7 +1,7 @@
 import {render, screen} from "@testing-library/react";
 import {describe, expect, it, vi} from "vitest";
 import InspectPage from "./page";
-import {SERVER_API_BASE_URL} from "@/lib/api";
+import {getBackendApiBaseUrl} from "@/lib/backend-url";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import type {ShortLinkPreviewDTO} from "@/lib/api-types";
@@ -38,7 +38,7 @@ describe("inspect page", () => {
         await renderInspectPage("abc123");
 
         expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-            `${SERVER_API_BASE_URL}${API_ENDPOINTS.SHORTLINKS_PREVIEW("abc123")}`,
+            `${getBackendApiBaseUrl()}${API_ENDPOINTS.SHORTLINKS_PREVIEW("abc123")}`,
             {cache: "no-store"},
         );
     });

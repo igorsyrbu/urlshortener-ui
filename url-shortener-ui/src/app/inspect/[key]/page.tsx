@@ -1,5 +1,5 @@
 import {ShortLinkPreviewDTO} from "@/lib/api-types";
-import {SERVER_API_BASE_URL} from "@/lib/api";
+import {getBackendApiBaseUrl} from "@/lib/backend-url";
 import {API_ENDPOINTS, DASHBOARD_CONTENT_SHELL_CLASS} from "@/lib/constants";
 import {redirect} from "next/navigation";
 import {logger} from "@/lib/logger";
@@ -15,7 +15,7 @@ interface InspectPageProps {
 
 async function fetchPreview(key: string): Promise<ShortLinkPreviewDTO | null> {
     try {
-        const res = await fetch(`${SERVER_API_BASE_URL}${API_ENDPOINTS.SHORTLINKS_PREVIEW(key)}`, {
+        const res = await fetch(`${getBackendApiBaseUrl()}${API_ENDPOINTS.SHORTLINKS_PREVIEW(key)}`, {
             cache: "no-store",
         });
         if (res.status === 404) return null;

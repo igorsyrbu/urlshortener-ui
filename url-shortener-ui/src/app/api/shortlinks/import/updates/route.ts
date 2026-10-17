@@ -1,4 +1,4 @@
-import {SERVER_API_BASE_URL} from "@/lib/api";
+import {getBackendApiBaseUrl} from "@/lib/backend-url";
 import {API_ENDPOINTS} from "@/lib/constants";
 
 const HTTP_UNAUTHORIZED = 401;
@@ -19,7 +19,7 @@ export async function GET(request: Request): Promise<Response> {
     if (!authorization) {
         return new Response(null, {status: HTTP_UNAUTHORIZED});
     }
-    const backend = await fetch(`${SERVER_API_BASE_URL}${API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES}`, {
+    const backend = await fetch(`${getBackendApiBaseUrl()}${API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES}`, {
         headers: {
             Authorization: authorization,
             Accept: "text/event-stream",

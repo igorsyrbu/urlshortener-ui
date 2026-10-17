@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { getBackendApiBaseUrl } from "./src/lib/backend-url";
 import { AUTH_ROUTE_HEADERS, buildSecurityHeaders } from "./src/lib/security-headers";
 
 const securityHeaders = buildSecurityHeaders({
@@ -23,11 +24,10 @@ const nextConfig: NextConfig = {
   },
   output: 'standalone',
   async rewrites() {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
     return [
       {
         source: '/api/:path*',
-        destination: `${apiBaseUrl}/:path*`,
+        destination: `${getBackendApiBaseUrl()}/:path*`,
       },
     ];
   },
