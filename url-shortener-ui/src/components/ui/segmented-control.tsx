@@ -15,6 +15,8 @@ export interface SegmentedControlOption {
     label: string;
     href?: string;
     suffix?: ReactNode;
+    /** Called when the pointer enters or focus reaches the option, before a click; use it to preload what the option shows. */
+    onIntent?: () => void;
 }
 
 interface SegmentedControlProps {
@@ -87,6 +89,8 @@ export function SegmentedControl({options, value, onValueChange, ariaLabel, isDi
                             ref={isSelected ? assignSelectedRef : undefined}
                             href={option.href ?? option.value}
                             aria-current={isSelected ? "page" : undefined}
+                            onPointerEnter={option.onIntent}
+                            onFocus={option.onIntent}
                             className={cn(OPTION_CLASS_NAME, SEGMENTED_CONTROL_LABEL_CLASS_NAME, !isSelected && SEGMENTED_CONTROL_HOVER_CLASS_NAME)}
                         >
                             {renderLabel(option)}
@@ -110,6 +114,8 @@ export function SegmentedControl({options, value, onValueChange, ariaLabel, isDi
                         aria-pressed={isSelected}
                         disabled={isDisabled}
                         onClick={() => onValueChange?.(option.value)}
+                        onPointerEnter={option.onIntent}
+                        onFocus={option.onIntent}
                         className={cn(OPTION_CLASS_NAME, SEGMENTED_CONTROL_LABEL_CLASS_NAME, !isSelected && SEGMENTED_CONTROL_HOVER_CLASS_NAME)}
                     >
                         {renderLabel(option)}

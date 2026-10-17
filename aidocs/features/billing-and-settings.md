@@ -26,7 +26,7 @@ Adding a settings tab: add a route folder under `settings/`, then extend the thr
 ### Appearance and color theme
 
 - `AppearanceCard`: Light / Dark / System buttons calling `next-themes` `setTheme`. Renders a skeleton until mounted to avoid a hydration mismatch.
-- `ThemeCard`: `SegmentedControl` with "Built-in" and "Custom" tabs. It opens on "Custom" automatically when the stored palette selection is custom, unless the user already switched tabs. Skeleton until mounted (`useSyncExternalStore`).
+- `ThemeCard`: `SegmentedControl` with "Built-in" and "Custom" tabs. It opens on "Custom" automatically when the stored palette selection is custom, unless the user already switched tabs. Skeleton until mounted (`useSyncExternalStore`). `CustomThemeBuilder` (with `culori` and `react-colorful`) loads on demand through `next/dynamic`, with a placeholder of its measured height (`min-h-87 sm:min-h-54`); the "Custom" option preloads it on hover or focus (`onIntent`). First-load JS of `/settings/general`: 271.4 -> 246.0 KB gzip.
   - `PresetPaletteGrid`: picks a preset with `selectPreset` from `usePalette()`.
   - `CustomThemeBuilder`: four colour rows (`CustomColorRow`), applied with `applyCustomColors`; Share copies the serialized colours to the clipboard, a "Surprise me" action randomises them, and Import (`ImportThemeDialog`) parses pasted input with `parseCustomColorsInput`, toasting "Theme imported" on success and showing an inline error on invalid input.
   - All palette mechanics (storage, init script, token mapping) are in [styling-and-theming](../styling-and-theming.md).

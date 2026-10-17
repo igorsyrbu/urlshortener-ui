@@ -36,7 +36,7 @@ magic-link form --POST /api/ott/generate (200)--> OTP form --6 chars--> hidden n
 
 1. `LoginMagicLinkForm` collects the email. `handleMagicLinkSubmit` validates in order: non-empty trimmed email, no active cooldown, Turnstile token present (only when enabled).
 2. It sends `POST {API_BASE_URL}/ott/generate` with `application/x-www-form-urlencoded` (`username`, plus `cf-turnstile-response` when Turnstile is on). This uses plain `fetch`, not `fetchWithAuth`, because the user has no token yet.
-3. On `200` the page switches to `LoginOtpForm` (`showOtpForm = true`) and clears the Turnstile token. The email arrives with both a link (`/auth/ott?token=...&email=...`) and a 6-character code.
+3. On `200` the page switches to `LoginOtpForm` (`showOtpForm = true`) and clears the Turnstile token. `LoginOtpForm` (with `input-otp`) is loaded through `next/dynamic`; its download starts when the magic link is requested, in parallel with the request, so the code step renders as soon as the server answers (`/login` first-load -4 KB). The email arrives with both a link (`/auth/ott?token=...&email=...`) and a 6-character code.
 4. `LoginOtpForm` renders a read-only email field with a clear button (`handleChangeEmail` resets email, code, message and returns to step 1) and a 6-slot `InputOTP` (letters and digits, `OTP_CODE_LENGTH = 6` in the page).
 5. Submitting is a state change, not a fetch: `handleSubmitCode` sets `loading` and `submittedCode`, which mounts a hidden `OttLoginForm` (`loginType="otp"`) that posts the credentials as a native form.
 
@@ -58,7 +58,7 @@ OTP submit rules in `LoginOtpForm`: a code typed character by character is submi
 
 ### Turnstile
 
-Controlled by `NEXT_PUBLIC_ENABLE_TURNSTILE` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (see [Configuration](../configuration.md)). When enabled and the key is missing the page throws during render. `TurnstileWidget` wraps `@marsidev/react-turnstile` (`appearance: "interaction-only"`, auto retry and refresh) and is rendered below the card only on the magic-link step. Until a token arrives the submit button shows "Verifying..." and is disabled; `onError` logs through `logger` and clears the token, `onExpire` clears it. The same widget is reused by the abuse form (see [Links and tags](links-and-tags.md#report-abuse-page)).
+Controlled by `NEXT_PUBLIC_ENABLE_TURNSTILE` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (see [Configuration](../configuration.md)). When enabled and the key is missing the page throws during render. `TurnstileWidget` wraps `@marsidev/react-turnstile` (`appearance: "interaction-only"`, auto retry and refresh) and is rendered below the card only on the magic-link step. Until a token arrives the submit button shows "Verifying..." and is disabled; `onError` logs through `logger` and clears the token, `onExpire` clears it. It is imported statically on purpose: lazy-loading its ~2 KB wrapper would start the Cloudflare challenge one request later on a page where the user waits for the token. The same widget is reused by the abuse form (see [Links and tags](links-and-tags.md#report-abuse-page)).
 
 ### Google OAuth
 

@@ -50,6 +50,22 @@ describe("SegmentedControl buttons", () => {
         expect(screen.getByRole("button", {name: "Yearly Save 17%"})).toBeDisabled();
     });
 
+    it("reports intent when the pointer enters or focus reaches an option, before any click", async () => {
+        const onIntent = vi.fn<() => void>();
+        const onValueChange = vi.fn<(value: string) => void>();
+        const user = userEvent.setup();
+        const options = [BUTTON_OPTIONS[0], {...BUTTON_OPTIONS[1], onIntent}];
+        render(<SegmentedControl ariaLabel="Billing cycle" value="monthly" onValueChange={onValueChange} options={options}/>);
+
+        await user.hover(screen.getByRole("button", {name: "Yearly Save 17%"}));
+        expect(onIntent).toHaveBeenCalledOnce();
+        await user.tab();
+        await user.tab();
+
+        expect(onIntent).toHaveBeenCalledTimes(2);
+        expect(onValueChange).not.toHaveBeenCalled();
+    });
+
     it("moves keyboard focus through every option", async () => {
         const user = userEvent.setup();
         render(<SegmentedControl ariaLabel="Billing cycle" value="monthly" options={BUTTON_OPTIONS}/>);
@@ -118,6 +134,17 @@ describe("SegmentedControl links", () => {
         const currentLinks = screen.getAllByRole("link").filter((link) => link.getAttribute("aria-current") === "page");
         expect(currentLinks).toHaveLength(1);
         expect(currentLinks[0]).toHaveTextContent("General");
+    });
+
+    it("reports intent on a link before it is followed", async () => {
+        const onIntent = vi.fn<() => void>();
+        const user = userEvent.setup();
+        const options = LINK_OPTIONS.map((option) => (option.label === "Billing" ? {...option, onIntent} : option));
+        render(<SegmentedControl ariaLabel="Settings sections" value="/settings/general" options={options}/>);
+
+        await user.hover(screen.getByRole("link", {name: "Billing"}));
+
+        expect(onIntent).toHaveBeenCalledOnce();
     });
 
     it("follows the current route when it changes", () => {

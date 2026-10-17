@@ -1,12 +1,12 @@
 "use client";
 
 import React, {useCallback, useState} from "react";
+import dynamic from "next/dynamic";
 import {Card, CardContent, CardDescription, CardHeader} from "@/components/ui/card";
 import {Link as LinkIcon} from "lucide-react";
 import {API_BASE_URL} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {LoginMagicLinkForm} from "@/components/auth/LoginMagicLinkForm";
-import {LoginOtpForm} from "@/components/auth/LoginOtpForm";
 import {OttLoginForm} from "@/components/auth/OttLoginForm";
 import {TurnstileWidget} from "@/components/auth/TurnstileWidget";
 import {MagicLinkCooldownMessage} from "@/components/auth/MagicLinkCooldownMessage";
@@ -20,6 +20,12 @@ import {parseRetryAfterSeconds} from "@/lib/retry-after";
 import {withPending} from "@/lib/async-utils";
 
 const OTP_CODE_LENGTH = 6;
+
+function loadLoginOtpForm() {
+    return import("@/components/auth/LoginOtpForm").then((formModule) => formModule.LoginOtpForm);
+}
+
+const LoginOtpForm = dynamic(loadLoginOtpForm, {ssr: false});
 const HTTP_TOO_MANY_REQUESTS = 429;
 
 type MagicLinkRequestResult =
@@ -115,6 +121,7 @@ export default function LoginPage() {
             return;
         }
 
+        void loadLoginOtpForm();
         await withPending(setLoading, async () => {
             const result = await requestMagicLink(trimmedEmail, turnstileEnabled ? turnstileToken : null);
             if (result.kind === "sent") {

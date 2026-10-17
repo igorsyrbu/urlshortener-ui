@@ -26,14 +26,14 @@ describe("ThemeCard", () => {
         expect(screen.getByRole("button", {name: "Catppuccin"})).toBeInTheDocument();
     });
 
-    it("opens on the custom builder when a custom theme is saved", () => {
+    it("opens on the custom builder when a custom theme is saved", async () => {
         stubDesktopViewport();
         storeCustomTheme(DEFAULT_CUSTOM_COLORS.light);
 
         renderWithPalette(<ThemeCard/>);
 
         expect(screen.getByRole("button", {name: "Custom"})).toHaveAttribute("aria-pressed", "true");
-        expect(screen.getByRole("button", {name: "Surprise me"})).toBeInTheDocument();
+        expect(await screen.findByRole("button", {name: "Surprise me"})).toBeInTheDocument();
     });
 
     it("switches between built-in and custom tabs", async () => {
@@ -41,7 +41,7 @@ describe("ThemeCard", () => {
         renderWithPalette(<ThemeCard/>);
 
         await user.click(screen.getByRole("button", {name: "Custom"}));
-        expect(screen.getByRole("button", {name: "Surprise me"})).toBeInTheDocument();
+        expect(await screen.findByRole("button", {name: "Surprise me"})).toBeInTheDocument();
         await user.click(screen.getByRole("button", {name: "Built-in"}));
 
         expect(screen.getByRole("button", {name: "Catppuccin"})).toBeInTheDocument();

@@ -1,20 +1,33 @@
 "use client";
 
 import {useEffect, useRef, useState} from "react";
+import dynamic from "next/dynamic";
 import {useHasMounted} from "@/lib/hooks/useHasMounted";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {SegmentedControl} from "@/components/ui/segmented-control";
 import {PresetPaletteGrid} from "@/components/settings/PresetPaletteGrid";
-import {CustomThemeBuilder} from "@/components/settings/CustomThemeBuilder";
 import {ThemeCardSkeleton} from "@/components/settings/ThemeCardSkeleton";
 import {usePalette} from "@/providers/palette-provider";
 
 const BUILT_IN_TAB = "built-in";
 const CUSTOM_TAB = "custom";
 
+function loadCustomThemeBuilder() {
+    return import("@/components/settings/CustomThemeBuilder").then((builderModule) => builderModule.CustomThemeBuilder);
+}
+
+function preloadCustomThemeBuilder(): void {
+    void loadCustomThemeBuilder();
+}
+
+const CustomThemeBuilder = dynamic(loadCustomThemeBuilder, {
+    ssr: false,
+    loading: () => <div className="min-h-87 sm:min-h-54" aria-hidden="true"/>,
+});
+
 const THEME_TAB_OPTIONS = [
     {value: BUILT_IN_TAB, label: "Built-in"},
-    {value: CUSTOM_TAB, label: "Custom"},
+    {value: CUSTOM_TAB, label: "Custom", onIntent: preloadCustomThemeBuilder},
 ] as const;
 
 export function ThemeCard() {
