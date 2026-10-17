@@ -112,12 +112,15 @@ Root ([`package.json`](../package.json)), run from the repository root:
 | `pnpm dev:ui`, `dev:ui:clean`, `dev:mock` | One side only; `dev:ui:clean` removes `.next` first. |
 | `pnpm build` | UI build only. |
 | `pnpm clean` | Removes the UI `.next`. |
-| `pnpm lint` | UI `eslint` only. |
+| `pnpm check` | `lint`, `type-check`, `test` (UI + mock), UI `test:perf`, UI `check:compiler-bailouts`; about 40 s. Run before every commit. |
+| `pnpm check:full` | `check`, UI `test:compiled`, `check:bundle-budgets`; about 75 s. Run when a change touches imports, layouts, pages or lazy boundaries. There is no CI workflow, so these are the gate. Not included yet: `pnpm audit` (fails until Next.js is upgraded past the open advisories) and git hooks. |
+| `pnpm type-check` | UI `type-check` (app and tests) then mock-server `typecheck`. |
+| `pnpm lint` | UI `eslint` only. Pre-existing errors are recorded in [`eslint-suppressions.json`](../url-shortener-ui/eslint-suppressions.json) (ESLint bulk suppressions), so `lint` is green and any new error fails. The file only shrinks: after fixing a suppressed error run `pnpm --filter=url-shortener-ui exec eslint --prune-suppressions` (ESLint fails on suppressions that no longer match). Warnings do not fail. |
 | `pnpm check:bundle-budgets` | UI production build with `NEXT_PUBLIC_ENABLE_TURNSTILE=false`, then [`scripts/check-bundle-budgets.mjs`](../url-shortener-ui/scripts/check-bundle-budgets.mjs). |
 | `pnpm test` | UI `test:run` then mock-server tests, once. |
 | `pnpm typecheck` | Mock server `tsc --noEmit` only. |
 
-`url-shortener-ui` scripts: `dev`, `dev:clean`, `clean`, `build`, `start`, `lint`, `test` (watch), `test:run`, `test:ui`, `test:coverage`, `type-check` (app and tests), `check:bundle-budgets`. Test scripts set `NODE_OPTIONS=--no-deprecation`. Test details: [testing](testing.md).
+`url-shortener-ui` scripts: `dev`, `dev:clean`, `clean`, `build`, `start`, `lint`, `test` (watch), `test:run`, `test:ui`, `test:coverage`, `type-check` (app and tests), `check:bundle-budgets`, `check:compiler-bailouts` ([`scripts/check-compiler-bailouts.mjs`](../url-shortener-ui/scripts/check-compiler-bailouts.mjs): runs the React Compiler over every source file and fails, listing file, line and reason, when any function is skipped; the build fails on the same condition, this finds it in about 2 s). Test scripts set `NODE_OPTIONS=--no-deprecation`. Test details: [testing](testing.md).
 
 ### Bundle budgets
 

@@ -13,14 +13,17 @@ Rules for AI agents and contributors. Details, explanations and examples live in
 
 | Purpose | Command |
 |---|---|
+| **Before every commit** (lint, type-check, all tests, render budgets, compiler check; ~40 s) | `pnpm check` |
+| **Before a commit touching imports, layouts, pages or lazy boundaries** (`check` + compiled tests + bundle budgets; ~75 s) | `pnpm check:full` |
 | Install | `pnpm install` |
 | Dev (UI on :3000 + mock on :8080) | `pnpm dev` |
 | Build | `pnpm build` |
 | Tests (UI + mock server) | `pnpm test` |
 | Compiled tests, render budgets | `pnpm --filter=url-shortener-ui test:compiled && pnpm --filter=url-shortener-ui test:perf` |
-| Type-check | `pnpm --filter=url-shortener-ui type-check && pnpm typecheck` |
+| Type-check (UI app and tests, mock server) | `pnpm type-check` |
 | Bundle budgets (after touching imports, layouts, pages or lazy boundaries) | `pnpm check:bundle-budgets` |
-| Lint | `pnpm lint` (not green yet: pre-existing `react-hooks` errors; add no new findings) |
+| Lint | `pnpm lint` (green; 14 pre-existing `react-hooks` errors are recorded in `url-shortener-ui/eslint-suppressions.json`. Never add to that file; after fixing one, run `pnpm --filter=url-shortener-ui exec eslint --prune-suppressions`) |
+| React Compiler check (no component or hook skipped) | `pnpm --filter=url-shortener-ui check:compiler-bailouts` |
 
 ## Required reading
 

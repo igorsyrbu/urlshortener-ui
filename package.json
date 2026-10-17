@@ -23,7 +23,10 @@
     "lint": "pnpm --filter=url-shortener-ui run lint",
     "check:bundle-budgets": "pnpm --filter=url-shortener-ui run check:bundle-budgets",
     "test": "pnpm --filter=url-shortener-ui run test:run && pnpm --filter=@url-shortener/url-shortener-mock-server run test",
-    "typecheck": "pnpm --filter=@url-shortener/url-shortener-mock-server run typecheck"
+    "typecheck": "pnpm --filter=@url-shortener/url-shortener-mock-server run typecheck",
+    "type-check": "pnpm --filter=url-shortener-ui run type-check && pnpm --filter=@url-shortener/url-shortener-mock-server run typecheck",
+    "check": "pnpm lint && pnpm type-check && pnpm test && pnpm --filter=url-shortener-ui run test:perf && pnpm --filter=url-shortener-ui run check:compiler-bailouts",
+    "check:full": "pnpm check && pnpm --filter=url-shortener-ui run test:compiled && pnpm check:bundle-budgets"
   },
   "dependencies": {
     "next": "^16.2.6"

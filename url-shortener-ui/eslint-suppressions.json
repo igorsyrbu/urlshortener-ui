@@ -1,0 +1,62 @@
+{
+  "src/app/auth/exchange/page.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/analytics/DateRangeDrawer.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/analytics/PeriodSelector.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/inspect/OgImage.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/links/LinkFormFields.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 2
+    }
+  },
+  "src/components/settings/CurrentSessionCard.tsx": {
+    "react-hooks/static-components": {
+      "count": 1
+    }
+  },
+  "src/components/settings/DeleteAccountDialog.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/settings/ProfileCard.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/tags/TagFormModal.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/components/ui/delete-confirmation-modal.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/lib/hooks/useMagicLinkCooldown.ts": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/lib/hooks/useUrlCleaner.ts": {
+    "react-hooks/set-state-in-effect": {
+      "count": 2
+    }
+  }
+}
