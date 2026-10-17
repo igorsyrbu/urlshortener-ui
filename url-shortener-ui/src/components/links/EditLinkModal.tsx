@@ -5,20 +5,14 @@ import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {LinkItem} from "@/lib/types";
 import {ShortKeyConflictError} from "@/components/links/create-link-types";
+import {extractKeyFromShortUrl, withShortKey} from "@/lib/url-utils";
 
 interface EditLinkModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     link: LinkItem | null;
-    onSuccess: () => void;
-}
-
-function extractKeyFromShortUrl(shortUrl: string): string {
-    try {
-        return new URL(shortUrl).pathname.split("/").filter(Boolean).pop() ?? "";
-    } catch {
-        return shortUrl;
-    }
+    /** Called with the link as saved, so the list can show it before it reloads. */
+    onSuccess: (savedLink: LinkItem) => void;
 }
 
 export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkModalProps) {
@@ -45,7 +39,7 @@ export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkMod
             throw new Error("Failed to update link");
         }
 
-        onSuccess();
+        onSuccess({...link, longUrl, title, key, shortUrl: withShortKey(link.shortUrl, key), tagIds: [...tagIds]});
     };
 
     return (

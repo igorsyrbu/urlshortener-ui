@@ -71,6 +71,7 @@ function LinksPageContent() {
         setShowArchived,
         setLinkArchived,
         deleteLink,
+        applySavedLink,
         hydrateShowArchived,
         searchQuery
     } = useLinkStore();
@@ -356,7 +357,7 @@ function LinksPageContent() {
                         open={isEditModalOpen}
                         onOpenChange={setIsEditModalOpen}
                         link={editingLink}
-                        onSuccess={() => fetchLinks()}
+                        onSuccess={applySavedLink}
                     />
                 )}
 

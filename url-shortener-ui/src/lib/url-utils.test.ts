@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {getDomain, getShortKeyValidationError, isValidUrl, normalizeUrl} from "@/lib/url-utils";
+import {extractKeyFromShortUrl, getDomain, getShortKeyValidationError, isValidUrl, normalizeUrl, withShortKey} from "@/lib/url-utils";
 
 const SHORT_KEY_MAX_LENGTH = 30;
 
@@ -99,5 +99,29 @@ describe("getShortKeyValidationError", () => {
 
     it("reports forbidden characters before the length", () => {
         expect(getShortKeyValidationError("_".repeat(SHORT_KEY_MAX_LENGTH + 1))).toBe("Key can only contain letters, numbers, and hyphens.");
+    });
+});
+
+describe("extractKeyFromShortUrl", () => {
+    it.each([
+        ["https://sho.rt/abc123", "abc123"],
+        ["https://sho.rt/from-url/", "from-url"],
+        ["not a url", "not a url"],
+    ])("reads %j as %j", (shortUrl, key) => {
+        expect(extractKeyFromShortUrl(shortUrl)).toBe(key);
+    });
+});
+
+describe("withShortKey", () => {
+    it("replaces the key in the last path segment", () => {
+        expect(withShortKey("https://sho.rt/abc123", "new-key")).toBe("https://sho.rt/new-key");
+    });
+
+    it("keeps a base path in front of the key", () => {
+        expect(withShortKey("https://example.com/s/abc123", "xyz")).toBe("https://example.com/s/xyz");
+    });
+
+    it("leaves a value that is not a URL unchanged", () => {
+        expect(withShortKey("abc123", "xyz")).toBe("abc123");
     });
 });

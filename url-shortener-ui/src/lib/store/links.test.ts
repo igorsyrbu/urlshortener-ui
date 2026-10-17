@@ -386,3 +386,33 @@ describe("link store deleting", () => {
         expect(logger.error).toHaveBeenCalled();
     });
 });
+
+describe("link store saved edits", () => {
+    afterEach(() => {
+        useLinkStore.setState(initialState, true);
+    });
+
+    it("shows the saved link in place at once, then reloads the page in the background", () => {
+        const links = [createLinkItem({id: "a", title: "Old"}), createLinkItem({id: "b", title: "Other"})];
+        useLinkStore.setState({links});
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise<Response>(() => undefined));
+
+        useLinkStore.getState().applySavedLink({...links[0], title: "New", longUrl: "https://example.com/new"});
+
+        expect(useLinkStore.getState().links.map((link) => [link.id, link.title, link.longUrl])).toEqual([
+            ["a", "New", "https://example.com/new"],
+            ["b", "Other", links[1].longUrl],
+        ]);
+        expect(requestedParams().get("page")).toBe("0");
+    });
+
+    it("shows the default title for a link saved without one", () => {
+        const link = createLinkItem({id: "a", title: "Old"});
+        useLinkStore.setState({links: [link]});
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise<Response>(() => undefined));
+
+        useLinkStore.getState().applySavedLink({...link, title: "  "});
+
+        expect(useLinkStore.getState().links[0].title).toBe(DEFAULT_LINK_TITLE);
+    });
+});

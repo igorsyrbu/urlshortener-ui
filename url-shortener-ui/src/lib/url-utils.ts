@@ -59,3 +59,25 @@ export function getShortKeyValidationError(value: string): string | null {
     }
     return null;
 }
+
+/** The short key in the last path segment of a short URL, or the value itself when it is not a URL. */
+export function extractKeyFromShortUrl(shortUrl: string): string {
+    try {
+        return new URL(shortUrl).pathname.split("/").filter(Boolean).pop() ?? "";
+    } catch {
+        return shortUrl;
+    }
+}
+
+/** The short URL with its last path segment replaced by `key`; unchanged when it is not a URL. */
+export function withShortKey(shortUrl: string, key: string): string {
+    try {
+        const url = new URL(shortUrl);
+        const segments = url.pathname.split("/").filter(Boolean);
+        segments[Math.max(segments.length - 1, 0)] = encodeURIComponent(key);
+        url.pathname = `/${segments.join("/")}`;
+        return url.toString();
+    } catch {
+        return shortUrl;
+    }
+}

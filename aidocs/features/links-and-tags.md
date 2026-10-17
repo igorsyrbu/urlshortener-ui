@@ -71,7 +71,7 @@ EditLinkModal -> LinkFormModal (Dialog | Drawer) -> LinkFormFields
 
 Create adds a second state in `CreateLinkModal`: `viewState` `"form"` then `"success"`. On a `2xx` it stores the new link, switches to `CreateLinkSuccess` (copyable short URL, "Done"), fires `canvas-confetti` (dynamically imported), pushes `/links` and refetches page 1.
 
-Edit closes the modal on success (`LinkFormModal.handleSubmit`) and the page refetches the current page (`onSuccess`).
+Edit closes the modal on success (`LinkFormModal.handleSubmit`) and reports the link as saved (`onSuccess(savedLink)`: the submitted values, with the short URL rebuilt by `withShortKey` when the key changed). The page passes it to `applySavedLink`, which shows it in place at once and then refetches the current page quietly, so any server-side normalisation replaces it a round trip later. It does not rely on the `PUT` response body.
 
 ### Fields and validation
 

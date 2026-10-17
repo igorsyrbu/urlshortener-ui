@@ -19,12 +19,12 @@ vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 
 interface RenderedModal {
     onOpenChange: ReturnType<typeof vi.fn<(open: boolean) => void>>;
-    onSuccess: ReturnType<typeof vi.fn<() => void>>;
+    onSuccess: ReturnType<typeof vi.fn<(savedLink: LinkItem) => void>>;
 }
 
 function renderModal(link: LinkItem | null = createLinkItem({title: "My article", tagIds: ["tag-1"]})): RenderedModal {
     const onOpenChange = vi.fn<(open: boolean) => void>();
-    const onSuccess = vi.fn<() => void>();
+    const onSuccess = vi.fn<(savedLink: LinkItem) => void>();
     render(<EditLinkModal open onOpenChange={onOpenChange} link={link} onSuccess={onSuccess}/>);
     return {onOpenChange, onSuccess};
 }
@@ -57,6 +57,20 @@ describe("EditLinkModal", () => {
         expect(await screen.findByLabelText("Short Link")).toHaveValue("from-url");
     });
 
+    it("reports the saved link with its short URL following a changed key", async () => {
+        const user = userEvent.setup();
+        mockUpdateEndpoint(() => Response.json({}));
+        const link = createLinkItem({id: "link-42", key: "old-key", shortUrl: "https://sho.rt/old-key"});
+        const {onSuccess} = renderModal(link);
+
+        await user.clear(await screen.findByLabelText("Short Link"));
+        await user.type(screen.getByLabelText("Short Link"), "new-key");
+        await user.click(screen.getByRole("button", {name: "Save"}));
+
+        await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
+        expect(onSuccess.mock.calls[0][0]).toMatchObject({id: "link-42", key: "new-key", shortUrl: "https://sho.rt/new-key"});
+    });
+
     it("saves the edited link keeping its id and archived state, then closes", async () => {
         const user = userEvent.setup();
         mockUpdateEndpoint(() => Response.json({}));
@@ -68,7 +82,7 @@ describe("EditLinkModal", () => {
         await user.click(screen.getByRole("button", {name: "Save"}));
 
         await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
-        expect(onSuccess).toHaveBeenCalledOnce();
+        expect(onSuccess).toHaveBeenCalledExactlyOnceWith({...link, title: "New title", tagIds: ["tag-1"]});
         const [request] = getRequestsTo(API_ENDPOINTS.SHORTLINKS, "PUT");
         expect(parseRequestBody(request)).toEqual({
             id: "link-42", longUrl: link.longUrl, title: "New title", key: link.key, isActive: false, tagIds: ["tag-1"],

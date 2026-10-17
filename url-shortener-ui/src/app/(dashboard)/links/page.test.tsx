@@ -358,6 +358,33 @@ describe("links page", () => {
             expect(screen.getByLabelText("Short Link")).toHaveValue("key0");
         });
 
+        it("shows the edited title on the card as soon as the save succeeds, before the list reloads", async () => {
+            const user = userEvent.setup();
+            let hasSaved = false;
+            const link = createLinks(1)[0];
+            routeFetchWithAuth({
+                [API_ENDPOINTS.SHORTLINKS]: (init: RequestInit | undefined) => {
+                    if (init?.method === "PUT") {
+                        hasSaved = true;
+                        return Response.json({});
+                    }
+                    return hasSaved ? new Promise<Response>(() => undefined) : Response.json(createPage([link]));
+                },
+                [API_ENDPOINTS.TAGS]: () => Response.json([]),
+                [API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES]: () => new Response("", {headers: {"Content-Type": "text/event-stream"}}),
+            });
+            render(<LinksPage/>);
+            await openLinkActions(user, 0);
+            await user.click(await screen.findByRole("menuitem", {name: /Edit/}));
+
+            await user.clear(await screen.findByLabelText("Title"));
+            await user.type(screen.getByLabelText("Title"), "Renamed link");
+            await user.click(screen.getByRole("button", {name: "Save"}));
+
+            expect(await screen.findByRole("heading", {name: "Renamed link"})).toBeInTheDocument();
+            expect(screen.queryByRole("heading", {name: "Link 0"})).not.toBeInTheDocument();
+        });
+
         it("opens the QR code dialog for the link", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});

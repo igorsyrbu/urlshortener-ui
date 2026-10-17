@@ -22,6 +22,8 @@ interface LinkStore {
     hydrateShowArchived: () => void;
     /** Updates the list at once, then saves; restores the list and resolves `false` when the server refuses. */
     setLinkArchived: (id: string, archived: boolean) => Promise<boolean>;
+    /** Shows a link the server has just saved, then reloads the page quietly to pick up any server-side changes. */
+    applySavedLink: (link: LinkItem) => void;
     /** Removes the link from the list at once, then deletes it; restores the list and resolves `false` on failure. */
     deleteLink: (id: string) => Promise<boolean>;
 }
@@ -164,6 +166,12 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
         if (!isSaved) set({links, totalElements});
         void get().fetchLinks();
         return isSaved;
+    },
+
+    applySavedLink: (savedLink) => {
+        const title = savedLink.title.trim() ? savedLink.title : DEFAULT_LINK_TITLE;
+        set({links: get().links.map((item) => (item.id === savedLink.id ? {...savedLink, title} : item))});
+        void get().fetchLinks();
     },
 
     deleteLink: async (id) => {
