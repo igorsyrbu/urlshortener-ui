@@ -1,6 +1,8 @@
 "use client";
 
 import {useState, type ReactNode} from "react";
+import dynamic from "next/dynamic";
+import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 import {FOCUS_RING_CLASS, ICON_BUTTON_LABELS} from "@/lib/constants";
 import {AnimatePresence, LazyMotion, m, useReducedMotion, type Transition} from "framer-motion";
 import {Archive, Download, LoaderCircle, MoreVertical, TableProperties} from "lucide-react";
@@ -19,7 +21,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {Switch} from "@/components/ui/switch";
-import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/components/ui/drawer";
 import {
     EXPORT_AS_CSV_LABEL,
     IMPORT_FROM_CSV_LABEL,
@@ -41,6 +42,16 @@ interface PageToolbarProps {
 
 const OPTIONS_BUTTON_CLASS =
     `flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-[0.5px] border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground outline-none ${FOCUS_RING_CLASS}`;
+
+function loadPageOptionsDrawer() {
+    return import("@/components/layout/PageOptionsDrawer").then((drawerModule) => drawerModule.PageOptionsDrawer);
+}
+
+function preloadPageOptionsDrawer(): void {
+    void loadPageOptionsDrawer();
+}
+
+const PageOptionsDrawer = dynamic(loadPageOptionsDrawer, {ssr: false});
 
 function loadMotionFeatures() {
     return import("@/lib/motion-features").then((featuresModule) => featuresModule.default);
@@ -148,6 +159,7 @@ function renderDesktopOptionsMenu(props: DesktopOptionsMenuProps): ReactNode {
 
 interface MobileOptionsMenuProps extends DesktopOptionsMenuProps {
     isDrawerOpen: boolean;
+    hasOpenedDrawer: boolean;
     onDrawerOpenChange: (open: boolean) => void;
     onMobileImportClick: () => void;
     onMobileExportClick: () => void;
@@ -160,53 +172,23 @@ function renderMobileOptionsMenu(props: MobileOptionsMenuProps): ReactNode {
                 type="button"
                 aria-label={ICON_BUTTON_LABELS.OPTIONS_MENU}
                 onClick={() => props.onDrawerOpenChange(true)}
+                onPointerDown={preloadPageOptionsDrawer}
                 className={OPTIONS_BUTTON_CLASS}
             >
                 <MoreVertical className="size-5"/>
             </button>
-            <Drawer open={props.isDrawerOpen} onOpenChange={props.onDrawerOpenChange}>
-                <DrawerContent className="p-0 outline-hidden">
-                    <DrawerTitle className="sr-only">Options</DrawerTitle>
-                    <DrawerDescription className="sr-only">Page options</DrawerDescription>
-                    <div className="flex flex-col mt-3">
-                        <button
-                            onClick={() => props.onShowArchivedChange?.(!props.showArchived)}
-                            className="flex w-full items-center gap-3.5 px-6 py-3.5 text-sm font-medium transition-colors outline-hidden select-none hover:bg-muted/10 active:bg-muted/20 text-foreground"
-                        >
-                            <Archive className="size-5 shrink-0"/>
-                            <span className="flex-1 text-left">Show archived links</span>
-                            <Switch readOnly checked={props.showArchived}/>
-                        </button>
-                        {props.showImportExport && (
-                            <>
-                                <div className="hairline-divider my-1"/>
-                                <button
-                                    onClick={props.onMobileImportClick}
-                                    disabled={props.isImportDisabled}
-                                    className="flex w-full items-center gap-3.5 px-6 py-3.5 text-sm font-medium transition-colors outline-hidden select-none hover:bg-muted/10 active:bg-muted/20 text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    <TableProperties className="size-5 shrink-0"/>
-                                    <span
-                                        className="flex-1 text-left">{IMPORT_FROM_CSV_LABEL}</span>
-                                    {props.isImportDisabled && (
-                                        <LoaderCircle
-                                            className="size-4 shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none"
-                                            aria-hidden="true"/>
-                                    )}
-                                </button>
-                                <button
-                                    onClick={props.onMobileExportClick}
-                                    className="flex w-full items-center gap-3.5 px-6 py-3.5 text-sm font-medium transition-colors outline-hidden select-none hover:bg-muted/10 active:bg-muted/20 text-foreground"
-                                >
-                                    <Download className="size-5 shrink-0"/>
-                                    <span
-                                        className="flex-1 text-left">{EXPORT_AS_CSV_LABEL}</span>
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </DrawerContent>
-            </Drawer>
+            {props.hasOpenedDrawer && (
+                <PageOptionsDrawer
+                    open={props.isDrawerOpen}
+                    onOpenChange={props.onDrawerOpenChange}
+                    showArchived={props.showArchived}
+                    onShowArchivedChange={props.onShowArchivedChange}
+                    showImportExport={props.showImportExport}
+                    isImportDisabled={props.isImportDisabled}
+                    onImportClick={props.onMobileImportClick}
+                    onExportClick={props.onMobileExportClick}
+                />
+            )}
         </>
     );
 }
@@ -225,6 +207,7 @@ export function PageToolbar({
                                 className
                             }: PageToolbarProps) {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const hasOpenedDrawer = useHasBeenOpened(isDrawerOpen);
     const isDesktop = useIsDesktop();
     const shouldReduceMotion = useReducedMotion() ?? false;
     const importStatus = useImportTracker((state) => state.status);
@@ -279,6 +262,7 @@ export function PageToolbar({
                                     : renderMobileOptionsMenu({
                                         ...menuProps,
                                         isDrawerOpen,
+                                        hasOpenedDrawer,
                                         onDrawerOpenChange: setIsDrawerOpen,
                                         onMobileImportClick: handleMobileImportClick,
                                         onMobileExportClick: handleMobileExportClick,

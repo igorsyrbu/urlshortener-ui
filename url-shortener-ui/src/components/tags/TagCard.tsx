@@ -15,7 +15,8 @@ import {TagItem} from "@/lib/types";
 import {cn} from "@/lib/utils";
 import {FOCUS_RING_CLASS, MORE_ACTIONS_BUTTON_CLASS, SHORTCUT_KEY_CLASS} from "@/lib/constants";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
-import {ActionDrawer} from "@/components/ui/action-drawer";
+import {LazyActionDrawer, preloadActionDrawer} from "@/components/ui/lazy-action-drawer";
+import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 import {isModalOpen} from "@/lib/utils";
 
 interface TagCardProps {
@@ -26,6 +27,7 @@ interface TagCardProps {
 
 export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const hasOpenedMenu = useHasBeenOpened(isMenuOpen);
     const cardRef = useRef<HTMLDivElement>(null);
     const isDesktop = useIsDesktop();
 
@@ -123,29 +125,32 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
                     <>
                         <button
                             onClick={() => setIsMenuOpen(true)}
+                            onPointerDown={preloadActionDrawer}
                             className={MORE_ACTIONS_BUTTON_CLASS}
                             aria-label="More actions for tag"
                         >
                             <MoreVertical className="size-5"/>
                         </button>
-                        <ActionDrawer
-                            open={isMenuOpen}
-                            onOpenChange={setIsMenuOpen}
-                            actions={[
-                                {
-                                    label: "Edit",
-                                    icon: PencilLine,
-                                    onClick: () => onEdit(tag),
-                                },
-                                {
-                                    label: "Delete",
-                                    icon: Trash2,
-                                    onClick: () => onDelete(tag),
-                                    variant: "destructive",
-                                    hasSeparator: true,
-                                },
-                            ]}
-                        />
+                        {hasOpenedMenu && (
+                            <LazyActionDrawer
+                                open={isMenuOpen}
+                                onOpenChange={setIsMenuOpen}
+                                actions={[
+                                    {
+                                        label: "Edit",
+                                        icon: PencilLine,
+                                        onClick: () => onEdit(tag),
+                                    },
+                                    {
+                                        label: "Delete",
+                                        icon: Trash2,
+                                        onClick: () => onDelete(tag),
+                                        variant: "destructive",
+                                        hasSeparator: true,
+                                    },
+                                ]}
+                            />
+                        )}
                     </>
                 )}
             </div>

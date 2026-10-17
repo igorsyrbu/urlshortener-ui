@@ -8,13 +8,13 @@
     "/auth/ott": 181,
     "/inspect/[key]": 187,
     "/login": 190,
-    "/report-abuse": 220,
-    "/dashboard": 237,
-    "/settings": 239,
-    "/settings/billing": 248,
-    "/settings/general": 249,
-    "/analytics": 259,
-    "/tags": 274,
-    "/links": 289
+    "/report-abuse": 219,
+    "/dashboard": 224,
+    "/settings": 226,
+    "/settings/billing": 235,
+    "/settings/general": 235,
+    "/analytics": 246,
+    "/tags": 261,
+    "/links": 276
   }
 }

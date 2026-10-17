@@ -47,7 +47,7 @@ Fetching and mutation live in the page component with local state (not a store):
 
 ### Danger zone
 
-`DangerZoneCard` opens a Dialog (desktop) or Drawer (mobile, `useIsDesktop`) that requires typing the user's email (case-insensitive, trimmed) to enable "Yes, Delete Account". See limitations: confirming does not call an API.
+`DangerZoneCard` opens `DeleteAccountDialog` (loaded on first open), a Dialog (desktop) or Drawer (mobile, `useIsDesktop`) that requires typing the user's email (case-insensitive, trimmed) to enable "Yes, Delete Account". See limitations: confirming does not call an API.
 
 ## Billing tab
 

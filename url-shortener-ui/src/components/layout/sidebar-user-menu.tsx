@@ -1,8 +1,9 @@
 "use client";
 
-import {useState} from "react";
+import {useState, type ComponentProps} from "react";
 import {useRouter} from "next/navigation";
 import {LogOut, Settings, User} from "lucide-react";
+import dynamic from "next/dynamic";
 import {useAuthStore} from "@/lib/store/auth";
 import {fetchWithAuth} from "@/lib/api";
 import {
@@ -15,29 +16,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {logger} from "@/lib/logger";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import {
-    Drawer,
-    DrawerContent,
-    DrawerDescription,
-    DrawerFooter,
-    DrawerHeader,
-    DrawerTitle,
-    DrawerTrigger,
-} from "@/components/ui/drawer";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
-import {Button} from "@/components/ui/button";
 import {cn} from "@/lib/utils";
 import {API_ENDPOINTS, FOCUS_RING_CLASS, ICON_BUTTON_LABELS, ROUTES} from "@/lib/constants";
 import {SETTINGS_ROUTES} from "@/lib/settings-constants";
 import {attempt} from "@/lib/async-utils";
+import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
+
+const AccountMenuDrawer = dynamic(
+    () => import("@/components/layout/AccountMenuDrawer").then((drawerModule) => drawerModule.AccountMenuDrawer),
+    {ssr: false},
+);
+const LogoutConfirmDialog = dynamic(
+    () => import("@/components/layout/LogoutConfirmDialog").then((dialogModule) => dialogModule.LogoutConfirmDialog),
+    {ssr: false},
+);
 
 interface SidebarUserMenuProps {
     onNavigate?: () => void;
@@ -51,6 +44,8 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
 
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const hasOpenedDrawer = useHasBeenOpened(isDrawerOpen);
+    const hasOpenedConfirm = useHasBeenOpened(isConfirmOpen);
 
     const handleLogout = async () => {
         const result = await attempt(() => fetchWithAuth(API_ENDPOINTS.USERS_SESSIONS_CURRENT, {method: "DELETE"}));
@@ -64,10 +59,11 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
         onNavigate?.();
     };
 
-    const triggerElement = (
+    const renderTrigger = (props: ComponentProps<"button">) => (
         <button
             type="button"
             aria-label={ICON_BUTTON_LABELS.ACCOUNT_MENU}
+            {...props}
             className={cn("flex w-full cursor-pointer items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-sidebar-accent/50 outline-none", FOCUS_RING_CLASS)}>
             <Avatar className="size-8 shrink-0 border border-sidebar-border bg-sidebar-accent">
                 <AvatarImage
@@ -95,7 +91,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
             {isDesktop ? (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        {triggerElement}
+                        {renderTrigger({})}
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56" align="start" forceMount>
                         <DropdownMenuLabel className="font-normal">
@@ -119,91 +115,22 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
                     </DropdownMenuContent>
                 </DropdownMenu>
             ) : (
-                <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                    <DrawerTrigger asChild>
-                        {triggerElement}
-                    </DrawerTrigger>
-                    <DrawerContent className="p-0 outline-hidden" mobileMenuSpacing>
-                        <DrawerTitle className="sr-only">Account options</DrawerTitle>
-                        <DrawerDescription className="sr-only">Settings and log out</DrawerDescription>
-
-                        <div className="flex flex-col px-6 py-3 mt-3">
-                            <p className="text-sm font-semibold text-foreground truncate">{user?.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                        </div>
-
-                        <div className="hairline-divider my-1"/>
-
-                        <div className="flex flex-col">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsDrawerOpen(false);
-                                    handleSettingsClick();
-                                }}
-                                className="flex w-full items-center gap-3.5 px-6 py-2.5 text-sm font-medium transition-colors outline-hidden select-none hover:bg-muted/10 active:bg-muted/20 text-foreground"
-                            >
-                                <Settings className="size-5 shrink-0 text-muted-foreground"/>
-                                <span>Settings</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsDrawerOpen(false);
-                                    setIsConfirmOpen(true);
-                                }}
-                                className="flex w-full items-center gap-3.5 px-6 py-2.5 text-sm font-medium transition-colors outline-hidden select-none text-destructive hover:bg-destructive/5 active:bg-destructive/10"
-                            >
-                                <LogOut className="size-5 shrink-0 text-destructive"/>
-                                <span>Log out</span>
-                            </button>
-                        </div>
-                    </DrawerContent>
-                </Drawer>
+                <>
+                    {renderTrigger({onClick: () => setIsDrawerOpen(true), "aria-haspopup": "dialog", "aria-expanded": isDrawerOpen})}
+                    {hasOpenedDrawer && (
+                        <AccountMenuDrawer
+                            open={isDrawerOpen}
+                            onOpenChange={setIsDrawerOpen}
+                            user={user}
+                            onSettingsClick={handleSettingsClick}
+                            onLogoutClick={() => setIsConfirmOpen(true)}
+                        />
+                    )}
+                </>
             )}
 
-            {isDesktop ? (
-                <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-                    <DialogContent showCloseButton={false}>
-                        <DialogHeader>
-                            <DialogTitle>Are you sure?</DialogTitle>
-                            <DialogDescription>
-                                You will be signed out immediately and will need to sign in again to continue.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>Cancel</Button>
-                            <Button variant="destructive" onClick={handleLogout}>Log out</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            ) : (
-                <Drawer open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-                    <DrawerContent className="outline-hidden px-6 gap-6">
-                        <DrawerHeader className="p-0 pb-6 text-center">
-                            <DrawerTitle>Are you sure?</DrawerTitle>
-                            <DrawerDescription className="text-sm text-foreground/70 mt-2">
-                                You will be signed out immediately and will need to sign in again to continue.
-                            </DrawerDescription>
-                        </DrawerHeader>
-                        <DrawerFooter className="p-0 flex flex-col gap-2">
-                            <Button
-                                variant="destructive"
-                                onClick={handleLogout}
-                                className="w-full"
-                            >
-                                Log out
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                onClick={() => setIsConfirmOpen(false)}
-                                className="w-full"
-                            >
-                                Cancel
-                            </Button>
-                        </DrawerFooter>
-                    </DrawerContent>
-                </Drawer>
+            {hasOpenedConfirm && (
+                <LogoutConfirmDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen} onConfirm={() => void handleLogout()}/>
             )}
         </>
     );

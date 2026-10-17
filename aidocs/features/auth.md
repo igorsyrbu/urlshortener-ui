@@ -98,7 +98,7 @@ Two implementations end the current session; both call `DELETE /users/sessions/c
 
 | Place | Behaviour |
 |---|---|
-| Sidebar user menu, [`src/components/layout/sidebar-user-menu.tsx`](../../url-shortener-ui/src/components/layout/sidebar-user-menu.tsx) | Confirm dialog or drawer, request, then `logout()` and `router.replace("/login")` in `finally`, so the UI signs out even if the request fails |
+| Sidebar user menu, [`src/components/layout/sidebar-user-menu.tsx`](../../url-shortener-ui/src/components/layout/sidebar-user-menu.tsx) | Confirm dialog or drawer (`LogoutConfirmDialog`, loaded on first open; the phone account drawer is `AccountMenuDrawer`, also on demand), request, then `logout()` and `router.replace("/login")` in `finally`, so the UI signs out even if the request fails |
 | Settings "This Device" row | Request first; only on `res.ok` does it call `logout()` and navigate; otherwise a toast "Failed to terminate session" |
 
 Neither resets other stores (links, tags, preferences, import). Navigation is client-side, so their in-memory data stays until overwritten by the next login's fetches.

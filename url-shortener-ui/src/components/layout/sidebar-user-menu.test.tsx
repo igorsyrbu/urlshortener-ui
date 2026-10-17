@@ -63,6 +63,18 @@ describe.each([
         expect(await screen.findByText(USER.email)).toBeInTheDocument();
     });
 
+    it("tells assistive technology whether the account menu is open", async () => {
+        const user = userEvent.setup();
+        renderMenu();
+        const trigger = screen.getByRole("button", {name: ICON_BUTTON_LABELS.ACCOUNT_MENU});
+        expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+        await openMenu(user);
+
+        await screen.findByText(USER.email);
+        expect(trigger).toHaveAttribute("aria-expanded", "true");
+    });
+
     it("shows the user name and email once opened", async () => {
         const user = userEvent.setup();
         renderMenu();

@@ -36,7 +36,8 @@ import {
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
-import {ActionDrawer} from "@/components/ui/action-drawer";
+import {LazyActionDrawer, preloadActionDrawer} from "@/components/ui/lazy-action-drawer";
+import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 
 interface LinkCardProps {
     link: LinkItem;
@@ -107,6 +108,7 @@ export function LinkCard({
                          }: LinkCardProps) {
     const {isCopied, copy} = useCopyToClipboard();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const hasOpenedMenu = useHasBeenOpened(isMenuOpen);
     const cardRef = useRef<HTMLDivElement>(null);
     const storeTags = useTagStoreWithoutCount((state) => state.tags);
     const isDesktop = useIsDesktop();
@@ -262,40 +264,43 @@ export function LinkCard({
                     <>
                         <button
                             onClick={() => setIsMenuOpen(true)}
+                            onPointerDown={preloadActionDrawer}
                             className={MORE_ACTIONS_BUTTON_CLASS}
                             aria-label="More actions for link">
                             <MoreVertical className="size-5"/>
                         </button>
-                        <ActionDrawer
-                            open={isMenuOpen}
-                            onOpenChange={setIsMenuOpen}
-                            actions={[
-                                {
-                                    label: "Edit",
-                                    icon: PencilLine,
-                                    onClick: () => onEdit(link),
-                                },
-                                {
-                                    label: "QR Code",
-                                    icon: QrCode,
-                                    onClick: () => onQrCode(link),
-                                },
-                                ...((onArchiveRequest) ? [
+                        {hasOpenedMenu && (
+                            <LazyActionDrawer
+                                open={isMenuOpen}
+                                onOpenChange={setIsMenuOpen}
+                                actions={[
                                     {
-                                        label: link.isActive ? "Archive" : "Unarchive",
-                                        icon: link.isActive ? Archive : ArchiveRestore,
-                                        onClick: () => onArchiveRequest(link),
+                                        label: "Edit",
+                                        icon: PencilLine,
+                                        onClick: () => onEdit(link),
                                     },
-                                ] : []),
-                                {
-                                    label: "Delete",
-                                    icon: Trash2,
-                                    onClick: () => onDelete(link),
-                                    variant: "destructive",
-                                    hasSeparator: true,
-                                },
-                            ]}
-                        />
+                                    {
+                                        label: "QR Code",
+                                        icon: QrCode,
+                                        onClick: () => onQrCode(link),
+                                    },
+                                    ...((onArchiveRequest) ? [
+                                        {
+                                            label: link.isActive ? "Archive" : "Unarchive",
+                                            icon: link.isActive ? Archive : ArchiveRestore,
+                                            onClick: () => onArchiveRequest(link),
+                                        },
+                                    ] : []),
+                                    {
+                                        label: "Delete",
+                                        icon: Trash2,
+                                        onClick: () => onDelete(link),
+                                        variant: "destructive",
+                                        hasSeparator: true,
+                                    },
+                                ]}
+                            />
+                        )}
                     </>
                 )}
             </div>
