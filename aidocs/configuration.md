@@ -73,7 +73,7 @@ The request header `x-mock-error: true` simulates a 500 on any request (not an e
 
 There is no `middleware.ts`/`proxy.ts` and no `env` block.
 
-- Observation: other remote images (OG images through `wsrv.nl` in `OgImage`, flags from `hatscripts.github.io` in `LocationIcon`) are plain `<img>` elements. There is no `images.remotePatterns`: the favicon `next/image` is `unoptimized`, so the old Google entry was dead config and was removed. Existing exception - not a template; new images use `next/image` ([coding-patterns](coding-patterns.md)).
+- Observation: other remote images (OG images through `wsrv.nl` in `OgImage`) are plain `<img>` elements. Country flags are no longer remote: they come from a local sprite (see [features/analytics](features/analytics.md#components)). There is no `images.remotePatterns`: the favicon `next/image` is `unoptimized`, so the old Google entry was dead config and was removed. Existing exception - not a template; new images use `next/image` ([coding-patterns](coding-patterns.md)).
 
 ## TypeScript and path alias
 

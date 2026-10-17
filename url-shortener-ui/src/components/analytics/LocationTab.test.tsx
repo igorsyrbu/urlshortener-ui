@@ -1,7 +1,7 @@
 import {render, screen} from "@testing-library/react";
 import {describe, expect, it, vi} from "vitest";
 import {LocationTab} from "@/components/analytics/LocationTab";
-import {CHART_COLORS, FLAG_SERVICE_URL} from "@/lib/constants";
+import {CHART_COLORS} from "@/lib/constants";
 import {createGroupedClick} from "@/test/analytics-utils";
 
 vi.mock("@/components/analytics/LazyHorizontalBarChart", async () => ({
@@ -27,7 +27,7 @@ describe("LocationTab", () => {
         render(<LocationTab locationTab="countries" data={data} isLoading={false} totalClicks={11}/>);
 
         expect(screen.getAllByTestId("bar-row").map((row) => row.textContent)).toEqual(["Canada", "France"]);
-        expect(screen.getByRole("img", {name: "CA"})).toHaveAttribute("src", `${FLAG_SERVICE_URL}/ca.svg`);
+        expect(screen.getByRole("img", {name: "CA"}).querySelector("use")?.getAttribute("href")).toMatch(/#ca$/);
         expect(screen.getByTestId("bar-chart")).toHaveAttribute("data-color", CHART_COLORS.LOCATIONS);
     });
 

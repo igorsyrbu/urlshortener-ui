@@ -1,21 +1,24 @@
-"use client";
-
-import {useState} from "react";
+import type {StaticImageData} from "next/image";
 import {MapPin} from "lucide-react";
-import {FLAG_SERVICE_URL} from "@/lib/constants";
+import flagSprite from "@/components/analytics/flags/circle-flags.svg";
+import {FLAG_CODES} from "@/components/analytics/flags/flag-codes";
 
 interface LocationIconProps {
     label: string;
     isCountry: boolean;
 }
 
-const COUNTRY_CODE_LENGTH = 2;
+/** Next.js imports the sprite as `StaticImageData` (hashed, cached for good); Vitest imports it as a URL string. */
+function resolveAssetUrl(asset: StaticImageData | string): string {
+    return typeof asset === "string" ? asset : asset.src;
+}
+
+const FLAG_SPRITE_URL = resolveAssetUrl(flagSprite);
 
 export function LocationIcon({label, isCountry}: LocationIconProps) {
-    const [error, setError] = useState(false);
-    const isCode = label && label.length === COUNTRY_CODE_LENGTH;
+    const flagCode = label.toLowerCase();
 
-    if (!isCountry || !isCode || error) {
+    if (!isCountry || !FLAG_CODES.has(flagCode)) {
         return (
             <div
                 className="size-6 shrink-0 flex items-center justify-center bg-muted border-[0.5px] border-border rounded-full overflow-hidden">
@@ -25,14 +28,9 @@ export function LocationIcon({label, isCountry}: LocationIconProps) {
     }
 
     return (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-            src={`${FLAG_SERVICE_URL}/${label.toLowerCase()}.svg`}
-            alt={label}
-            title={label}
-            className="size-5 rounded-full shrink-0 object-cover"
-            onError={() => setError(true)}
-        />
+        <svg role="img" aria-label={label} className="size-5 rounded-full shrink-0">
+            <use href={`${FLAG_SPRITE_URL}#${flagCode}`}/>
+        </svg>
     );
 }
 

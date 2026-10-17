@@ -276,7 +276,6 @@ export const FAVICON_SIZE = 64;
 // Country flag service
 // ---------------------------------------------------------------------------
 
-export const FLAG_SERVICE_URL = "https://hatscripts.github.io/circle-flags/flags";
 
 // ---------------------------------------------------------------------------
 // Abuse report
