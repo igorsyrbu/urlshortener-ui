@@ -226,6 +226,31 @@ describe("links page", () => {
                 {timeout: SEARCH_DEBOUNCE_TIMEOUT_MS});
         });
 
+        it("searches at once when Enter is pressed, without waiting for the typing pause", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(2)});
+            render(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Link 0"});
+
+            await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "promo{Enter}");
+
+            expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).at(-1)?.get("search")).toBe("promo");
+        });
+
+        it("drops the search at once when the field is cleared", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(2)});
+            render(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Link 0"});
+            await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "promo");
+            await waitFor(() => expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).at(-1)?.get("search")).toBe("promo"),
+                {timeout: SEARCH_DEBOUNCE_TIMEOUT_MS});
+
+            await user.click(screen.getByRole("button", {name: "Clear search"}));
+
+            expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).at(-1)?.has("search")).toBe(false);
+        });
+
         it("says nothing matched when a search returns no links", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});

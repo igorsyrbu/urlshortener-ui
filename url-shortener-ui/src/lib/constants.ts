@@ -204,6 +204,9 @@ export const EXPORT_SEARCH_MAX_LENGTH = 2048;
 
 export const DEFAULT_PAGE_SIZE = 20;
 
+/** Pause after the last keystroke before a search is sent; Enter and Clear search at once. */
+export const SEARCH_DEBOUNCE_MS = 300;
+
 // ---------------------------------------------------------------------------
 // Analytics
 // ---------------------------------------------------------------------------

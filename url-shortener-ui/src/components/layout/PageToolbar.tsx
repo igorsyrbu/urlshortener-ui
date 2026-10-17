@@ -34,6 +34,7 @@ interface PageToolbarProps {
     onExportCsvClick?: () => void;
     searchValue?: string;
     onSearchChange?: (value: string) => void;
+    onSearchSubmit?: (value: string) => void;
     placeholder?: string;
     className?: string;
 }
@@ -219,6 +220,7 @@ export function PageToolbar({
                                 onExportCsvClick,
                                 searchValue,
                                 onSearchChange,
+                                onSearchSubmit,
                                 placeholder,
                                 className
                             }: PageToolbarProps) {
@@ -260,6 +262,7 @@ export function PageToolbar({
                     <SearchBar
                         value={searchValue}
                         onChange={onSearchChange}
+                        onSubmit={onSearchSubmit}
                         placeholder={placeholder}
                     />
                 </m.div>

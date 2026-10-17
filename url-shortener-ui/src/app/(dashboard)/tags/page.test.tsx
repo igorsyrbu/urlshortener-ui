@@ -4,7 +4,7 @@ import {toast} from "sonner";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import TagsPage from "./page";
 import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS, TAGS_LOAD_COPY, TRY_AGAIN_LABEL} from "@/lib/constants";
+import {API_ENDPOINTS, SEARCH_DEBOUNCE_MS, TAGS_LOAD_COPY, TRY_AGAIN_LABEL} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
@@ -17,7 +17,6 @@ vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn(), warn: vi.fn(), info: vi.fn()}}));
 vi.mock("@/lib/hooks/useMediaQuery", () => ({useIsDesktop: () => true, useIsMobile: () => false}));
 
-const SEARCH_DEBOUNCE_MS = 500;
 const SEARCH_PLACEHOLDER = "Search...";
 
 function mockTagsResponse(tags = [createTag()]): void {
@@ -95,6 +94,18 @@ describe("tags page", () => {
         });
 
         await waitFor(() => expect(requestedUrls()).toEqual([`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=20&search=mark`]));
+    });
+
+    it("searches at once when Enter is pressed", async () => {
+        const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        mockTagsResponse();
+        render(<TagsPage/>);
+        await screen.findByText("Marketing");
+        vi.mocked(fetchWithAuth).mockClear();
+
+        await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "mark{Enter}");
+
+        expect(requestedUrls()).toEqual([`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=20&search=mark`]);
     });
 
     it("shows the no results state when a search matches no tags", async () => {

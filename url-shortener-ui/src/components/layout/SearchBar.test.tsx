@@ -23,6 +23,31 @@ describe("SearchBar", () => {
         expect(onChange).toHaveBeenNthCalledWith(2, "b");
     });
 
+    it("searches now with the typed text when Enter is pressed", async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn<(value: string) => void>();
+        render(<SearchBar value="promo" onSubmit={onSubmit}/>);
+
+        await user.type(screen.getByRole("textbox"), "{Enter}");
+
+        expect(onSubmit).toHaveBeenCalledExactlyOnceWith("promo");
+    });
+
+    it.each([
+        {action: "the clear button", clear: async (user: ReturnType<typeof userEvent.setup>) => user.click(screen.getByRole("button", {name: "Clear search"}))},
+        {action: "Escape", clear: async (user: ReturnType<typeof userEvent.setup>) => user.type(screen.getByRole("textbox"), "{Escape}")},
+    ])("searches now with empty text when cleared with $action", async ({clear}) => {
+        const user = userEvent.setup();
+        const onChange = vi.fn<(value: string) => void>();
+        const onSubmit = vi.fn<(value: string) => void>();
+        render(<SearchBar value="promo" onChange={onChange} onSubmit={onSubmit}/>);
+
+        await clear(user);
+
+        expect(onChange).toHaveBeenCalledWith("");
+        expect(onSubmit).toHaveBeenCalledExactlyOnceWith("");
+    });
+
     it("limits the text length", () => {
         render(<SearchBar/>);
 

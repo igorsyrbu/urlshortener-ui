@@ -11,9 +11,11 @@ interface SearchBarProps {
     className?: string;
     value?: string;
     onChange?: (value: string) => void;
+    /** Search now with this text, without waiting for the debounce (Enter, Clear). */
+    onSubmit?: (value: string) => void;
 }
 
-export function SearchBar({placeholder = "Search...", className, value, onChange}: SearchBarProps) {
+export function SearchBar({placeholder = "Search...", className, value, onChange, onSubmit}: SearchBarProps) {
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -35,6 +37,7 @@ export function SearchBar({placeholder = "Search...", className, value, onChange
 
     const handleClear = () => {
         onChange?.("");
+        onSubmit?.("");
         inputRef.current?.focus();
     };
 
@@ -54,6 +57,10 @@ export function SearchBar({placeholder = "Search...", className, value, onChange
                 onChange={handleChange}
                 maxLength={2048}
                 onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                        onSubmit?.(e.currentTarget.value);
+                        return;
+                    }
                     if (e.key === "Escape") {
                         e.preventDefault();
                         if (hasValue) {

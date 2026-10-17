@@ -20,7 +20,7 @@ import {attempt, withPending} from "@/lib/async-utils";
 import {TAG_DELETE_FAILED_MESSAGE} from "@/lib/tag-constants";
 import {toast} from "sonner";
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
-import {CARD_LIST_CLASS, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, TAGS_LOAD_COPY} from "@/lib/constants";
+import {CARD_LIST_CLASS, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, SEARCH_DEBOUNCE_MS, TAGS_LOAD_COPY} from "@/lib/constants";
 
 function loadEditTagModal() {
     return import("@/components/tags/EditTagModal").then((modalModule) => modalModule.EditTagModal);
@@ -33,6 +33,14 @@ function loadDeleteTagModal() {
 const EditTagModal = dynamic(loadEditTagModal, {ssr: false});
 const DeleteTagModal = dynamic(loadDeleteTagModal, {ssr: false});
 
+function commitTagSearch(text: string): void {
+    const trimmed = text.trim();
+    const store = useTagStoreWithCount.getState();
+    if (store.searchQuery === trimmed) return;
+    store.setSearchQuery(trimmed);
+    store.fetchTags();
+}
+
 export default function TagsPage() {
     const {tags, loading, error, fetchTags, clearError, searchQuery} = useTagStoreWithCount();
     const {deleteTag} = useTagMutations();
@@ -42,7 +50,7 @@ export default function TagsPage() {
     const [tagToDelete, setTagToDelete] = useState<TagItem | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [searchInput, setSearchInput] = useState("");
-    const debouncedSearch = useDebounce(searchInput, 500);
+    const debouncedSearch = useDebounce(searchInput, SEARCH_DEBOUNCE_MS);
     const hasOpenedEdit = useHasBeenOpened(isEditModalOpen);
     const hasOpenedDelete = useHasBeenOpened(deleteModalOpen);
 
@@ -55,12 +63,7 @@ export default function TagsPage() {
     }, []);
 
     useEffect(() => {
-        const trimmed = debouncedSearch.trim();
-        const store = useTagStoreWithCount.getState();
-        if (store.searchQuery !== trimmed) {
-            store.setSearchQuery(trimmed);
-            store.fetchTags();
-        }
+        commitTagSearch(debouncedSearch);
     }, [debouncedSearch]);
 
     const handleDeleteClick = (tag: TagItem) => {
@@ -92,6 +95,7 @@ export default function TagsPage() {
         <PageToolbar
             searchValue={searchInput}
             onSearchChange={setSearchInput}
+            onSearchSubmit={commitTagSearch}
             placeholder="Search..."
         />
     );

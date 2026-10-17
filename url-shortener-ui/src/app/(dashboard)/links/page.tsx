@@ -1,6 +1,6 @@
 "use client";
 
-import {Suspense, useCallback, useEffect, useState} from "react";
+import {Suspense, useCallback, useEffect, useEffectEvent, useState} from "react";
 import {useRouter, useSearchParams} from "next/navigation";
 import dynamic from "next/dynamic";
 import {LinkCard} from "@/components/links/LinkCard";
@@ -16,7 +16,7 @@ import {IMPORT_TRACKING_STATUS, useImportTracker} from "@/lib/store/import";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {PageToolbar} from "@/components/layout/PageToolbar";
-import {CARD_LIST_CLASS, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, ROUTES} from "@/lib/constants";
+import {CARD_LIST_CLASS, DEFAULT_PAGE_SIZE, SEARCH_DEBOUNCE_MS, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, ROUTES} from "@/lib/constants";
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
 import {toast} from "sonner";
 import {buildLinksPageUrl, parseLinksPageParam} from "@/lib/pagination";
@@ -85,7 +85,7 @@ function LinksPageContent() {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [archiveModalLink, setArchiveModalLink] = useState<LinkItem | null>(null);
     const [searchInput, setSearchInput] = useState("");
-    const debouncedSearch = useDebounce(searchInput, 500);
+    const debouncedSearch = useDebounce(searchInput, SEARCH_DEBOUNCE_MS);
     const hasOpenedEdit = useHasBeenOpened(isEditModalOpen);
     const hasOpenedDelete = useHasBeenOpened(deleteModalOpen);
     const hasOpenedQrCode = useHasBeenOpened(isQrCodeModalOpen);
@@ -121,15 +121,19 @@ function LinksPageContent() {
         }
     };
 
-    useEffect(() => {
-        const trimmed = debouncedSearch.trim();
+    const commitSearch = (text: string): void => {
+        const trimmed = text.trim();
         const store = useLinkStore.getState();
-        if (store.searchQuery !== trimmed) {
-            store.setSearchQuery(trimmed);
-            resetUrlToFirstPage();
-            store.fetchLinks(0);
-        }
-    }, [debouncedSearch, resetUrlToFirstPage]);
+        if (store.searchQuery === trimmed) return;
+        store.setSearchQuery(trimmed);
+        resetUrlToFirstPage();
+        store.fetchLinks(0);
+    };
+    const commitDebouncedSearch = useEffectEvent(commitSearch);
+
+    useEffect(() => {
+        commitDebouncedSearch(debouncedSearch);
+    }, [debouncedSearch]);
 
     useEffect(() => {
         fetchLinks(urlPage);
@@ -276,6 +280,7 @@ function LinksPageContent() {
             onExportCsvClick={handleExportCsvClick}
             searchValue={searchInput}
             onSearchChange={setSearchInput}
+            onSearchSubmit={commitSearch}
             placeholder="Search by URL or title"
         />
     );
