@@ -1,10 +1,10 @@
 "use client";
 
-import {useEffect, useState} from "react";
 import {useTheme} from "next-themes";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {Monitor, Moon, Sun, LucideIcon} from "lucide-react";
 import {AppearanceCardSkeleton} from "@/components/settings/AppearanceCardSkeleton";
+import {useHasMounted} from "@/lib/hooks/useHasMounted";
 
 interface ThemeOption {
     value: string;
@@ -20,13 +20,9 @@ const THEME_OPTIONS: ThemeOption[] = [
 
 export function AppearanceCard() {
     const {theme, setTheme} = useTheme();
-    const [mounted, setMounted] = useState(false);
+    const hasMounted = useHasMounted();
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    if (!mounted) {
+    if (!hasMounted) {
         return <AppearanceCardSkeleton/>;
     }
 
@@ -42,7 +38,7 @@ export function AppearanceCard() {
                         <button
                             key={option.value}
                             onClick={() => setTheme(option.value)}
-                            className={`flex flex-col items-center justify-center p-3 border-[0.5px] rounded-xl hover:bg-muted transition-colors w-24 sm:w-28 outline-hidden focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${mounted && theme === option.value ? "border-primary ring-1 ring-primary" : "border-border"}`}
+                            className={`flex flex-col items-center justify-center p-3 border-[0.5px] rounded-xl hover:bg-muted transition-colors w-24 sm:w-28 outline-hidden focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${hasMounted && theme === option.value ? "border-primary ring-1 ring-primary" : "border-border"}`}
                         >
                             <option.icon className="size-6 mb-1.5 stroke-[1.5]"/>
                             <span className="text-xs sm:text-sm font-medium">{option.label}</span>

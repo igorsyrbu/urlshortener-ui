@@ -35,7 +35,7 @@ vi.mock("@/components/links/LinkCard", async (importOriginal) => {
 
 const HOVERED_CARD_COUNT = 10;
 const SEARCH_TEXT = "abcdefgh";
-const MAX_CARD_RENDERS_ON_MOUNT = 2 * DEFAULT_PAGE_SIZE;
+const MAX_CARD_RENDERS_ON_MOUNT = DEFAULT_PAGE_SIZE;
 
 async function hoverAcrossCards(): Promise<void> {
     const cards = Array.from(document.querySelectorAll<HTMLElement>("[data-link-id]")).slice(0, HOVERED_CARD_COUNT);
@@ -72,7 +72,7 @@ describe("links page render counts", () => {
         renders.page = 0;
     });
 
-    it("renders each card at most twice while the page mounts", async () => {
+    it("renders each card once while the page mounts", async () => {
         await renderLinksPage();
 
         expect(renders.card).toBeLessThanOrEqual(MAX_CARD_RENDERS_ON_MOUNT);

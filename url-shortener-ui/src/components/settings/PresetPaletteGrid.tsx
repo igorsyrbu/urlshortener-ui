@@ -1,17 +1,10 @@
 "use client";
 
-import {useSyncExternalStore} from "react";
+import {useHasMounted} from "@/lib/hooks/useHasMounted";
 import {useTheme} from "next-themes";
 import {PALETTES, PaletteSwatch} from "@/lib/themes/palettes";
 import {usePalette} from "@/providers/palette-provider";
 import {cn} from "@/lib/utils";
-
-const subscribeToNothing = () => () => {
-};
-
-function useMounted(): boolean {
-    return useSyncExternalStore(subscribeToNothing, () => true, () => false);
-}
 
 function SwatchDots({swatch}: { swatch: PaletteSwatch }) {
     const colors = [swatch.background, swatch.primary, swatch.accent, swatch.foreground];
@@ -31,7 +24,7 @@ function SwatchDots({swatch}: { swatch: PaletteSwatch }) {
 export function PresetPaletteGrid() {
     const {activePaletteId, selectPreset} = usePalette();
     const {resolvedTheme} = useTheme();
-    const mounted = useMounted();
+    const mounted = useHasMounted();
 
     const mode = mounted && resolvedTheme === "dark" ? "dark" : "light";
 

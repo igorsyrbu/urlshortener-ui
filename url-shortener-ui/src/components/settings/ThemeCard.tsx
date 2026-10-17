@@ -1,6 +1,7 @@
 "use client";
 
-import {useEffect, useRef, useState, useSyncExternalStore} from "react";
+import {useEffect, useRef, useState} from "react";
+import {useHasMounted} from "@/lib/hooks/useHasMounted";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {SegmentedControl} from "@/components/ui/segmented-control";
 import {PresetPaletteGrid} from "@/components/settings/PresetPaletteGrid";
@@ -20,7 +21,7 @@ export function ThemeCard() {
     const {selection} = usePalette();
     const [activeTab, setActiveTab] = useState(BUILT_IN_TAB);
     const hasUserSwitchedTab = useRef(false);
-    const mounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
+    const mounted = useHasMounted();
 
     useEffect(() => {
         if (!hasUserSwitchedTab.current && selection.kind === "custom") {

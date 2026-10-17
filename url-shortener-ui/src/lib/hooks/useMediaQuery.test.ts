@@ -109,3 +109,43 @@ describe("useIsMobile", () => {
         expect(result.current).toBe(true);
     });
 });
+
+describe("shared media query subscriptions", () => {
+    const DESKTOP_QUERY = `(min-width: ${MOBILE_BREAKPOINT_PX}px)`;
+    const SUBSCRIBER_COUNT = 20;
+
+    it("has the real answer on the first render, without waiting for an effect", () => {
+        stubMatchMedia(DESKTOP_QUERY);
+        const firstRenderValues: boolean[] = [];
+
+        renderHook(() => {
+            const isDesktop = useIsDesktop();
+            firstRenderValues.push(isDesktop);
+            return isDesktop;
+        });
+
+        expect(firstRenderValues[0]).toBe(true);
+    });
+
+    it("shares one listened media query list between every component asking the same question", () => {
+        stubMatchMedia(null);
+        const addListener = vi.spyOn(FakeMediaQueryList.prototype, "addEventListener");
+
+        for (let index = 0; index < SUBSCRIBER_COUNT; index++) renderHook(() => useIsDesktop());
+
+        expect(addListener).toHaveBeenCalledOnce();
+    });
+
+    it("stops listening once the last component asking the question unmounts", () => {
+        stubMatchMedia(null);
+        const removeListener = vi.spyOn(FakeMediaQueryList.prototype, "removeEventListener");
+        const first = renderHook(() => useIsDesktop());
+        const second = renderHook(() => useIsDesktop());
+
+        first.unmount();
+        expect(removeListener).not.toHaveBeenCalled();
+
+        second.unmount();
+        expect(removeListener).toHaveBeenCalledOnce();
+    });
+});
