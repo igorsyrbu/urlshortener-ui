@@ -68,6 +68,8 @@ The four billing calls, `BillingApiError` and the `X-Rate-Limit-Retry-After-Seco
 - `BillingCycleSelector` (Monthly / Yearly "Save 17%") is disabled while anything is busy or a yearly switch is scheduled.
 - Pro users also see "Manage subscription" and a note: "Switches to yearly billing on <date>" (or "...at your next renewal" when the date is unknown), else "Cancels on <date>" when `cancelAtPeriodEnd`, else "Renews on <date>". The scheduled note prefers server `pendingSwitch` over the local optimistic `scheduledSwitch`.
 
+Request ordering in [`useBillingSubscription`](../../url-shortener-ui/src/lib/hooks/useBillingSubscription.ts): every load and silent refresh takes the next request id and only the newest may update state, so a slow, older response can never overwrite a newer one (portal return, period switch and Retry can overlap). Whichever request finishes last also ends a pending visible load (skeleton) and shows the load error if it failed. Unmount discards everything in flight.
+
 ### Checkout (Free to Pro)
 
 1. Free user selects a cycle and clicks "Upgrade to Pro" on the Pro card.
@@ -80,7 +82,7 @@ The four billing calls, `BillingApiError` and the `X-Rate-Limit-Retry-After-Seco
 1. Pro user clicks "Manage subscription": `useBillingPortal.handleManage` calls `createBillingPortalUrl`, then `markPortalOpened(expiresInSeconds)` and `openBillingUrlInNewTab(url)` (`window.open(..., "_blank")` with `opener` nulled; falls back to same-tab navigation if the popup is blocked).
 2. [`billing-portal-return.ts`](../../url-shortener-ui/src/lib/billing-portal-return.ts) stores `{expiresAtMs}` under `localStorage["urlshortener:billing:portal-return"]`; the TTL is `expiresInSeconds` or, when missing/invalid, `PORTAL_RETURN_FALLBACK_TTL_MS` (10 minutes). Storage errors are swallowed (refresh just stays disabled).
 3. In the original tab, `BillingSettings` listens to `window` `focus` and `document` `visibilitychange` (when visible). If the current subscription is Pro and `consumePortalReturn()` returns true (flag present and unexpired; it is always removed when read), it calls `handlePortalReturn`.
-4. `handlePortalReturn` calls `refreshSilently()` (re-fetches the subscription without the skeleton; returns false on error or unmount) and, if it succeeded, clears the local optimistic `scheduledSwitch` so the server state wins (e.g. after "Cancel yearly switch" in the portal).
+4. `handlePortalReturn` calls `refreshSilently()` (re-fetches the subscription without the skeleton; returns false on error, on unmount, or when a newer request superseded it) and, if it succeeded, clears the local optimistic `scheduledSwitch` so the server state wins (e.g. after "Cancel yearly switch" in the portal).
 5. Errors: 404 -> "No billing history yet..."; 429 -> rate-limited message; else generic. The flag is shared by same-origin tabs and consumed by the first eligible event. Reproduction recipes live in [`README.md`](../../README.md) (mock billing section).
 
 ### Period switch (monthly to yearly)

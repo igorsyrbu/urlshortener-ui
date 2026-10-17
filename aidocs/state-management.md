@@ -46,6 +46,7 @@ Notes per store:
 Follow these when adding or changing a store.
 
 - **One file per store**, hook named `use<Name>Store`, state and actions typed in one `interface`. Actions live inside the store, not in components.
+- **Overlapping requests:** when the same data can be requested again before an earlier request answers (filters, refreshes, retries), only the newest response may write state: give each request an increasing id and drop answers whose id is no longer the latest (`useBillingSubscription`). Existing stores that do not do this are listed under limitations.
 - **Async actions** follow the same shape: guard, `set({loading: true, error: null})`, `try` call via `fetchWithAuth`, `set` result or `set({error})`, `catch` logging with `logger` and setting `error`, `finally` `set({loading: false})`. Error values are user-facing strings (see [api-layer.md](api-layer.md#error-handling-conventions)).
 - **A list store's `error` describes loading that list.** Mutations (create/update/delete) never write it: they reject and the caller shows the failure where the action happened (inline in a form, a toast for a menu action). Otherwise one failed action makes every page that renders the list look broken.
 - **Map DTOs to view models inside the store** (`mapResponseToLinkItem`), so components only see `LinkItem`/`TagItem` (types in [`src/lib/types.ts`](../url-shortener-ui/src/lib/types.ts)).

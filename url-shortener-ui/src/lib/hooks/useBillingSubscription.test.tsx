@@ -86,3 +86,65 @@ describe("useBillingSubscription silent refresh", () => {
         expect(result.current.subscription).toEqual(currentSubscription);
     });
 });
+
+describe("useBillingSubscription with overlapping requests", () => {
+    beforeEach(() => {
+        vi.mocked(fetchWithAuth).mockImplementation(async () => Response.json(PRO_SUBSCRIPTION));
+    });
+
+    it("keeps the newest refresh when an older one resolves last", async () => {
+        const {result} = renderHook(() => useBillingSubscription());
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        const olderResponse = Promise.withResolvers<Response>();
+        const newerResponse = Promise.withResolvers<Response>();
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(olderResponse.promise).mockReturnValueOnce(newerResponse.promise);
+        let olderRefresh: Promise<boolean> | undefined;
+        let newerRefresh: Promise<boolean> | undefined;
+        act(() => {
+            olderRefresh = result.current.refreshSilently();
+            newerRefresh = result.current.refreshSilently();
+        });
+
+        await act(async () => {
+            newerResponse.resolve(Response.json({...PRO_SUBSCRIPTION, cancelAtPeriodEnd: true}));
+            expect(await newerRefresh).toBe(true);
+            olderResponse.resolve(Response.json({...PRO_SUBSCRIPTION, cancelAtPeriodEnd: false}));
+            expect(await olderRefresh).toBe(false);
+        });
+
+        expect(result.current.subscription.cancelAtPeriodEnd).toBe(true);
+    });
+
+    it("ends the initial loading state when a refresh overtakes the first load", async () => {
+        const initialResponse = Promise.withResolvers<Response>();
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(initialResponse.promise);
+        const {result} = renderHook(() => useBillingSubscription());
+        expect(result.current.isLoading).toBe(true);
+
+        await act(async () => {
+            expect(await result.current.refreshSilently()).toBe(true);
+        });
+        expect(result.current.isLoading).toBe(false);
+
+        await act(async () => {
+            initialResponse.resolve(Response.json({...PRO_SUBSCRIPTION, plan: "FREE"}));
+        });
+        expect(result.current.subscription.planId).toBe("pro");
+    });
+
+    it("shows the load error when the request that overtook the first load fails", async () => {
+        const initialResponse = Promise.withResolvers<Response>();
+        vi.mocked(fetchWithAuth)
+            .mockReturnValueOnce(initialResponse.promise)
+            .mockResolvedValueOnce(new Response(null, {status: HTTP_INTERNAL_SERVER_ERROR}));
+        const {result} = renderHook(() => useBillingSubscription());
+
+        await act(async () => {
+            expect(await result.current.refreshSilently()).toBe(false);
+        });
+
+        expect(result.current.isLoading).toBe(false);
+        expect(result.current.errorMessage).toBe(BILLING_COPY.SUBSCRIPTION_LOAD_ERROR);
+    });
+});
+
