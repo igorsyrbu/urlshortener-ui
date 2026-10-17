@@ -64,7 +64,7 @@ The four billing calls, `BillingApiError` and the `X-Rate-Limit-Retry-After-Seco
 `BillingSettings` ([`BillingSettings.tsx`](../../url-shortener-ui/src/components/settings/BillingSettings.tsx)):
 
 - Initial/retry load: `BillingSettingsSkeleton`. Load failure: red message plus Retry (`handleRetry` bumps a counter that reruns the load effect); plan cards are hidden while the error shows.
-- Two plan cards (`BillingPlanCard`) from `BILLING_PLANS`: Free and Pro. The current plan gets a ring and a "Current plan" badge. Prices come from `BILLING_PRICES[cycle]` ($9.99 monthly, $8.33/month billed yearly at $99.99) with an animated `BillingPrice`.
+- Two plan cards (`BillingPlanCard`) from `BILLING_PLANS`: Free and Pro. The current plan gets a ring and a "Current plan" badge. Prices come from `BILLING_PRICES[cycle]` ($9.99 monthly, $8.33/month billed yearly at $99.99) with an animated `BillingPrice` (CSS cross-fade, see [styling-and-theming](../styling-and-theming.md) motion rules).
 - `BillingCycleSelector` (Monthly / Yearly "Save 17%") is disabled while anything is busy or a yearly switch is scheduled.
 - Pro users also see "Manage subscription" and a note: "Switches to yearly billing on <date>" (or "...at your next renewal" when the date is unknown), else "Cancels on <date>" when `cancelAtPeriodEnd`, else "Renews on <date>". The scheduled note prefers server `pendingSwitch` over the local optimistic `scheduledSwitch`.
 

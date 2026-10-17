@@ -2,7 +2,7 @@
 
 import {useState, type ReactNode} from "react";
 import {FOCUS_RING_CLASS, ICON_BUTTON_LABELS} from "@/lib/constants";
-import {AnimatePresence, motion, useReducedMotion, type Transition} from "framer-motion";
+import {AnimatePresence, LazyMotion, m, useReducedMotion, type Transition} from "framer-motion";
 import {Archive, Download, LoaderCircle, MoreVertical, TableProperties} from "lucide-react";
 import {cn} from "@/lib/utils";
 import {Kbd} from "@/components/ui/kbd";
@@ -41,6 +41,10 @@ interface PageToolbarProps {
 const OPTIONS_BUTTON_CLASS =
     `flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-[0.5px] border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground outline-none ${FOCUS_RING_CLASS}`;
 
+function loadMotionFeatures() {
+    return import("@/lib/motion-features").then((featuresModule) => featuresModule.default);
+}
+
 function isImportOngoing(status: ImportTrackingStatus): boolean {
     // An interrupted stream never confirms the job is gone, so keep the
     // import action disabled until the backend confirms no ongoing import.
@@ -64,7 +68,7 @@ function renderImportIndicator(
 ): ReactNode {
     if (!show || !progress) return null;
     return (
-        <motion.span
+        <m.span
             key="import-radial"
             initial={{opacity: 0, scale: 0.5, x: 28}}
             animate={{opacity: 1, scale: 1, x: 0}}
@@ -77,7 +81,7 @@ function renderImportIndicator(
                 totalRows={progress.totalRows}
                 onPress={onPress}
             />
-        </motion.span>
+        </m.span>
     );
 }
 
@@ -250,35 +254,37 @@ export function PageToolbar({
     };
 
     return (
-        <div className={cn("flex items-center gap-2 sm:gap-4", className)}>
-            <motion.div layout transition={playfulTransition} className="min-w-0 flex-1 max-w-md">
-                <SearchBar
-                    value={searchValue}
-                    onChange={onSearchChange}
-                    placeholder={placeholder}
-                />
-            </motion.div>
+        <LazyMotion features={loadMotionFeatures} strict>
+            <div className={cn("flex items-center gap-2 sm:gap-4", className)}>
+                <m.div layout transition={playfulTransition} className="min-w-0 flex-1 max-w-md">
+                    <SearchBar
+                        value={searchValue}
+                        onChange={onSearchChange}
+                        placeholder={placeholder}
+                    />
+                </m.div>
 
-            {(showImportRadial || showOptions) && (
-                <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-4">
-                    <AnimatePresence mode="popLayout" initial={false}>
-                        {renderImportIndicator(importProgress, showImportRadial, playfulTransition, onImportCsvClick)}
-                    </AnimatePresence>
-                    {showOptions && (
-                        <div className="relative z-10 flex shrink-0 items-center">
-                            {isDesktop
-                                ? renderDesktopOptionsMenu(menuProps)
-                                : renderMobileOptionsMenu({
-                                    ...menuProps,
-                                    isDrawerOpen,
-                                    onDrawerOpenChange: setIsDrawerOpen,
-                                    onMobileImportClick: handleMobileImportClick,
-                                    onMobileExportClick: handleMobileExportClick,
-                                })}
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
+                {(showImportRadial || showOptions) && (
+                    <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-4">
+                        <AnimatePresence mode="popLayout" initial={false}>
+                            {renderImportIndicator(importProgress, showImportRadial, playfulTransition, onImportCsvClick)}
+                        </AnimatePresence>
+                        {showOptions && (
+                            <div className="relative z-10 flex shrink-0 items-center">
+                                {isDesktop
+                                    ? renderDesktopOptionsMenu(menuProps)
+                                    : renderMobileOptionsMenu({
+                                        ...menuProps,
+                                        isDrawerOpen,
+                                        onDrawerOpenChange: setIsDrawerOpen,
+                                        onMobileImportClick: handleMobileImportClick,
+                                        onMobileExportClick: handleMobileExportClick,
+                                    })}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </LazyMotion>
     );
 }

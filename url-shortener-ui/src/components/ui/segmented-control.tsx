@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {useCallback, useRef, type ReactNode} from "react";
-import {useReducedMotion} from "framer-motion";
 import {cn} from "@/lib/utils";
 import {useSegmentedIndicator, type SegmentedIndicator} from "@/lib/hooks/useSegmentedIndicator";
 import {
@@ -52,7 +51,7 @@ function renderLabel(option: SegmentedControlOption): ReactNode {
     );
 }
 
-function renderThumb(indicator: SegmentedIndicator, animate: boolean): ReactNode {
+function renderThumb(indicator: SegmentedIndicator): ReactNode {
     if (!indicator.isReady) return null;
     return (
         <span
@@ -60,7 +59,7 @@ function renderThumb(indicator: SegmentedIndicator, animate: boolean): ReactNode
             data-testid={THUMB_TEST_ID}
             className={cn(
                 "absolute top-1 bottom-1 left-0 rounded-lg bg-card shadow-soft",
-                animate && "transition-[transform,width] duration-200 ease-out",
+                indicator.shouldAnimate && "motion-safe:transition-[transform,width] motion-safe:duration-200 motion-safe:ease-out",
             )}
             style={{transform: `translateX(${indicator.x}px)`, width: indicator.width}}
         />
@@ -68,10 +67,8 @@ function renderThumb(indicator: SegmentedIndicator, animate: boolean): ReactNode
 }
 
 export function SegmentedControl({options, value, onValueChange, ariaLabel, isDisabled = false}: SegmentedControlProps) {
-    const hasReducedMotion = useReducedMotion() ?? false;
     const selectedRef = useRef<HTMLElement | null>(null);
     const indicator = useSegmentedIndicator(selectedRef, value);
-    const animateThumb = indicator.shouldAnimate && !hasReducedMotion;
 
     const assignSelectedRef = useCallback((element: HTMLElement | null): void => {
         selectedRef.current = element;
@@ -80,7 +77,7 @@ export function SegmentedControl({options, value, onValueChange, ariaLabel, isDi
     if (isLinkMode(options)) {
         return (
             <nav aria-label={ariaLabel} className={cn(CONTAINER_CLASS_NAME, "min-h-10")}>
-                {renderThumb(indicator, animateThumb)}
+                {renderThumb(indicator)}
                 {options.map((option) => {
                     const isSelected = option.value === value;
                     return (
@@ -103,7 +100,7 @@ export function SegmentedControl({options, value, onValueChange, ariaLabel, isDi
 
     return (
         <div role="group" aria-label={ariaLabel} className={CONTAINER_CLASS_NAME}>
-            {renderThumb(indicator, animateThumb)}
+            {renderThumb(indicator)}
             {options.map((option) => {
                 const isSelected = option.value === value;
                 return (
