@@ -4,7 +4,7 @@ import {useState} from "react";
 import {FOCUS_RING_CLASS} from "@/lib/constants";
 import {Download, Info} from "lucide-react";
 import {toast} from "sonner";
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import {Tooltip as TooltipPrimitive} from "radix-ui";
 import {Button} from "@/components/ui/button";
 import {ButtonSpinner} from "@/components/ui/button-spinner";
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle,} from "@/components/ui/dialog";

@@ -5,6 +5,9 @@ import nextTs from "eslint-config-next/typescript";
 const CULORI_ONLY_IN_THEME_BUILDER =
   "culori costs ~15 KB gzip; only src/lib/themes/custom-theme.ts may import it, so it stays out of the root layout.";
 
+const RADIX_FROM_UMBRELLA =
+  "Import Radix primitives from the single radix-ui package (import {Dialog as DialogPrimitive} from \"radix-ui\"), so only one copy of its internals ships.";
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -12,7 +15,10 @@ const eslintConfig = defineConfig([
     files: ["src/**/*.{ts,tsx}"],
     ignores: ["src/lib/themes/custom-theme.ts", "src/**/*.test.{ts,tsx}"],
     rules: {
-      "no-restricted-imports": ["error", {paths: [{name: "culori", message: CULORI_ONLY_IN_THEME_BUILDER}]}],
+      "no-restricted-imports": ["error", {
+        paths: [{name: "culori", message: CULORI_ONLY_IN_THEME_BUILDER}],
+        patterns: [{group: ["@radix-ui/*"], message: RADIX_FROM_UMBRELLA}],
+      }],
     },
   },
   {

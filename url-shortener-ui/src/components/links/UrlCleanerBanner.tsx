@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Info, ShieldAlert } from "lucide-react";
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import {Tooltip as TooltipPrimitive} from "radix-ui";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {URL_CLEANER_TOOLTIP, FOCUS_RING_CLASS} from "@/lib/constants";

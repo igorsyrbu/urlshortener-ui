@@ -86,7 +86,7 @@ There is no `middleware.ts`/`proxy.ts` and no `env` block.
 
 - **shadcn:** [`components.json`](../url-shortener-ui/components.json): style `new-york`, `rsc: true`, base colour `neutral`, CSS variables, CSS entry `src/app/globals.css`, no Tailwind config file, icon library `lucide`, aliases `@/components`, `@/components/ui`, `@/lib`, `@/lib/utils`, extra registry `@aceternity`. Styling conventions: [styling-and-theming](styling-and-theming.md).
 - **Tailwind v4 / PostCSS:** [`postcss.config.mjs`](../url-shortener-ui/postcss.config.mjs) registers `@tailwindcss/postcss`; there is no `tailwind.config.*`.
-- **ESLint:** [`eslint.config.mjs`](../url-shortener-ui/eslint.config.mjs) flat config extending `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`; ignores `.next`, `out`, `build`, `next-env.d.ts`. One project rule pair keeps `culori` out of the shared bundle (see [styling-and-theming](styling-and-theming.md), custom themes).
+- **ESLint:** [`eslint.config.mjs`](../url-shortener-ui/eslint.config.mjs) flat config extending `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`; ignores `.next`, `out`, `build`, `next-env.d.ts`. One project rule pair keeps `culori` out of the shared bundle (see [styling-and-theming](styling-and-theming.md), custom themes); the same `no-restricted-imports` rule rejects `@radix-ui/*` (use `radix-ui`).
 - **Vitest:** jsdom, globals, `setupFiles`, auto-reset flags and coverage thresholds are documented in [testing](testing.md).
 - **Formatting:** no Prettier or EditorConfig in the repo.
 

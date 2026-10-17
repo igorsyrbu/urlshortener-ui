@@ -1,6 +1,6 @@
 "use client";
 
-import * as DialogPrimitive from "@radix-ui/react-dialog";
+import {Dialog as DialogPrimitive} from "radix-ui";
 import {useEffect} from "react";
 import {Dialog, DialogDescription, DialogOverlay, DialogPortal} from "@/components/ui/dialog";
 import {cn} from "@/lib/utils";
