@@ -2,14 +2,15 @@
 
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
-import { MobileSidebarDrawer } from "@/components/layout/mobile-sidebar-drawer";
-import { CreateLinkModal } from "@/components/links/CreateLinkModal";
-import { CreateTagModal } from "@/components/tags/CreateTagModal";
 import { SessionCheckScreen } from "@/components/layout/SessionCheckScreen";
-import React, { useState, useRef } from "react";
+import dynamic from "next/dynamic";
+import React, { useEffect, useState, useRef } from "react";
 import { useUIStore } from "@/lib/store/ui";
 import { usePathname } from "next/navigation";
 import { useSessionBootstrap } from "@/lib/hooks/useSessionBootstrap";
+import { useHasBeenOpened } from "@/lib/hooks/useHasBeenOpened";
+import { useIsMobile } from "@/lib/hooks/useMediaQuery";
+import { preloadOnIdle } from "@/lib/preload-on-idle";
 import {
     DASHBOARD_CONTENT_SHELL_CLASS,
     SCROLL_TOP_THRESHOLD,
@@ -19,6 +20,22 @@ import {
     SKIP_TO_CONTENT_LABEL,
 } from "@/lib/constants";
 import {cn} from "@/lib/utils";
+
+function loadCreateLinkModal() {
+    return import("@/components/links/CreateLinkModal").then((modalModule) => modalModule.CreateLinkModal);
+}
+
+function loadCreateTagModal() {
+    return import("@/components/tags/CreateTagModal").then((modalModule) => modalModule.CreateTagModal);
+}
+
+function loadMobileSidebarDrawer() {
+    return import("@/components/layout/mobile-sidebar-drawer").then((drawerModule) => drawerModule.MobileSidebarDrawer);
+}
+
+const CreateLinkModal = dynamic(loadCreateLinkModal, {ssr: false});
+const CreateTagModal = dynamic(loadCreateTagModal, {ssr: false});
+const MobileSidebarDrawer = dynamic(loadMobileSidebarDrawer, {ssr: false});
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -32,6 +49,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const lastScrollY = useRef(0);
+    const isMobile = useIsMobile();
+    const isReady = phase === "ready";
+    const hasOpenedCreateLink = useHasBeenOpened(isCreateModalOpen);
+    const hasOpenedCreateTag = useHasBeenOpened(isCreateTagModalOpen);
+    const hasOpenedMobileSidebar = useHasBeenOpened(isMobileSidebarOpen);
+
+    useEffect(() => {
+        if (!isReady) return;
+        preloadOnIdle(isMobile
+            ? [loadCreateLinkModal, loadCreateTagModal, loadMobileSidebarDrawer]
+            : [loadCreateLinkModal, loadCreateTagModal]);
+    }, [isReady, isMobile]);
 
     const isTagsPage = pathname === "/tags" || pathname.startsWith("/tags/");
     const createLabel = isTagsPage ? "Create tag" : "Create link";
@@ -66,7 +95,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         lastScrollY.current = currentScrollY;
     };
 
-    if (phase !== "ready") {
+    if (!isReady) {
         return <SessionCheckScreen isUnavailable={phase === "unavailable"} onRetry={handleRetry}/>;
     }
 
@@ -106,9 +135,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     </main>
                 </div>
             </div>
-            <CreateLinkModal open={isCreateModalOpen} onOpenChange={setCreateModalOpen} />
-            <CreateTagModal open={isCreateTagModalOpen} onOpenChange={setCreateTagModalOpen} />
-            <MobileSidebarDrawer open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen} />
+            {hasOpenedCreateLink && <CreateLinkModal open={isCreateModalOpen} onOpenChange={setCreateModalOpen} />}
+            {hasOpenedCreateTag && <CreateTagModal open={isCreateTagModalOpen} onOpenChange={setCreateTagModalOpen} />}
+            {hasOpenedMobileSidebar && <MobileSidebarDrawer open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen} />}
         </div>
     );
 }

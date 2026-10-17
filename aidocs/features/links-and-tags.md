@@ -48,7 +48,7 @@ Both are **optimistic**: confirming closes the dialog and changes the list at on
 
 ## Create and edit link form
 
-Entry points: the dashboard header button and `EmptyLinksState` open `CreateLinkModal` through `useUIStore.isCreateModalOpen` (mounted in the dashboard layout, so it works from any dashboard page; on `/tags` the same header button opens the tag modal instead). Editing opens `EditLinkModal` from the card.
+Entry points: the dashboard header button and `EmptyLinksState` open `CreateLinkModal` through `useUIStore.isCreateModalOpen` (rendered by the dashboard layout, so it works from any dashboard page; on `/tags` the same header button opens the tag modal instead). The layout loads both create modals on demand and preloads them when the browser is idle; the links and tags pages do the same for their row dialogs (see [coding-patterns](../coding-patterns.md), dialogs loaded on demand). Editing opens `EditLinkModal` from the card.
 
 Component chain:
 

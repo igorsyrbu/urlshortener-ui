@@ -1,8 +1,7 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {EditTagModal} from "@/components/tags/EditTagModal";
-import {DeleteTagModal} from "@/components/tags/DeleteTagModal";
+import dynamic from "next/dynamic";
 import {TagCard} from "@/components/tags/TagCard";
 import {EmptyTagsState} from "@/components/tags/EmptyTagsState";
 import {NoTagsFoundState} from "@/components/tags/NoTagsFoundState";
@@ -14,12 +13,25 @@ import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
 import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import {TagItem} from "@/lib/types";
 import {useDebounce} from "@/lib/hooks/useDebounce";
+import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
+import {preloadOnIdle} from "@/lib/preload-on-idle";
 import {logger} from "@/lib/logger";
 import {attempt, withPending} from "@/lib/async-utils";
 import {TAG_DELETE_FAILED_MESSAGE} from "@/lib/tag-constants";
 import {toast} from "sonner";
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
 import {LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, TAGS_LOAD_COPY} from "@/lib/constants";
+
+function loadEditTagModal() {
+    return import("@/components/tags/EditTagModal").then((modalModule) => modalModule.EditTagModal);
+}
+
+function loadDeleteTagModal() {
+    return import("@/components/tags/DeleteTagModal").then((modalModule) => modalModule.DeleteTagModal);
+}
+
+const EditTagModal = dynamic(loadEditTagModal, {ssr: false});
+const DeleteTagModal = dynamic(loadDeleteTagModal, {ssr: false});
 
 export default function TagsPage() {
     const {tags, loading, error, fetchTags, clearError, searchQuery} = useTagStoreWithCount();
@@ -31,10 +43,16 @@ export default function TagsPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [searchInput, setSearchInput] = useState("");
     const debouncedSearch = useDebounce(searchInput, 500);
+    const hasOpenedEdit = useHasBeenOpened(isEditModalOpen);
+    const hasOpenedDelete = useHasBeenOpened(deleteModalOpen);
 
     useEffect(() => {
         fetchTags();
     }, [fetchTags]);
+
+    useEffect(() => {
+        preloadOnIdle([loadEditTagModal, loadDeleteTagModal]);
+    }, []);
 
     useEffect(() => {
         const trimmed = debouncedSearch.trim();
@@ -120,20 +138,24 @@ export default function TagsPage() {
 
             {renderTagList()}
 
-            <EditTagModal
-                open={isEditModalOpen}
-                onOpenChange={setIsEditModalOpen}
-                tag={editingTag}
-            />
+            {hasOpenedEdit && (
+                <EditTagModal
+                    open={isEditModalOpen}
+                    onOpenChange={setIsEditModalOpen}
+                    tag={editingTag}
+                />
+            )}
 
-            <DeleteTagModal
-                open={deleteModalOpen}
-                onOpenChange={setDeleteModalOpen}
-                onConfirm={confirmDelete}
-                loading={isDeleting}
-                tagName={tagToDelete?.name}
-                tagColor={tagToDelete?.color}
-            />
+            {hasOpenedDelete && (
+                <DeleteTagModal
+                    open={deleteModalOpen}
+                    onOpenChange={setDeleteModalOpen}
+                    onConfirm={confirmDelete}
+                    loading={isDeleting}
+                    tagName={tagToDelete?.name}
+                    tagColor={tagToDelete?.color}
+                />
+            )}
         </PageContainer>
     );
 }

@@ -2,6 +2,7 @@
 
 import {useState, useEffect, useRef} from "react";
 import {useRouter} from "next/navigation";
+import dynamic from "next/dynamic";
 import {toast} from "sonner";
 import {fetchWithAuth} from "@/lib/api";
 import {useAuthStore} from "@/lib/store/auth";
@@ -15,8 +16,14 @@ import {PreferencesCard} from "@/components/settings/PreferencesCard";
 import {CurrentSessionCard} from "@/components/settings/CurrentSessionCard";
 import {OtherSessionsList} from "@/components/settings/OtherSessionsList";
 import {DangerZoneCard} from "@/components/settings/DangerZoneCard";
-import {SessionLogoutDialog, LogoutTarget} from "@/components/settings/SessionLogoutDialog";
+import type {LogoutTarget} from "@/components/settings/SessionLogoutDialog";
 import {logger} from "@/lib/logger";
+import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
+
+const SessionLogoutDialog = dynamic(
+    () => import("@/components/settings/SessionLogoutDialog").then((dialogModule) => dialogModule.SessionLogoutDialog),
+    {ssr: false},
+);
 
 type SessionDeleteOutcome = "deleted" | "rejected" | "failed";
 
@@ -57,6 +64,7 @@ export default function GeneralSettingsPage() {
     const [logoutTarget, setLogoutTarget] = useState<LogoutTarget>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const jwtTTL = accessToken ? getJwtTTL(accessToken) : null;
+    const hasOpenedLogoutDialog = useHasBeenOpened(logoutTarget !== null);
 
     const fetched = useRef(false);
 
@@ -158,12 +166,14 @@ export default function GeneralSettingsPage() {
                 onConfirmDelete={() => setIsDeleteDialogOpen(false)}
             />
 
-            <SessionLogoutDialog
-                target={logoutTarget}
-                jwtTTL={jwtTTL}
-                onClose={() => setLogoutTarget(null)}
-                onConfirm={handleLogoutConfirm}
-            />
+            {hasOpenedLogoutDialog && (
+                <SessionLogoutDialog
+                    target={logoutTarget}
+                    jwtTTL={jwtTTL}
+                    onClose={() => setLogoutTarget(null)}
+                    onConfirm={handleLogoutConfirm}
+                />
+            )}
         </div>
     );
 }

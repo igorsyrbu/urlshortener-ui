@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useState} from "react";
+import dynamic from "next/dynamic";
 import {Button} from "@/components/ui/button";
 import {ButtonSpinner} from "@/components/ui/button-spinner";
 import {ExternalLink} from "lucide-react";
@@ -8,12 +9,17 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/compo
 import {BillingCycleSelector} from "@/components/settings/BillingCycleSelector";
 import {BillingPlanCard} from "@/components/settings/BillingPlanCard";
 import {BillingSettingsSkeleton} from "@/components/settings/BillingSettingsSkeleton";
-import {PeriodSwitchConfirmModal} from "@/components/settings/PeriodSwitchConfirmModal";
 import {BILLING_COPY, BILLING_PLANS, isProSubscription} from "@/lib/billing-constants";
 import {consumePortalReturn} from "@/lib/billing-portal-return";
 import {useBillingSettings} from "@/components/settings/BillingSettingsProvider";
 import type {BillingPortalState} from "@/lib/hooks/useBillingPortal";
 import type {BillingSubscription, ScheduledPeriodSwitch} from "@/lib/billing-constants";
+import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
+
+const PeriodSwitchConfirmModal = dynamic(
+    () => import("@/components/settings/PeriodSwitchConfirmModal").then((modalModule) => modalModule.PeriodSwitchConfirmModal),
+    {ssr: false},
+);
 
 function formatPeriodEnd(currentPeriodEnd: string | undefined): string | null {
     if (!currentPeriodEnd) return null;
@@ -69,6 +75,7 @@ export function BillingSettings() {
     const isBusy = subscription.isLoading || checkout.isRedirecting || periodUpgrade.isScheduling || portal.isManaging;
     const hasScheduledSwitch = periodUpgrade.scheduledSwitch !== null || subscription.subscription.pendingSwitch !== null;
     const [isSwitchConfirmOpen, setIsSwitchConfirmOpen] = useState(false);
+    const hasOpenedSwitchConfirm = useHasBeenOpened(isSwitchConfirmOpen);
 
     useEffect(() => {
         function refreshOnReturn(): void {
@@ -139,7 +146,7 @@ export function BillingSettings() {
                         {checkout.errorMessage && <p role="alert" className="min-w-0 break-all text-sm text-destructive">{checkout.errorMessage}</p>}
                         {periodUpgrade.errorMessage && <p role="alert" className="min-w-0 break-all text-sm text-destructive">{periodUpgrade.errorMessage}</p>}
                         {isPro && renderManageSection(subscription.subscription, portal, periodUpgrade.scheduledSwitch)}
-                        {isPro && <PeriodSwitchConfirmModal open={isSwitchConfirmOpen} onOpenChange={setIsSwitchConfirmOpen}
+                        {isPro && hasOpenedSwitchConfirm && <PeriodSwitchConfirmModal open={isSwitchConfirmOpen} onOpenChange={setIsSwitchConfirmOpen}
                                                              onConfirm={handleSwitchConfirm}/>}
                     </>
                 )}

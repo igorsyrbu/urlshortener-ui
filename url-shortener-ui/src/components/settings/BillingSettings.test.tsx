@@ -285,7 +285,7 @@ function switchToYearlyButton(): HTMLElement {
 }
 
 async function confirmPeriodSwitch(user: ReturnType<typeof userEvent.setup>): Promise<void> {
-    await user.click(screen.getByRole("button", {name: BILLING_COPY.SWITCH_CONFIRM_BUTTON}));
+    await user.click(await screen.findByRole("button", {name: BILLING_COPY.SWITCH_CONFIRM_BUTTON}));
 }
 
 interface PortalReturnBillingResponses {

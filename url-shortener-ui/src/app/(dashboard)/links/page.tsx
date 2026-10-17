@@ -2,12 +2,7 @@
 
 import {Suspense, useCallback, useEffect, useState} from "react";
 import {useRouter, useSearchParams} from "next/navigation";
-import {EditLinkModal} from "@/components/links/EditLinkModal";
-import {DeleteLinkModal} from "@/components/links/DeleteLinkModal";
-import {ArchiveLinkModal} from "@/components/links/ArchiveLinkModal";
-import {QrCodeModal} from "@/components/links/QrCodeModal";
-import {ImportCsvModal} from "@/components/links/ImportCsvModal";
-import {ExportCsvModal} from "@/components/links/ExportCsvModal";
+import dynamic from "next/dynamic";
 import {LinkCard} from "@/components/links/LinkCard";
 import {LinkCardSkeletonList} from "@/components/links/LinkCardSkeleton";
 import {LinksPagination} from "@/components/links/LinksPagination";
@@ -27,8 +22,29 @@ import {toast} from "sonner";
 import {buildLinksPageUrl, parseLinksPageParam} from "@/lib/pagination";
 import {isModalOpen} from "@/lib/utils";
 import {useDebounce} from "@/lib/hooks/useDebounce";
+import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
+import {preloadOnIdle} from "@/lib/preload-on-idle";
 
 const LINKS_LIST_TOP_ID = "links-list-top";
+
+function loadEditLinkModal() {
+    return import("@/components/links/EditLinkModal").then((modalModule) => modalModule.EditLinkModal);
+}
+
+function loadDeleteLinkModal() {
+    return import("@/components/links/DeleteLinkModal").then((modalModule) => modalModule.DeleteLinkModal);
+}
+
+function loadArchiveLinkModal() {
+    return import("@/components/links/ArchiveLinkModal").then((modalModule) => modalModule.ArchiveLinkModal);
+}
+
+const EditLinkModal = dynamic(loadEditLinkModal, {ssr: false});
+const DeleteLinkModal = dynamic(loadDeleteLinkModal, {ssr: false});
+const ArchiveLinkModal = dynamic(loadArchiveLinkModal, {ssr: false});
+const QrCodeModal = dynamic(() => import("@/components/links/QrCodeModal").then((modalModule) => modalModule.QrCodeModal), {ssr: false});
+const ImportCsvModal = dynamic(() => import("@/components/links/ImportCsvModal").then((modalModule) => modalModule.ImportCsvModal), {ssr: false});
+const ExportCsvModal = dynamic(() => import("@/components/links/ExportCsvModal").then((modalModule) => modalModule.ExportCsvModal), {ssr: false});
 
 function scrollLinksToTop(): void {
     const scroller = document.querySelector("main");
@@ -70,10 +86,20 @@ function LinksPageContent() {
     const [archiveModalLink, setArchiveModalLink] = useState<LinkItem | null>(null);
     const [searchInput, setSearchInput] = useState("");
     const debouncedSearch = useDebounce(searchInput, 500);
+    const hasOpenedEdit = useHasBeenOpened(isEditModalOpen);
+    const hasOpenedDelete = useHasBeenOpened(deleteModalOpen);
+    const hasOpenedQrCode = useHasBeenOpened(isQrCodeModalOpen);
+    const hasOpenedArchive = useHasBeenOpened(archiveModalLink !== null);
+    const hasOpenedImport = useHasBeenOpened(isImportModalOpen);
+    const hasOpenedExport = useHasBeenOpened(isExportModalOpen);
 
     useEffect(() => {
         hydrateShowArchived();
     }, [hydrateShowArchived]);
+
+    useEffect(() => {
+        preloadOnIdle([loadEditLinkModal, loadDeleteLinkModal, loadArchiveLinkModal]);
+    }, []);
 
     useEffect(() => {
         useImportTracker.getState().ensureDiscovery();
@@ -320,43 +346,55 @@ function LinksPageContent() {
 
                 {renderListBody()}
 
-                <EditLinkModal
-                    open={isEditModalOpen}
-                    onOpenChange={setIsEditModalOpen}
-                    link={editingLink}
-                    onSuccess={() => fetchLinks()}
-                />
+                {hasOpenedEdit && (
+                    <EditLinkModal
+                        open={isEditModalOpen}
+                        onOpenChange={setIsEditModalOpen}
+                        link={editingLink}
+                        onSuccess={() => fetchLinks()}
+                    />
+                )}
 
-                <DeleteLinkModal
-                    open={deleteModalOpen}
-                    onOpenChange={setDeleteModalOpen}
-                    onConfirm={confirmDelete}
-                    shortUrl={linkToDelete?.shortUrl}
-                    longUrl={linkToDelete?.longUrl}
-                />
+                {hasOpenedDelete && (
+                    <DeleteLinkModal
+                        open={deleteModalOpen}
+                        onOpenChange={setDeleteModalOpen}
+                        onConfirm={confirmDelete}
+                        shortUrl={linkToDelete?.shortUrl}
+                        longUrl={linkToDelete?.longUrl}
+                    />
+                )}
 
-                <QrCodeModal
-                    open={isQrCodeModalOpen}
-                    onOpenChange={setIsQrCodeModalOpen}
-                    link={linkForQrCode}
-                />
+                {hasOpenedQrCode && (
+                    <QrCodeModal
+                        open={isQrCodeModalOpen}
+                        onOpenChange={setIsQrCodeModalOpen}
+                        link={linkForQrCode}
+                    />
+                )}
 
-                <ArchiveLinkModal
-                    open={!!archiveModalLink}
-                    onOpenChange={(open) => !open && setArchiveModalLink(null)}
-                    link={archiveModalLink}
-                    onConfirm={handleArchiveConfirm}
-                />
+                {hasOpenedArchive && (
+                    <ArchiveLinkModal
+                        open={!!archiveModalLink}
+                        onOpenChange={(open) => !open && setArchiveModalLink(null)}
+                        link={archiveModalLink}
+                        onConfirm={handleArchiveConfirm}
+                    />
+                )}
 
-                <ImportCsvModal
-                    open={isImportModalOpen}
-                    onOpenChange={setIsImportModalOpen}
-                />
+                {hasOpenedImport && (
+                    <ImportCsvModal
+                        open={isImportModalOpen}
+                        onOpenChange={setIsImportModalOpen}
+                    />
+                )}
 
-                <ExportCsvModal
-                    open={isExportModalOpen}
-                    onOpenChange={setIsExportModalOpen}
-                />
+                {hasOpenedExport && (
+                    <ExportCsvModal
+                        open={isExportModalOpen}
+                        onOpenChange={setIsExportModalOpen}
+                    />
+                )}
             </PageContainer>
         </TooltipProvider>
     );

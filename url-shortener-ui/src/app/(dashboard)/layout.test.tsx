@@ -1,10 +1,13 @@
-import {render, screen, waitFor} from "@testing-library/react";
+import {act, render, screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import DashboardLayout from "@/app/(dashboard)/layout";
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS, MAIN_CONTENT_ID, ROUTES, SESSION_CHECK_COPY, SKIP_TO_CONTENT_LABEL} from "@/lib/constants";
 import {hasSessionHint, setSessionHint} from "@/lib/session-hint";
+import {preloadOnIdle} from "@/lib/preload-on-idle";
+import {CreateLinkModal} from "@/components/links/CreateLinkModal";
+import {CreateTagModal} from "@/components/tags/CreateTagModal";
 import {useAuthStore, UserProfile} from "@/lib/store/auth";
 import {useUIStore} from "@/lib/store/ui";
 
@@ -20,12 +23,14 @@ vi.mock("next/navigation", () => ({
     usePathname: () => mocks.pathname.current,
 }));
 vi.mock("@/components/layout/Sidebar", () => ({Sidebar: () => <nav>sidebar</nav>}));
+vi.mock("@/lib/preload-on-idle", () => ({preloadOnIdle: vi.fn()}));
+vi.mock("@/lib/hooks/useMediaQuery", () => ({useIsMobile: () => false}));
 vi.mock("@/components/layout/mobile-sidebar-drawer", () => ({MobileSidebarDrawer: () => null}));
 vi.mock("@/components/links/CreateLinkModal", () => ({
-    CreateLinkModal: ({open}: {open: boolean}) => (open ? <div>create link modal</div> : null),
+    CreateLinkModal: ({open}: {open: boolean}) => <div data-testid={CREATE_LINK_DIALOG} data-open={open}/>,
 }));
 vi.mock("@/components/tags/CreateTagModal", () => ({
-    CreateTagModal: ({open}: {open: boolean}) => (open ? <div>create tag modal</div> : null),
+    CreateTagModal: ({open}: {open: boolean}) => <div data-testid={CREATE_TAG_DIALOG} data-open={open}/>,
 }));
 vi.mock("@/components/layout/Header", () => ({
     Header: ({onCreateClick, createLabel}: {onCreateClick: () => void; createLabel: string}) => (
@@ -33,6 +38,8 @@ vi.mock("@/components/layout/Header", () => ({
     ),
 }));
 
+const CREATE_LINK_DIALOG = "create link modal";
+const CREATE_TAG_DIALOG = "create tag modal";
 const USER: UserProfile = {email: "ada@example.com", name: "Ada"};
 const HTTP_SERVICE_UNAVAILABLE = 503;
 
@@ -172,19 +179,19 @@ describe("DashboardLayout when the session cannot be checked", () => {
 
 describe("DashboardLayout create action", () => {
     beforeEach(() => {
+        mocks.pathname.current = "/links";
         signIn();
         useUIStore.setState({isCreateModalOpen: false, isCreateTagModalOpen: false});
     });
 
     it("opens the link modal from the links page", async () => {
-        mocks.pathname.current = "/links";
         const user = userEvent.setup();
         renderLayout();
 
         await user.click(await screen.findByRole("button", {name: "Create link"}));
 
-        expect(screen.getByText("create link modal")).toBeInTheDocument();
-        expect(screen.queryByText("create tag modal")).not.toBeInTheDocument();
+        expect(await screen.findByTestId(CREATE_LINK_DIALOG)).toHaveAttribute("data-open", "true");
+        expect(screen.queryByTestId(CREATE_TAG_DIALOG)).not.toBeInTheDocument();
     });
 
     it.each(["/tags", "/tags/tag-1"])("opens the tag modal from %s", async (pathname) => {
@@ -194,8 +201,47 @@ describe("DashboardLayout create action", () => {
 
         await user.click(await screen.findByRole("button", {name: "Create tag"}));
 
-        expect(screen.getByText("create tag modal")).toBeInTheDocument();
-        expect(screen.queryByText("create link modal")).not.toBeInTheDocument();
+        expect(await screen.findByTestId(CREATE_TAG_DIALOG)).toHaveAttribute("data-open", "true");
+        expect(screen.queryByTestId(CREATE_LINK_DIALOG)).not.toBeInTheDocument();
+    });
+
+    it("does not mount the create dialogs before one is opened", async () => {
+        renderLayout();
+
+        await screen.findByRole("button", {name: "Create link"});
+
+        expect(screen.queryByTestId(CREATE_LINK_DIALOG)).not.toBeInTheDocument();
+        expect(screen.queryByTestId(CREATE_TAG_DIALOG)).not.toBeInTheDocument();
+    });
+
+    it("keeps the link dialog mounted after it closes, so its close animation can play", async () => {
+        const user = userEvent.setup();
+        renderLayout();
+        await user.click(await screen.findByRole("button", {name: "Create link"}));
+        await screen.findByTestId(CREATE_LINK_DIALOG);
+
+        act(() => useUIStore.getState().setCreateModalOpen(false));
+
+        expect(screen.getByTestId(CREATE_LINK_DIALOG)).toHaveAttribute("data-open", "false");
+    });
+
+    it("preloads the create dialogs on idle once the session is ready", async () => {
+        renderLayout();
+
+        await waitFor(() => expect(preloadOnIdle).toHaveBeenCalled());
+        const [loaders] = vi.mocked(preloadOnIdle).mock.calls[0];
+
+        expect(await Promise.all(loaders.map((load) => load()))).toEqual([CreateLinkModal, CreateTagModal]);
+    });
+
+    it("does not preload anything while the session is still being checked", async () => {
+        useAuthStore.setState({accessToken: null, user: null});
+        holdProfileRequest();
+        renderLayout();
+
+        await screen.findByText(SESSION_CHECK_COPY.CHECKING);
+
+        expect(preloadOnIdle).not.toHaveBeenCalled();
     });
 
     it("does not treat a similarly named route as the tags page", async () => {
