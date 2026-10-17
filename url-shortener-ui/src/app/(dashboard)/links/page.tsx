@@ -16,7 +16,7 @@ import {IMPORT_TRACKING_STATUS, useImportTracker} from "@/lib/store/import";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {PageToolbar} from "@/components/layout/PageToolbar";
-import {DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, ROUTES} from "@/lib/constants";
+import {CARD_LIST_CLASS, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, ROUTES} from "@/lib/constants";
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
 import {toast} from "sonner";
 import {buildLinksPageUrl, parseLinksPageParam} from "@/lib/pagination";
@@ -294,7 +294,7 @@ function LinksPageContent() {
         if (links.length === 0) return searchQuery !== "" ? <NoLinksFoundState/> : <EmptyLinksState/>;
         return (
             <>
-                <div id={LINKS_LIST_TOP_ID} className="grid grid-cols-1 gap-3">
+                <div id={LINKS_LIST_TOP_ID} className={CARD_LIST_CLASS}>
                     {links.map((link) => (
                         <LinkCard
                             key={link.id}

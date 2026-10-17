@@ -1,5 +1,6 @@
 "use client";
 
+import {CARD_LIST_CLASS} from "@/lib/constants";
 
 export function TagCardSkeleton() {
   return (
@@ -19,7 +20,7 @@ export function TagCardSkeleton() {
 
 export function TagCardSkeletonList({ count = 3 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-1 gap-4">
+    <div className={CARD_LIST_CLASS}>
       {Array.from({ length: count }).map((_, index) => (
         <TagCardSkeleton key={index} />
       ))}

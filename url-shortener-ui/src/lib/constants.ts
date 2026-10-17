@@ -218,6 +218,9 @@ export const TRY_AGAIN_LABEL = "Try again";
 /** Shared look of a load error that replaces a whole list (links, tags, analytics). */
 export const LIST_LOAD_ERROR_CLASS = "rounded-xl border-[0.5px] border-border bg-card p-10";
 
+/** Link and tag lists and their skeletons share it, so the gap cannot drift between the two (DESIGN.md: `gap-3`). */
+export const CARD_LIST_CLASS = "grid grid-cols-1 gap-3";
+
 export const ANALYTICS_COPY = {
     LOAD_FAILED: "Couldn't load analytics for this period.",
     REFRESH_FAILED: "Couldn't update analytics. The numbers below are from your previous selection.",

@@ -20,7 +20,7 @@ import {attempt, withPending} from "@/lib/async-utils";
 import {TAG_DELETE_FAILED_MESSAGE} from "@/lib/tag-constants";
 import {toast} from "sonner";
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
-import {LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, TAGS_LOAD_COPY} from "@/lib/constants";
+import {CARD_LIST_CLASS, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, TAGS_LOAD_COPY} from "@/lib/constants";
 
 function loadEditTagModal() {
     return import("@/components/tags/EditTagModal").then((modalModule) => modalModule.EditTagModal);
@@ -108,7 +108,7 @@ export default function TagsPage() {
         }
         if (tags.length === 0) return searchQuery !== "" ? <NoTagsFoundState/> : <EmptyTagsState/>;
         return (
-            <div className="grid grid-cols-1 gap-3">
+            <div className={CARD_LIST_CLASS}>
                 {tags.map((tag) => (
                     <TagCard key={tag.id} tag={tag} onEdit={handleEdit} onDelete={handleDeleteClick}/>
                 ))}

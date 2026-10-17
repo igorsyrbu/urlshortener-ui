@@ -2,7 +2,7 @@
 
 import {cn} from "@/lib/utils";
 import React from "react";
-import {ANALYTICS_CARD_CLASS} from "@/components/analytics/analytics-layout";
+import {ANALYTICS_CARD_CLASS, ANALYTICS_CARD_HEADER_CLASS} from "@/components/analytics/analytics-layout";
 
 interface AnalyticsCardTabConfig {
     label: string;
@@ -20,7 +20,7 @@ interface AnalyticsCardProps {
 export function AnalyticsCard({title, tabs, onTabChange, children}: AnalyticsCardProps) {
     return (
         <div className={ANALYTICS_CARD_CLASS}>
-            <div className="mb-6 flex items-center justify-between border-b-[0.5px] border-border pb-2">
+            <div className={ANALYTICS_CARD_HEADER_CLASS}>
                 {title && !tabs ? (
                     <span className="-mb-2.5 border-b-2 border-foreground pb-2 text-sm font-bold text-foreground">
                         {title}

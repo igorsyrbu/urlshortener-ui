@@ -1,6 +1,7 @@
 import {
     ANALYTICS_CARD_BODY_HEIGHT_CLASS,
     ANALYTICS_CARD_CLASS,
+    ANALYTICS_CARD_HEADER_CLASS,
     ANALYTICS_GRID_CLASS,
     ANALYTICS_PERIOD_ROW_CLASS,
     ANALYTICS_SUMMARY_CARD_CLASS,
@@ -13,9 +14,9 @@ const BREAKDOWN_CARD_COUNT = 4;
 export function AnalyticsCardSkeleton() {
     return (
         <div className={cn(ANALYTICS_CARD_CLASS, "animate-pulse")}>
-            <div className="mb-6 flex items-center justify-between border-b-[0.5px] border-border pb-2">
-                <div className="h-4 bg-muted rounded w-24 mb-0.5"/>
-                <div className="h-4 bg-muted rounded w-10 mb-0.5 mr-3"/>
+            <div className={ANALYTICS_CARD_HEADER_CLASS}>
+                <div className="h-5 bg-muted rounded w-24"/>
+                <div className="h-5 bg-muted rounded w-10 mr-3"/>
             </div>
 
             <div className={cn("flex flex-col justify-around", ANALYTICS_CARD_BODY_HEIGHT_CLASS)}>
