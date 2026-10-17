@@ -2,7 +2,8 @@ import {act, renderHook} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {toast} from "sonner";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {COPY_FAILED_LOG_MESSAGE, COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
+import {COPIED_ANNOUNCEMENT, COPY_FAILED_LOG_MESSAGE, COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
+import {useAnnouncerStore} from "@/lib/store/announcer";
 import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
 import {logger} from "@/lib/logger";
 
@@ -31,6 +32,14 @@ describe("useCopyToClipboard", () => {
 
         expect(await navigator.clipboard.readText()).toBe(TEXT);
         expect(result.current.isCopied).toBe(true);
+    });
+
+    it("announces the copy to screen readers", async () => {
+        const {result} = renderHook(() => useCopyToClipboard());
+
+        await act(() => result.current.copy(TEXT));
+
+        expect(useAnnouncerStore.getState().message).toBe(COPIED_ANNOUNCEMENT);
     });
 
     it("clears the copied state after the feedback duration", async () => {

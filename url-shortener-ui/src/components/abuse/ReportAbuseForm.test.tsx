@@ -1,4 +1,4 @@
-import {act, render, screen} from "@testing-library/react";
+import {act, render, screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {afterEach, describe, expect, it, vi, type Mock} from "vitest";
 import {ReportAbuseForm} from "@/components/abuse/ReportAbuseForm";
@@ -74,6 +74,30 @@ describe("ReportAbuseForm validation", () => {
         expect(screen.getByText("Please select a reason")).toBeInTheDocument();
         expect(screen.getByText("Please enter your email address")).toBeInTheDocument();
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("links each error to its field and announces it", async () => {
+        const user = userEvent.setup();
+        mockFetch(new Response(null, {status: 201}));
+        renderForm();
+
+        await submit(user);
+
+        expect(screen.getAllByRole("alert")).toHaveLength(3);
+        expect(screen.getByLabelText("Link to report")).toHaveAttribute("aria-invalid", "true");
+        expect(screen.getByLabelText("Link to report")).toHaveAccessibleDescription("Please enter a valid URL starting with http:// or https://");
+        expect(screen.getByLabelText("Reason")).toHaveAccessibleDescription("Please select a reason");
+        expect(screen.getByLabelText("Your email")).toHaveAccessibleDescription("Please enter your email address");
+    });
+
+    it("moves focus to the first invalid field", async () => {
+        const user = userEvent.setup();
+        mockFetch(new Response(null, {status: 201}));
+        renderForm({initialShortUrl: VALID_URL});
+
+        await submit(user);
+
+        await waitFor(() => expect(screen.getByLabelText("Reason")).toHaveFocus());
     });
 
     it("rejects a link that is not http or https", async () => {

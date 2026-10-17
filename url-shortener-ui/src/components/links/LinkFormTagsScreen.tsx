@@ -8,6 +8,7 @@ import {TagBadge} from "@/components/tags/TagBadge";
 import {TagItem} from "@/lib/types";
 import {cn} from "@/lib/utils";
 import React from "react";
+import {FieldError} from "@/components/ui/field-error";
 
 interface TagsScreenContentProps {
     tagSearch: string;
@@ -143,7 +144,7 @@ export function TagsScreenContent({
             </div>
 
             {tagError && (
-                <p className="mt-2 text-xs text-destructive">{tagError}</p>
+                <FieldError id="tags-screen-error" className="mt-2 text-xs">{tagError}</FieldError>
             )}
 
             <div className="mt-4 flex flex-col gap-2">

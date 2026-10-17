@@ -21,6 +21,10 @@ import {
 } from "@/components/ui/drawer";
 import {Input} from "@/components/ui/input";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
+import {FieldError} from "@/components/ui/field-error";
+
+const IMPORT_THEME_ERROR_ID = "import-theme-error";
+const INVALID_THEME_MESSAGE = "Invalid theme. Expected four comma-separated hex colors.";
 
 interface ImportThemeDialogProps {
     open: boolean;
@@ -56,12 +60,11 @@ export function ImportThemeDialog({open, onOpenChange, value, onValueChange, onI
                         onKeyDown={handleKeyDown}
                         placeholder="#f5f4ef,#ffffff,#d96a47,#cc2525"
                         aria-invalid={hasError}
+                        aria-describedby={hasError ? IMPORT_THEME_ERROR_ID : undefined}
                         spellCheck={false}
                     />
                     {hasError && (
-                        <p className="text-sm text-destructive">
-                            Invalid theme. Expected four comma-separated hex colors.
-                        </p>
+                        <FieldError id={IMPORT_THEME_ERROR_ID}>{INVALID_THEME_MESSAGE}</FieldError>
                     )}
                     <DialogFooter>
                         <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -92,13 +95,12 @@ export function ImportThemeDialog({open, onOpenChange, value, onValueChange, onI
                         onKeyDown={handleKeyDown}
                         placeholder="#f5f4ef,#ffffff,#d96a47,#cc2525"
                         aria-invalid={hasError}
+                        aria-describedby={hasError ? IMPORT_THEME_ERROR_ID : undefined}
                         spellCheck={false}
                         className="h-11"
                     />
                     {hasError && (
-                        <p className="text-sm text-destructive">
-                            Invalid theme. Expected four comma-separated hex colors.
-                        </p>
+                        <FieldError id={IMPORT_THEME_ERROR_ID}>{INVALID_THEME_MESSAGE}</FieldError>
                     )}
                 </div>
                 <DrawerFooter className="p-0 flex flex-col gap-2">

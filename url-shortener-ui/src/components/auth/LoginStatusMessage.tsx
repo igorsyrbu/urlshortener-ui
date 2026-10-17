@@ -20,6 +20,7 @@ export function LoginStatusMessage({message}: LoginStatusMessageProps) {
 
     return (
         <div
+            role={isSuccess ? "status" : "alert"}
             className={cn(
                 "rounded-lg border p-4",
                 isSuccess

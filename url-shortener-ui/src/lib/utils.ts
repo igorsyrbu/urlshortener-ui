@@ -85,3 +85,7 @@ export function isModalOpen(): boolean {
     return document.querySelector('[role="dialog"], [role="alertdialog"], [data-slot="dialog-content"], [data-slot="alert-dialog-content"]') !== null;
 }
 
+/** Moves focus to the element with this id on the next frame, after a state change may have (re)mounted it. */
+export function focusElementById(id: string): void {
+    requestAnimationFrame(() => document.getElementById(id)?.focus());
+}

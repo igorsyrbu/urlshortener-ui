@@ -5,6 +5,7 @@ import {ThemeProvider} from "@/providers/theme-provider";
 import {PaletteProvider} from "@/providers/palette-provider";
 import {buildPaletteInitScript} from "@/lib/themes/palette-init-script";
 import {Toaster} from "@/components/ui/sonner";
+import {LiveAnnouncer} from "@/components/layout/LiveAnnouncer";
 import React from "react";
 import {APP_NAME} from "@/lib/constants";
 
@@ -52,6 +53,7 @@ export default function RootLayout({
             <PaletteProvider>
                 {children}
                 <Toaster/>
+                <LiveAnnouncer/>
             </PaletteProvider>
         </ThemeProvider>
         </body>

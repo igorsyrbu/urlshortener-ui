@@ -15,6 +15,17 @@ import {Textarea} from "@/components/ui/textarea";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
+import {FieldError} from "@/components/ui/field-error";
+import {focusElementById} from "@/lib/utils";
+
+const ABUSE_FIELD_IDS = {SHORT_URL: "shortUrl", REASON: "reason", REPORTER_EMAIL: "reporterEmail"} as const;
+const ABUSE_FIELD_ERROR_IDS = {
+    SHORT_URL: `${ABUSE_FIELD_IDS.SHORT_URL}-error`,
+    REASON: `${ABUSE_FIELD_IDS.REASON}-error`,
+    REPORTER_EMAIL: `${ABUSE_FIELD_IDS.REPORTER_EMAIL}-error`,
+} as const;
+const ABUSE_FORM_ERROR_ID = "abuse-report-error";
+const FIELD_ERROR_WITH_ICON_CLASS = "flex items-center gap-1";
 
 interface ReportAbuseFormProps {
     turnstileEnabled: boolean;
@@ -72,24 +83,27 @@ export function ReportAbuseForm({turnstileEnabled, turnstileSiteKey, initialShor
         setReasonError(null);
         setEmailError(null);
 
-        let hasError = false;
+        const invalidFieldIds: string[] = [];
 
         if (!isValidUrl(shortUrl)) {
             setUrlError("Please enter a valid URL starting with http:// or https://");
-            hasError = true;
+            invalidFieldIds.push(ABUSE_FIELD_IDS.SHORT_URL);
         }
 
         if (!reason) {
             setReasonError("Please select a reason");
-            hasError = true;
+            invalidFieldIds.push(ABUSE_FIELD_IDS.REASON);
         }
 
         if (!reporterEmail) {
             setEmailError("Please enter your email address");
-            hasError = true;
+            invalidFieldIds.push(ABUSE_FIELD_IDS.REPORTER_EMAIL);
         }
 
-        if (hasError) return;
+        if (invalidFieldIds.length > 0) {
+            focusElementById(invalidFieldIds[0]);
+            return;
+        }
 
         setLoading(true);
 
@@ -157,12 +171,12 @@ export function ReportAbuseForm({turnstileEnabled, turnstileSiteKey, initialShor
         <div className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="shortUrl">Link to report</Label>
+                    <Label htmlFor={ABUSE_FIELD_IDS.SHORT_URL}>Link to report</Label>
                     <div className="relative">
                         <LinkIcon
                             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/>
                         <Input
-                            id="shortUrl"
+                            id={ABUSE_FIELD_IDS.SHORT_URL}
                             type="url"
                             value={shortUrl}
                             onChange={(e) => setShortUrl(e.target.value)}
@@ -170,35 +184,38 @@ export function ReportAbuseForm({turnstileEnabled, turnstileSiteKey, initialShor
                             className="pl-9"
                             disabled={loading}
                             aria-invalid={!!urlError}
+                            aria-describedby={urlError ? ABUSE_FIELD_ERROR_IDS.SHORT_URL : undefined}
                         />
                     </div>
                     {urlError && (
-                        <p className="flex items-center gap-1 text-sm text-destructive">
+                        <FieldError id={ABUSE_FIELD_ERROR_IDS.SHORT_URL} className={FIELD_ERROR_WITH_ICON_CLASS}>
                             <AlertCircle className="size-3.5"/>
                             {urlError}
-                        </p>
+                        </FieldError>
                     )}
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="reason">Reason</Label>
+                    <Label htmlFor={ABUSE_FIELD_IDS.REASON}>Reason</Label>
                     <ReasonSelect
+                        id={ABUSE_FIELD_IDS.REASON}
                         value={reason}
                         onChange={setReason}
                         error={!!reasonError}
+                        errorId={ABUSE_FIELD_ERROR_IDS.REASON}
                     />
                     {reasonError && (
-                        <p className="flex items-center gap-1 text-sm text-destructive">
+                        <FieldError id={ABUSE_FIELD_ERROR_IDS.REASON} className={FIELD_ERROR_WITH_ICON_CLASS}>
                             <AlertCircle className="size-3.5"/>
                             {reasonError}
-                        </p>
+                        </FieldError>
                     )}
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="reporterEmail">Your email</Label>
+                    <Label htmlFor={ABUSE_FIELD_IDS.REPORTER_EMAIL}>Your email</Label>
                     <Input
-                        id="reporterEmail"
+                        id={ABUSE_FIELD_IDS.REPORTER_EMAIL}
                         type="email"
                         value={reporterEmail}
                         onChange={(e) => {
@@ -208,12 +225,13 @@ export function ReportAbuseForm({turnstileEnabled, turnstileSiteKey, initialShor
                         placeholder="you@example.com"
                         disabled={loading}
                         aria-invalid={!!emailError}
+                        aria-describedby={emailError ? ABUSE_FIELD_ERROR_IDS.REPORTER_EMAIL : undefined}
                     />
                     {emailError && (
-                        <p className="flex items-center gap-1 text-sm text-destructive">
+                        <FieldError id={ABUSE_FIELD_ERROR_IDS.REPORTER_EMAIL} className={FIELD_ERROR_WITH_ICON_CLASS}>
                             <AlertCircle className="size-3.5"/>
                             {emailError}
-                        </p>
+                        </FieldError>
                     )}
                 </div>
 
@@ -243,10 +261,10 @@ export function ReportAbuseForm({turnstileEnabled, turnstileSiteKey, initialShor
                 </div>
 
                 {errorMessage && (
-                    <p className="flex items-center gap-1 text-sm text-destructive">
+                    <FieldError id={ABUSE_FORM_ERROR_ID} className={FIELD_ERROR_WITH_ICON_CLASS}>
                         <AlertCircle className="size-3.5 shrink-0"/>
                         {errorMessage}
-                    </p>
+                    </FieldError>
                 )}
 
                 <Button

@@ -4,20 +4,26 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/c
 import {ABUSE_REASON_LABELS, ABUSE_REASONS, type AbuseReason} from "@/lib/constants";
 
 interface ReasonSelectProps {
+    id: string;
     value: AbuseReason | "";
     onChange: (value: AbuseReason) => void;
     error?: boolean;
+    /** Id of the element describing the current error, if any. */
+    errorId?: string;
 }
 
-export function ReasonSelect({value, onChange, error}: ReasonSelectProps) {
+export function ReasonSelect({id, value, onChange, error, errorId}: ReasonSelectProps) {
     return (
         <Select
             value={value || undefined}
             onValueChange={(v) => onChange(v as AbuseReason)}
         >
             <SelectTrigger
+                id={id}
                 className={error ? "border-destructive" : undefined}
                 data-error={error ? "true" : undefined}
+                aria-invalid={error || undefined}
+                aria-describedby={error ? errorId : undefined}
             >
                 <SelectValue placeholder="Select a reason"/>
             </SelectTrigger>

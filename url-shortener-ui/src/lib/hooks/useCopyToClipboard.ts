@@ -2,7 +2,8 @@
 
 import {useEffect, useRef, useState} from "react";
 import {toast} from "sonner";
-import {COPY_FAILED_LOG_MESSAGE, COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
+import {COPIED_ANNOUNCEMENT, COPY_FAILED_LOG_MESSAGE, COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
+import {announce} from "@/lib/store/announcer";
 import {logger} from "@/lib/logger";
 
 interface CopyToClipboard {
@@ -25,6 +26,7 @@ export function useCopyToClipboard(failureMessage: string = COPY_FAILED_MESSAGE)
             return;
         }
         setIsCopied(true);
+        announce(COPIED_ANNOUNCEMENT);
         clearTimeout(resetTimerRef.current);
         resetTimerRef.current = setTimeout(() => setIsCopied(false), COPY_FEEDBACK_DURATION_MS);
     };

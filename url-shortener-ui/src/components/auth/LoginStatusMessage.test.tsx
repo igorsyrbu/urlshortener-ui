@@ -20,4 +20,13 @@ describe("LoginStatusMessage", () => {
 
         expect(screen.getByText(/✗\s*Invalid code/)).toBeInTheDocument();
     });
+
+    it("announces errors as alerts and successes as status updates", () => {
+        const {rerender} = render(<LoginStatusMessage message={{type: "error", text: "Invalid code"}}/>);
+        expect(screen.getByRole("alert")).toHaveTextContent("Invalid code");
+
+        rerender(<LoginStatusMessage message={{type: "success", text: "Magic link sent"}}/>);
+
+        expect(screen.getByRole("status")).toHaveTextContent("Magic link sent");
+    });
 });

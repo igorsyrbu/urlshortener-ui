@@ -81,7 +81,9 @@ Check this catalogue and the feature folders before writing a new component. All
 | Date picking | `Calendar` (`calendar.tsx`, react-day-picker), `IosWheelPicker` (`ios-wheel-picker.tsx`, embla; styles in `globals.css`) |
 | Charts | `ChartContainer` and friends (`chart.tsx`, Recharts wrapper); see [features/analytics.md](features/analytics.md) |
 | Hover glow | `GlowingEffect` (`glowing-effect.tsx`); used only in `CreateLinkTitleField` |
-| Toasts | `Toaster` (`sonner.tsx`), mounted once in the root layout; call `toast` from `sonner` |
+| Toasts | `Toaster` (`sonner.tsx`), mounted once in the root layout; call `toast` from `sonner` (Sonner renders in a live region, so toasts are announced) |
+| Field validation message | `FieldError` (`field-error.tsx`); see Forms below |
+| Screen-reader confirmation without a toast ("Copied") | `announce(message)` from `lib/store/announcer.ts`; `LiveAnnouncer` (`components/layout/`) is the single polite live region in the root layout. `useCopyToClipboard` already announces |
 | Page structure | `PageContainer`, `PageHeading`, `PageToolbar`, `SearchBar`, `NoResultsState` (`components/layout/`) |
 | Page title for a client page | Re-export `MetadataOnlyLayout` from the route's `layout.tsx` and export `metadata` ([routing-and-navigation.md](routing-and-navigation.md#page-titles-and-skip-link)) |
 | No-results states | `NoLinksFoundState`, `NoTagsFoundState` (both wrap `NoResultsState`); first-use states: `EmptyLinksState`, `EmptyTagsState` |
@@ -107,8 +109,8 @@ Every modal in the app is a Dialog on desktop and a bottom Drawer on mobile, cho
 There is no form library. Forms are controlled React forms with local `useState`.
 
 - **State**: one `useState` per field plus `isSubmitting`/`loading` and one error value per field (`urlError`, `keyError`) or a single `errorMessage`. Reset state when the modal opens (`useEffect` on `open`, `TagFormModal`).
-- **Markup**: `<form onSubmit={handleSubmit}>`, `type="submit"` primary button, `type="button"` for every other button, `<Label htmlFor>` (or `<label>`) tied to the input `id`, `aria-invalid` on invalid inputs, error text as `text-destructive` paragraphs near the field.
-- **Submit flow** (`handleSubmit`): `e.preventDefault()`, clear previous errors, validate synchronously with helpers from `lib/` (`isValidUrl`, `normalizeUrl`, `getShortKeyValidationError`), return early on failure, set pending, `await` the call in `try/catch/finally`, map known failures (`ShortKeyConflictError`, HTTP 429, 422) to field or form messages, always clear pending.
+- **Markup**: `<form onSubmit={handleSubmit}>`, `type="submit"` primary button, `type="button"` for every other button, `<Label htmlFor>` (or `<label>`) tied to the input `id` (custom controls such as a Radix `SelectTrigger` get that `id` too). An invalid field gets `aria-invalid` and `aria-describedby` pointing at its error, rendered with `FieldError` ([`components/ui/field-error.tsx`](../url-shortener-ui/src/components/ui/field-error.tsx), `role="alert"`, id `<fieldId>-error`), so the message is announced and read with the field. Form-level errors use `FieldError` (or `role="alert"`) as well.
+- **Submit flow** (`handleSubmit`): `e.preventDefault()`, clear previous errors, validate synchronously with helpers from `lib/` (`isValidUrl`, `normalizeUrl`, `getShortKeyValidationError`), return early on failure after moving focus to the first invalid field (`focusElementById` from `lib/utils.ts`, which waits a frame so a screen switch can mount the field), set pending, `await` the call in `try/catch/finally`, map known failures (`ShortKeyConflictError`, HTTP 429, 422) to field or form messages, always clear pending.
 - **Pending UI**: disable inputs and the submit button while pending; swap the label (`submittingLabel`, "Sending magic link...") or show `ButtonSpinner`; the primary button also disables when the form is not submittable (`!name.trim()`).
 - **Modal forms** close in the parent after `onSubmit` resolves (`LinkFormModal.handleSubmit`) and stay open with pending cleared when it rejects.
 - **Debounced checks**: `useDebounce` + `KEY_AVAILABILITY_CHECK_DEBOUNCE_MS` for key availability, `URL_CLEANER_DEBOUNCE_MS` for the URL cleaner hook.

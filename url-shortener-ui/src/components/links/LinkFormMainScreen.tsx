@@ -16,10 +16,9 @@ import {TagItem} from "@/lib/types";
 import type {UrlCleanerResponse} from "@/lib/api-types";
 import type {GlowState} from "@/components/links/create-link-types";
 import {cn} from "@/lib/utils";
+import {LINK_FORM_FIELD_IDS} from "@/components/links/link-form-constants";
 
-const LONG_URL_FIELD_ID = "longUrl";
-const TITLE_FIELD_ID = "title";
-const SHORT_LINK_KEY_FIELD_ID = "shortLinkKey";
+const {LONG_URL: LONG_URL_FIELD_ID, TITLE: TITLE_FIELD_ID, SHORT_LINK_KEY: SHORT_LINK_KEY_FIELD_ID} = LINK_FORM_FIELD_IDS;
 
 interface FormScreenContentProps {
     title: string;

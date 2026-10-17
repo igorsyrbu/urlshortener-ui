@@ -24,6 +24,7 @@ import {EnterKbd} from "@/components/ui/enter-kbd";
 import {TagColorPicker} from "@/components/tags/TagColorPicker";
 import {BadgeVariant} from "@/components/ui/badge";
 import {ALLOWED_TAG_COLORS, TAG_SAVE_FAILED_MESSAGE} from "@/lib/tag-constants";
+import {FieldError} from "@/components/ui/field-error";
 
 interface TagFormModalProps {
     open: boolean;
@@ -123,9 +124,9 @@ export function TagFormModal({
                     aria-describedby={submitError ? "tag-form-error" : undefined}
                 />
                 {submitError && (
-                    <p id="tag-form-error" role="alert" className="text-sm text-destructive break-all">
+                    <FieldError id="tag-form-error" className="break-all">
                         {submitError}
-                    </p>
+                    </FieldError>
                 )}
             </div>
 

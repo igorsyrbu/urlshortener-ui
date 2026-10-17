@@ -283,6 +283,19 @@ describe("LinkFormFields", () => {
             expect(onSubmit).not.toHaveBeenCalled();
         });
 
+        it("announces the URL error, links it to the field and focuses the field", async () => {
+            const user = userEvent.setup();
+            renderForm({initialKey: "k"});
+
+            await user.type(getUrlInput(), "invalid url");
+            await user.click(getSubmitButton());
+
+            expect(screen.getByRole("alert")).toHaveTextContent(INVALID_URL_MESSAGE);
+            expect(getUrlInput()).toHaveAttribute("aria-invalid", "true");
+            expect(getUrlInput()).toHaveAccessibleDescription(INVALID_URL_MESSAGE);
+            await waitFor(() => expect(getUrlInput()).toHaveFocus());
+        });
+
         it("does not submit without a key", async () => {
             const user = userEvent.setup();
             const {onSubmit} = renderForm({initialLongUrl: "https://example.com"});

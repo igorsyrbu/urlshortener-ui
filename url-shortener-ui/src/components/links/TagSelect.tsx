@@ -12,6 +12,7 @@ import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import {useTagSelectKeyboard} from "@/lib/hooks/useTagSelectKeyboard";
 import {TagSelectSearch} from "@/components/links/TagSelectSearch";
 import {cn} from "@/lib/utils";
+import {FieldError} from "@/components/ui/field-error";
 
 interface TagSelectProps {
     selectedTagIds: string[];
@@ -237,7 +238,7 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
                 </div>
 
                 {error && (
-                    <p className="px-3 pb-2 text-xs text-destructive">{error}</p>
+                    <FieldError id="tag-select-error" className="px-3 pb-2 text-xs">{error}</FieldError>
                 )}
             </PopoverContent>
         </Popover>

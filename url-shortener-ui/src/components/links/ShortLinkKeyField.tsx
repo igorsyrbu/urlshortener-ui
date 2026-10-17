@@ -5,6 +5,7 @@ import {Input} from "@/components/ui/input";
 import {Loader2, Shuffle} from "lucide-react";
 import {MOCKED_SHORT_DOMAIN} from "@/lib/constants";
 import {cn} from "@/lib/utils";
+import {FieldError} from "@/components/ui/field-error";
 
 interface ShortLinkKeyFieldProps {
     inputId: string;
@@ -62,10 +63,12 @@ export function ShortLinkKeyField({
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     onBlur={onBlur}
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? `${inputId}-error` : undefined}
                     className="min-w-0 flex-1 rounded-none border-0 shadow-none focus-visible:ring-0 focus-visible:border-transparent"
                 />
             </div>
-            {error ? <p className="-mt-1 text-xs text-destructive">{error}</p> : null}
+            {error ? <FieldError id={`${inputId}-error`} className="-mt-1 text-xs">{error}</FieldError> : null}
         </div>
     );
 }

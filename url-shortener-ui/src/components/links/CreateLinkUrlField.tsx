@@ -7,6 +7,7 @@ import {UrlCleanerBanner} from "@/components/links/UrlCleanerBanner";
 import {UrlCleanerSuccessBanner} from "@/components/links/UrlCleanerSuccessBanner";
 import type {UrlCleanerResponse} from "@/lib/api-types";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
+import {FieldError} from "@/components/ui/field-error";
 
 interface CreateLinkUrlFieldProps {
     inputId: string;
@@ -54,6 +55,8 @@ export function CreateLinkUrlField({
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     onBlur={onBlur}
+                    aria-invalid={Boolean(urlError)}
+                    aria-describedby={urlError ? `${inputId}-error` : undefined}
                     className={cn(
                         "col-span-3",
                         urlError && "border-destructive focus-visible:border-destructive",
@@ -70,7 +73,7 @@ export function CreateLinkUrlField({
                     onReview={onReview}
                 />
             ) : null}
-            {urlError ? <p className="-mt-1 text-xs text-destructive">{urlError}</p> : null}
+            {urlError ? <FieldError id={`${inputId}-error`} className="-mt-1 text-xs">{urlError}</FieldError> : null}
         </div>
     );
 }

@@ -3,7 +3,7 @@
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {AnimatePresence, motion} from "framer-motion";
 import {fetchWithAuth} from "@/lib/api";
-import {generateTitleFromHostname} from "@/lib/utils";
+import {generateTitleFromHostname, focusElementById} from "@/lib/utils";
 import {getDomain, getShortKeyValidationError, isValidUrl, normalizeUrl} from "@/lib/url-utils";
 import {
     API_ENDPOINTS,
@@ -28,6 +28,7 @@ import {TrackerReviewScreen} from "@/components/links/TrackerReviewScreen";
 import {ALLOWED_TAG_COLORS} from "@/lib/tag-constants";
 import {logger} from "@/lib/logger";
 import {buildFinalUrl, buildTrackerEntries} from "@/lib/url-cleaner-utils";
+import {LINK_FORM_FIELD_IDS} from "@/components/links/link-form-constants";
 
 interface LinkFormFieldsProps {
     title: string;
@@ -423,6 +424,7 @@ export function LinkFormFields({
             setUrlError("Please enter a valid URL (e.g. https://example.com)");
             setSlideDirection(-1);
             setActiveScreen("form");
+            focusElementById(LINK_FORM_FIELD_IDS.LONG_URL);
             return;
         }
 
@@ -435,6 +437,7 @@ export function LinkFormFields({
         if (!resolvedKey) {
             setKeyError("Key is required.");
             setIsSubmitting(false);
+            focusElementById(LINK_FORM_FIELD_IDS.SHORT_LINK_KEY);
             return;
         }
 
@@ -442,6 +445,7 @@ export function LinkFormFields({
         if (keyValidationError) {
             setKeyError(keyValidationError);
             setIsSubmitting(false);
+            focusElementById(LINK_FORM_FIELD_IDS.SHORT_LINK_KEY);
             return;
         }
 
@@ -454,6 +458,7 @@ export function LinkFormFields({
                 setKeyError(err.message);
                 setSlideDirection(-1);
                 setActiveScreen("form");
+                focusElementById(LINK_FORM_FIELD_IDS.SHORT_LINK_KEY);
             }
             setIsSubmitting(false);
         }

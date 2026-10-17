@@ -84,6 +84,7 @@ export const ICON_BUTTON_LABELS = {
 
 export const COPY_FAILED_MESSAGE = "Couldn't copy to clipboard";
 export const COPY_FAILED_LOG_MESSAGE = "Failed to copy to clipboard";
+export const COPIED_ANNOUNCEMENT = "Copied to clipboard";
 
 // ---------------------------------------------------------------------------
 // UI timing constants (milliseconds)
