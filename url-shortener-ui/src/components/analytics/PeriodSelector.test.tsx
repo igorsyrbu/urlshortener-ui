@@ -12,6 +12,16 @@ const {TEST_NOW} = vi.hoisted(() => {
     return {TEST_NOW: testNow};
 });
 
+// Render the real calendar and drawer synchronously: waiting for the lazy chunks races findBy timeouts under load.
+vi.mock("@/components/analytics/LazyCalendar", async () => ({
+    LazyCalendar: (await import("@/components/ui/calendar")).Calendar,
+    preloadCalendar: vi.fn(),
+}));
+vi.mock("@/components/analytics/LazyDateRangeDrawer", async () => ({
+    LazyDateRangeDrawer: (await import("@/components/analytics/DateRangeDrawer")).DateRangeDrawer,
+    preloadDateRangeDrawer: vi.fn(),
+}));
+
 afterAll(() => {
     vi.useRealTimers();
 });
