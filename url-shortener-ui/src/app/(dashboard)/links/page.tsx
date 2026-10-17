@@ -80,7 +80,6 @@ function LinksPageContent() {
     const [linkForQrCode, setLinkForQrCode] = useState<LinkItem | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-    const [hoveredLinkId, setHoveredLinkId] = useState<string | null>(null);
     const [archiveModalLink, setArchiveModalLink] = useState<LinkItem | null>(null);
     const [isArchiving, setIsArchiving] = useState(false);
     const [searchInput, setSearchInput] = useState("");
@@ -148,8 +147,8 @@ function LinksPageContent() {
             e.preventDefault();
             e.stopPropagation();
 
-            const hoveredCard = document.querySelector("[data-link-id]:hover") as HTMLElement | null;
-            const hoveredId = hoveredLinkId ?? hoveredCard?.dataset.linkId ?? null;
+            const hoveredCard = document.querySelector<HTMLElement>("[data-link-id]:hover");
+            const hoveredId = hoveredCard?.dataset.linkId ?? null;
 
             if (hoveredId) {
                 const hoveredLink = useLinkStore.getState().links.find((l) => l.id === hoveredId);
@@ -165,7 +164,7 @@ function LinksPageContent() {
 
         document.addEventListener("keydown", handleKeyDown, true);
         return () => document.removeEventListener("keydown", handleKeyDown, true);
-    }, [hoveredLinkId, showArchived, fetchLinks, setShowArchived, archiveModalLink, resetUrlToFirstPage]);
+    }, [showArchived, fetchLinks, setShowArchived, archiveModalLink, resetUrlToFirstPage]);
 
     const handleShowArchivedChange = (value: boolean) => {
         setShowArchived(value);
@@ -300,8 +299,6 @@ function LinksPageContent() {
                                     onDelete={handleDeleteClick}
                                     onQrCode={handleQrCode}
                                     onArchiveRequest={(link) => setArchiveModalLink(link)}
-                                    onMouseEnter={() => setHoveredLinkId(link.id)}
-                                    onMouseLeave={() => setHoveredLinkId(null)}
                                 />
                             ))}
                         </div>

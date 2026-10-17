@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import React, {useEffect, useEffectEvent, useMemo, useRef, useState} from "react";
 import {
     Archive,
     ArchiveRestore,
@@ -44,8 +44,6 @@ interface LinkCardProps {
     onDelete: (link: LinkItem) => void;
     onQrCode: (link: LinkItem) => void;
     onArchiveRequest?: (link: LinkItem) => void;
-    onMouseEnter?: () => void;
-    onMouseLeave?: () => void;
 }
 
 function getSafeDomain(longUrl: string): string {
@@ -106,8 +104,6 @@ export function LinkCard({
                              onDelete,
                              onQrCode,
                              onArchiveRequest,
-                             onMouseEnter,
-                             onMouseLeave
                          }: LinkCardProps) {
     const {isCopied, copy} = useCopyToClipboard();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -125,7 +121,9 @@ export function LinkCard({
 
     const handleCopy = () => copy(link.shortUrl);
 
-    const handleShortcut = useCallback((event: KeyboardEvent) => {
+    // An effect event always sees the latest menu state and link, so the document listener is added once per card
+    // instead of being re-registered whenever the card re-renders.
+    const handleShortcut = useEffectEvent((event: KeyboardEvent) => {
         if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
 
         const isCardActive = isMenuOpen || cardRef.current?.matches(":hover");
@@ -146,20 +144,19 @@ export function LinkCard({
             setIsMenuOpen(false);
             onQrCode(link);
         }
-    }, [isMenuOpen, link, onEdit, onDelete, onQrCode]);
+    });
 
     useEffect(() => {
-        document.addEventListener("keydown", handleShortcut);
-        return () => document.removeEventListener("keydown", handleShortcut);
-    }, [handleShortcut]);
+        const listener = (event: KeyboardEvent) => handleShortcut(event);
+        document.addEventListener("keydown", listener);
+        return () => document.removeEventListener("keydown", listener);
+    }, []);
 
     return (
         <div
             ref={cardRef}
             tabIndex={0}
             data-link-id={link.id}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
             className={cn(
                 "group flex items-center p-4 md:p-5 rounded-xl bg-card border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-4 outline-none",
                 FOCUS_RING_CLASS,
