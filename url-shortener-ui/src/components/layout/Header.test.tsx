@@ -1,4 +1,4 @@
-import {fireEvent, render, screen} from "@testing-library/react";
+import {act, fireEvent, render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {describe, expect, it, vi} from "vitest";
 import {Header} from "@/components/layout/Header";
@@ -47,6 +47,21 @@ describe("Header", () => {
         await user.click(screen.getByRole("button", {name: /Create link/}));
 
         expect(onCreateClick).toHaveBeenCalledOnce();
+    });
+
+    it.each([
+        {gesture: "hovering", reach: async (user: ReturnType<typeof userEvent.setup>) => user.hover(screen.getByRole("button", {name: /Create link/}))},
+        {gesture: "focusing", reach: async () => act(() => screen.getByRole("button", {name: /Create link/}).focus())},
+    ])("reports the intent to create when $gesture the create button, before any click", async ({reach}) => {
+        const user = userEvent.setup();
+        const onCreateClick = vi.fn();
+        const onCreateIntent = vi.fn();
+        render(<Header onCreateClick={onCreateClick} onCreateIntent={onCreateIntent}/>);
+
+        await reach(user);
+
+        expect(onCreateIntent).toHaveBeenCalled();
+        expect(onCreateClick).not.toHaveBeenCalled();
     });
 
     it("shows the menu button only when a menu handler is provided", async () => {

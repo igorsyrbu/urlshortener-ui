@@ -16,6 +16,7 @@ import {
 import {usePreferencesStore} from "@/lib/store/preferences";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {getRequestsTo, routeFetchWithAuth} from "@/test/link-form-utils";
+import {peekPrefetchedRandomKey, prefetchRandomKey, resetRandomKeyPrefetchForTests} from "@/lib/random-key";
 import {createTag} from "@/test/tag-utils";
 
 const media = vi.hoisted(() => ({isDesktop: true}));
@@ -107,7 +108,7 @@ describe("LinkFormFields", () => {
         routeFetchWithAuth({});
     });
 
-    afterEach(() => { vi.useRealTimers(); });
+    afterEach(() => { vi.useRealTimers(); resetRandomKeyPrefetchForTests(); });
 
     describe("short key generation", () => {
         it("fills the key field with a generated key when auto generation is enabled", async () => {
@@ -116,6 +117,18 @@ describe("LinkFormFields", () => {
             renderForm({autoGenerateKey: true});
 
             await waitFor(() => expect(getKeyInput()).toHaveValue(GENERATED_KEY));
+        });
+
+        it("shows a key prefetched before opening on the first render, without asking for another", async () => {
+            routeFetchWithAuth({[API_ENDPOINTS.SHORTLINKS_RANDOM]: () => Response.json({key: GENERATED_KEY})});
+            prefetchRandomKey();
+            await vi.waitFor(() => expect(peekPrefetchedRandomKey()).toBe(GENERATED_KEY));
+
+            renderForm({autoGenerateKey: true});
+
+            expect(getKeyInput()).toHaveValue(GENERATED_KEY);
+            expect(getRequestsTo(API_ENDPOINTS.SHORTLINKS_RANDOM)).toHaveLength(1);
+            expect(peekPrefetchedRandomKey()).toBeNull();
         });
 
         it("asks the user to type a key when generation fails", async () => {

@@ -11,6 +11,7 @@ import { useSessionBootstrap } from "@/lib/hooks/useSessionBootstrap";
 import { useHasBeenOpened } from "@/lib/hooks/useHasBeenOpened";
 import { useIsMobile } from "@/lib/hooks/useMediaQuery";
 import { preloadOnIdle } from "@/lib/preload-on-idle";
+import { prefetchCreateLinkData } from "@/lib/prefetch-create-link";
 import {
     DASHBOARD_CONTENT_SHELL_CLASS,
     SCROLL_TOP_THRESHOLD,
@@ -116,6 +117,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         <div className={DASHBOARD_CONTENT_SHELL_CLASS}>
                             <Header
                                 onCreateClick={handleCreateClick}
+                                onCreateIntent={isTagsPage ? undefined : prefetchCreateLinkData}
                                 onMenuClick={() => setIsMobileSidebarOpen(true)}
                                 createLabel={createLabel}
                             />

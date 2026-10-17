@@ -12,11 +12,13 @@ import {ROUTES, PAGE_TITLES} from "@/lib/constants";
 
 interface HeaderProps {
     onCreateClick?: () => void;
+    /** Pointer or focus reached the create button: start what the dialog will need. */
+    onCreateIntent?: () => void;
     onMenuClick?: () => void;
     createLabel?: string;
 }
 
-export function Header({onCreateClick, onMenuClick, createLabel = "Create link"}: HeaderProps) {
+export function Header({onCreateClick, onCreateIntent, onMenuClick, createLabel = "Create link"}: HeaderProps) {
     const pathname = usePathname();
 
     const titles: Record<string, string> = {
@@ -69,6 +71,8 @@ export function Header({onCreateClick, onMenuClick, createLabel = "Create link"}
                     <Button
                         type="button"
                         onClick={onCreateClick}
+                        onPointerEnter={onCreateIntent}
+                        onFocus={onCreateIntent}
                         className="ml-1 sm:ml-2"
                     >
                         <span className="text-xs font-bold tracking-wider uppercase">{createLabel}</span>

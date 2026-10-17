@@ -2,6 +2,7 @@
 
 import {Link as LinkIcon, MousePointerClick} from "lucide-react";
 import {useUIStore} from "@/lib/store/ui";
+import {prefetchCreateLinkData} from "@/lib/prefetch-create-link";
 
 const SCROLL_ITEM_COUNT = 30;
 const LOOP_COUNT = 2;
@@ -45,6 +46,8 @@ export function EmptyLinksState() {
                 </p>
                 <button
                     onClick={() => setCreateModalOpen(true)}
+                    onPointerEnter={prefetchCreateLinkData}
+                    onFocus={prefetchCreateLinkData}
                     className="flex items-center justify-center gap-1.5 sm:gap-2 h-9 px-3 sm:px-4 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-all active:scale-95"
                 >
                     <span className="text-xs font-bold uppercase tracking-wider">Create Link</span>

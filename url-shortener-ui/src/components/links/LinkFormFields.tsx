@@ -14,7 +14,8 @@ import {
     TRACKER_MODE,
     URL_CLEANER_SUCCESS_DURATION_MS,
 } from "@/lib/constants";
-import type {LongUrlTitleResponse, RandomKeyResponse} from "@/lib/api-types";
+import type {LongUrlTitleResponse} from "@/lib/api-types";
+import {consumePrefetchedRandomKey, peekPrefetchedRandomKey, takeRandomKey} from "@/lib/random-key";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useDebounce} from "@/lib/hooks/useDebounce";
 import {useUrlCleaner} from "@/lib/hooks/useUrlCleaner";
@@ -51,22 +52,6 @@ const EMPTY_TAG_IDS: string[] = [];
 function resolveLinkTitle(value: string): string {
     const trimmed = value.trim();
     return trimmed ? trimmed : DEFAULT_LINK_TITLE;
-}
-
-/** The server-generated random key, or `null` (logged) when it could not be fetched. */
-async function requestRandomKey(): Promise<string | null> {
-    try {
-        const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS_RANDOM);
-        if (!res.ok) {
-            logger.error("Error fetching random key", new Error(`Failed to fetch random key: ${res.status}`));
-            return null;
-        }
-        const data: RandomKeyResponse = await res.json();
-        return data.key;
-    } catch (err) {
-        logger.error("Error fetching random key", err);
-        return null;
-    }
 }
 
 /** The page title of `longUrl` reported by the backend, or `null` when there is none. */
@@ -117,7 +102,8 @@ export function LinkFormFields({
     const [longUrl, setLongUrl] = useState(initialLongUrl);
     const [urlError, setUrlError] = useState<string | null>(null);
     const [titleText, setTitleText] = useState(initialTitle);
-    const [key, setKey] = useState(initialKey);
+    const [prefetchedKey] = useState(() => (autoGenerateKey && initialKey === "" ? peekPrefetchedRandomKey() : null));
+    const [key, setKey] = useState(initialKey || (prefetchedKey ?? ""));
     const [keyError, setKeyError] = useState<string | null>(null);
     const [isKeyLoading, setIsKeyLoading] = useState(false);
     const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialTagIds);
@@ -179,10 +165,10 @@ export function LinkFormFields({
 
     useEffect(() => {
         if (!hasUserEditedKeyRef.current) {
-            setKey(initialKey);
+            setKey(initialKey || (prefetchedKey ?? ""));
             setKeyError(null);
         }
-    }, [initialKey]);
+    }, [initialKey, prefetchedKey]);
 
     useEffect(() => {
         if (cleanedTrackerCount === null) return;
@@ -196,7 +182,7 @@ export function LinkFormFields({
         }
 
         const request = (async () => {
-            const randomKey = await requestRandomKey();
+            const randomKey = await takeRandomKey();
             if (randomKey === null) {
                 if (!hasUserEditedKeyRef.current) {
                     setKeyError("Failed to generate a random key. Please type one manually.");
@@ -225,10 +211,13 @@ export function LinkFormFields({
     }, []);
 
     useEffect(() => {
-        if (autoGenerateKey) {
-            void fetchRandomKey(false);
+        if (!autoGenerateKey) return;
+        if (prefetchedKey !== null) {
+            consumePrefetchedRandomKey(prefetchedKey);
+            return;
         }
-    }, [autoGenerateKey, fetchRandomKey]);
+        void fetchRandomKey(false);
+    }, [autoGenerateKey, fetchRandomKey, prefetchedKey]);
 
     const debouncedKey = useDebounce(key, KEY_AVAILABILITY_CHECK_DEBOUNCE_MS);
 
