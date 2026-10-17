@@ -8,7 +8,7 @@ import {BILLING_COPY, BILLING_PRICES} from "@/lib/billing-constants";
 import {SETTINGS_LABELS} from "@/lib/settings-constants";
 import {routeFetchWithAuth} from "@/test/link-form-utils";
 import {stubDesktopViewport} from "@/test/viewport-utils";
-import {createBillingSubscriptionDto} from "@/test/billing-utils";
+import {createBillingSubscriptionDto, allowTestBillingOrigins} from "@/test/billing-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn()}}));
@@ -24,6 +24,10 @@ function mockSubscription(payload: unknown): void {
         [API_ENDPOINTS.BILLING_PORTAL]: () => Response.json({url: "https://billing.polar.sh/portal/test"}),
     });
 }
+
+beforeEach(() => {
+    allowTestBillingOrigins();
+});
 
 describe("BillingSettingsProvider", () => {
     beforeEach(stubDesktopViewport);

@@ -11,7 +11,7 @@ import {logger} from "@/lib/logger";
 import {getRequestsTo, parseRequestBody, routeFetchWithAuth} from "@/test/link-form-utils";
 import {markPortalOpened} from "@/lib/billing-portal-return";
 import {stubDesktopViewport, stubMobileViewport} from "@/test/viewport-utils";
-import {createBillingSubscriptionDto} from "@/test/billing-utils";
+import {createBillingSubscriptionDto, allowTestBillingOrigins} from "@/test/billing-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn()}}));
@@ -68,6 +68,10 @@ async function clickUpgrade(user: ReturnType<typeof userEvent.setup>): Promise<v
 }
 
 const BILLING_CYCLES: BillingCycle[] = ["monthly", "yearly"];
+
+beforeEach(() => {
+    allowTestBillingOrigins();
+});
 
 describe("BillingSettings plans", () => {
     beforeEach(() => {

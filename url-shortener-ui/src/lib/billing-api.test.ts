@@ -1,4 +1,4 @@
-import {describe, expect, it, vi, beforeEach} from "vitest";
+import {beforeEach, describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {RATE_LIMIT_RETRY_AFTER_HEADER} from "@/lib/billing-constants";
@@ -9,6 +9,8 @@ import {
     getBillingSubscription,
     scheduleBillingPeriodUpgrade,
 } from "@/lib/billing-api";
+import {UnsafeBillingUrlError} from "@/lib/billing-redirect";
+import {allowTestBillingOrigins} from "@/test/billing-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 
@@ -24,6 +26,10 @@ function rateLimitedResponse(retryAfterSeconds: string | null): Response {
 
 beforeEach(() => {
     vi.mocked(fetchWithAuth).mockReset();
+});
+
+beforeEach(() => {
+    allowTestBillingOrigins();
 });
 
 describe("getBillingSubscription", () => {
@@ -70,6 +76,15 @@ describe("getBillingSubscription", () => {
 });
 
 describe("createBillingCheckoutUrl", () => {
+    it.each([
+        ["a javascript: URL", "javascript:alert(document.domain)"],
+        ["a foreign origin", "https://evil.example/checkout"],
+    ])("rejects %s returned by the API", async (_name, url) => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({url}));
+
+        await expect(createBillingCheckoutUrl("monthly")).rejects.toThrow(UnsafeBillingUrlError);
+    });
+
     it.each([
         {cycle: "monthly" as const, billingPeriod: "MONTHLY"},
         {cycle: "yearly" as const, billingPeriod: "YEARLY"},

@@ -9,6 +9,7 @@ import {
     type BillingSubscription,
     type BillingSubscriptionDto,
 } from "@/lib/billing-constants";
+import {parseBillingUrl} from "@/lib/billing-redirect";
 import {parseRetryAfterSeconds} from "@/lib/retry-after";
 
 export const HTTP_BAD_REQUEST = 400;
@@ -46,7 +47,7 @@ function parseBillingUrlPayload(payload: unknown): string {
     if (typeof payload !== "object" || payload === null) throw new Error("Invalid billing URL payload");
     const url = (payload as Partial<BillingUrlPayload>).url;
     if (typeof url !== "string" || url.length === 0) throw new Error("Invalid billing URL payload");
-    return url;
+    return parseBillingUrl(url).href;
 }
 
 function parseBillingPortalPayload(payload: unknown): BillingPortalResult {

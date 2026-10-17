@@ -71,7 +71,7 @@ The four billing calls, `BillingApiError` and the `X-Rate-Limit-Retry-After-Seco
 ### Checkout (Free to Pro)
 
 1. Free user selects a cycle and clicks "Upgrade to Pro" on the Pro card.
-2. `useBillingCheckout.handleUpgrade` sets `isRedirecting`, calls `createBillingCheckoutUrl(cycle)` and `redirectToBillingUrl(url)` (`window.location.assign`, same tab).
+2. `useBillingCheckout.handleUpgrade` sets `isRedirecting`, calls `createBillingCheckoutUrl(cycle)` and `redirectToBillingUrl(url)` (both refuse a URL outside the billing allowlist, which then shows the generic checkout error; see [api-layer](../api-layer.md#billing-api-module)) (`window.location.assign`, same tab).
 3. The user pays on the external page, which returns to `/settings/billing`; the page remounts and loads the subscription fresh.
 4. Errors (button re-enabled, inline alert): 409 -> "You're already on Pro." and the subscription is reloaded (`handleRetry`); 400 -> invalid period; 429 -> rate-limited message with ` Try again in Ns.` when the header was present; anything else -> generic failure.
 
@@ -100,7 +100,6 @@ Endpoints, scenarios, error codes (400/404/409/422/429), rate limits and hosted 
 All are observations; not templates and not permission for drive-by changes.
 
 - Observation: `DangerZoneCard`'s confirm handler (`onConfirmDelete` in the General page) only closes the dialog; there is no account-deletion request.
-- Observation: `redirectToBillingUrl` and `openBillingUrlInNewTab` do not validate the URL returned by the API (scheme/host); whatever string the backend returns is navigated to. The only check is that it is a non-empty string.
 - Observation: the subscription DTO carries no "current billing period", so a Pro user already billed yearly who selects Yearly still sees "Switch to yearly"; the backend answers 409 and the UI silently reloads. The mock does so for yearly, pending and canceling subscriptions.
 - Observation: `consumePortalReturn` removes the flag on any focus/visibility event while the subscription is Pro, even if the later refresh fails, so a failed refresh is not retried by a subsequent focus.
 - Observation: a 409 from checkout ("already on Pro" message) or from the period switch (no message) reloads the whole subscription through `handleRetry`, which shows the billing skeleton again.

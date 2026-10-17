@@ -15,6 +15,7 @@ Env files: copy [`.env.example`](../url-shortener-ui/.env.example) to `.env` ins
 | `NEXT_PUBLIC_ENABLE_TURNSTILE` | disabled | Turnstile is on only when the value is exactly the string `"true"`. Read in `login/page.tsx` and `(legal)/report-abuse/page.tsx`. |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `""` | Site key for the widget. If Turnstile is enabled and the key is empty, both pages throw `NEXT_PUBLIC_TURNSTILE_SITE_KEY is required when Turnstile is enabled`. |
 | `CSP_ENFORCE` | `false` | `"true"` sends the Content-Security-Policy as `Content-Security-Policy` (enforced); anything else sends `Content-Security-Policy-Report-Only` (violations reported in the console, nothing blocked). Read by `next.config.ts` at build/start time, not inlined into the client. |
+| `NEXT_PUBLIC_BILLING_ORIGINS` | empty | Comma-separated `https://` origins of the payment provider's hosted checkout and portal pages. `parseBillingUrl` in [`src/lib/billing-redirect.ts`](../url-shortener-ui/src/lib/billing-redirect.ts) only follows API-returned billing URLs on these origins; outside production `http(s)://localhost` is always allowed for the mock. Empty in production = every billing redirect is refused (fail closed). When the mock is reached via another host (LAN IP, production build), add its origin here. Build-time (inlined into the client). |
 
 Facts that matter when changing them:
 

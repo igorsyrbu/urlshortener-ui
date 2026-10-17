@@ -130,6 +130,7 @@ Copy `.env.example` to `.env` in the `url-shortener-ui` directory to customize:
 | `NEXT_PUBLIC_ENABLE_TURNSTILE`   | `true`                     | Enables or disables Cloudflare Turnstile CAPTCHA verification |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `1x00000000000000000000AA` | Site key used for Cloudflare Turnstile CAPTCHA                |
 | `CSP_ENFORCE`                    | `false`                    | Enforce the Content-Security-Policy instead of Report-Only    |
+| `NEXT_PUBLIC_BILLING_ORIGINS`    | `https://buy.polar.sh,https://billing.polar.sh` | Allowed origins of the hosted checkout/portal pages (localhost is allowed outside production) |
 
 #### API Reference
 
