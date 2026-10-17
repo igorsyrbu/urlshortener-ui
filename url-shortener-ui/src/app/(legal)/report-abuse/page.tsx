@@ -1,6 +1,10 @@
+import type {Metadata} from "next";
 import {Flag} from "lucide-react";
 import {Card, CardContent, CardDescription, CardHeader} from "@/components/ui/card";
 import {ReportAbuseForm} from "@/components/abuse/ReportAbuseForm";
+import {PAGE_TITLES} from "@/lib/constants";
+
+export const metadata: Metadata = {title: PAGE_TITLES.REPORT_ABUSE};
 
 interface ReportAbusePageProps {
     searchParams: Promise<{ shortUrl?: string }>;

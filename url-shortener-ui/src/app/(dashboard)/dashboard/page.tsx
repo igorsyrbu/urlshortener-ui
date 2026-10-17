@@ -1,5 +1,9 @@
+import type {Metadata} from "next";
+import {PAGE_TITLES} from "@/lib/constants";
 import {LayoutDashboard} from "lucide-react";
 import {PageContainer} from "@/components/layout/PageContainer";
+
+export const metadata: Metadata = {title: PAGE_TITLES.DASHBOARD};
 
 export default function DashboardPage() {
     return (

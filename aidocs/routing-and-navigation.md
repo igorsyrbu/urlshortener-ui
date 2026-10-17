@@ -27,7 +27,7 @@ The UI uses the App Router exclusively (`src/app/`); there is no Pages Router an
 | `/manifest.webmanifest` | `manifest.ts` | metadata route | PWA manifest with `start_url: "/links"`. |
 | any unknown URL | `not-found.tsx` | client | 404 page. |
 
-Layouts: `layout.tsx` (root: fonts, providers, `Toaster`), `(dashboard)/layout.tsx` (client: auth gate, sidebar, header, global modals), `(dashboard)/settings/layout.tsx` (server: `PageContainer` + `SettingsTabs`). `(legal)` and `auth/` have no layout.
+Layouts: `layout.tsx` (root: fonts, providers, `Toaster`), `(dashboard)/layout.tsx` (client: auth gate, sidebar, header, global modals), `(dashboard)/settings/layout.tsx` (server: `PageContainer` + `SettingsTabs`). Metadata-only server layouts (re-exporting `MetadataOnlyLayout`) give client pages their title: `links`, `tags`, `analytics`, `settings/general`, `login` and `auth/`. `(legal)` has no layout.
 
 Why server vs client per file is in [architecture](architecture.md#rendering-model).
 
@@ -48,6 +48,12 @@ Guarding is client-side only; there is no server-side check.
 - Logout (sidebar user menu and the current-session card in settings) calls `DELETE /users/sessions/current`, clears `useAuthStore` and `router.replace`s to `/login` ([features/auth](features/auth.md)).
 - Public pages (no gate): `/login`, `/auth/exchange`, `/auth/ott`, `/inspect/[key]`, `/report-abuse`, `not-found`. The login page does not redirect an already signed-in user away.
 
+## Page titles and skip link
+
+- Every route has its own browser-tab title: the root layout sets `title: {default: APP_NAME, template: "%s | Short Links"}` and each route sets `metadata.title` from `PAGE_TITLES` in `lib/constants.ts` (the same names the dashboard header shows). Settings tabs read `<tab> · Settings`. Distinct titles also let the App Router's route announcer tell screen-reader users that the page changed.
+- Client pages cannot export `metadata`, so their folder gets a server `layout.tsx` that re-exports `MetadataOnlyLayout` ([`src/components/layout/MetadataOnlyLayout.tsx`](../url-shortener-ui/src/components/layout/MetadataOnlyLayout.tsx)) and exports `metadata`; server pages export it directly. A new route adds its name to `PAGE_TITLES` and one of these exports; `src/app/route-titles.test.ts` checks that titles are set and unique.
+- The dashboard layout starts with a "Skip to main content" link, visible only on keyboard focus, that targets `<main id="main-content" tabIndex={-1}>` (`MAIN_CONTENT_ID`).
+
 ## Error and not-found boundaries
 
 - [`src/app/(dashboard)/error.tsx`](../url-shortener-ui/src/app/(dashboard)/error.tsx) catches render errors of dashboard pages (not of the dashboard layout itself, per Next.js semantics). It logs through `logger.error` and offers "Try again" (`reset`).
@@ -63,7 +69,7 @@ There are no `loading.tsx` files and none may be added. Loading states are compo
 
 - Internal navigation uses `next/link` (`Link`): sidebar items (`sidebar-nav.tsx`), settings tabs (via `SegmentedControl` link mode, which renders `Link`s inside a `<nav>` with `aria-current="page"`), and the inspect page header/report links.
 - Programmatic navigation uses `useRouter` from `next/navigation`.
-- There are no raw `<a>` tags in `src` today (verified with a repo grep); keep it that way for internal routes. External provider URLs are opened with `window.location.assign` / `window.open` ([`src/lib/billing-redirect.ts`](../url-shortener-ui/src/lib/billing-redirect.ts)).
+- The only raw `<a>` is the skip link in the dashboard layout (`href="#main-content"`, an in-page fragment, not a route). Internal routes always use `Link`. External provider URLs are opened with `window.location.assign` / `window.open` ([`src/lib/billing-redirect.ts`](../url-shortener-ui/src/lib/billing-redirect.ts)).
 - Active state: `sidebar-nav.tsx` marks an item active when `pathname === href` or `pathname.startsWith(href + "/")`, so `Settings` (`/settings`) stays active on `/settings/general` and `/settings/billing`.
 
 ## Sidebar and settings tabs

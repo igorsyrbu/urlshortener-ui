@@ -1,6 +1,7 @@
+import type {Metadata} from "next";
 import {ShortLinkPreviewDTO} from "@/lib/api-types";
 import {getBackendApiBaseUrl} from "@/lib/backend-url";
-import {API_ENDPOINTS, DASHBOARD_CONTENT_SHELL_CLASS} from "@/lib/constants";
+import {API_ENDPOINTS, DASHBOARD_CONTENT_SHELL_CLASS, PAGE_TITLES} from "@/lib/constants";
 import {redirect} from "next/navigation";
 import {logger} from "@/lib/logger";
 import Link from "next/link";
@@ -8,6 +9,8 @@ import {LinkIcon, Flag} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {InspectLinkPreviewCard} from "@/components/inspect/InspectLinkPreviewCard";
+
+export const metadata: Metadata = {title: PAGE_TITLES.LINK_PREVIEW};
 
 interface InspectPageProps {
     params: Promise<{ key: string }>;

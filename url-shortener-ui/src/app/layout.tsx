@@ -6,6 +6,7 @@ import {PaletteProvider} from "@/providers/palette-provider";
 import {buildPaletteInitScript} from "@/lib/themes/palette-init-script";
 import {Toaster} from "@/components/ui/sonner";
 import React from "react";
+import {APP_NAME} from "@/lib/constants";
 
 const manrope = Manrope({
     variable: "--font-manrope",
@@ -13,7 +14,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-    title: "Short Links",
+    title: {default: APP_NAME, template: `%s | ${APP_NAME}`},
     description: "Dashboard for URL Shortener",
     appleWebApp: {
         capable: true,

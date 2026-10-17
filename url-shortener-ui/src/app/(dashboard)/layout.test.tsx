@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import DashboardLayout from "@/app/(dashboard)/layout";
 import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
+import {API_ENDPOINTS, MAIN_CONTENT_ID, ROUTES, SKIP_TO_CONTENT_LABEL} from "@/lib/constants";
 import {useAuthStore, UserProfile} from "@/lib/store/auth";
 import {useUIStore} from "@/lib/store/ui";
 
@@ -137,5 +137,33 @@ describe("DashboardLayout create action", () => {
         renderLayout();
 
         expect(await screen.findByRole("button", {name: "Create link"})).toBeInTheDocument();
+    });
+});
+
+describe("DashboardLayout skip link", () => {
+    beforeEach(() => {
+        mocks.pathname.current = "/links";
+        signIn();
+    });
+
+    it("is the first tab stop and points at the main content", async () => {
+        const user = userEvent.setup();
+        renderLayout();
+        await screen.findByText("page content");
+
+        await user.tab();
+
+        const skipLink = screen.getByRole("link", {name: SKIP_TO_CONTENT_LABEL});
+        expect(skipLink).toHaveFocus();
+        expect(skipLink).toHaveAttribute("href", `#${MAIN_CONTENT_ID}`);
+    });
+
+    it("makes the main landmark focusable as the skip target", async () => {
+        renderLayout();
+
+        const main = await screen.findByRole("main");
+
+        expect(main).toHaveAttribute("id", MAIN_CONTENT_ID);
+        expect(main).toHaveAttribute("tabindex", "-1");
     });
 });

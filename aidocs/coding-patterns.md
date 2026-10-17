@@ -83,6 +83,7 @@ Check this catalogue and the feature folders before writing a new component. All
 | Hover glow | `GlowingEffect` (`glowing-effect.tsx`); used only in `CreateLinkTitleField` |
 | Toasts | `Toaster` (`sonner.tsx`), mounted once in the root layout; call `toast` from `sonner` |
 | Page structure | `PageContainer`, `PageHeading`, `PageToolbar`, `SearchBar`, `NoResultsState` (`components/layout/`) |
+| Page title for a client page | Re-export `MetadataOnlyLayout` from the route's `layout.tsx` and export `metadata` ([routing-and-navigation.md](routing-and-navigation.md#page-titles-and-skip-link)) |
 | No-results states | `NoLinksFoundState`, `NoTagsFoundState` (both wrap `NoResultsState`); first-use states: `EmptyLinksState`, `EmptyTagsState` |
 | Debounce, media query, indicator, keyboard | `useDebounce`, `useIsDesktop` / `useIsMobile`, `useSegmentedIndicator`, `useTagSelectKeyboard` in `lib/hooks/` |
 | Copy to clipboard | `useCopyToClipboard(failureMessage?)` in [`src/lib/hooks/useCopyToClipboard.ts`](../url-shortener-ui/src/lib/hooks/useCopyToClipboard.ts): returns `{isCopied, copy}`; awaits the write, shows "copied" for `COPY_FEEDBACK_DURATION_MS`, and on failure (including a missing `navigator.clipboard` on insecure origins) logs and shows an error toast. Never call `navigator.clipboard.writeText` directly for text (the QR image copy in `QrCodeModal` is the only other clipboard code) |

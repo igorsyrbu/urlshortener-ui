@@ -2,6 +2,21 @@
 // Route paths
 // ---------------------------------------------------------------------------
 
+export const APP_NAME = "Short Links";
+
+/** Page names shown in the dashboard header and in the browser tab title (`<name> | Short Links`). */
+export const PAGE_TITLES = {
+    LINKS: "Links",
+    TAGS: "Tags",
+    DASHBOARD: "Dashboard",
+    ANALYTICS: "Analytics",
+    SETTINGS: "Settings",
+    LOGIN: "Sign in",
+    SIGNING_IN: "Signing in",
+    REPORT_ABUSE: "Report a link",
+    LINK_PREVIEW: "Link preview",
+} as const;
+
 export const ROUTES = {
     LOGIN: "/login",
     LINKS: "/links",
@@ -44,6 +59,9 @@ export const API_ENDPOINTS = {
 // ---------------------------------------------------------------------------
 // Accessibility
 // ---------------------------------------------------------------------------
+
+export const MAIN_CONTENT_ID = "main-content";
+export const SKIP_TO_CONTENT_LABEL = "Skip to main content";
 
 /** Visible keyboard-focus ring for custom focusable elements; same tokens as `Button` and `Input`. */
 export const FOCUS_RING_CLASS = "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";

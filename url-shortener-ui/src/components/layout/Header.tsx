@@ -8,7 +8,7 @@ import {Button} from "@/components/ui/button";
 import {PageHeading} from "@/components/layout/PageHeading";
 import {usePathname} from "next/navigation";
 import {isModalOpen} from "@/lib/utils";
-import {ROUTES} from "@/lib/constants";
+import {ROUTES, PAGE_TITLES} from "@/lib/constants";
 
 interface HeaderProps {
     onCreateClick?: () => void;
@@ -20,11 +20,11 @@ export function Header({onCreateClick, onMenuClick, createLabel = "Create link"}
     const pathname = usePathname();
 
     const titles: Record<string, string> = {
-        "/links": "Links",
-        "/tags": "Tags",
-        "/dashboard": "Dashboard",
-        "/analytics": "Analytics",
-        [ROUTES.SETTINGS]: "Settings",
+        [ROUTES.LINKS]: PAGE_TITLES.LINKS,
+        "/tags": PAGE_TITLES.TAGS,
+        "/dashboard": PAGE_TITLES.DASHBOARD,
+        "/analytics": PAGE_TITLES.ANALYTICS,
+        [ROUTES.SETTINGS]: PAGE_TITLES.SETTINGS,
     };
     const title = pathname.startsWith(`${ROUTES.SETTINGS}/`) ? titles[ROUTES.SETTINGS] : titles[pathname] ?? "";
 

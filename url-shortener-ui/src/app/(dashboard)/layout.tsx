@@ -17,7 +17,11 @@ import {
     ROUTES,
     SCROLL_TOP_THRESHOLD,
     SCROLL_DELTA_THRESHOLD,
+    FOCUS_RING_CLASS,
+    MAIN_CONTENT_ID,
+    SKIP_TO_CONTENT_LABEL,
 } from "@/lib/constants";
+import {cn} from "@/lib/utils";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -103,6 +107,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     return (
         <div className="bg-sidebar h-dvh w-full overflow-hidden text-foreground transition-colors duration-300">
+            <a
+                href={`#${MAIN_CONTENT_ID}`}
+                className={cn("sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:px-4 focus:py-2 rounded-lg bg-background text-sm font-medium text-foreground shadow-md outline-none", FOCUS_RING_CLASS)}
+            >
+                {SKIP_TO_CONTENT_LABEL}
+            </a>
             <div className="flex h-full w-full">
                 <Sidebar />
                 <div className="flex flex-1 flex-col min-w-0 h-full overflow-hidden relative">
@@ -118,7 +128,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         </div>
                     </div>
                     <main
-                        className="relative min-h-0 flex-1 overflow-y-auto bg-sidebar pt-16 md:pt-0 [scrollbar-gutter:stable]"
+                        id={MAIN_CONTENT_ID}
+                        tabIndex={-1}
+                        className="relative min-h-0 flex-1 overflow-y-auto bg-sidebar pt-16 md:pt-0 [scrollbar-gutter:stable] outline-none"
                         onScroll={handleScroll}
                     >
                         <div
