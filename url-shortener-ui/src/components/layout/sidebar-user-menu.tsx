@@ -86,7 +86,11 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
                 </AvatarFallback>
             </Avatar>
             <div className="flex flex-col justify-center overflow-hidden text-sm">
-                <p className="truncate text-sidebar-foreground">{user?.name || user?.email}</p>
+                {user ? (
+                    <p className="truncate text-sidebar-foreground">{user.name || user.email}</p>
+                ) : (
+                    <div className="h-4 w-24 rounded bg-muted animate-pulse" aria-hidden="true"/>
+                )}
             </div>
         </button>
     );

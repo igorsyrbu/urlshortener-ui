@@ -14,12 +14,13 @@ All authentication is performed by the external REST API. The UI only collects t
 | Magic-link landing | [`src/app/auth/ott/page.tsx`](../../url-shortener-ui/src/app/auth/ott/page.tsx) | Reads `token` + `email` from the query string, auto-submits `OttLoginForm` |
 | OAuth / OTT exchange | [`src/app/auth/exchange/page.tsx`](../../url-shortener-ui/src/app/auth/exchange/page.tsx) | Trades `code` for an access token, then goes to `/links` |
 | Auth store | [`src/lib/store/auth.ts`](../../url-shortener-ui/src/lib/store/auth.ts) | `useAuthStore`: `accessToken`, `user`, `logout()` |
-| Bootstrap gate | [`src/app/(dashboard)/layout.tsx`](../../url-shortener-ui/src/app/(dashboard)/layout.tsx) | Restores the session for every dashboard route |
+| Session bootstrap | [`src/app/(dashboard)/layout.tsx`](../../url-shortener-ui/src/app/(dashboard)/layout.tsx), [`src/lib/hooks/useSessionBootstrap.ts`](../../url-shortener-ui/src/lib/hooks/useSessionBootstrap.ts) | Restores the session for every dashboard route |
+| Session hint | [`src/lib/session-hint.ts`](../../url-shortener-ui/src/lib/session-hint.ts) | `localStorage` flag "this browser had a session"; lets the shell render before the session is confirmed |
 | Token refresh | [`src/lib/api.ts`](../../url-shortener-ui/src/lib/api.ts) | `fetchWithAuth`; see [API layer](../api-layer.md) |
 | Cooldown hook | [`src/lib/hooks/useMagicLinkCooldown.ts`](../../url-shortener-ui/src/lib/hooks/useMagicLinkCooldown.ts) | Per-email resend cooldown persisted in `localStorage` |
 | Session UI | [`src/app/(dashboard)/settings/general/page.tsx`](../../url-shortener-ui/src/app/(dashboard)/settings/general/page.tsx) | Lists and terminates sessions |
 
-The auth store holds only `accessToken: string | null` and `user: UserProfile | null` (`email`, `name`, optional `pictureUrl`). `logout()` nulls both. Nothing is persisted: a reload always starts with an empty store and recovers through the refresh cookie (see [Session bootstrap](#session-bootstrap)). See [State management](../state-management.md) for store conventions.
+The auth store holds only `accessToken: string | null` and `user: UserProfile | null` (`email`, `name`, optional `pictureUrl`). `logout()` nulls both and clears the session hint. Nothing is persisted: a reload always starts with an empty store and recovers through the refresh cookie (see [Session bootstrap](#session-bootstrap)). See [State management](../state-management.md) for store conventions.
 
 ## Login page flows
 
@@ -82,10 +83,12 @@ Reached from the email link. If `token` or `email` is missing it renders "Invali
 
 The dashboard layout ([`src/app/(dashboard)/layout.tsx`](../../url-shortener-ui/src/app/(dashboard)/layout.tsx)) is the only auth gate; see [Routing](../routing-and-navigation.md) and [Architecture](../architecture.md).
 
-1. While `isCheckingAuth` it renders a full-screen "Securing session..." spinner (nothing from the dashboard mounts, so no page fetches fire early).
-2. If the store has both `accessToken` and `user`, the gate opens immediately.
-3. Otherwise it calls `fetchWithAuth("/users/me")`. With no token, `fetchWithAuth` first runs `POST /api/token/refresh` (cookie based), stores the new token, then retries; concurrent callers queue behind the single refresh (see [API layer](../api-layer.md)).
-4. `res.ok` gives `setUser(data)` and opens the gate. Any other result or an exception calls `router.replace("/login")`.
+1. If the store has a `user`, the shell and page render immediately and no profile request is sent.
+2. Otherwise `useSessionBootstrap` calls `fetchWithAuth("/users/me")`. With no token, `fetchWithAuth` first runs `POST /api/token/refresh` (cookie based); the page's own requests wait for the same single refresh (see [API layer](../api-layer.md#token-refresh)).
+3. **With the session hint** the shell and page render while that request runs (the sidebar shows a name placeholder until the profile arrives). **Without it** a full-screen "Securing session..." spinner is shown until the profile arrives, so a signed-out visitor never sees the dashboard.
+4. `res.ok` gives `setUser(data)` and sets the hint. 401/403 clears the hint, hides the page and calls `router.replace("/login")`. Any other failure (offline, 5xx, 503 from an unreachable refresh) never signs the user out: without a hint it shows "Can't reach the server" with a retry button; with a hint the shell stays and the pages show their own errors.
+5. The hint is set after a loaded profile and cleared by `logout()` and by a rejected token refresh. It is never a credential: a stale hint only means the shell flashes for one round trip before the redirect.
+6. Components that read `user` must cope with `null` while the profile loads (`ProfileCard` shows its skeleton, the sidebar menu a placeholder, and `DangerZoneCard` never accepts an empty confirmation for an unknown email).
 
 The public pages (`/login`, `/auth/*`, `/inspect/[key]`, `/report-abuse`) sit outside this layout and have no gate.
 

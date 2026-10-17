@@ -73,6 +73,14 @@ describe.each([
         expect(screen.getByRole("button", {name: "Yes, Delete Account"})).toBeEnabled();
     });
 
+    it("keeps the final delete button disabled while the profile has not loaded", async () => {
+        useAuthStore.setState({user: null});
+
+        renderCard(true);
+
+        expect(await screen.findByRole("button", {name: "Yes, Delete Account"})).toBeDisabled();
+    });
+
     it("keeps the final delete button disabled for a different email", async () => {
         const {user} = renderCard(true);
 

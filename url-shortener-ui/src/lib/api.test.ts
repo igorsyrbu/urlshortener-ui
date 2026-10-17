@@ -2,6 +2,7 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import {API_BASE_URL, fetchWithAuth, HTTP_SERVICE_UNAVAILABLE, HTTP_UNAUTHORIZED} from "@/lib/api";
 import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 import {logger} from "@/lib/logger";
+import {hasSessionHint, setSessionHint} from "@/lib/session-hint";
 import {useAuthStore} from "@/lib/store/auth";
 
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn()}}));
@@ -181,6 +182,24 @@ describe("fetchWithAuth", () => {
             expect(refreshCallCount()).toBe(1);
             expect(apiCalls()).toEqual([]);
             expect(loginRedirects).toHaveBeenCalledOnce();
+        });
+
+        it("forgets that this browser had a session when the refresh is rejected", async () => {
+            setSessionHint();
+            mockRefreshEndpoint(() => new Response(null, {status: HTTP_UNAUTHORIZED}));
+
+            await fetchWithAuth(TEST_ENDPOINT);
+
+            expect(hasSessionHint()).toBe(false);
+        });
+
+        it("keeps the session hint when the refresh cannot reach the server", async () => {
+            setSessionHint();
+            mockRefreshEndpoint(() => new Response(null, {status: HTTP_INTERNAL_SERVER_ERROR}));
+
+            await fetchWithAuth(TEST_ENDPOINT);
+
+            expect(hasSessionHint()).toBe(true);
         });
 
         it("logs the failure and returns 503 without signing out when the refresh request throws", async () => {

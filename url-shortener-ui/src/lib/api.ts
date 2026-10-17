@@ -1,6 +1,7 @@
 import {useAuthStore} from "@/lib/store/auth";
 import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 import {logger} from "@/lib/logger";
+import {clearSessionHint} from "@/lib/session-hint";
 
 export const API_BASE_URL = "/api";
 export const HTTP_UNAUTHORIZED = 401;
@@ -60,7 +61,10 @@ function redirectToLogin(): void {
 
 async function refreshSession(): Promise<RefreshResult> {
     const result = await requestAccessToken();
-    if (result.kind === "rejected") redirectToLogin();
+    if (result.kind === "rejected") {
+        clearSessionHint();
+        redirectToLogin();
+    }
     return result;
 }
 

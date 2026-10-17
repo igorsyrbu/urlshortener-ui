@@ -63,6 +63,13 @@ export const API_ENDPOINTS = {
 export const MAIN_CONTENT_ID = "main-content";
 export const SKIP_TO_CONTENT_LABEL = "Skip to main content";
 
+export const SESSION_CHECK_COPY = {
+    CHECKING: "Securing session...",
+    UNAVAILABLE_TITLE: "Can't reach the server",
+    UNAVAILABLE_DESCRIPTION: "Your session could not be checked. Check your connection and try again.",
+    RETRY: "Try again",
+} as const;
+
 /** Visible keyboard-focus ring for custom focusable elements; same tokens as `Button` and `Input`. */
 export const FOCUS_RING_CLASS = "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";
 

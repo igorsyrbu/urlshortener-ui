@@ -5,16 +5,13 @@ import { Header } from "@/components/layout/Header";
 import { MobileSidebarDrawer } from "@/components/layout/mobile-sidebar-drawer";
 import { CreateLinkModal } from "@/components/links/CreateLinkModal";
 import { CreateTagModal } from "@/components/tags/CreateTagModal";
-import React, { useState, useRef, useEffect } from "react";
-import { useAuthStore } from "@/lib/store/auth";
+import { SessionCheckScreen } from "@/components/layout/SessionCheckScreen";
+import React, { useState, useRef } from "react";
 import { useUIStore } from "@/lib/store/ui";
-import { useRouter, usePathname } from "next/navigation";
-import { fetchWithAuth } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useSessionBootstrap } from "@/lib/hooks/useSessionBootstrap";
 import {
-    API_ENDPOINTS,
     DASHBOARD_CONTENT_SHELL_CLASS,
-    ROUTES,
     SCROLL_TOP_THRESHOLD,
     SCROLL_DELTA_THRESHOLD,
     FOCUS_RING_CLASS,
@@ -28,11 +25,10 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-    const router = useRouter();
+    const {phase, handleRetry} = useSessionBootstrap();
     const pathname = usePathname();
     const { isCreateModalOpen, setCreateModalOpen, isCreateTagModalOpen, setCreateTagModalOpen } = useUIStore();
     const [isHeaderHidden, setIsHeaderHidden] = useState(false);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const lastScrollY = useRef(0);
@@ -46,32 +42,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             setCreateModalOpen(true);
         }
     };
-
-    useEffect(() => {
-        let mounted = true;
-        const checkAuth = async () => {
-            const authStore = useAuthStore.getState();
-            if (!authStore.accessToken || !authStore.user) {
-                try {
-                    const res = await fetchWithAuth(API_ENDPOINTS.USERS_ME);
-                    if (res && res.ok && mounted) {
-                        const data = await res.json();
-                        authStore.setUser(data);
-                        setIsCheckingAuth(false);
-                    } else if (mounted) {
-                        router.replace(ROUTES.LOGIN);
-                    }
-                } catch {
-                    if (mounted) router.replace(ROUTES.LOGIN);
-                }
-            } else {
-                if (mounted) setIsCheckingAuth(false);
-            }
-        };
-
-        checkAuth();
-        return () => { mounted = false; };
-    }, [router]);
 
     const handleScroll = (e: React.UIEvent<HTMLElement>) => {
         const target = e.target as HTMLElement;
@@ -96,13 +66,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         lastScrollY.current = currentScrollY;
     };
 
-    if (isCheckingAuth) {
-        return (
-            <div className="h-dvh w-full flex flex-col gap-4 items-center justify-center bg-sidebar text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm font-medium">Securing session...</p>
-            </div>
-        );
+    if (phase !== "ready") {
+        return <SessionCheckScreen isUnavailable={phase === "unavailable"} onRetry={handleRetry}/>;
     }
 
     return (

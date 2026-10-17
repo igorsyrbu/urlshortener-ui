@@ -48,7 +48,8 @@ export function DangerZoneCard({
         }
     }, [isDeleteDialogOpen]);
 
-    const isEmailConfirmed = confirmEmail.trim().toLowerCase() === userEmail.trim().toLowerCase();
+    // The profile can still be loading while this card renders; an unknown email must never match an empty field.
+    const isEmailConfirmed = userEmail !== "" && confirmEmail.trim().toLowerCase() === userEmail.trim().toLowerCase();
 
     return (
         <>

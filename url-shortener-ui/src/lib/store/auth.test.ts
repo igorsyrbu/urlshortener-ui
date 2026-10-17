@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, it} from "vitest";
 import {useAuthStore} from "@/lib/store/auth";
 import type {UserProfile} from "@/lib/store/auth";
+import {hasSessionHint, setSessionHint} from "@/lib/session-hint";
 
 const initialState = useAuthStore.getInitialState();
 const USER: UserProfile = {email: "ada@example.com", name: "Ada"};
@@ -34,5 +35,13 @@ describe("auth store", () => {
 
         expect(useAuthStore.getState().accessToken).toBeNull();
         expect(useAuthStore.getState().user).toBeNull();
+    });
+
+    it("forgets that this browser had a session on logout", () => {
+        setSessionHint();
+
+        useAuthStore.getState().logout();
+
+        expect(hasSessionHint()).toBe(false);
     });
 });

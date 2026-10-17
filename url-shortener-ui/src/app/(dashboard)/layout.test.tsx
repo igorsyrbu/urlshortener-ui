@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import DashboardLayout from "@/app/(dashboard)/layout";
 import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS, MAIN_CONTENT_ID, ROUTES, SKIP_TO_CONTENT_LABEL} from "@/lib/constants";
+import {API_ENDPOINTS, MAIN_CONTENT_ID, ROUTES, SESSION_CHECK_COPY, SKIP_TO_CONTENT_LABEL} from "@/lib/constants";
+import {hasSessionHint, setSessionHint} from "@/lib/session-hint";
 import {useAuthStore, UserProfile} from "@/lib/store/auth";
 import {useUIStore} from "@/lib/store/ui";
 
@@ -12,7 +13,8 @@ const mocks = vi.hoisted(() => {
     return {replace, router: {replace}, pathname: {current: "/links"}};
 });
 
-vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
+vi.mock("@/lib/api", async (importOriginal) => ({...await importOriginal<typeof import("@/lib/api")>(), fetchWithAuth: vi.fn()}));
+vi.mock("@/lib/logger", () => ({logger: {error: vi.fn()}}));
 vi.mock("next/navigation", () => ({
     useRouter: () => mocks.router,
     usePathname: () => mocks.pathname.current,
@@ -32,6 +34,7 @@ vi.mock("@/components/layout/Header", () => ({
 }));
 
 const USER: UserProfile = {email: "ada@example.com", name: "Ada"};
+const HTTP_SERVICE_UNAVAILABLE = 503;
 
 function renderLayout(): void {
     render(<DashboardLayout><p>page content</p></DashboardLayout>);
@@ -39,6 +42,10 @@ function renderLayout(): void {
 
 function signIn(): void {
     useAuthStore.setState({accessToken: "token", user: USER});
+}
+
+function holdProfileRequest(): void {
+    vi.mocked(fetchWithAuth).mockReturnValue(new Promise(() => undefined));
 }
 
 describe("DashboardLayout authentication", () => {
@@ -57,16 +64,27 @@ describe("DashboardLayout authentication", () => {
         expect(fetchWithAuth).not.toHaveBeenCalled();
     });
 
-    it("shows a progress message while the session is being verified", () => {
-        vi.mocked(fetchWithAuth).mockReturnValue(new Promise(() => undefined));
+    it("shows a progress message while a session this browser has not seen is verified", () => {
+        holdProfileRequest();
 
         renderLayout();
 
-        expect(screen.getByText("Securing session...")).toBeInTheDocument();
+        expect(screen.getByText(SESSION_CHECK_COPY.CHECKING)).toBeInTheDocument();
         expect(screen.queryByText("page content")).not.toBeInTheDocument();
     });
 
-    it("restores the user from the profile endpoint and renders the page", async () => {
+    it("renders the shell and the page while the profile loads when this browser had a session", () => {
+        setSessionHint();
+        holdProfileRequest();
+
+        renderLayout();
+
+        expect(screen.getByText("page content")).toBeInTheDocument();
+        expect(screen.getByRole("navigation")).toBeInTheDocument();
+        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME);
+    });
+
+    it("restores the user, remembers the session and renders the page", async () => {
         vi.mocked(fetchWithAuth).mockResolvedValue(Response.json(USER));
 
         renderLayout();
@@ -74,6 +92,7 @@ describe("DashboardLayout authentication", () => {
         expect(await screen.findByText("page content")).toBeInTheDocument();
         expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME);
         expect(useAuthStore.getState().user).toEqual(USER);
+        expect(hasSessionHint()).toBe(true);
         expect(mocks.replace).not.toHaveBeenCalled();
     });
 
@@ -86,12 +105,15 @@ describe("DashboardLayout authentication", () => {
         expect(screen.queryByText("page content")).not.toBeInTheDocument();
     });
 
-    it("redirects to login when the profile request fails", async () => {
-        vi.mocked(fetchWithAuth).mockRejectedValue(new Error("network down"));
+    it("hides the page, forgets the session and redirects when a remembered session is rejected", async () => {
+        setSessionHint();
+        vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: 401}));
 
         renderLayout();
 
         await waitFor(() => expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(ROUTES.LOGIN));
+        expect(screen.queryByText("page content")).not.toBeInTheDocument();
+        expect(hasSessionHint()).toBe(false);
     });
 
     it("redirects to login when a token exists but the user profile is missing", async () => {
@@ -101,6 +123,50 @@ describe("DashboardLayout authentication", () => {
         renderLayout();
 
         await waitFor(() => expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(ROUTES.LOGIN));
+    });
+});
+
+describe("DashboardLayout when the session cannot be checked", () => {
+    beforeEach(() => {
+        mocks.pathname.current = "/links";
+        useAuthStore.setState({accessToken: null, user: null});
+    });
+
+    it.each([
+        ["the server is unavailable", () => vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: HTTP_SERVICE_UNAVAILABLE}))],
+        ["the request fails", () => vi.mocked(fetchWithAuth).mockRejectedValue(new Error("network down"))],
+    ])("offers a retry instead of signing out when %s", async (_name, arrangeFailure) => {
+        arrangeFailure();
+
+        renderLayout();
+
+        expect(await screen.findByRole("alert")).toHaveTextContent(SESSION_CHECK_COPY.UNAVAILABLE_TITLE);
+        expect(mocks.replace).not.toHaveBeenCalled();
+        expect(screen.queryByText("page content")).not.toBeInTheDocument();
+    });
+
+    it("checks again and renders the page after a successful retry", async () => {
+        const user = userEvent.setup();
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: HTTP_SERVICE_UNAVAILABLE}));
+        renderLayout();
+        vi.mocked(fetchWithAuth).mockResolvedValue(Response.json(USER));
+
+        await user.click(await screen.findByRole("button", {name: SESSION_CHECK_COPY.RETRY}));
+
+        expect(await screen.findByText("page content")).toBeInTheDocument();
+        expect(fetchWithAuth).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps the shell and the page for a remembered session", async () => {
+        setSessionHint();
+        vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: HTTP_SERVICE_UNAVAILABLE}));
+
+        renderLayout();
+
+        await waitFor(() => expect(fetchWithAuth).toHaveBeenCalledOnce());
+        expect(screen.getByText("page content")).toBeInTheDocument();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(mocks.replace).not.toHaveBeenCalled();
     });
 });
 

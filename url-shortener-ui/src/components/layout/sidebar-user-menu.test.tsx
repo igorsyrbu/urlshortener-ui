@@ -145,3 +145,18 @@ describe("SidebarUserMenu trigger", () => {
         expect(screen.getByText(USER.email)).toBeInTheDocument();
     });
 });
+
+describe("SidebarUserMenu while the profile loads", () => {
+    beforeEach(() => {
+        mediaQuery.isDesktop = true;
+        useAuthStore.setState({user: null, accessToken: null});
+    });
+
+    it("keeps the account menu reachable without showing a name", () => {
+        render(<SidebarUserMenu/>);
+
+        const trigger = screen.getByRole("button", {name: ICON_BUTTON_LABELS.ACCOUNT_MENU});
+        expect(trigger).toBeEnabled();
+        expect(trigger).not.toHaveTextContent(USER.name);
+    });
+});

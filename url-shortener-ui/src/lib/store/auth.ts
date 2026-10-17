@@ -1,4 +1,5 @@
 import {create} from 'zustand';
+import {clearSessionHint} from '@/lib/session-hint';
 
 export interface UserProfile {
     email: string;
@@ -19,5 +20,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
     setAccessToken: (token) => set({accessToken: token}),
     user: null,
     setUser: (user) => set({user}),
-    logout: () => set({accessToken: null, user: null}),
+    logout: () => {
+        clearSessionHint();
+        set({accessToken: null, user: null});
+    },
 }));
