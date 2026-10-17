@@ -113,10 +113,15 @@ Root ([`package.json`](../package.json)), run from the repository root:
 | `pnpm build` | UI build only. |
 | `pnpm clean` | Removes the UI `.next`. |
 | `pnpm lint` | UI `eslint` only. |
+| `pnpm check:bundle-budgets` | UI production build with `NEXT_PUBLIC_ENABLE_TURNSTILE=false`, then [`scripts/check-bundle-budgets.mjs`](../url-shortener-ui/scripts/check-bundle-budgets.mjs). |
 | `pnpm test` | UI `test:run` then mock-server tests, once. |
 | `pnpm typecheck` | Mock server `tsc --noEmit` only. |
 
-`url-shortener-ui` scripts: `dev`, `dev:clean`, `clean`, `build`, `start`, `lint`, `test` (watch), `test:run`, `test:ui`, `test:coverage`, `type-check` (app and tests). Test scripts set `NODE_OPTIONS=--no-deprecation`. Test details: [testing](testing.md).
+`url-shortener-ui` scripts: `dev`, `dev:clean`, `clean`, `build`, `start`, `lint`, `test` (watch), `test:run`, `test:ui`, `test:coverage`, `type-check` (app and tests), `check:bundle-budgets`. Test scripts set `NODE_OPTIONS=--no-deprecation`. Test details: [testing](testing.md).
+
+### Bundle budgets
+
+[`bundle-budgets.json`](../url-shortener-ui/bundle-budgets.json) caps each route's first-load JavaScript (gzip level 9, the sum of the route's `firstLoadChunkPaths` in `.next/diagnostics/route-bundle-stats.json`) and the largest single chunk; `pnpm check:bundle-budgets` prints every route with its headroom and exits 1 when one is over. Budgets are the measured value plus about 2 KB, rounded up, so re-adding any heavy library to a shared component fails (culori ~16 KB, vaul ~8 KB, framer-motion ~26 KB; a probe import of culori in the sidebar took `/dashboard` from 234.3 to 248.1 KB). A route without an entry gets `defaultRouteKb` (215), so a new dashboard route needs its own entry. Budgets only go down: after a saving, lower the number to the new value plus about 2 KB; raising one needs a written reason in the commit. Turnstile is switched off for the measurement so local `.env` files do not change the result.
 
 Mock server scripts: `dev` (`tsx watch src/index.ts`), `start` (`node dist/index.js`), `build` (`tsc`), `typecheck`, `test` (`node --import tsx --test 'src/**/*.test.ts'`).
 

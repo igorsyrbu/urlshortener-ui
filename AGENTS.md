@@ -19,6 +19,7 @@ Rules for AI agents and contributors. Details, explanations and examples live in
 | Tests (UI + mock server) | `pnpm test` |
 | Compiled tests, render budgets | `pnpm --filter=url-shortener-ui test:compiled && pnpm --filter=url-shortener-ui test:perf` |
 | Type-check | `pnpm --filter=url-shortener-ui type-check && pnpm typecheck` |
+| Bundle budgets (after touching imports, layouts, pages or lazy boundaries) | `pnpm check:bundle-budgets` |
 | Lint | `pnpm lint` (not green yet: pre-existing `react-hooks` errors; add no new findings) |
 
 ## Required reading

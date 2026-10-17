@@ -1,0 +1,20 @@
+{
+  "defaultRouteKb": 215,
+  "maxSingleChunkKb": 116,
+  "routes": {
+    "/": 178,
+    "/_not-found": 178,
+    "/auth/exchange": 181,
+    "/auth/ott": 181,
+    "/inspect/[key]": 187,
+    "/login": 190,
+    "/report-abuse": 220,
+    "/dashboard": 237,
+    "/settings": 239,
+    "/settings/billing": 248,
+    "/settings/general": 249,
+    "/analytics": 259,
+    "/tags": 274,
+    "/links": 289
+  }
+}

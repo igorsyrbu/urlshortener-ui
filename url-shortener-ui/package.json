@@ -14,6 +14,7 @@
     "test:ui": "NODE_OPTIONS=--no-deprecation vitest --ui",
     "test:coverage": "NODE_OPTIONS=--no-deprecation vitest --coverage",
     "test:compiled": "NODE_OPTIONS=--no-deprecation COMPILED_TEST_INCLUDE='src/**/*.test.{ts,tsx}' vitest run -c vitest.compiler.config.ts",
+    "check:bundle-budgets": "NEXT_PUBLIC_ENABLE_TURNSTILE=false next build && node scripts/check-bundle-budgets.mjs",
     "test:perf": "NODE_OPTIONS=--no-deprecation vitest run -c vitest.compiler.config.ts",
     "type-check": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   },
