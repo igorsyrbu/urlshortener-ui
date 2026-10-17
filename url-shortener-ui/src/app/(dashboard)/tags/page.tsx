@@ -15,6 +15,7 @@ import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import {TagItem} from "@/lib/types";
 import {useDebounce} from "@/lib/hooks/useDebounce";
 import {logger} from "@/lib/logger";
+import {attempt, withPending} from "@/lib/async-utils";
 import {TAG_DELETE_FAILED_MESSAGE} from "@/lib/tag-constants";
 import {toast} from "sonner";
 
@@ -49,17 +50,17 @@ export default function TagsPage() {
 
     const confirmDelete = async () => {
         if (!tagToDelete?.id) return;
-        setIsDeleting(true);
-        try {
-            await deleteTag(tagToDelete.id);
+        const tagId = tagToDelete.id;
+        await withPending(setIsDeleting, async () => {
+            const result = await attempt(() => deleteTag(tagId));
+            if (!result.isSuccess) {
+                logger.error("Failed to delete tag", result.error, {tagId});
+                toast.error(TAG_DELETE_FAILED_MESSAGE);
+                return;
+            }
             setDeleteModalOpen(false);
             setTagToDelete(null);
-        } catch (error) {
-            logger.error("Failed to delete tag", error, {tagId: tagToDelete.id});
-            toast.error(TAG_DELETE_FAILED_MESSAGE);
-        } finally {
-            setIsDeleting(false);
-        }
+        });
     };
 
     const handleEdit = (tag: TagItem) => {

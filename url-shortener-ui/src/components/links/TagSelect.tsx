@@ -12,6 +12,7 @@ import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import {useTagSelectKeyboard} from "@/lib/hooks/useTagSelectKeyboard";
 import {TagSelectSearch} from "@/components/links/TagSelectSearch";
 import {cn} from "@/lib/utils";
+import {attempt, withPending} from "@/lib/async-utils";
 import {FieldError} from "@/components/ui/field-error";
 
 interface TagSelectProps {
@@ -56,18 +57,18 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     const handleCreate = async () => {
-        if (!search.trim() || createLoading) return;
-        setCreateLoading(true);
+        const tagName = search.trim();
+        if (!tagName || createLoading) return;
         setError(null);
-        try {
-            const newTag = await createTag(search.trim(), getRandomColor());
-            onChange([...selectedTagIds, newTag.id]);
+        await withPending(setCreateLoading, async () => {
+            const result = await attempt(() => createTag(tagName, getRandomColor()));
+            if (!result.isSuccess) {
+                setError("Failed to create tag");
+                return;
+            }
+            onChange([...selectedTagIds, result.value.id]);
             setSearch("");
-        } catch {
-            setError("Failed to create tag");
-        } finally {
-            setCreateLoading(false);
-        }
+        });
     };
 
     const {

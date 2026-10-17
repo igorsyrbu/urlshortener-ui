@@ -63,5 +63,7 @@ Read [aidocs/README.md](aidocs/README.md), then the guides for your task before 
     behaviour over implementation, mocks only at boundaries, `vi.mocked`, no snapshots.
 12. Code listed under "Known limitations and existing exceptions" in a guide is not a template. Do not copy it and do
     not change it as a drive-by.
-13. Keep the docs true: when a change alters behaviour or a pattern described in `aidocs/`, update the owning guide in
+13. Components and hooks must compile with the React Compiler (the build fails otherwise): no `try/finally`,
+    `throw` or `?.`/`&&`/`??` inside `try` in them; use module-level async functions, `withPending`, `attempt`.
+14. Keep the docs true: when a change alters behaviour or a pattern described in `aidocs/`, update the owning guide in
     the same commit. Comments explain why, never what.

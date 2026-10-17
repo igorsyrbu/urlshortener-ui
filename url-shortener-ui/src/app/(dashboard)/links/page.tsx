@@ -27,6 +27,7 @@ import {buildLinksPageUrl, parseLinksPageParam} from "@/lib/pagination";
 import {logger} from "@/lib/logger";
 import {isModalOpen} from "@/lib/utils";
 import {useDebounce} from "@/lib/hooks/useDebounce";
+import {withPending} from "@/lib/async-utils";
 
 const LINKS_LIST_TOP_ID = "links-list-top";
 
@@ -37,6 +38,18 @@ function scrollLinksToTop(): void {
         return;
     }
     document.getElementById(LINKS_LIST_TOP_ID)?.scrollIntoView({behavior: "smooth", block: "start"});
+}
+
+/** Deletes a link and logs any failure; `true` when the backend confirmed the deletion. */
+async function deleteShortLink(linkId: string): Promise<boolean> {
+    try {
+        const res = await fetchWithAuth(`${API_ENDPOINTS.SHORTLINKS}/${linkId}`, {method: "DELETE"});
+        if (!res.ok) logger.error("Failed to delete link", undefined, {status: res.status, linkId});
+        return res.ok;
+    } catch (e) {
+        logger.error("Error deleting link", e, {linkId});
+        return false;
+    }
 }
 
 function LinksPageContent() {
@@ -182,14 +195,12 @@ function LinksPageContent() {
 
     const handleArchiveConfirm = async () => {
         if (!archiveModalLink) return;
-        setIsArchiving(true);
-        try {
-            await setLinkArchived(archiveModalLink.id, archiveModalLink.isActive);
+        const {id, isActive} = archiveModalLink;
+        await withPending(setIsArchiving, async () => {
+            await setLinkArchived(id, isActive);
             setArchiveModalLink(null);
             await syncPageAfterRemoval();
-        } finally {
-            setIsArchiving(false);
-        }
+        });
     };
 
     const handleDeleteClick = (link: LinkItem) => {
@@ -199,25 +210,15 @@ function LinksPageContent() {
 
     const confirmDelete = async () => {
         if (!linkToDelete) return;
-        setIsDeleting(true);
-        try {
-            const res = await fetchWithAuth(`${API_ENDPOINTS.SHORTLINKS}/${linkToDelete.id}`, {
-                method: "DELETE",
-            });
-            if (res.ok) {
-                const store = useLinkStore.getState();
-                await store.fetchLinks(store.currentPage);
-                setDeleteModalOpen(false);
-                setLinkToDelete(null);
-                await syncPageAfterRemoval();
-            } else {
-                logger.error("Failed to delete link", undefined, {status: res.status, linkId: linkToDelete.id});
-            }
-        } catch (e) {
-            logger.error("Error deleting link", e, {linkId: linkToDelete.id});
-        } finally {
-            setIsDeleting(false);
-        }
+        const linkId = linkToDelete.id;
+        await withPending(setIsDeleting, async () => {
+            if (!await deleteShortLink(linkId)) return;
+            const store = useLinkStore.getState();
+            await store.fetchLinks(store.currentPage);
+            setDeleteModalOpen(false);
+            setLinkToDelete(null);
+            await syncPageAfterRemoval();
+        });
     };
 
     const handleEdit = (link: LinkItem) => {

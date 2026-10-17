@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useCallback, useEffect, useRef} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {EmblaCarouselType} from "embla-carousel";
 import useEmblaCarousel from "embla-carousel-react";
 import {cn} from "@/lib/utils";
@@ -88,16 +88,14 @@ export function IosWheelPicker({
                                     loop = false,
                                     className,
                                 }: IosWheelPickerProps) {
-    const initialIndexRef = useRef(
-        Math.min(selectedIndex, Math.max(items.length - 1, 0))
-    );
+    const [initialIndex] = useState(() => Math.min(selectedIndex, Math.max(items.length - 1, 0)));
 
     const [emblaRef, emblaApi] = useEmblaCarousel({
         loop,
         axis: "y",
         dragFree: true,
         containScroll: false,
-        startIndex: initialIndexRef.current,
+        startIndex: initialIndex,
     });
 
     const slideCount = items.length;

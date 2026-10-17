@@ -9,7 +9,8 @@ const securityHeaders = buildSecurityHeaders({
 });
 
 const nextConfig: NextConfig = {
-  reactCompiler: true,
+  // Every component compiles today; fail the build instead of silently shipping an uncompiled one.
+  reactCompiler: { panicThreshold: "all_errors" },
   poweredByHeader: false,
   experimental: {
     optimizePackageImports: ['radix-ui', 'lucide-react']

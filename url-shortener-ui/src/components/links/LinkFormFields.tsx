@@ -27,6 +27,7 @@ import {TagsScreenContent} from "@/components/links/LinkFormTagsScreen";
 import {TrackerReviewScreen} from "@/components/links/TrackerReviewScreen";
 import {ALLOWED_TAG_COLORS} from "@/lib/tag-constants";
 import {logger} from "@/lib/logger";
+import {attempt, withPending} from "@/lib/async-utils";
 import {buildFinalUrl, buildTrackerEntries} from "@/lib/url-cleaner-utils";
 import {LINK_FORM_FIELD_IDS} from "@/components/links/link-form-constants";
 
@@ -50,6 +51,34 @@ const EMPTY_TAG_IDS: string[] = [];
 function resolveLinkTitle(value: string): string {
     const trimmed = value.trim();
     return trimmed ? trimmed : DEFAULT_LINK_TITLE;
+}
+
+/** The server-generated random key, or `null` (logged) when it could not be fetched. */
+async function requestRandomKey(): Promise<string | null> {
+    try {
+        const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS_RANDOM);
+        if (!res.ok) {
+            logger.error("Error fetching random key", new Error(`Failed to fetch random key: ${res.status}`));
+            return null;
+        }
+        const data: RandomKeyResponse = await res.json();
+        return data.key;
+    } catch (err) {
+        logger.error("Error fetching random key", err);
+        return null;
+    }
+}
+
+/** The page title of `longUrl` reported by the backend, or `null` when there is none. */
+async function requestLongUrlTitle(longUrl: string): Promise<string | null> {
+    try {
+        const res = await fetchWithAuth(`${API_ENDPOINTS.LONG_URL_TITLE}?url=${encodeURIComponent(longUrl)}`);
+        if (!res.ok) return null;
+        const data: LongUrlTitleResponse = await res.json();
+        return data.title?.trim() || null;
+    } catch {
+        return null;
+    }
 }
 
 const slideVariants = {
@@ -167,29 +196,22 @@ export function LinkFormFields({
         }
 
         const request = (async () => {
-            try {
-                const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS_RANDOM);
-                if (!res.ok) {
-                    throw new Error(`Failed to fetch random key: ${res.status}`);
-                }
-
-                const data = (await res.json()) as RandomKeyResponse;
-
-                const shouldApplyKey = force || !hasUserEditedKeyRef.current;
-                if (!shouldApplyKey) {
-                    return null;
-                }
-
-                setKey(data.key);
-                setKeyError(null);
-                return data.key;
-            } catch (err) {
-                logger.error("Error fetching random key", err);
+            const randomKey = await requestRandomKey();
+            if (randomKey === null) {
                 if (!hasUserEditedKeyRef.current) {
                     setKeyError("Failed to generate a random key. Please type one manually.");
                 }
                 return null;
             }
+
+            const shouldApplyKey = force || !hasUserEditedKeyRef.current;
+            if (!shouldApplyKey) {
+                return null;
+            }
+
+            setKey(randomKey);
+            setKeyError(null);
+            return randomKey;
         })();
 
         setIsKeyLoading(true);
@@ -392,26 +414,16 @@ export function LinkFormFields({
 
     const fetchTitle = async () => {
         if (!longUrl) return;
-        setIsLoadingTitle(true);
         setGlowState("loading");
-        try {
-            const res = await fetchWithAuth(`${API_ENDPOINTS.LONG_URL_TITLE}?url=${encodeURIComponent(longUrl)}`);
-            if (res.ok) {
-                const data: LongUrlTitleResponse = await res.json();
-                if (data.title?.trim()) {
-                    setTitleText(data.title.trim());
-                    applyGlowFeedback();
-                } else {
-                    setTitleFromHostname(longUrl);
-                }
-            } else {
+        await withPending(setIsLoadingTitle, async () => {
+            const pageTitle = await requestLongUrlTitle(longUrl);
+            if (pageTitle === null) {
                 setTitleFromHostname(longUrl);
+                return;
             }
-        } catch {
-            setTitleFromHostname(longUrl);
-        } finally {
-            setIsLoadingTitle(false);
-        }
+            setTitleText(pageTitle);
+            applyGlowFeedback();
+        });
     };
 
     const handleSubmit = async (e?: React.SyntheticEvent) => {
@@ -465,19 +477,19 @@ export function LinkFormFields({
     };
 
     const handleCreateTag = async () => {
-        if (!tagSearch.trim() || createTagLoading) return;
-        setCreateTagLoading(true);
+        const tagName = tagSearch.trim();
+        if (!tagName || createTagLoading) return;
         setTagError(null);
-        try {
-            const randomColor = ALLOWED_TAG_COLORS[Math.floor(Math.random() * ALLOWED_TAG_COLORS.length)];
-            const newTag = await createTag(tagSearch.trim(), randomColor);
-            setSelectedTagIds((prev) => [...prev, newTag.id]);
+        const randomColor = ALLOWED_TAG_COLORS[Math.floor(Math.random() * ALLOWED_TAG_COLORS.length)];
+        await withPending(setCreateTagLoading, async () => {
+            const result = await attempt(() => createTag(tagName, randomColor));
+            if (!result.isSuccess) {
+                setTagError("Failed to create tag");
+                return;
+            }
+            setSelectedTagIds((prev) => [...prev, result.value.id]);
             setTagSearch("");
-        } catch {
-            setTagError("Failed to create tag");
-        } finally {
-            setCreateTagLoading(false);
-        }
+        });
     };
 
     const handleToggleTag = (tagId: string) => {

@@ -17,8 +17,34 @@ import {LoginGoogleSignInButton} from "@/components/auth/LoginGoogleSignInButton
 import {useMagicLinkCooldown} from "@/lib/hooks/useMagicLinkCooldown";
 import {logger} from "@/lib/logger";
 import {parseRetryAfterSeconds} from "@/lib/retry-after";
+import {withPending} from "@/lib/async-utils";
 
 const OTP_CODE_LENGTH = 6;
+const HTTP_TOO_MANY_REQUESTS = 429;
+
+type MagicLinkRequestResult =
+    | {kind: "sent"}
+    | {kind: "rate-limited"; retryAfterSeconds: number | null}
+    | {kind: "failed"; message: string};
+
+async function requestMagicLink(email: string, turnstileToken: string | null): Promise<MagicLinkRequestResult> {
+    const bodyParams = new URLSearchParams({username: email});
+    if (turnstileToken !== null) bodyParams.set("cf-turnstile-response", turnstileToken);
+    try {
+        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.OTT_GENERATE}`, {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            body: bodyParams.toString(),
+        });
+        if (response.status === HTTP_TOO_MANY_REQUESTS) {
+            return {kind: "rate-limited", retryAfterSeconds: parseRetryAfterSeconds(response.headers)};
+        }
+        if (!response.ok) return {kind: "failed", message: `Failed to generate magic link: ${response.status}`};
+        return {kind: "sent"};
+    } catch (error) {
+        return {kind: "failed", message: error instanceof Error ? error.message : "Failed to send magic link"};
+    }
+}
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -89,50 +115,24 @@ export default function LoginPage() {
             return;
         }
 
-        try {
-            setLoading(true);
-
-            const bodyParams = new URLSearchParams({username: trimmedEmail});
-            if (turnstileEnabled) {
-                bodyParams.set("cf-turnstile-response", turnstileToken);
-            }
-
-            const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.OTT_GENERATE}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: bodyParams.toString(),
-            });
-
-            if (response.status === 429) {
-                const retryAfterSeconds = parseRetryAfterSeconds(response.headers);
-                if (retryAfterSeconds !== null) {
-                    startCooldown(retryAfterSeconds);
-                    setManuallyLocked(true);
-                    return;
-                }
-                setMessage({
-                    type: "error",
-                    text: "Too many attempts. Please try again later.",
-                });
+        await withPending(setLoading, async () => {
+            const result = await requestMagicLink(trimmedEmail, turnstileEnabled ? turnstileToken : null);
+            if (result.kind === "sent") {
+                setShowOtpForm(true);
+                setTurnstileToken("");
                 return;
             }
-
-            if (!response.ok) {
-                throw new Error(`Failed to generate magic link: ${response.status}`);
+            if (result.kind === "failed") {
+                setMessage({type: "error", text: result.message});
+                return;
             }
-
-            setShowOtpForm(true);
-            setTurnstileToken("");
-        } catch (error) {
-            setMessage({
-                type: "error",
-                text: error instanceof Error ? error.message : "Failed to send magic link",
-            });
-        } finally {
-            setLoading(false);
-        }
+            if (result.retryAfterSeconds !== null) {
+                startCooldown(result.retryAfterSeconds);
+                setManuallyLocked(true);
+                return;
+            }
+            setMessage({type: "error", text: "Too many attempts. Please try again later."});
+        });
     };
 
     const handleSubmitCode = (submittedCode?: string) => {

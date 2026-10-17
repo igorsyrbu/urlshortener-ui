@@ -13,6 +13,24 @@ interface AccessTokenContainer {
     accessToken: string
 }
 
+type ExchangeResult = {accessToken: string} | {errorMessage: string}
+
+async function exchangeAuthorizationCode(code: string): Promise<ExchangeResult> {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}${API_ENDPOINTS.AUTH_CODE_EXCHANGE}?code=${encodeURIComponent(code)}`,
+            {credentials: "include"},
+        );
+        if (!response.ok) {
+            return {errorMessage: `Exchange failed: ${response.status} ${response.statusText}`};
+        }
+        const data: AccessTokenContainer = await response.json();
+        return {accessToken: data.accessToken};
+    } catch (err) {
+        return {errorMessage: err instanceof Error ? err.message : "Failed to exchange code"};
+    }
+}
+
 function ExchangeProcessor() {
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -31,31 +49,17 @@ function ExchangeProcessor() {
         }
         exchangedCodeRef.current = code
 
-        const exchangeCode = async () => {
-            try {
-                const response = await fetch(
-                    `${API_BASE_URL}${API_ENDPOINTS.AUTH_CODE_EXCHANGE}?code=${encodeURIComponent(code)}`,
-                    {credentials: "include"},
-                );
-
-                if (!response.ok) {
-                    throw new Error(`Exchange failed: ${response.status} ${response.statusText}`);
-                }
-
-                const data: AccessTokenContainer = await response.json();
-
-                useAuthStore.getState().setAccessToken(data.accessToken);
-                setSessionHint();
-                // Replace, not push: Back must not return here and resend the spent single-use code.
-                router.replace(ROUTES.LINKS);
-
-                setError(null);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to exchange code");
+        void exchangeAuthorizationCode(code).then((result) => {
+            if ("errorMessage" in result) {
+                setError(result.errorMessage)
+                return
             }
-        }
-
-        exchangeCode()
+            useAuthStore.getState().setAccessToken(result.accessToken)
+            setSessionHint()
+            // Replace, not push: Back must not return here and resend the spent single-use code.
+            router.replace(ROUTES.LINKS)
+            setError(null)
+        })
     }, [code, router])
 
     if (!code) {

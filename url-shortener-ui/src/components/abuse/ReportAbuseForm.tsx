@@ -17,6 +17,7 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {FieldError} from "@/components/ui/field-error";
 import {focusElementById} from "@/lib/utils";
+import {withPending} from "@/lib/async-utils";
 
 const ABUSE_FIELD_IDS = {SHORT_URL: "shortUrl", REASON: "reason", REPORTER_EMAIL: "reporterEmail"} as const;
 const ABUSE_FIELD_ERROR_IDS = {
@@ -26,6 +27,66 @@ const ABUSE_FIELD_ERROR_IDS = {
 } as const;
 const ABUSE_FORM_ERROR_ID = "abuse-report-error";
 const FIELD_ERROR_WITH_ICON_CLASS = "flex items-center gap-1";
+
+const HTTP_CREATED = 201;
+const HTTP_UNPROCESSABLE_ENTITY = 422;
+const HTTP_TOO_MANY_REQUESTS = 429;
+
+interface AbuseReportInput {
+    shortUrl: string;
+    reason: string;
+    reporterEmail: string;
+    description: string;
+    turnstileToken: string;
+}
+
+type AbuseReportResult =
+    | {kind: "submitted"; reportId: string}
+    | {kind: "failed"; message: string}
+    | {kind: "unanswered"};
+
+function buildAbuseReportBody(input: AbuseReportInput): URLSearchParams {
+    const body = new URLSearchParams();
+    body.set("shortUrl", input.shortUrl);
+    body.set("reason", input.reason);
+    if (input.reporterEmail) body.set("reporterEmail", input.reporterEmail);
+    if (input.description) body.set("description", input.description);
+    if (input.turnstileToken) body.set("cf-turnstile-response", input.turnstileToken);
+    return body;
+}
+
+function buildRateLimitedMessage(retryAfter: number | null): string {
+    if (!retryAfter) return "Too many requests. Please try again later.";
+    return `Too many requests. Please try again in ${retryAfter} second${retryAfter === 1 ? "" : "s"}.`;
+}
+
+async function readAbuseReportResponse(response: Response): Promise<AbuseReportResult> {
+    if (response.status === HTTP_TOO_MANY_REQUESTS) {
+        return {kind: "failed", message: buildRateLimitedMessage(parseRetryAfterSeconds(response.headers))};
+    }
+    if (response.status === HTTP_UNPROCESSABLE_ENTITY) {
+        const data = await response.json();
+        return {kind: "failed", message: data.message || data.error || "Invalid input. Please check your entries."};
+    }
+    if (!response.ok) return {kind: "failed", message: "An unexpected error occurred. Please try again later."};
+    if (response.status !== HTTP_CREATED) return {kind: "unanswered"};
+    const data = await response.json();
+    return {kind: "submitted", reportId: data.id};
+}
+
+async function submitAbuseReport(input: AbuseReportInput): Promise<AbuseReportResult> {
+    try {
+        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ABUSE_REPORT}`, {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            body: buildAbuseReportBody(input).toString(),
+        });
+        return await readAbuseReportResponse(response);
+    } catch (error) {
+        logger.error("Failed to submit abuse report", error);
+        return {kind: "failed", message: "Network error. Please check your connection and try again."};
+    }
+}
 
 interface ReportAbuseFormProps {
     turnstileEnabled: boolean;
@@ -105,53 +166,11 @@ export function ReportAbuseForm({turnstileEnabled, turnstileSiteKey, initialShor
             return;
         }
 
-        setLoading(true);
-
-        try {
-            const body = new URLSearchParams();
-            body.set("shortUrl", shortUrl);
-            body.set("reason", reason);
-            if (reporterEmail) body.set("reporterEmail", reporterEmail);
-            if (description) body.set("description", description);
-            if (turnstileToken) body.set("cf-turnstile-response", turnstileToken);
-
-            const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.ABUSE_REPORT}`, {
-                method: "POST",
-                headers: {"Content-Type": "application/x-www-form-urlencoded"},
-                body: body.toString(),
-            });
-
-            if (response.status === 429) {
-                const retryAfter = parseRetryAfterSeconds(response.headers);
-                if (retryAfter) {
-                    setErrorMessage(`Too many requests. Please try again in ${retryAfter} second${retryAfter === 1 ? "" : "s"}.`);
-                } else {
-                    setErrorMessage("Too many requests. Please try again later.");
-                }
-                return;
-            }
-
-            if (response.status === 422) {
-                const data = await response.json();
-                setErrorMessage(data.message || data.error || "Invalid input. Please check your entries.");
-                return;
-            }
-
-            if (!response.ok) {
-                setErrorMessage("An unexpected error occurred. Please try again later.");
-                return;
-            }
-
-            if (response.status === 201) {
-                const data = await response.json();
-                setSubmittedReport({id: data.id});
-            }
-        } catch (error) {
-            logger.error("Failed to submit abuse report", error);
-            setErrorMessage("Network error. Please check your connection and try again.");
-        } finally {
-            setLoading(false);
-        }
+        await withPending(setLoading, async () => {
+            const result = await submitAbuseReport({shortUrl, reason, reporterEmail, description, turnstileToken});
+            if (result.kind === "failed") setErrorMessage(result.message);
+            if (result.kind === "submitted") setSubmittedReport({id: result.reportId});
+        });
     }, [shortUrl, reason, reporterEmail, description, turnstileToken]);
 
     if (submittedReport) {

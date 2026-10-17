@@ -10,6 +10,7 @@ import {
     scheduleBillingPeriodUpgrade,
 } from "@/lib/billing-api";
 import {BILLING_COPY, buildRateLimitedMessage, type ScheduledPeriodSwitch} from "@/lib/billing-constants";
+import {attempt} from "@/lib/async-utils";
 import {logger} from "@/lib/logger";
 
 export interface BillingPeriodUpgradeState {
@@ -42,21 +43,21 @@ export function useBillingPeriodUpgrade(onConflict: () => void, onScheduled?: ()
         if (isScheduling || scheduledSwitch !== null) return;
         setIsScheduling(true);
         setErrorMessage(null);
-        try {
-            const response = await scheduleBillingPeriodUpgrade();
-            setScheduledSwitch({effectiveDate: response.effectiveDate ?? null});
+        const result = await attempt(scheduleBillingPeriodUpgrade);
+        if (result.isSuccess) {
+            setScheduledSwitch({effectiveDate: result.value.effectiveDate ?? null});
             setIsScheduling(false);
             onScheduled?.();
-        } catch (error) {
-            logger.error(BILLING_COPY.PERIOD_UPGRADE_LOG_ERROR, error);
-            if (error instanceof BillingApiError && error.status === HTTP_CONFLICT) {
-                onConflict();
-                setIsScheduling(false);
-                return;
-            }
-            setErrorMessage(resolvePeriodUpgradeErrorMessage(error));
-            setIsScheduling(false);
+            return;
         }
+        logger.error(BILLING_COPY.PERIOD_UPGRADE_LOG_ERROR, result.error);
+        if (result.error instanceof BillingApiError && result.error.status === HTTP_CONFLICT) {
+            onConflict();
+            setIsScheduling(false);
+            return;
+        }
+        setErrorMessage(resolvePeriodUpgradeErrorMessage(result.error));
+        setIsScheduling(false);
     }
 
     return {isScheduling, errorMessage, scheduledSwitch, clearScheduledSwitch, handleSwitch};

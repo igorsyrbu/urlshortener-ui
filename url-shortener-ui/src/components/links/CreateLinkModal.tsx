@@ -27,6 +27,36 @@ interface CreateLinkModalBodyProps {
 }
 
 const CONFETTI_ORIGIN_Y = 0.6;
+const HTTP_CONFLICT = 409;
+
+async function celebrateCreatedLink(): Promise<void> {
+    const confetti = (await import("canvas-confetti")).default;
+    confetti({
+        particleCount: CONFETTI_PARTICLE_COUNT,
+        spread: CONFETTI_SPREAD,
+        origin: {y: CONFETTI_ORIGIN_Y},
+    });
+}
+
+/** Throws `ShortKeyConflictError` for a taken key and a generic error otherwise; `LinkFormFields` shows both. */
+async function createShortLink(longUrl: string, title: string, key: string, tagIds: string[]): Promise<ShortLinkData> {
+    try {
+        const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS, {
+            method: "POST",
+            body: JSON.stringify({longUrl, title, key, isActive: true, tagIds: tagIds.length > 0 ? [...tagIds] : undefined}),
+        });
+        if (res.ok) return await res.json();
+        if (res.status === HTTP_CONFLICT) {
+            logger.error("Short link key conflict on create", undefined, {status: res.status});
+            throw new ShortKeyConflictError();
+        }
+        logger.error("Failed to create link", undefined, {status: res.status});
+        throw new Error("Failed to create link");
+    } catch (err) {
+        logger.error("Error creating link", err);
+        throw err;
+    }
+}
 
 function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
     const isDesktop = useIsDesktop();
@@ -35,47 +65,14 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
     const [shortLink, setShortLink] = useState<ShortLinkData | null>(null);
     const {fetchLinks} = useLinkStore();
 
-    const handleSubmitSuccess = async (data: ShortLinkData) => {
-        setShortLink(data);
+    const handleFormSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {
+        const createdLink = await createShortLink(longUrl, title, key, tagIds);
+        setShortLink(createdLink);
         setViewState("success");
-
-        const confetti = (await import("canvas-confetti")).default;
-        confetti({
-            particleCount: CONFETTI_PARTICLE_COUNT,
-            spread: CONFETTI_SPREAD,
-            origin: {y: CONFETTI_ORIGIN_Y},
-        });
-
+        // The confetti chunk downloads on the first link; the list refresh must not wait for it.
+        void celebrateCreatedLink();
         router.push(ROUTES.LINKS, {scroll: false});
         fetchLinks(0);
-    };
-
-    const handleFormSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {
-        try {
-            const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS, {
-                method: "POST",
-                body: JSON.stringify({
-                    longUrl,
-                    title,
-                    key,
-                    isActive: true,
-                    tagIds: tagIds.length > 0 ? [...tagIds] : undefined,
-                }),
-            });
-            if (res.ok) {
-                const data = await res.json();
-                await handleSubmitSuccess(data);
-            } else if (res.status === 409) {
-                logger.error("Short link key conflict on create", undefined, {status: res.status});
-                throw new ShortKeyConflictError();
-            } else {
-                logger.error("Failed to create link", undefined, { status: res.status });
-                throw new Error("Failed to create link");
-            }
-        } catch (err) {
-            logger.error("Error creating link", err);
-            throw err;
-        }
     };
 
     return (

@@ -59,7 +59,7 @@ The request header `x-mock-error: true` simulates a 500 on any request (not an e
 
 | Option | Value | Notes |
 |---|---|---|
-| `reactCompiler` | `true` | React Compiler is on (`babel-plugin-react-compiler` is a devDependency). Memoisation guidance: [coding-patterns](coding-patterns.md). |
+| `reactCompiler` | `{panicThreshold: "all_errors"}` | React Compiler is on (`babel-plugin-react-compiler` is a devDependency) and every component must compile: a function the compiler would skip fails `next build` and shows the error overlay in `next dev` (`ReactCompilerError`). Patterns: [coding-patterns](coding-patterns.md). |
 | `experimental.optimizePackageImports` | `radix-ui`, `lucide-react` | Barrel-import optimisation. |
 | `output` | `standalone` | Production build emits a self-contained server. |
 | `rewrites()` | `/api/:path*` -> `${getBackendApiBaseUrl()}/:path*` | The browser's only path to the backend. The route handler `app/api/shortlinks/import/updates/route.ts` is a filesystem route, so it is served instead of the rewrite for that one path ([architecture](architecture.md#sse-pass-through-route-handler)). |

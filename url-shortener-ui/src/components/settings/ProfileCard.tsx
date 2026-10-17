@@ -10,6 +10,29 @@ import {useAuthStore, UserProfile} from "@/lib/store/auth";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import {ProfileCardSkeleton} from "@/components/settings/ProfileCardSkeleton";
+import {withPending} from "@/lib/async-utils";
+
+type NameSaveOutcome = "saved" | "rejected" | "failed";
+
+async function loadProfile(): Promise<UserProfile | null> {
+    try {
+        const res = await fetchWithAuth(API_ENDPOINTS.USERS_ME);
+        return res.ok ? await res.json() : null;
+    } catch (error) {
+        logger.error("Failed to load profile", error);
+        return null;
+    }
+}
+
+async function saveProfileName(name: string): Promise<NameSaveOutcome> {
+    try {
+        const res = await fetchWithAuth(API_ENDPOINTS.USERS_ME_NAME, {method: "PUT", body: JSON.stringify({name})});
+        return res.ok ? "saved" : "rejected";
+    } catch (error) {
+        logger.error("Error updating name", error);
+        return "failed";
+    }
+}
 
 export function ProfileCard() {
     const user = useAuthStore((state) => state.user);
@@ -26,37 +49,21 @@ export function ProfileCard() {
         }
     }, [user]);
 
-    const fetchProfile = async () => {
-        try {
-            const res = await fetchWithAuth(API_ENDPOINTS.USERS_ME);
-            if (res.ok) {
-                const data: UserProfile = await res.json();
-                setUser(data);
-            }
-        } catch (error) {
-            logger.error("Failed to load profile", error);
-        }
-    };
-
     const handleSaveName = async () => {
-        setIsSaving(true);
-        try {
-            const res = await fetchWithAuth(API_ENDPOINTS.USERS_ME_NAME, {
-                method: "PUT",
-                body: JSON.stringify({name}),
-            });
-            if (res.ok) {
-                await fetchProfile();
-                toast.success("Profile updated successfully");
-            } else {
+        await withPending(setIsSaving, async () => {
+            const outcome = await saveProfileName(name);
+            if (outcome === "rejected") {
                 toast.error("Failed to update profile");
+                return;
             }
-        } catch (error) {
-            logger.error("Error updating name", error);
-            toast.error("An unexpected error occurred while updating profile");
-        } finally {
-            setIsSaving(false);
-        }
+            if (outcome === "failed") {
+                toast.error("An unexpected error occurred while updating profile");
+                return;
+            }
+            const profile = await loadProfile();
+            if (profile) setUser(profile);
+            toast.success("Profile updated successfully");
+        });
     };
 
     if (!user) {

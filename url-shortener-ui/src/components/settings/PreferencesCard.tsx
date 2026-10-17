@@ -60,16 +60,16 @@ export function PreferencesCard() {
     const [loadFailed, setLoadFailed] = useState(false);
     const fetched = useRef(false);
 
+    async function loadPreferences(): Promise<void> {
+        const ok = await usePreferencesStore.getState().fetchPreferences();
+        setLoadFailed(!ok);
+    }
+
     useEffect(() => {
         if (fetched.current) return;
         fetched.current = true;
         void loadPreferences();
     }, []);
-
-    async function loadPreferences(): Promise<void> {
-        const ok = await usePreferencesStore.getState().fetchPreferences();
-        setLoadFailed(!ok);
-    }
 
     const handleSelect = async (mode: TrackerMode) => {
         if (isLoading || isSaving || trackerMode === mode) return;

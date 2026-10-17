@@ -35,8 +35,9 @@ import {
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {Button} from "@/components/ui/button";
 import {cn} from "@/lib/utils";
-import {FOCUS_RING_CLASS, ICON_BUTTON_LABELS} from "@/lib/constants";
+import {API_ENDPOINTS, FOCUS_RING_CLASS, ICON_BUTTON_LABELS, ROUTES} from "@/lib/constants";
 import {SETTINGS_ROUTES} from "@/lib/settings-constants";
+import {attempt} from "@/lib/async-utils";
 
 interface SidebarUserMenuProps {
     onNavigate?: () => void;
@@ -52,16 +53,10 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
     const handleLogout = async () => {
-        try {
-            await fetchWithAuth("/users/sessions/current", {
-                method: "DELETE",
-            });
-        } catch (error) {
-            logger.error("Failed to terminate session on backend", error);
-        } finally {
-            logout();
-            router.replace("/login");
-        }
+        const result = await attempt(() => fetchWithAuth(API_ENDPOINTS.USERS_SESSIONS_CURRENT, {method: "DELETE"}));
+        if (!result.isSuccess) logger.error("Failed to terminate session on backend", result.error);
+        logout();
+        router.replace(ROUTES.LOGIN);
     };
 
     const handleSettingsClick = () => {

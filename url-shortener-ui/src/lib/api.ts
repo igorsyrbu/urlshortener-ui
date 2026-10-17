@@ -2,11 +2,10 @@ import {useAuthStore} from "@/lib/store/auth";
 import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import {clearSessionHint} from "@/lib/session-hint";
+import {HTTP_FORBIDDEN, HTTP_SERVICE_UNAVAILABLE, HTTP_UNAUTHORIZED} from "@/lib/http-status";
 
 export const API_BASE_URL = "/api";
-export const HTTP_UNAUTHORIZED = 401;
-export const HTTP_FORBIDDEN = 403;
-export const HTTP_SERVICE_UNAVAILABLE = 503;
+export {HTTP_FORBIDDEN, HTTP_SERVICE_UNAVAILABLE, HTTP_UNAUTHORIZED} from "@/lib/http-status";
 
 const JSON_CONTENT_TYPE = "application/json";
 const REFRESH_LOG_ERROR = "Failed to refresh token";

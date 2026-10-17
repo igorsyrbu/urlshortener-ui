@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
+import { HTTP_BAD_REQUEST, HTTP_FORBIDDEN, HTTP_UNAUTHORIZED } from "@/lib/http-status";
 import { API_ENDPOINTS, URL_CLEANER_DEBOUNCE_MS } from "@/lib/constants";
 import type { UrlCleanerResponse } from "@/lib/api-types";
 import { isValidUrl, normalizeUrl } from "@/lib/url-utils";
@@ -15,6 +16,34 @@ interface UseUrlCleanerOptions {
 
 interface UseUrlCleanerResult {
     result: UrlCleanerResponse | null;
+}
+
+const QUIETLY_IGNORED_STATUSES: readonly number[] = [HTTP_BAD_REQUEST, HTTP_UNAUTHORIZED, HTTP_FORBIDDEN];
+
+function isAbortError(error: unknown): boolean {
+    return error instanceof DOMException && error.name === "AbortError";
+}
+
+/** The cleaned URL when the backend removed trackers from `url`, otherwise `null` (also on any failure). */
+async function requestTrackerCleanup(url: string, signal: AbortSignal): Promise<UrlCleanerResponse | null> {
+    try {
+        const res = await fetchWithAuth(API_ENDPOINTS.URL_CLEANER, {
+            method: "POST",
+            body: JSON.stringify({ url }),
+            signal,
+        });
+        if (signal.aborted || QUIETLY_IGNORED_STATUSES.includes(res.status)) return null;
+        if (!res.ok) {
+            logger.warn("URL cleaner check failed", { status: res.status });
+            return null;
+        }
+        const data: UrlCleanerResponse = await res.json();
+        const hasTrackers = data.removedParams.length > 0 && !data.completeProviderSkipped;
+        return hasTrackers && data.url !== url ? data : null;
+    } catch (err) {
+        if (!signal.aborted && !isAbortError(err)) logger.warn("URL cleaner request error", { error: String(err) });
+        return null;
+    }
 }
 
 function shouldSkipCleaner(url: string): boolean {
@@ -64,49 +93,9 @@ export function useUrlCleaner({ enabled, url }: UseUrlCleanerOptions): UseUrlCle
         lastRequestedUrlRef.current = normalized;
 
         const checkUrl = async (): Promise<void> => {
-            try {
-                const res = await fetchWithAuth(API_ENDPOINTS.URL_CLEANER, {
-                    method: "POST",
-                    body: JSON.stringify({ url: normalized }),
-                    signal: controller.signal,
-                });
-
-                if (cancelled || controller.signal.aborted) return;
-
-                if (res.status === 401 || res.status === 403) {
-                    setResult(null);
-                    return;
-                }
-
-                if (res.status === 400) {
-                    setResult(null);
-                    return;
-                }
-
-                if (!res.ok) {
-                    logger.warn("URL cleaner check failed", { status: res.status });
-                    setResult(null);
-                    return;
-                }
-
-                const data = (await res.json()) as UrlCleanerResponse;
-
-                if (cancelled || controller.signal.aborted) return;
-
-                const hasTrackers = data.removedParams.length > 0 && !data.completeProviderSkipped;
-                const isChanged = data.url !== normalized;
-
-                if (hasTrackers && isChanged) {
-                    setResult(data);
-                } else {
-                    setResult(null);
-                }
-            } catch (err) {
-                if (cancelled || controller.signal.aborted) return;
-                if (err instanceof DOMException && err.name === "AbortError") return;
-                logger.warn("URL cleaner request error", { error: String(err) });
-                setResult(null);
-            }
+            const cleanedUrl = await requestTrackerCleanup(normalized, controller.signal);
+            if (cancelled || controller.signal.aborted) return;
+            setResult(cleanedUrl);
         };
 
         void checkUrl();

@@ -7,6 +7,7 @@ import type {LinkImportJobDTO, LinkImportProgressDTO} from "@/lib/api-types";
 import {MAX_IMPORT_DATA_ROWS, ROUTES} from "@/lib/constants";
 import {precheckCsv, TransferError, uploadLinksImport} from "@/lib/link-transfer";
 import {logger} from "@/lib/logger";
+import {attempt} from "@/lib/async-utils";
 import {buildDiscoveredJob, IMPORT_TRACKING_STATUS, useImportTracker, type ImportTrackingStatus} from "@/lib/store/import";
 import {useLinkStore} from "@/lib/store/links";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
@@ -44,6 +45,12 @@ async function readImportFile(file: File): Promise<string> {
     if (precheck.status === "empty") throw new Error(IMPORT_EMPTY_FILE_MESSAGE);
     if (precheck.status === "too-many-rows") throw new Error(buildTooManyRowsMessage(MAX_IMPORT_DATA_ROWS));
     return csvText;
+}
+
+async function submitImport(file: File, generateTakenKeys: boolean, signal: AbortSignal): Promise<LinkImportJobDTO> {
+    const csvText = await readImportFile(file);
+    signal.throwIfAborted();
+    return uploadLinksImport(csvText, {generateTakenKeys, fileName: file.name, signal});
 }
 
 function mapTrackingToSession(
@@ -86,20 +93,16 @@ export function useLinkImport(): UseLinkImportResult {
         const controller = new AbortController();
         uploadController.current = controller;
         setIsUploading(true);
-        try {
-            const csvText = await readImportFile(file);
-            controller.signal.throwIfAborted();
-            const submittedJob = await uploadLinksImport(csvText, {generateTakenKeys, fileName: file.name, signal: controller.signal});
-            if (controller.signal.aborted) return;
-            useImportTracker.getState().trackSubmission(submittedJob);
-        } catch (error) {
-            if (controller.signal.aborted) return;
-            if (!(error instanceof TransferError)) logger.error("Error starting links import", error);
-            toast.error(error instanceof Error ? error.message : IMPORT_FAILED_MESSAGE);
-        } finally {
-            uploadController.current = null;
-            if (!controller.signal.aborted) setIsUploading(false);
+        const result = await attempt(() => submitImport(file, generateTakenKeys, controller.signal));
+        uploadController.current = null;
+        if (controller.signal.aborted) return;
+        setIsUploading(false);
+        if (result.isSuccess) {
+            useImportTracker.getState().trackSubmission(result.value);
+            return;
         }
+        if (!(result.error instanceof TransferError)) logger.error("Error starting links import", result.error);
+        toast.error(result.error instanceof Error ? result.error.message : IMPORT_FAILED_MESSAGE);
     };
 
     const handleReset = (): void => {

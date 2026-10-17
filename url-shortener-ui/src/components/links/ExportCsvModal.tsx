@@ -15,6 +15,7 @@ import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useLinkStore} from "@/lib/store/links";
 import {downloadLinksExport, isRateLimitedError, TransferError,} from "@/lib/link-transfer";
 import {logger} from "@/lib/logger";
+import {attempt, withPending} from "@/lib/async-utils";
 import {
     APPLY_FILTERS_TOOLTIP,
     CANCEL_LABEL,
@@ -34,6 +35,13 @@ interface ExportCsvModalProps {
     onOpenChange: (open: boolean) => void;
 }
 
+function getExportFailureMessage(error: unknown): string {
+    if (isRateLimitedError(error)) return EXPORT_RATE_LIMITED_MESSAGE;
+    if (error instanceof TransferError) return error.message;
+    logger.error("Error exporting links to CSV", error);
+    return EXPORT_FAILED_MESSAGE;
+}
+
 export function ExportCsvModal({open, onOpenChange}: ExportCsvModalProps) {
     const isDesktop = useIsDesktop();
     const {showArchived, searchQuery} = useLinkStore();
@@ -45,23 +53,15 @@ export function ExportCsvModal({open, onOpenChange}: ExportCsvModalProps) {
         if (isExporting) {
             return;
         }
-        setIsExporting(true);
-        try {
-            await downloadLinksExport(includeFilters, {showArchived, search: searchQuery});
+        await withPending(setIsExporting, async () => {
+            const result = await attempt(() => downloadLinksExport(includeFilters, {showArchived, search: searchQuery}));
+            if (!result.isSuccess) {
+                toast.error(getExportFailureMessage(result.error));
+                return;
+            }
             toast.success(EXPORT_SUCCESS_MESSAGE);
             onOpenChange(false);
-        } catch (error) {
-            if (isRateLimitedError(error)) {
-                toast.error(EXPORT_RATE_LIMITED_MESSAGE);
-            } else if (error instanceof TransferError) {
-                toast.error(error.message);
-            } else {
-                logger.error("Error exporting links to CSV", error);
-                toast.error(EXPORT_FAILED_MESSAGE);
-            }
-        } finally {
-            setIsExporting(false);
-        }
+        });
     };
 
     const body = (

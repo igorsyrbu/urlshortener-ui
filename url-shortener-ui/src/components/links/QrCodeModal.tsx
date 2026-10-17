@@ -25,6 +25,7 @@ import {COPY_FEEDBACK_DURATION_MS, ICON_BUTTON_LABELS} from "@/lib/constants";
 import type QRCodeStylingType from "qr-code-styling";
 import {logger} from "@/lib/logger";
 import {ActionDrawer} from "@/components/ui/action-drawer";
+import {withPending} from "@/lib/async-utils";
 
 // ---------------------------------------------------------------------------
 // Module-level import cache — the dynamic import promise is resolved only once
@@ -99,27 +100,22 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
         if (isSameLink && lowResQrInstance.current) return;
 
         const renderPreview = async () => {
-            setIsQrLoading(true);
-            try {
-                const qr = await buildQrCode(QR_LOW_RES_SIZE, QR_LOW_RES_SIZE, 0);
-                if (!qr || !qrRef.current) return;
+            const qr = await buildQrCode(QR_LOW_RES_SIZE, QR_LOW_RES_SIZE, 0);
+            if (!qr || !qrRef.current) return;
 
-                if (lowResQrInstance.current) {
-                    lowResQrInstance.current.update({data: link.shortUrl});
-                } else {
-                    qrRef.current.innerHTML = "";
-                    qr.append(qrRef.current);
-                    lowResQrInstance.current = qr;
-                }
-
-                highResQrInstance.current = null;
-                lastRenderedLinkId.current = link.id;
-            } finally {
-                setIsQrLoading(false);
+            if (lowResQrInstance.current) {
+                lowResQrInstance.current.update({data: link.shortUrl});
+            } else {
+                qrRef.current.innerHTML = "";
+                qr.append(qrRef.current);
+                lowResQrInstance.current = qr;
             }
+
+            highResQrInstance.current = null;
+            lastRenderedLinkId.current = link.id;
         };
 
-        renderPreview();
+        void withPending(setIsQrLoading, renderPreview);
     }, [open, link, buildQrCode]);
 
     useEffect(() => {

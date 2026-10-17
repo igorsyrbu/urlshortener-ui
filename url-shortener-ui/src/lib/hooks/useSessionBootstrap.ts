@@ -2,7 +2,8 @@
 
 import {useEffect, useState, useSyncExternalStore} from "react";
 import {useRouter} from "next/navigation";
-import {fetchWithAuth, HTTP_FORBIDDEN, HTTP_UNAUTHORIZED} from "@/lib/api";
+import {fetchWithAuth} from "@/lib/api";
+import {HTTP_FORBIDDEN, HTTP_UNAUTHORIZED} from "@/lib/http-status";
 import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import {clearSessionHint, hasSessionHint, setSessionHint} from "@/lib/session-hint";

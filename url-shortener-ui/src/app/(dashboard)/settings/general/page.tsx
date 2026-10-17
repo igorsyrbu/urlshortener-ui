@@ -18,6 +18,35 @@ import {DangerZoneCard} from "@/components/settings/DangerZoneCard";
 import {SessionLogoutDialog, LogoutTarget} from "@/components/settings/SessionLogoutDialog";
 import {logger} from "@/lib/logger";
 
+type SessionDeleteOutcome = "deleted" | "rejected" | "failed";
+
+function currentSessionFirst(first: UserSession, second: UserSession): number {
+    if (first.current === second.current) return 0;
+    return first.current ? -1 : 1;
+}
+
+async function loadSessions(): Promise<UserSession[] | null> {
+    try {
+        const res = await fetchWithAuth(API_ENDPOINTS.USERS_SESSIONS);
+        if (!res.ok) return null;
+        const sessions: UserSession[] = await res.json();
+        return sessions.sort(currentSessionFirst);
+    } catch (error) {
+        logger.error("Failed to load sessions", error);
+        return null;
+    }
+}
+
+async function deleteSessions(endpoint: string, failureLogMessage: string): Promise<SessionDeleteOutcome> {
+    try {
+        const res = await fetchWithAuth(endpoint, {method: "DELETE"});
+        return res.ok ? "deleted" : "rejected";
+    } catch (error) {
+        logger.error(failureLogMessage, error);
+        return "failed";
+    }
+}
+
 export default function GeneralSettingsPage() {
     const router = useRouter();
     const accessToken = useAuthStore((state) => state.accessToken);
@@ -35,65 +64,48 @@ export default function GeneralSettingsPage() {
         if (fetched.current) return;
         fetched.current = true;
 
-        async function fetchSessions(): Promise<void> {
-            try {
-                const res = await fetchWithAuth(API_ENDPOINTS.USERS_SESSIONS);
-                if (res.ok) {
-                    const data: UserSession[] = await res.json();
-                    data.sort((first, second) => (first.current === second.current ? 0 : first.current ? -1 : 1));
-                    setSessions(data);
-                }
-            } catch (error) {
-                logger.error("Failed to load sessions", error);
-            } finally {
-                setIsLoadingSessions(false);
-            }
-        }
-
-        void fetchSessions();
+        void loadSessions().then((loadedSessions) => {
+            if (loadedSessions) setSessions(loadedSessions);
+            setIsLoadingSessions(false);
+        });
     }, []);
 
     const handleLogoutSession = async (id: string, isCurrent: boolean = false) => {
         setSessionActionLoading(id);
-        try {
-            const endpoint = isCurrent ? API_ENDPOINTS.USERS_SESSIONS_CURRENT : `/users/sessions/${id}`;
-            const res = await fetchWithAuth(endpoint, {method: "DELETE"});
-
-            if (res.ok) {
-                if (isCurrent) {
-                    useAuthStore.getState().logout();
-                    router.replace(ROUTES.LOGIN);
-                } else {
-                    setSessions((prev) => prev.filter((s) => s.id !== id));
-                    toast.success("Session terminated successfully");
-                }
-            } else {
-                toast.error("Failed to terminate session");
-            }
-        } catch (error) {
-            logger.error("Error terminating session", error);
-            toast.error("An unexpected error occurred while terminating session");
-        } finally {
-            setSessionActionLoading(null);
+        const endpoint = isCurrent ? API_ENDPOINTS.USERS_SESSIONS_CURRENT : `/users/sessions/${id}`;
+        const outcome = await deleteSessions(endpoint, "Error terminating session");
+        setSessionActionLoading(null);
+        if (outcome === "rejected") {
+            toast.error("Failed to terminate session");
+            return;
         }
+        if (outcome === "failed") {
+            toast.error("An unexpected error occurred while terminating session");
+            return;
+        }
+        if (isCurrent) {
+            useAuthStore.getState().logout();
+            router.replace(ROUTES.LOGIN);
+            return;
+        }
+        setSessions((prev) => prev.filter((s) => s.id !== id));
+        toast.success("Session terminated successfully");
     };
 
     const handleLogoutOther = async () => {
         setSessionActionLoading("other");
-        try {
-            const res = await fetchWithAuth(API_ENDPOINTS.USERS_SESSIONS_OTHER, {method: "DELETE"});
-            if (res.ok) {
-                setSessions((prev) => prev.filter((s) => s.current));
-                toast.success("Successfully logged out of all other devices");
-            } else {
-                toast.error("Failed to terminate other sessions");
-            }
-        } catch (error) {
-            logger.error("Error terminating other sessions", error);
-            toast.error("An unexpected error occurred while terminating other sessions");
-        } finally {
-            setSessionActionLoading(null);
+        const outcome = await deleteSessions(API_ENDPOINTS.USERS_SESSIONS_OTHER, "Error terminating other sessions");
+        setSessionActionLoading(null);
+        if (outcome === "rejected") {
+            toast.error("Failed to terminate other sessions");
+            return;
         }
+        if (outcome === "failed") {
+            toast.error("An unexpected error occurred while terminating other sessions");
+            return;
+        }
+        setSessions((prev) => prev.filter((s) => s.current));
+        toast.success("Successfully logged out of all other devices");
     };
 
     const handleLogoutConfirm = () => {
@@ -107,6 +119,11 @@ export default function GeneralSettingsPage() {
 
     const currentSession = sessions.find((s) => s.current);
     const otherSessions = sessions.filter((s) => !s.current);
+
+    const handleLogoutCurrentSession = () => {
+        if (!currentSession) return;
+        setLogoutTarget({type: "single", id: currentSession.id, isCurrent: true});
+    };
 
     return (
         <div className="flex min-w-0 flex-col gap-4">
@@ -123,7 +140,7 @@ export default function GeneralSettingsPage() {
                     isActionDisabled={sessionActionLoading !== null}
                     isLoggingOut={sessionActionLoading === currentSession?.id}
                     isTerminatingOther={sessionActionLoading === "other"}
-                    onLogout={() => setLogoutTarget({type: "single", id: currentSession!.id, isCurrent: true})}
+                    onLogout={handleLogoutCurrentSession}
                     onTerminateOther={() => setLogoutTarget({type: "other"})}
                 />
                 <OtherSessionsList
