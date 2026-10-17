@@ -15,6 +15,10 @@ import {ANALYTICS_COPY} from "@/lib/constants";
 import {cn} from "@/lib/utils";
 
 const LOAD_ERROR_CLASS = "rounded-xl border-[0.5px] border-border bg-card p-10";
+// A fast refresh would flash the dimming and the spinner on and off; both wait 300 ms (delay-300 delays the opacity
+// transition and the spinner's fade-in), so only a slow refresh shows them.
+const REFRESHING_DIM_CLASS = "opacity-60 delay-300";
+const REFRESHING_SPINNER_CLASS = "flex items-center motion-safe:animate-in motion-safe:fade-in motion-safe:delay-300 motion-safe:fill-mode-backwards";
 
 export default function AnalyticsPage() {
     const {
@@ -52,13 +56,13 @@ export default function AnalyticsPage() {
     };
 
     const handleRetryOverview = () => retrySection("overview");
-    const refreshingClass = cn("transition-opacity", isRefreshing && "opacity-60");
+    const refreshingClass = cn("transition-opacity", isRefreshing && REFRESHING_DIM_CLASS);
 
     return (
         <PageContainer>
             <div className="flex min-h-10 items-center justify-end gap-3">
                 {isRefreshing && (
-                    <span role="status" className="flex items-center">
+                    <span role="status" className={REFRESHING_SPINNER_CLASS}>
                         <Spinner size="sm"/>
                         <span className="sr-only">{ANALYTICS_COPY.UPDATING}</span>
                     </span>

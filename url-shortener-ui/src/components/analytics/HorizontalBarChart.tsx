@@ -3,6 +3,8 @@
 import React from "react";
 import {Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis} from "recharts";
 import {ChartContainer, ChartTooltip} from "@/components/ui/chart";
+import {useFirstDrawAnimation} from "@/lib/hooks/useFirstDrawAnimation";
+import {CHART_ANIMATION_MS} from "@/lib/constants";
 
 interface BarChartDataItem {
     name: string;
@@ -38,12 +40,27 @@ const BAR_RADIUS = 6;
 
 export type {BarLabelProps};
 
+interface BarLabelContentProps extends Partial<BarLabelProps> {
+    renderLabel: (props: BarLabelProps) => React.ReactElement;
+}
+
+/**
+ * Recharts mounts a label function as a component type, so a new function on every render remounted every label and
+ * reloaded its icon. Passing this element instead keeps one stable component that recharts clones with fresh props.
+ */
+function BarLabelContent({renderLabel, ...labelProps}: BarLabelContentProps) {
+    // Recharts' label props are typed wider (optional string|number fields); in a horizontal bar layout it always
+    // provides the concrete numbers renderLabel expects.
+    return renderLabel(labelProps as BarLabelProps);
+}
+
 export function HorizontalBarChart({
                                        data,
                                        totalClicks,
                                        color,
                                        renderLabel,
                                    }: HorizontalBarChartProps) {
+    const {isAnimationActive, handleAnimationEnd} = useFirstDrawAnimation();
     if (!data || data.length === 0) return null;
 
     const maxDataValue = Math.max(totalClicks, 1);
@@ -136,7 +153,8 @@ export function HorizontalBarChart({
                             }}
                         />
                         <Bar dataKey="clicks" radius={BAR_RADIUS} barSize={BAR_SIZE} fillOpacity={1}
-                             yAxisId="left">
+                             yAxisId="left" animationDuration={CHART_ANIMATION_MS}
+                             isAnimationActive={isAnimationActive} onAnimationEnd={handleAnimationEnd}>
                             {chartData.map((entry, index) => (
                                 <Cell
                                     key={`cell-${index}`}
@@ -145,13 +163,7 @@ export function HorizontalBarChart({
                                     className="transition-all duration-300 [fill-opacity:0.4] stroke-0 dark:[fill-opacity:0.2] dark:stroke-[1px] dark:[stroke-opacity:0.7]"
                                 />
                             ))}
-                            {/* Recharts' LabelList content type is wider (optional string|number fields).
-                                We cast here because our renderLabel expects concrete numbers, which Recharts
-                                always provides in a horizontal bar layout. */}
-                            <LabelList
-                                dataKey="name"
-                                content={(props) => renderLabel(props as unknown as BarLabelProps)}
-                            />
+                            <LabelList dataKey="name" content={<BarLabelContent renderLabel={renderLabel}/>}/>
                         </Bar>
                     </BarChart>
                 </ChartContainer>

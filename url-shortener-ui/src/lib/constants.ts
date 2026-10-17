@@ -192,6 +192,9 @@ export const DEFAULT_PAGE_SIZE = 20;
 
 export const DEFAULT_PERIOD_DAYS = 30;
 
+/** Chart entry animations settle almost as soon as the data is there (recharts defaults to 1500 ms). */
+export const CHART_ANIMATION_MS = 400;
+
 export const ANALYTICS_COPY = {
     LOAD_FAILED: "Couldn't load analytics for this period.",
     REFRESH_FAILED: "Couldn't update analytics. The numbers below are from your previous selection.",

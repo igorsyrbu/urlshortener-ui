@@ -12,9 +12,11 @@ function matchesWidthQuery(query: string, viewportWidth: number): boolean {
     return match[1] === "min" ? viewportWidth >= limit : viewportWidth <= limit;
 }
 
-function stubViewportWidth(viewportWidth: number): void {
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function stubMatchMedia(matches: (query: string) => boolean): void {
     vi.stubGlobal("matchMedia", (query: string): MediaQueryList => ({
-        matches: matchesWidthQuery(query, viewportWidth),
+        matches: matches(query),
         media: query,
         onchange: null,
         addListener: vi.fn(),
@@ -23,6 +25,15 @@ function stubViewportWidth(viewportWidth: number): void {
         removeEventListener: vi.fn(),
         dispatchEvent: vi.fn(),
     }));
+}
+
+function stubViewportWidth(viewportWidth: number): void {
+    stubMatchMedia((query) => matchesWidthQuery(query, viewportWidth));
+}
+
+/** A desktop viewport whose user asked the OS to reduce motion. */
+export function stubReducedMotion(): void {
+    stubMatchMedia((query) => query === REDUCED_MOTION_QUERY || matchesWidthQuery(query, DESKTOP_VIEWPORT_WIDTH_PX));
 }
 
 export function stubDesktopViewport(): void {

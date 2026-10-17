@@ -7,7 +7,7 @@ import {AnalyticsDailyClick} from "@/lib/store/analytics";
 import {DateRange} from "react-day-picker";
 import {useIsDesktop, usePrefersReducedMotion} from "@/lib/hooks/useMediaQuery";
 import {formatShortDayLabel, parseLocalIsoDate} from "@/lib/date-utils";
-import {ANALYTICS_COPY} from "@/lib/constants";
+import {ANALYTICS_COPY, CHART_ANIMATION_MS} from "@/lib/constants";
 
 interface ClicksTimeSeriesChartProps {
     timeSeries: AnalyticsDailyClick[];
@@ -21,8 +21,6 @@ interface DragState {
 
 const LOW_CLICKS_THRESHOLD = 4;
 const YAXIS_WIDTH = 40;
-/** Recharts animates an area for 1500 ms by default; the chart should settle almost as soon as the data is there. */
-const CHART_ANIMATION_MS = 400;
 
 function formatYAxisTick(value: number): string {
     if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
@@ -69,7 +67,6 @@ interface TimeSeriesAreaChartProps {
 function TimeSeriesAreaChart({timeSeries, onZoom, dragEnabled}: TimeSeriesAreaChartProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [drag, setDrag] = useState<DragState | null>(null);
-    const [isFirstDraw, setIsFirstDraw] = useState(true);
     const prefersReducedMotion = usePrefersReducedMotion();
 
     const chartData = timeSeries.map((item) => ({
@@ -156,8 +153,7 @@ function TimeSeriesAreaChart({timeSeries, onZoom, dragEnabled}: TimeSeriesAreaCh
                         fillOpacity={1}
                         strokeWidth={2}
                         animationDuration={CHART_ANIMATION_MS}
-                        isAnimationActive={isFirstDraw && !prefersReducedMotion}
-                        onAnimationEnd={() => setIsFirstDraw(false)}
+                        isAnimationActive={!prefersReducedMotion}
                     />
                     {refAreaX1 && refAreaX2 && refAreaX1 !== refAreaX2 && (
                         <ReferenceArea

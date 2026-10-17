@@ -93,7 +93,8 @@ Details and timing scale: [DESIGN.md](../DESIGN.md) section 6. What the code act
 - `tw-animate-css` classes for Radix/vaul open/close; plain `transition-*` utilities for hover and state changes. Pair every `duration-*` with an explicit `transition-*` scope (a bare `duration-*` animates all properties).
 - Loaders: `ButtonSpinner` in buttons, `Spinner` for block loaders, `animate-pulse` skeletons.
 - Reduced motion is honoured in `SegmentedControl`, `PageToolbar`, `BillingPrice` (`useReducedMotion`), in the import progress components (`motion-reduce:*` utilities) and in the analytics time-series chart (`usePrefersReducedMotion` from `lib/hooks/useMediaQuery.ts` turns the recharts animation off; `motion-safe:` for the fade).
-- Chart animations (recharts) run once, on first draw, and short (`CHART_ANIMATION_MS` = 400 ms); data updates swap without replaying (`isAnimationActive` off after `onAnimationEnd`). Apply the same to new looping or large animations.
+- Chart animations (recharts) are short (`CHART_ANIMATION_MS` = 400 ms) and off with reduced motion. The time-series area also animates data changes (the curve morphs to the new period). Bar charts animate only their first draw (`useFirstDrawAnimation`), because recharts hides bar labels while bars animate and the labels would blink on every update. Pass recharts `content` / label renderers as elements, not inline functions (a new function per render remounts every label).
+- Loading indicators for refreshes that are usually fast get a `delay-300` (it delays both the transition and the `tw-animate-css` animation), so they only appear when the wait is noticeable. Apply the same to new looping or large animations.
 - `canvas-confetti` fires once on link creation (lazy import).
 
 ## Text truncation and overflow
