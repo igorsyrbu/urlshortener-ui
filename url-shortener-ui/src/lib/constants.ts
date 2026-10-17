@@ -202,15 +202,10 @@ export const ANALYTICS_COPY = {
     RETRY: "Try again",
     UPDATING: "Updating analytics",
     NO_CLICKS: "No clicks in this period.",
-    SHOW_FEWER: "Show fewer",
 } as const;
 
-/** Breakdown cards show this many rows until the user asks for all of them. */
+/** Breakdown cards show at most this many rows, the ones with the most clicks. */
 export const ANALYTICS_VISIBLE_ROWS = 10;
-
-export function buildShowAllRowsLabel(rowCount: number): string {
-    return `Show all ${rowCount}`;
-}
 
 /** Earliest year with analytics data; the date pickers allow every year from this one to the current one. */
 export const FIRST_ANALYTICS_YEAR = 2026;

@@ -5,10 +5,9 @@ import {cn} from "@/lib/utils";
 import {AnalyticsGroupedClick} from "@/lib/store/analytics";
 import type {BarLabelProps} from "@/components/analytics/HorizontalBarChart";
 import {LazyHorizontalBarChart} from "@/components/analytics/LazyHorizontalBarChart";
-import {CappedRows} from "@/components/analytics/CappedRows";
 import {getCountryName, LocationIcon} from "@/components/analytics/LocationIcon";
 import {Spinner} from "@/components/ui/spinner";
-import {CHART_COLORS} from "@/lib/constants";
+import {ANALYTICS_VISIBLE_ROWS, CHART_COLORS} from "@/lib/constants";
 
 interface LocationTabProps {
     locationTab: "countries" | "continents";
@@ -36,7 +35,7 @@ export function LocationTab({locationTab, data, isLoading, totalClicks}: Locatio
         );
     }
 
-    const sortedData = [...data].sort((a, b) => b.clicks - a.clicks);
+    const sortedData = [...data].sort((a, b) => b.clicks - a.clicks).slice(0, ANALYTICS_VISIBLE_ROWS);
 
     const chartData = sortedData.map((d) => ({
         name: locationTab === "countries" ? getCountryName(d.label) : d.label,
@@ -65,15 +64,11 @@ export function LocationTab({locationTab, data, isLoading, totalClicks}: Locatio
     };
 
     return (
-        <CappedRows rows={chartData}>
-            {(visibleRows) => (
-                <LazyHorizontalBarChart
-                    data={visibleRows}
-                    color={CHART_COLORS.LOCATIONS}
-                    totalClicks={totalClicks}
-                    renderLabel={renderLocationLabel}
-                />
-            )}
-        </CappedRows>
+        <LazyHorizontalBarChart
+            data={chartData}
+            color={CHART_COLORS.LOCATIONS}
+            totalClicks={totalClicks}
+            renderLabel={renderLocationLabel}
+        />
     );
 }

@@ -1,7 +1,7 @@
 import {render, screen} from "@testing-library/react";
 import {describe, expect, it, vi} from "vitest";
 import {TopLinksTab} from "@/components/analytics/TopLinksTab";
-import {ANALYTICS_VISIBLE_ROWS, buildShowAllRowsLabel, CHART_COLORS} from "@/lib/constants";
+import {ANALYTICS_VISIBLE_ROWS, CHART_COLORS} from "@/lib/constants";
 import {createLinkItem} from "@/test/link-utils";
 
 vi.mock("@/components/analytics/LazyHorizontalBarChart", async () => ({
@@ -59,7 +59,7 @@ describe("TopLinksTab", () => {
         expect(topLinks.map((link) => link.shortLinkId)).toEqual(["a", "b"]);
     });
 
-    it("shows only the busiest links until the user asks for all of them", () => {
+    it("shows only the busiest links, without a way to expand the list", () => {
         const linkCount = ANALYTICS_VISIBLE_ROWS + 3;
         const topLinks = Array.from({length: linkCount}, (_, index) => ({shortLinkId: `link-${index}`, clicks: index + 1}));
 
@@ -67,6 +67,6 @@ describe("TopLinksTab", () => {
 
         expect(screen.getAllByTestId("bar-row")).toHaveLength(ANALYTICS_VISIBLE_ROWS);
         expect(screen.getAllByTestId("bar-row")[0]).toHaveAttribute("data-clicks", String(linkCount));
-        expect(screen.getByRole("button", {name: buildShowAllRowsLabel(linkCount)})).toBeInTheDocument();
+        expect(screen.queryByRole("button")).not.toBeInTheDocument();
     });
 });

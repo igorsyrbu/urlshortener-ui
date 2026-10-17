@@ -1,7 +1,7 @@
 import {render, screen, within} from "@testing-library/react";
 import {describe, expect, it, vi} from "vitest";
 import {ReferrersTab} from "@/components/analytics/ReferrersTab";
-import {CHART_COLORS} from "@/lib/constants";
+import {ANALYTICS_VISIBLE_ROWS, CHART_COLORS} from "@/lib/constants";
 import {createGroupedClick} from "@/test/analytics-utils";
 
 vi.mock("@/components/analytics/LazyHorizontalBarChart", async () => ({
@@ -50,5 +50,18 @@ describe("ReferrersTab", () => {
         render(<ReferrersTab referrers={referrers} isLoading={false} totalClicks={10}/>);
 
         expect(within(screen.getByTestId("bar-row")).queryByRole("img", {name: "favicon"})).not.toBeInTheDocument();
+    });
+
+    it("shows only the busiest referrers, most clicks first", () => {
+        const referrerCount = ANALYTICS_VISIBLE_ROWS + 2;
+        const referrers = Array.from({length: referrerCount}, (_, index) =>
+            createGroupedClick({label: `site-${index}.example`, clicks: index + 1}));
+
+        render(<ReferrersTab referrers={referrers} isLoading={false} totalClicks={100}/>);
+
+        const clicks = screen.getAllByTestId("bar-row").map((row) => Number(row.getAttribute("data-clicks")));
+        expect(clicks).toHaveLength(ANALYTICS_VISIBLE_ROWS);
+        expect(clicks[0]).toBe(referrerCount);
+        expect(clicks).toEqual([...clicks].sort((a, b) => b - a));
     });
 });

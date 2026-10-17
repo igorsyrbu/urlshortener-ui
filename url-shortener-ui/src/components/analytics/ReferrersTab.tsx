@@ -5,11 +5,10 @@ import {cn} from "@/lib/utils";
 import {AnalyticsGroupedClick} from "@/lib/store/analytics";
 import type {BarLabelProps} from "@/components/analytics/HorizontalBarChart";
 import {LazyHorizontalBarChart} from "@/components/analytics/LazyHorizontalBarChart";
-import {CappedRows} from "@/components/analytics/CappedRows";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
 import {Link2} from "lucide-react";
 import {Spinner} from "@/components/ui/spinner";
-import {CHART_COLORS} from "@/lib/constants";
+import {ANALYTICS_VISIBLE_ROWS, CHART_COLORS} from "@/lib/constants";
 
 interface ReferrersTabProps {
     referrers: AnalyticsGroupedClick[];
@@ -38,7 +37,9 @@ export function ReferrersTab({referrers, isLoading, totalClicks}: ReferrersTabPr
         );
     }
 
-    const chartData = referrers.map((r) => ({
+    const busiestReferrers = [...referrers].sort((a, b) => b.clicks - a.clicks).slice(0, ANALYTICS_VISIBLE_ROWS);
+
+    const chartData = busiestReferrers.map((r) => ({
         name: r.label,
         clicks: r.clicks,
         rawLabel: r.label,
@@ -75,15 +76,11 @@ export function ReferrersTab({referrers, isLoading, totalClicks}: ReferrersTabPr
     };
 
     return (
-        <CappedRows rows={chartData}>
-            {(visibleRows) => (
-                <LazyHorizontalBarChart
-                    data={visibleRows}
-                    color={CHART_COLORS.REFERRERS}
-                    totalClicks={totalClicks}
-                    renderLabel={renderReferrerLabel}
-                />
-            )}
-        </CappedRows>
+        <LazyHorizontalBarChart
+            data={chartData}
+            color={CHART_COLORS.REFERRERS}
+            totalClicks={totalClicks}
+            renderLabel={renderReferrerLabel}
+        />
     );
 }
