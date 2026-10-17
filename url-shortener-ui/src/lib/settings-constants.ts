@@ -15,3 +15,5 @@ export const SETTINGS_SECTIONS = [
 ];
 
 export const THEME_COPY_FAILED_MESSAGE = "Failed to copy theme";
+
+export const PROFILE_FIELD_LABELS = {EMAIL: "Email", NAME: "Name"} as const;

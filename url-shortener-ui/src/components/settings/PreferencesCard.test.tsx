@@ -37,13 +37,17 @@ describe("PreferencesCard", () => {
         expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME_PREFERENCES);
     });
 
-    it("shows placeholders instead of options while loading", () => {
+    it("shows every option disabled and none selected while loading", () => {
         vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise(() => undefined));
 
         render(<PreferencesCard/>);
 
         expect(screen.getByRole("radiogroup", {name: "Tracker detection mode"})).toHaveAttribute("aria-busy", "true");
-        expect(screen.queryAllByRole("radio")).toHaveLength(0);
+        expect(screen.getAllByRole("radio")).toHaveLength(Object.values(TRACKER_MODE).length);
+        screen.getAllByRole("radio").forEach((option) => {
+            expect(option).toBeDisabled();
+            expect(option).not.toBeChecked();
+        });
     });
 
     it("offers a retry when the preferences cannot be loaded", async () => {

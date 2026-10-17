@@ -36,7 +36,7 @@ Adding a settings tab: add a route folder under `settings/`, then extend the thr
 `PreferencesCard` + `usePreferencesStore` ([`src/lib/store/preferences.ts`](../../url-shortener-ui/src/lib/store/preferences.ts)):
 
 - On mount (once, guarded by a ref) `fetchPreferences()` calls `GET /users/me/preferences`. The store loads once per session (`hasLoaded`), ignores concurrent loads, and validates the payload (`urlCleanerMode` must be one of `TRACKER_MODE` values); an invalid payload is logged and treated as a failed load.
-- Failure with no value shows an inline message and a Retry button; while `trackerMode` is `null` the three option cards render as skeletons.
+- Failure with no value shows an inline message and a Retry button; while `trackerMode` is `null` the three real option cards render disabled with none selected (`aria-busy` on the group), so nothing moves when the value arrives.
 - Options (radiogroup of buttons): disabled / suggest / auto-clean, labels from `TRACKER_MODE_LABELS` / `TRACKER_MODE_DESCRIPTIONS`.
 - Selecting an option is optimistic: `updatePreferences` sets the mode, sends `PUT /users/me/preferences` with `{urlCleanerMode}`, adopts the server's returned value, and on failure reverts to the previous mode and rethrows; the card toasts "Couldn't save preference. Please try again." Buttons are disabled while loading or saving.
 - The same store is read by the link form (`components/links/LinkFormFields.tsx`) to decide the URL-cleaner behaviour; see [links-and-tags](links-and-tags.md).
@@ -63,7 +63,7 @@ The four billing calls, `BillingApiError` and the `X-Rate-Limit-Retry-After-Seco
 
 `BillingSettings` ([`BillingSettings.tsx`](../../url-shortener-ui/src/components/settings/BillingSettings.tsx)):
 
-- Initial/retry load: `BillingSettingsSkeleton`. Load failure: red message plus Retry (`handleRetry` bumps a counter that reruns the load effect); plan cards are hidden while the error shows.
+- Initial/retry load: the real card renders with the cycle selector disabled and both plan cards in `isLoading` (prices and features shown; no current-plan badge or ring; a pulse bar in place of the button), plus an sr-only `role="status"` "Loading subscription…". The manage section appears only after a Pro subscription loads. Load failure: red message plus Retry (`handleRetry` bumps a counter that reruns the load effect); plan cards are hidden while the error shows.
 - Two plan cards (`BillingPlanCard`) from `BILLING_PLANS`: Free and Pro. The current plan gets a ring and a "Current plan" badge. Prices come from `BILLING_PRICES[cycle]` ($9.99 monthly, $8.33/month billed yearly at $99.99) with an animated `BillingPrice` (CSS cross-fade, see [styling-and-theming](../styling-and-theming.md) motion rules).
 - `BillingCycleSelector` (Monthly / Yearly "Save 17%") is disabled while anything is busy or a yearly switch is scheduled.
 - Pro users also see "Manage subscription" and a note: "Switches to yearly billing on <date>" (or "...at your next renewal" when the date is unknown), else "Cancels on <date>" when `cancelAtPeriodEnd`, else "Renews on <date>". The scheduled note prefers server `pendingSwitch` over the local optimistic `scheduledSwitch`.
@@ -105,7 +105,7 @@ All are observations; not templates and not permission for drive-by changes.
 - Observation: `DangerZoneCard`'s confirm handler (`onConfirmDelete` in the General page) only closes the dialog; there is no account-deletion request.
 - Observation: the subscription DTO carries no "current billing period", so a Pro user already billed yearly who selects Yearly still sees "Switch to yearly"; the backend answers 409 and the UI silently reloads. The mock does so for yearly, pending and canceling subscriptions.
 - Observation: `consumePortalReturn` removes the flag on any focus/visibility event while the subscription is Pro, even if the later refresh fails, so a failed refresh is not retried by a subsequent focus.
-- Observation: a 409 from checkout ("already on Pro" message) or from the period switch (no message) reloads the whole subscription through `handleRetry`, which shows the billing skeleton again.
+- Observation: a 409 from checkout ("already on Pro" message) or from the period switch (no message) reloads the whole subscription through `handleRetry`, which shows the loading state again.
 - Observation: plan features, prices and the "Save 17%" label are hard-coded in `billing-constants.ts`; they are not loaded from the API.
 - Observation: sessions logic (fetch, terminate, sort) lives inside the General page component with `useState`/`useEffect`, not in a store or hook; `ProfileCard` and `PreferencesCard` also fetch in effects. Existing pattern for this feature, not a template for new data loading (see [api-layer](../api-layer.md)).
 - Tests: component and hook tests are co-located; billing fixtures are in `src/test/billing-utils.ts` ([testing](../testing.md)).

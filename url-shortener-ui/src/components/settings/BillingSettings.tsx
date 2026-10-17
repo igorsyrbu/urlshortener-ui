@@ -8,7 +8,6 @@ import {ExternalLink} from "lucide-react";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {BillingCycleSelector} from "@/components/settings/BillingCycleSelector";
 import {BillingPlanCard} from "@/components/settings/BillingPlanCard";
-import {BillingSettingsSkeleton} from "@/components/settings/BillingSettingsSkeleton";
 import {BILLING_COPY, BILLING_PLANS, isProSubscription} from "@/lib/billing-constants";
 import {consumePortalReturn} from "@/lib/billing-portal-return";
 import {useBillingSettings} from "@/components/settings/BillingSettingsProvider";
@@ -113,10 +112,6 @@ export function BillingSettings() {
             && subscription.subscription.pendingSwitch === null;
     }
 
-    if (subscription.isLoading) {
-        return <BillingSettingsSkeleton/>;
-    }
-
     return (
         <Card className="min-w-0">
             <CardHeader className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -127,6 +122,7 @@ export function BillingSettings() {
                 <BillingCycleSelector cycle={cycle} isDisabled={isBusy || hasScheduledSwitch} onCycleChange={handleCycleChange}/>
             </CardHeader>
             <CardContent className="@container min-w-0 space-y-6">
+                {subscription.isLoading && <span role="status" aria-label={BILLING_COPY.SUBSCRIPTION_LOADING} className="sr-only">{BILLING_COPY.SUBSCRIPTION_LOADING}</span>}
                 {subscription.errorMessage && (
                     <div className="min-w-0 space-y-2">
                         <p role="alert" className="min-w-0 break-all text-sm text-destructive">{subscription.errorMessage}</p>
@@ -140,7 +136,8 @@ export function BillingSettings() {
                                 <BillingPlanCard key={plan.id} plan={plan} isCurrent={subscription.subscription.planId === plan.id}
                                                  cycle={cycle} isUpgrading={checkout.isRedirecting}
                                                  isPeriodSwitchable={isPeriodSwitchable(plan.id)}
-                                                 isSchedulingPeriod={periodUpgrade.isScheduling} onUpgrade={handleUpgrade}/>
+                                                 isSchedulingPeriod={periodUpgrade.isScheduling} onUpgrade={handleUpgrade}
+                                                 isLoading={subscription.isLoading}/>
                             ))}
                         </div>
                         {checkout.errorMessage && <p role="alert" className="min-w-0 break-all text-sm text-destructive">{checkout.errorMessage}</p>}

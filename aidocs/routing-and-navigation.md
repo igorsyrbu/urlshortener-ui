@@ -63,7 +63,7 @@ Guarding is client-side only; there is no server-side check.
 
 ## No route-level `loading.tsx`
 
-There are no `loading.tsx` files and none may be added. Loading states are component-level to avoid full-page layout shifts: skeletons (`LinkCardSkeletonList`, `TagCardSkeletonList`, `AnalyticsPageSkeleton`, `BillingSettingsSkeleton`, profile/session skeletons) rendered by the page or component that fetches. Pages that call `useSearchParams` are wrapped in `<Suspense>` with a skeleton fallback (`links/page.tsx`, `auth/exchange`, `auth/ott`).
+There are no `loading.tsx` files and none may be added. Loading states are component-level to avoid full-page layout shifts: skeletons (`LinkCardSkeletonList`, `TagCardSkeletonList`, `AnalyticsPageSkeleton`, profile/session skeletons, the billing card's loading state) rendered by the page or component that fetches. Pages that call `useSearchParams` are wrapped in `<Suspense>` with a skeleton fallback (`links/page.tsx`, `auth/exchange`, `auth/ott`).
 
 ## Links and `<Link>`
 

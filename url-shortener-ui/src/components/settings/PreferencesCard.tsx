@@ -37,22 +37,6 @@ const TRACKER_OPTIONS: TrackerOption[] = [
     },
 ];
 
-function TrackerOptionSkeleton() {
-    return (
-        <div
-            aria-hidden="true"
-            className="flex flex-1 flex-col items-start gap-2 rounded-xl border-[0.5px] border-border p-4"
-        >
-            <div className="flex items-center gap-2 w-full">
-                <div className="size-4 shrink-0 rounded bg-muted animate-pulse" />
-                <div className="h-3.5 w-20 rounded bg-muted animate-pulse" />
-            </div>
-            <div className="h-3 w-full rounded bg-muted animate-pulse" />
-            <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
-        </div>
-    );
-}
-
 export function PreferencesCard() {
     const trackerMode = usePreferencesStore((state) => state.trackerMode);
     const isLoading = usePreferencesStore((state) => state.isLoading);
@@ -86,8 +70,7 @@ export function PreferencesCard() {
         void loadPreferences();
     };
 
-    const showOptions = trackerMode !== null && !loadFailed;
-    const showSkeletons = !showOptions && !loadFailed;
+    const hasLoadedMode = trackerMode !== null;
 
     return (
         <Card>
@@ -115,41 +98,33 @@ export function PreferencesCard() {
                     <div
                         role="radiogroup"
                         aria-label="Tracker detection mode"
-                        aria-busy={isLoading}
+                        aria-busy={isLoading || !hasLoadedMode}
                         className="flex flex-col gap-3 sm:flex-row sm:gap-4"
                     >
-                        {showSkeletons ? (
-                            <>
-                                <TrackerOptionSkeleton />
-                                <TrackerOptionSkeleton />
-                                <TrackerOptionSkeleton />
-                            </>
-                        ) : (
-                            TRACKER_OPTIONS.map((option) => {
-                                const isActive = trackerMode === option.value;
-                                const Icon = option.icon;
-                                return (
-                                    <button
-                                        key={option.value}
-                                        type="button"
-                                        role="radio"
-                                        aria-checked={isActive}
-                                        aria-label={`${option.label}: ${option.description}`}
-                                        disabled={isLoading || isSaving}
-                                        onClick={() => void handleSelect(option.value)}
-                                        className={`flex flex-1 flex-col items-start gap-2 rounded-xl border-[0.5px] p-4 text-left transition-colors outline-hidden focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] hover:bg-muted/50 disabled:cursor-wait disabled:opacity-70 ${
-                                            isActive ? "border-primary ring-1 ring-primary bg-muted/30" : "border-border"
-                                        }`}
-                                    >
-                                        <span className="flex items-center gap-2">
-                                            <Icon className="size-4 shrink-0" aria-hidden="true" />
-                                            <span className="text-sm font-semibold leading-none">{option.label}</span>
-                                        </span>
-                                        <span className="text-xs leading-snug text-muted-foreground">{option.description}</span>
-                                    </button>
-                                );
-                            })
-                        )}
+                        {TRACKER_OPTIONS.map((option) => {
+                            const isActive = trackerMode === option.value;
+                            const Icon = option.icon;
+                            return (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={isActive}
+                                    aria-label={`${option.label}: ${option.description}`}
+                                    disabled={!hasLoadedMode || isLoading || isSaving}
+                                    onClick={() => void handleSelect(option.value)}
+                                    className={`flex flex-1 flex-col items-start gap-2 rounded-xl border-[0.5px] p-4 text-left transition-colors outline-hidden focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] hover:bg-muted/50 disabled:cursor-wait disabled:opacity-70 ${
+                                        isActive ? "border-primary ring-1 ring-primary bg-muted/30" : "border-border"
+                                    }`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Icon className="size-4 shrink-0" aria-hidden="true" />
+                                        <span className="text-sm font-semibold leading-none">{option.label}</span>
+                                    </span>
+                                    <span className="text-xs leading-snug text-muted-foreground">{option.description}</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
             </CardContent>

@@ -80,12 +80,17 @@ describe("BillingSettings plans", () => {
         mockBillingRedirect();
     });
 
-    it("shows a loading skeleton while the subscription loads", () => {
+    it("shows both plans with their prices but no plan actions while the subscription loads", () => {
         routeFetchWithAuth({[API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => new Promise<Response>(() => {})});
         renderBilling();
 
         expect(screen.getByRole("status", {name: BILLING_COPY.SUBSCRIPTION_LOADING})).toBeInTheDocument();
-        expect(screen.queryByRole("region", {name: "Free plan"})).not.toBeInTheDocument();
+        for (const plan of BILLING_PLANS) {
+            const planCard = screen.getByRole("region", {name: `${plan.name} plan`});
+            expect(within(planCard).queryByRole("button")).not.toBeInTheDocument();
+            expect(within(planCard).queryByText(BILLING_COPY.CURRENT_PLAN)).not.toBeInTheDocument();
+        }
+        expect(screen.getByRole("button", {name: BILLING_COPY.MONTHLY})).toBeDisabled();
     });
 
     it("shows the Free plan as current and lists both plans' features", async () => {

@@ -1,7 +1,7 @@
 import {render, screen, within} from "@testing-library/react";
 import {describe, expect, it, vi} from "vitest";
 import {BillingPlanCard} from "@/components/settings/BillingPlanCard";
-import {BILLING_COPY, type BillingPlan} from "@/lib/billing-constants";
+import {BILLING_COPY, BILLING_PRICES, type BillingPlan} from "@/lib/billing-constants";
 import {stubDesktopViewport, stubMobileViewport} from "@/test/viewport-utils";
 
 const LONG_TEXT_LENGTH = 250;
@@ -61,5 +61,17 @@ describe.each([
         render(<BillingPlanCard plan={plan} cycle="yearly" isCurrent isUpgrading={false} isPeriodSwitchable isSchedulingPeriod onUpgrade={onUpgrade}/>);
 
         expect(screen.getByRole("button", {name: BILLING_COPY.SWITCHING_PERIOD})).toBeDisabled();
+    });
+
+    it("shows the plan's price and features but holds the action and the current badge while loading", () => {
+        stubViewport();
+        const plan: BillingPlan = {id: "pro", name: "Pro", features: ["Custom domains"]};
+
+        render(<BillingPlanCard plan={plan} cycle="monthly" isCurrent isUpgrading={false} isPeriodSwitchable={false} isSchedulingPeriod={false} onUpgrade={() => undefined} isLoading/>);
+
+        expect(screen.getByRole("status", {name: BILLING_PRICES.monthly.monthlyPrice})).toBeInTheDocument();
+        expect(screen.getByText("Custom domains")).toBeInTheDocument();
+        expect(screen.queryByRole("button")).not.toBeInTheDocument();
+        expect(screen.queryByText(BILLING_COPY.CURRENT_PLAN)).not.toBeInTheDocument();
     });
 });

@@ -15,6 +15,7 @@ interface BillingPlanCardProps {
     isPeriodSwitchable: boolean;
     isSchedulingPeriod: boolean;
     onUpgrade: () => void;
+    isLoading?: boolean;
 }
 
 function renderFeatures(plan: BillingPlan): React.ReactNode {
@@ -41,20 +42,35 @@ function renderUpgradeLabel(plan: BillingPlan, isCurrent: boolean, isUpgrading: 
     return <>{<Zap aria-hidden="true"/>}{BILLING_COPY.UPGRADE}</>;
 }
 
-export function BillingPlanCard({plan, cycle, isCurrent, isUpgrading, isPeriodSwitchable, isSchedulingPeriod, onUpgrade}: BillingPlanCardProps) {
+function renderAction(plan: BillingPlan, props: BillingPlanCardProps): React.ReactNode {
+    const {isCurrent, isUpgrading, isPeriodSwitchable, isSchedulingPeriod, onUpgrade} = props;
+    if (props.isLoading) return <div aria-hidden="true" className="h-9 w-full rounded-md bg-muted animate-pulse"/>;
     const isFree = plan.id === "free";
-    const price = isFree ? BILLING_COPY.FREE_PRICE : BILLING_PRICES[cycle].monthlyPrice;
-    const description = isFree ? BILLING_COPY.FREE_DESCRIPTION : BILLING_PRICES[cycle].description;
     const isUpgradePending = !isCurrent && !isFree && isUpgrading;
     const isSwitchPending = isPeriodSwitchable && isSchedulingPeriod;
     const isButtonDisabled = (isCurrent && !isPeriodSwitchable) || isFree || isUpgrading || isSchedulingPeriod;
     const busyLabel = isSwitchPending ? BILLING_COPY.SWITCHING_PERIOD : isUpgradePending ? BILLING_COPY.UPGRADING : undefined;
     return (
-        <Card role="region" aria-label={`${plan.name} plan`} className={cn("min-w-0", isCurrent && "border-primary ring-1 ring-primary")}>
+        <Button className="w-full" variant={isFree || (isCurrent && !isPeriodSwitchable) ? "outline" : "default"}
+                disabled={isButtonDisabled} aria-busy={isUpgradePending || isSwitchPending}
+                aria-label={busyLabel} onClick={onUpgrade}>
+            {renderUpgradeLabel(plan, isCurrent, isUpgrading, isPeriodSwitchable, isSchedulingPeriod)}
+        </Button>
+    );
+}
+
+export function BillingPlanCard(props: BillingPlanCardProps) {
+    const {plan, cycle, isCurrent, isLoading = false} = props;
+    const isFree = plan.id === "free";
+    const price = isFree ? BILLING_COPY.FREE_PRICE : BILLING_PRICES[cycle].monthlyPrice;
+    const description = isFree ? BILLING_COPY.FREE_DESCRIPTION : BILLING_PRICES[cycle].description;
+    const isShownAsCurrent = isCurrent && !isLoading;
+    return (
+        <Card role="region" aria-label={`${plan.name} plan`} className={cn("min-w-0", isShownAsCurrent && "border-primary ring-1 ring-primary")}>
             <CardHeader className="min-w-0 gap-4">
                 <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                     <CardTitle className="min-w-0 text-lg"><h3 className="truncate" title={plan.name}>{plan.name}</h3></CardTitle>
-                    {isCurrent && <Badge className="border-transparent bg-primary/10 text-primary hover:bg-primary/10">{BILLING_COPY.CURRENT_PLAN}</Badge>}
+                    {isShownAsCurrent && <Badge className="border-transparent bg-primary/10 text-primary hover:bg-primary/10">{BILLING_COPY.CURRENT_PLAN}</Badge>}
                 </div>
                 <BillingPrice price={price}/>
                 <CardDescription>{description}</CardDescription>
@@ -64,11 +80,7 @@ export function BillingPlanCard({plan, cycle, isCurrent, isUpgrading, isPeriodSw
                 {renderFeatures(plan)}
             </CardContent>
             <CardFooter>
-                <Button className="w-full" variant={isFree || (isCurrent && !isPeriodSwitchable) ? "outline" : "default"}
-                        disabled={isButtonDisabled} aria-busy={isUpgradePending || isSwitchPending}
-                        aria-label={busyLabel} onClick={onUpgrade}>
-                    {renderUpgradeLabel(plan, isCurrent, isUpgrading, isPeriodSwitchable, isSchedulingPeriod)}
-                </Button>
+                {renderAction(plan, props)}
             </CardFooter>
         </Card>
     );

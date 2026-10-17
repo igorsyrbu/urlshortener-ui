@@ -9,7 +9,8 @@ import {fetchWithAuth} from "@/lib/api";
 import {useAuthStore, UserProfile} from "@/lib/store/auth";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
-import {ProfileCardSkeleton} from "@/components/settings/ProfileCardSkeleton";
+import {PROFILE_LABEL_CLASS, ProfileCardSkeleton} from "@/components/settings/ProfileCardSkeleton";
+import {PROFILE_FIELD_LABELS} from "@/lib/settings-constants";
 import {withPending} from "@/lib/async-utils";
 
 type NameSaveOutcome = "saved" | "rejected" | "failed";
@@ -78,14 +79,14 @@ export function ProfileCard() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2 max-w-sm">
-                    <label htmlFor="email" className="text-sm font-medium leading-none">
-                        Email
+                    <label htmlFor="email" className={PROFILE_LABEL_CLASS}>
+                        {PROFILE_FIELD_LABELS.EMAIL}
                     </label>
                     <Input id="email" value={email} disabled className="bg-muted cursor-not-allowed"/>
                 </div>
                 <div className="space-y-2 max-w-sm">
-                    <label htmlFor="name" className="text-sm font-medium leading-none">
-                        Name
+                    <label htmlFor="name" className={PROFILE_LABEL_CLASS}>
+                        {PROFILE_FIELD_LABELS.NAME}
                     </label>
                     <Input id="name" value={name} onChange={(e) => setName(e.target.value)}/>
                 </div>
