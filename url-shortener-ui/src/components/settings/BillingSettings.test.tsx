@@ -27,7 +27,8 @@ const PRO_SUBSCRIPTION = createBillingSubscriptionDto({currentPeriodEnd: FUTURE_
 
 function mockBillingRedirect(): void {
     vi.spyOn(billingRedirect, "redirectToBillingUrl").mockImplementation(() => undefined);
-    vi.spyOn(billingRedirect, "openBillingUrlInNewTab").mockImplementation(() => undefined);
+    vi.spyOn(billingRedirect, "openBlankBillingTab").mockReturnValue(null);
+    vi.spyOn(billingRedirect, "showBillingUrlInTab").mockImplementation(() => undefined);
 }
 
 function redirectedUrls(): string[] {
@@ -35,7 +36,7 @@ function redirectedUrls(): string[] {
 }
 
 function portalOpenedUrls(): string[] {
-    return vi.mocked(billingRedirect.openBillingUrlInNewTab).mock.calls.map(([url]) => url);
+    return vi.mocked(billingRedirect.showBillingUrlInTab).mock.calls.map(([, url]) => url);
 }
 
 function mockFreeBilling(): void {

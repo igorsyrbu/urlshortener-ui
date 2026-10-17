@@ -102,7 +102,7 @@ Add new global polyfills here, never inside individual tests.
 | [`palette-utils.tsx`](../url-shortener-ui/src/test/palette-utils.tsx) | `renderWithPalette`, `storeCustomTheme`, `readStoredSelection`, `resetDocumentTheme` | Palette/custom-theme tests (see [styling-and-theming](styling-and-theming.md)) |
 | [`analytics-utils.tsx`](../url-shortener-ui/src/test/analytics-utils.tsx) | `MockHorizontalBarChart`, `createGroupedClick` | Replace the chart component and build grouped-click fixtures |
 | [`user-session-utils.ts`](../url-shortener-ui/src/test/user-session-utils.ts) | `createUserSession` | Session list fixtures |
-| [`billing-utils.ts`](../url-shortener-ui/src/test/billing-utils.ts) | `createBillingSubscriptionDto` | Billing subscription DTO fixture |
+| [`billing-utils.ts`](../url-shortener-ui/src/test/billing-utils.ts) | `createBillingSubscriptionDto`, `allowTestBillingOrigins`, `TEST_BILLING_ORIGINS`, `createFakeBillingTab` | Billing subscription DTO fixture; puts the test origins on the billing allowlist; a fake `window.open` tab with spies on `location.replace` and `close` |
 | [`page-toolbar-utils.ts`](../url-shortener-ui/src/test/page-toolbar-utils.ts) | `getOptionsTrigger` | Locate the toolbar options trigger |
 | [`time-zone-utils.ts`](../url-shortener-ui/src/test/time-zone-utils.ts) | `FAR_FROM_UTC_TIME_ZONES` | Run date logic under UTC+14 and UTC-7/-8 with `describe.each` + `vi.stubEnv("TZ", timeZone)` (Node applies it immediately; vitest restores it). Every test of code that turns dates into strings or back uses it |
 | [`viewport-utils.ts`](../url-shortener-ui/src/test/viewport-utils.ts) | `stubDesktopViewport`, `stubMobileViewport` | Stub `matchMedia` by viewport width (derived from `MOBILE_BREAKPOINT_PX`) |

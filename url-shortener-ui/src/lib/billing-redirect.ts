@@ -2,6 +2,7 @@ const HTTPS_PROTOCOL = "https:";
 const HTTP_PROTOCOL = "http:";
 const LOOPBACK_HOSTNAMES: readonly string[] = ["localhost", "127.0.0.1", "[::1]"];
 const NEW_TAB_TARGET = "_blank";
+const BLANK_PAGE_URL = "about:blank";
 
 export class UnsafeBillingUrlError extends Error {
     constructor() {
@@ -41,9 +42,19 @@ export function redirectToBillingUrl(rawUrl: string): void {
     window.location.assign(parseBillingUrl(rawUrl).href);
 }
 
-export function openBillingUrlInNewTab(rawUrl: string): void {
+/** Opens an empty tab synchronously, while the click still counts as a user gesture; `null` when blocked. */
+export function openBlankBillingTab(loadingText: string): Window | null {
+    const tab = window.open(BLANK_PAGE_URL, NEW_TAB_TARGET);
+    if (tab === null) return null;
+    tab.opener = null;
+    tab.document.title = loadingText;
+    tab.document.body.textContent = loadingText;
+    return tab;
+}
+
+/** Sends the tab from `openBlankBillingTab` to the billing URL, or the current tab when no tab could be opened. */
+export function showBillingUrlInTab(tab: Window | null, rawUrl: string): void {
     const url = parseBillingUrl(rawUrl).href;
-    const opened = window.open(url, NEW_TAB_TARGET);
-    if (opened === null) window.location.assign(url);
-    else opened.opener = null;
+    if (tab === null) window.location.assign(url);
+    else tab.location.replace(url);
 }

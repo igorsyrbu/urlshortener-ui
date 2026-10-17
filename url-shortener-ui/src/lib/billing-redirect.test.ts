@@ -1,14 +1,16 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {
-    openBillingUrlInNewTab,
+    openBlankBillingTab,
+    showBillingUrlInTab,
     parseBillingUrl,
     redirectToBillingUrl,
     UnsafeBillingUrlError,
 } from "@/lib/billing-redirect";
-import {allowTestBillingOrigins} from "@/test/billing-utils";
+import {allowTestBillingOrigins, createFakeBillingTab} from "@/test/billing-utils";
 
 const PORTAL_URL = "https://billing.polar.sh/portal/test";
 const CHECKOUT_URL = "https://buy.polar.sh/checkout/abc";
+const LOADING_TEXT = "Opening portal…";
 const MOCK_CHECKOUT_URL = "http://localhost:8080/mock/billing/checkout/abc";
 
 beforeEach(() => {
@@ -68,31 +70,48 @@ describe("redirectToBillingUrl", () => {
     });
 });
 
-describe("openBillingUrlInNewTab", () => {
-    it("opens the billing url in a new tab and severs the opener link", () => {
-        const openedWindow = {} as Window;
-        const openSpy = vi.spyOn(window, "open").mockReturnValue(openedWindow);
+describe("openBlankBillingTab", () => {
+    it("opens an empty tab that shows the loading text and cannot reach this page", () => {
+        const {tab} = createFakeBillingTab();
+        const openSpy = vi.spyOn(window, "open").mockReturnValue(tab);
 
-        openBillingUrlInNewTab(PORTAL_URL);
+        expect(openBlankBillingTab(LOADING_TEXT)).toBe(tab);
 
-        expect(openSpy).toHaveBeenCalledWith(PORTAL_URL, "_blank");
-        expect(openedWindow.opener).toBeNull();
+        expect(openSpy).toHaveBeenCalledWith("about:blank", "_blank");
+        expect(tab.opener).toBeNull();
+        expect(tab.document.title).toBe(LOADING_TEXT);
+        expect(tab.document.body.textContent).toBe(LOADING_TEXT);
     });
 
-    it("falls back to the current tab when the popup is blocked", () => {
+    it("returns null when the browser blocks the tab", () => {
         vi.spyOn(window, "open").mockReturnValue(null);
+
+        expect(openBlankBillingTab(LOADING_TEXT)).toBeNull();
+    });
+});
+
+describe("showBillingUrlInTab", () => {
+    it("sends the opened tab to the billing url", () => {
+        const {tab, replaceLocation} = createFakeBillingTab();
+
+        showBillingUrlInTab(tab, PORTAL_URL);
+
+        expect(replaceLocation).toHaveBeenCalledExactlyOnceWith(PORTAL_URL);
+    });
+
+    it("falls back to the current tab when no tab could be opened", () => {
         const assign = vi.fn();
         vi.stubGlobal("location", {...window.location, assign});
 
-        openBillingUrlInNewTab(PORTAL_URL);
+        showBillingUrlInTab(null, PORTAL_URL);
 
         expect(assign).toHaveBeenCalledExactlyOnceWith(PORTAL_URL);
     });
 
-    it("opens nothing for an unsafe URL", () => {
-        const openSpy = vi.spyOn(window, "open");
+    it("navigates nowhere for an unsafe URL", () => {
+        const {tab, replaceLocation} = createFakeBillingTab();
 
-        expect(() => openBillingUrlInNewTab("//evil.example/portal")).toThrow(UnsafeBillingUrlError);
-        expect(openSpy).not.toHaveBeenCalled();
+        expect(() => showBillingUrlInTab(tab, "//evil.example/portal")).toThrow(UnsafeBillingUrlError);
+        expect(replaceLocation).not.toHaveBeenCalled();
     });
 });
