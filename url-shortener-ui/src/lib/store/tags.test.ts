@@ -70,16 +70,20 @@ describe.each(storeCases)("$name", ({useStore, withLinksCount}) => {
         expect(useStore.getState().loading).toBe(false);
     });
 
-    it("ignores a fetch request while another one is in flight", async () => {
-        let respond: (response: Response) => void = () => undefined;
-        vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise<Response>((resolve) => { respond = resolve; }));
+    it("applies only the newest search when an older request answers last", async () => {
+        const olderResponse = Promise.withResolvers<Response>();
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(olderResponse.promise);
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json([createTag({id: "newest", name: "Newest"})]));
 
-        const first = useStore.getState().fetchTags();
+        const older = useStore.getState().fetchTags();
+        useStore.getState().setSearchQuery("new");
         await useStore.getState().fetchTags();
-        respond(Response.json([]));
-        await first;
+        olderResponse.resolve(Response.json([createTag({id: "older", name: "Older"})]));
+        await older;
 
-        expect(fetchWithAuth).toHaveBeenCalledOnce();
+        expect(useStore.getState().tags.map((tag) => tag.id)).toEqual(["newest"]);
+        expect(requestedParams(1).get("search")).toBe("new");
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.signal?.aborted).toBe(true);
     });
 
     it("exposes the HTTP status when the response is an error", async () => {

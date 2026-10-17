@@ -159,17 +159,34 @@ describe("link store fetching", () => {
         expect(useLinkStore.getState().error).toBeNull();
     });
 
-    it("ignores a fetch request while another one is in flight", async () => {
-        let respond: (response: Response) => void = () => undefined;
-        vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise<Response>((resolve) => { respond = resolve; }));
+    it("applies only the newest request when an older one answers last", async () => {
+        const olderResponse = Promise.withResolvers<Response>();
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(olderResponse.promise);
+        mockLinksPage([createShortLink({id: "newest", title: "Newest"})]);
 
-        const first = useLinkStore.getState().fetchLinks();
-        expect(useLinkStore.getState().loading).toBe(true);
+        const older = useLinkStore.getState().fetchLinks(0);
         await useLinkStore.getState().fetchLinks(1);
-        respond(Response.json(createPage([])));
-        await first;
+        olderResponse.resolve(Response.json(createPage([createShortLink({id: "older", title: "Older"})])));
+        await older;
 
-        expect(fetchWithAuth).toHaveBeenCalledOnce();
+        expect(useLinkStore.getState().links.map((link) => link.id)).toEqual(["newest"]);
+        expect(useLinkStore.getState().loading).toBe(false);
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.signal?.aborted).toBe(true);
+    });
+
+    it("stays loading until the newest request answers", async () => {
+        const newestResponse = Promise.withResolvers<Response>();
+        mockLinksPage([]);
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(newestResponse.promise);
+
+        const older = useLinkStore.getState().fetchLinks(0);
+        const newest = useLinkStore.getState().fetchLinks(1);
+        await older;
+
+        expect(useLinkStore.getState().loading).toBe(true);
+        newestResponse.resolve(Response.json(createPage([])));
+        await newest;
+        expect(useLinkStore.getState().loading).toBe(false);
     });
 });
 

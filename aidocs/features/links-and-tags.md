@@ -11,7 +11,7 @@ Route `/links` ([`src/app/(dashboard)/links/page.tsx`](../../url-shortener-ui/sr
 | Concern | Where | Behaviour |
 |---|---|---|
 | List state | [`src/lib/store/links.ts`](../../url-shortener-ui/src/lib/store/links.ts) `useLinkStore` | `links`, `loading`, `error`, `showArchived`, `searchQuery`, `currentPage`, `totalElements`, `totalPages` |
-| Fetch | `fetchLinks(page?)` | `GET /shortlinks?page&size=20&showArchived&search`; maps `ShortLinkDTO` to `LinkItem` (empty title becomes `DEFAULT_LINK_TITLE`); reads pagination from `data.page ?? data` |
+| Fetch | `fetchLinks(page?)` | `GET /shortlinks?page&size=20&showArchived&search`; maps `ShortLinkDTO` to `LinkItem` (empty title becomes `DEFAULT_LINK_TITLE`); reads pagination from `data.page ?? data`. Latest wins: a new call aborts the previous request and only the newest answer is applied, so a search typed during a page load is never lost |
 | Page in URL | [`src/lib/pagination.ts`](../../url-shortener-ui/src/lib/pagination.ts) | `?page=N` is **1-based** in the URL, 0-based in the store; page 1 has no query string. Invalid values parse to page 0 |
 | Search | `useDebounce(searchInput, 500)` | On a changed trimmed value: `setSearchQuery`, reset URL to page 1, `fetchLinks(0)`. Placeholder "Search by URL or title" |
 | Archived toggle | `showArchived` | Persisted in `localStorage` key `showArchived` (`SHOW_ARCHIVED_STORAGE_KEY`); `hydrateShowArchived()` runs in an effect after mount |

@@ -4,6 +4,7 @@ import {LinkItem} from "@/lib/types";
 import {API_ENDPOINTS, DEFAULT_LINK_TITLE, DEFAULT_PAGE_SIZE, SHOW_ARCHIVED_STORAGE_KEY} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import type {ShortLinkDTO, PageDTO} from "@/lib/api-types";
+import {createLatestRequestTracker} from "@/lib/latest-request";
 
 interface LinkStore {
     links: LinkItem[];
@@ -34,6 +35,8 @@ function mapResponseToLinkItem(item: ShortLinkDTO): LinkItem {
     };
 }
 
+const linksRequests = createLatestRequestTracker();
+
 export const useLinkStore = create<LinkStore>((set, get) => ({
     links: [],
     loading: false,
@@ -46,7 +49,10 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
 
     fetchLinks: async (page?: number) => {
         const requestedPage = Math.max(0, page ?? get().currentPage);
-        if (get().loading) return;
+        const request = linksRequests.begin();
+        const setIfLatest = (partial: Partial<LinkStore>): void => {
+            if (request.isLatest()) set(partial);
+        };
 
         set({loading: true, error: null});
         try {
@@ -58,29 +64,28 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
             if (searchQuery) {
                 params.set("search", searchQuery);
             }
-            const res = await fetchWithAuth(
-                `${API_ENDPOINTS.SHORTLINKS}?${params}`,
-            );
+            const res = await fetchWithAuth(`${API_ENDPOINTS.SHORTLINKS}?${params}`, {signal: request.signal});
 
             if (res.ok) {
                 const data: PageDTO<ShortLinkDTO> = await res.json();
                 const mapped = data.content.map(mapResponseToLinkItem);
                 const pagination = data.page ?? data;
 
-                set({
+                setIfLatest({
                     links: mapped,
                     currentPage: pagination.number ?? requestedPage,
                     totalElements: pagination.totalElements ?? mapped.length,
                     totalPages: pagination.totalPages ?? 1,
                 });
             } else {
-                set({error: `Failed to fetch links: ${res.status}`});
+                setIfLatest({error: `Failed to fetch links: ${res.status}`});
             }
         } catch (error) {
+            if (request.signal.aborted) return;
             logger.error("Error fetching links", error);
-            set({error: error instanceof Error ? error.message : "Unknown error occurred"});
+            setIfLatest({error: error instanceof Error ? error.message : "Unknown error occurred"});
         } finally {
-            set({loading: false});
+            setIfLatest({loading: false});
         }
     },
 

@@ -2,6 +2,7 @@ import {create} from "zustand";
 import {fetchWithAuth} from "@/lib/api";
 import {TagItem} from "@/lib/types";
 import {fetchTagsResponse} from "@/lib/store/fetch-tags-common";
+import {createLatestRequestTracker} from "@/lib/latest-request";
 
 interface TagStore {
     tags: TagItem[];
@@ -13,6 +14,8 @@ interface TagStore {
     clearError: () => void;
 }
 
+const tagRequests = createLatestRequestTracker();
+
 export const useTagStoreWithCount = create<TagStore>((set, get) => ({
     tags: [],
     loading: false,
@@ -20,7 +23,10 @@ export const useTagStoreWithCount = create<TagStore>((set, get) => ({
     searchQuery: "",
 
     fetchTags: async (params) => {
-        if (get().loading) return;
+        const request = tagRequests.begin();
+        const setIfLatest = (partial: Partial<TagStore>): void => {
+            if (request.isLatest()) set(partial);
+        };
 
         set({loading: true, error: null});
         try {
@@ -32,11 +38,12 @@ export const useTagStoreWithCount = create<TagStore>((set, get) => ({
                 query.set("search", searchQuery);
             }
 
-            await fetchTagsResponse(query, set, fetchWithAuth);
+            await fetchTagsResponse(query, setIfLatest, (url) => fetchWithAuth(url, {signal: request.signal}));
         } catch (error) {
-            set({error: error instanceof Error ? error.message : "Unknown error occurred"});
+            if (request.signal.aborted) return;
+            setIfLatest({error: error instanceof Error ? error.message : "Unknown error occurred"});
         } finally {
-            set({loading: false});
+            setIfLatest({loading: false});
         }
     },
 
