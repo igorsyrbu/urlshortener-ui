@@ -75,6 +75,7 @@ Request ordering in [`useBillingSubscription`](../../url-shortener-ui/src/lib/ho
 1. Free user selects a cycle and clicks "Upgrade to Pro" on the Pro card.
 2. `useBillingCheckout.handleUpgrade` sets `isRedirecting`, calls `createBillingCheckoutUrl(cycle)` and `redirectToBillingUrl(url)` (both refuse a URL outside the billing allowlist, which then shows the generic checkout error; see [api-layer](../api-layer.md#billing-api-module)) (`window.location.assign`, same tab).
 3. The user pays on the external page, which returns to `/settings/billing`; the page remounts and loads the subscription fresh.
+   Pressing Back on the external page instead can restore `/settings/billing` from the browser's back/forward cache, without a remount. `isRedirecting` is never reset after a successful redirect, so a `pageshow` listener with `event.persisted` resets it; otherwise the button would stay on "Redirecting…".
 4. Errors (button re-enabled, inline alert): 409 -> "You're already on Pro." and the subscription is reloaded (`handleRetry`); 400 -> invalid period; 429 -> rate-limited message with ` Try again in Ns.` when the header was present; anything else -> generic failure.
 
 ### Portal and return refresh

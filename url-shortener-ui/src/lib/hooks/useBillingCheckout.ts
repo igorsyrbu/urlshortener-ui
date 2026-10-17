@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {
     BillingApiError,
     HTTP_BAD_REQUEST,
@@ -35,6 +35,17 @@ function resolveCheckoutErrorMessage(error: unknown): string {
 export function useBillingCheckout(cycle: BillingCycle, onAlreadyPro: () => void): BillingCheckoutState {
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Back from the hosted checkout can restore this page from the back/forward cache with the button frozen
+        // in "Redirecting…", because a successful redirect never resets it.
+        function handlePageShow(event: PageTransitionEvent): void {
+            if (event.persisted) setIsRedirecting(false);
+        }
+
+        window.addEventListener("pageshow", handlePageShow);
+        return () => window.removeEventListener("pageshow", handlePageShow);
+    }, []);
 
     async function handleUpgrade(): Promise<void> {
         if (isRedirecting) return;
