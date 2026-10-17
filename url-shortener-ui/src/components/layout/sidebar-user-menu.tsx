@@ -36,6 +36,7 @@ import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {Button} from "@/components/ui/button";
 import {cn} from "@/lib/utils";
 import {FOCUS_RING_CLASS, ICON_BUTTON_LABELS} from "@/lib/constants";
+import {SETTINGS_ROUTES} from "@/lib/settings-constants";
 
 interface SidebarUserMenuProps {
     onNavigate?: () => void;
@@ -64,7 +65,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
     };
 
     const handleSettingsClick = () => {
-        router.push("/settings");
+        router.push(SETTINGS_ROUTES.DEFAULT);
         onNavigate?.();
     };
 

@@ -1,7 +1,11 @@
+const SETTINGS_GENERAL_ROUTE = "/settings/general";
+
 export const SETTINGS_ROUTES = {
-    GENERAL: "/settings/general",
+    GENERAL: SETTINGS_GENERAL_ROUTE,
     BILLING: "/settings/billing",
-};
+    /** Where links to "Settings" go directly; `/settings` itself only redirects here. */
+    DEFAULT: SETTINGS_GENERAL_ROUTE,
+} as const;
 
 export const SETTINGS_LABELS = {GENERAL: "General", BILLING: "Billing", NAVIGATION: "Settings sections"};
 

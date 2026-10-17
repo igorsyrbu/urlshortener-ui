@@ -3,16 +3,30 @@
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {cn} from "@/lib/utils";
-import {ChartBar, LayoutDashboard, Link as LinkIcon, Link as LogoIcon, Settings, Tag,} from "lucide-react";
-import {FOCUS_RING_CLASS} from "@/lib/constants";
+import {ChartBar, LayoutDashboard, Link as LinkIcon, Link as LogoIcon, Settings, Tag, type LucideIcon} from "lucide-react";
+import {FOCUS_RING_CLASS, ROUTES} from "@/lib/constants";
+import {SETTINGS_ROUTES} from "@/lib/settings-constants";
 
-const navigation = [
+interface NavigationItem {
+    name: string;
+    href: string;
+    /** Route prefix that keeps the item highlighted; defaults to `href`. */
+    matchPrefix?: string;
+    icon: LucideIcon;
+}
+
+const navigation: NavigationItem[] = [
     {name: "Dashboard", href: "/dashboard", icon: LayoutDashboard},
     {name: "Links", href: "/links", icon: LinkIcon},
     {name: "Analytics", href: "/analytics", icon: ChartBar},
     {name: "Tags", href: "/tags", icon: Tag},
-    {name: "Settings", href: "/settings", icon: Settings},
+    {name: "Settings", href: SETTINGS_ROUTES.DEFAULT, matchPrefix: ROUTES.SETTINGS, icon: Settings},
 ];
+
+function isNavigationItemActive(item: NavigationItem, pathname: string): boolean {
+    const prefix = item.matchPrefix ?? item.href;
+    return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
 
 interface SidebarNavProps {
     onNavigate?: () => void;
@@ -32,7 +46,7 @@ export function SidebarNav({onNavigate}: SidebarNavProps) {
             </div>
             <nav className="flex flex-col gap-2.5">
                 {navigation.map((item) => {
-                    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                    const isActive = isNavigationItemActive(item, pathname);
                     const Icon = item.icon;
                     return (
                         <Link

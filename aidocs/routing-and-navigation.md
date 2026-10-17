@@ -18,7 +18,7 @@ The UI uses the App Router exclusively (`src/app/`); there is no Pages Router an
 | `/tags` | `(dashboard)/tags/page.tsx` | client | Tags list with counts, search, modals. |
 | `/analytics` | `(dashboard)/analytics/page.tsx` | client | Analytics dashboard (period selector, chart, breakdown cards). |
 | `/dashboard` | `(dashboard)/dashboard/page.tsx` | server, static | Placeholder card ("Dashboard Content (Mock)"). |
-| `/settings` | `(dashboard)/settings/page.tsx` | server, `redirect()` only | Redirects to `SETTINGS_ROUTES.GENERAL` (`/settings/general`). |
+| `/settings` | `(dashboard)/settings/page.tsx` | HTTP 307 from `next.config.ts` `redirects()`; the `redirect()`-only page is a fallback | Redirects to `SETTINGS_ROUTES.DEFAULT` (`/settings/general`). Nothing in the app links here. |
 | `/settings/general` | `(dashboard)/settings/general/page.tsx` | client | Profile, appearance, theme, preferences, sessions, danger zone. |
 | `/settings/billing` | `(dashboard)/settings/billing/page.tsx` | server wrapper | `BillingSettingsProvider` + `BillingSettings` (client). |
 | `/inspect/[key]` | `inspect/[key]/page.tsx` | server, async | Public link inspector (preview card, destination URL, report link). Redirects to `/` when the preview returns 404. |
@@ -33,7 +33,7 @@ Why server vs client per file is in [architecture](architecture.md#rendering-mod
 
 ## Redirects
 
-- `/` and `/settings` are `redirect()`-only server pages (`next/navigation`). Keep such pages free of other logic.
+- `/` and `/settings` are `redirect()`-only server pages (`next/navigation`). Keep such pages free of other logic. `/settings` is also redirected over HTTP in `next.config.ts` (`redirects()`, 307), so the server answers before any HTML; links go straight to the destination (`SETTINGS_ROUTES.DEFAULT`) instead of through a redirect.
 - `inspect/[key]` calls `redirect("/")` when the backend has no preview for the key (observation, see limitations).
 - Client redirects use `router.replace` when the previous entry must not stay in history (login after a failed auth check, after logout) and `router.push` otherwise (`auth/exchange` -> `/links` after `AUTH_REDIRECT_DELAY_MS`, link creation and import -> `/links`).
 - Hard navigations (`window.location`) exist for things the router cannot do: `fetchWithAuth` goes to `/login` when refresh fails ([api-layer](api-layer.md)), Google sign-in goes to `/api/oauth2/authorization/google` (cross-origin redirect chain through the proxy), billing checkout/portal go to provider URLs (`src/lib/billing-redirect.ts`).
@@ -70,12 +70,12 @@ There are no `loading.tsx` files and none may be added. Loading states are compo
 - Internal navigation uses `next/link` (`Link`): sidebar items (`sidebar-nav.tsx`), settings tabs (via `SegmentedControl` link mode, which renders `Link`s inside a `<nav>` with `aria-current="page"`), and the inspect page header/report links.
 - Programmatic navigation uses `useRouter` from `next/navigation`.
 - The only raw `<a>` is the skip link in the dashboard layout (`href="#main-content"`, an in-page fragment, not a route). Internal routes always use `Link`. External provider URLs are opened with `window.location.assign` / `window.open` ([`src/lib/billing-redirect.ts`](../url-shortener-ui/src/lib/billing-redirect.ts)).
-- Active state: `sidebar-nav.tsx` marks an item active when `pathname === href` or `pathname.startsWith(href + "/")`, so `Settings` (`/settings`) stays active on `/settings/general` and `/settings/billing`.
+- Active state: `sidebar-nav.tsx` marks an item active when `pathname` equals its `matchPrefix` (defaults to `href`) or starts with `matchPrefix + "/"`. Settings links to `/settings/general` with `matchPrefix: ROUTES.SETTINGS`, so it stays active on every settings tab.
 
 ## Sidebar and settings tabs
 
-- Sidebar items (defined in `sidebar-nav.tsx`): Dashboard `/dashboard`, Links `/links`, Analytics `/analytics`, Tags `/tags`, Settings `/settings`. Desktop (`lg` and up): fixed `Sidebar`. Below `lg`: `MobileSidebarDrawer` opened from the header menu button; it closes on navigation (`onNavigate`) and when the viewport grows past `LARGE_SCREEN_MIN_WIDTH_PX`.
-- `SidebarUserMenu` offers Settings (`router.push("/settings")`) and Logout.
+- Sidebar items (defined in `sidebar-nav.tsx`): Dashboard `/dashboard`, Links `/links`, Analytics `/analytics`, Tags `/tags`, Settings `/settings/general` (`SETTINGS_ROUTES.DEFAULT`). Desktop (`lg` and up): fixed `Sidebar`. Below `lg`: `MobileSidebarDrawer` opened from the header menu button; it closes on navigation (`onNavigate`) and when the viewport grows past `LARGE_SCREEN_MIN_WIDTH_PX`.
+- `SidebarUserMenu` offers Settings (`router.push(SETTINGS_ROUTES.DEFAULT)`) and Logout.
 - Header title is derived from `pathname` in `Header.tsx` (a fixed map; any `/settings/*` path shows "Settings"). A new top-level page must be added to that map and to the sidebar list.
 - Settings tabs: [`src/components/settings/SettingsTabs.tsx`](../url-shortener-ui/src/components/settings/SettingsTabs.tsx) renders `SETTINGS_SECTIONS` (General, Billing) from `settings-constants.ts`, with the current `pathname` as the selected value. Add a settings section by adding a route folder under `settings/` and an entry in `SETTINGS_SECTIONS`.
 
@@ -108,7 +108,7 @@ Details of the links and tags behaviours: [features/links-and-tags](features/lin
 ## Known limitations and existing exceptions
 
 - Observation: `/dashboard` is a placeholder page, yet it is the target of "Go to Dashboard" in `not-found.tsx` and the first sidebar item, while `/` redirects to `/links`. Existing behaviour - do not change as a drive-by.
-- Observation: `not-found.tsx` and `sidebar-user-menu.tsx` use string literals (`"/dashboard"`, `"/login"`, `"/settings"`) instead of `ROUTES`; `ROUTES` has no entries for `/dashboard`, `/tags`, `/analytics`, `/inspect` or `/report-abuse`. Existing exception - not a template.
+- Observation: `not-found.tsx` and `sidebar-user-menu.tsx` use string literals (`"/dashboard"`, `"/login"`) instead of `ROUTES`; `ROUTES` has no entries for `/dashboard`, `/tags`, `/analytics`, `/inspect` or `/report-abuse`. Existing exception - not a template.
 - Observation: `inspect/[key]/page.tsx` (server fetch, `redirect("/")` on a missing key) and `report-abuse/page.tsx` (async server page) are exceptions to the client-rendered model; see [architecture](architecture.md#known-limitations-and-existing-exceptions).
 - Observation: the auth gate is client-side, so a protected page's JS bundle is delivered before the check completes; nothing user-specific is rendered until it passes.
 - Observation: `app/error.tsx` exports a component named `GlobalError`, but the file is a regular segment boundary, not `global-error.tsx`.

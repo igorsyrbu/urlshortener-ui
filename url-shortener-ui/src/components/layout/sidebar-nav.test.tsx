@@ -22,7 +22,7 @@ const NAV_ITEMS = [
     {name: "Links", href: "/links"},
     {name: "Analytics", href: "/analytics"},
     {name: "Tags", href: "/tags"},
-    {name: "Settings", href: "/settings"},
+    {name: "Settings", href: SETTINGS_ROUTES.DEFAULT},
 ];
 
 function isHighlighted(link: HTMLElement): boolean {
@@ -46,6 +46,12 @@ describe("SidebarNav", () => {
 
         const highlighted = screen.getAllByRole("link").filter(isHighlighted);
         expect(highlighted.map((link) => link.textContent)).toEqual([name]);
+    });
+
+    it.each([SETTINGS_ROUTES.GENERAL, SETTINGS_ROUTES.BILLING])("keeps Settings highlighted on %s", (pathname) => {
+        renderAt(pathname);
+
+        expect(isHighlighted(screen.getByRole("link", {name: "Settings"}))).toBe(true);
     });
 
     it("keeps a section highlighted on its nested routes", () => {

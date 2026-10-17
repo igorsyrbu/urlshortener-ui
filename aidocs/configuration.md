@@ -64,6 +64,7 @@ The request header `x-mock-error: true` simulates a 500 on any request (not an e
 | `images.remotePatterns` | `https://www.google.com/s2/favicons/**` | Only host allowed for `next/image`; `LinkFavicon` is the only `next/image` user. |
 | `output` | `standalone` | Production build emits a self-contained server. |
 | `rewrites()` | `/api/:path*` -> `${getBackendApiBaseUrl()}/:path*` | The browser's only path to the backend. The route handler `app/api/shortlinks/import/updates/route.ts` is a filesystem route, so it is served instead of the rewrite for that one path ([architecture](architecture.md#sse-pass-through-route-handler)). |
+| `redirects()` | `/settings` -> `SETTINGS_ROUTES.DEFAULT` (307) | Answers before any HTML; links target the destination directly ([routing-and-navigation](routing-and-navigation.md#redirects)). |
 
 `poweredByHeader: false` drops `X-Powered-By`. `headers()` adds the security headers built in [`src/lib/security-headers.ts`](../url-shortener-ui/src/lib/security-headers.ts) to every route (`/:path*`) and `Referrer-Policy: no-referrer` to `/auth/:path*`:
 

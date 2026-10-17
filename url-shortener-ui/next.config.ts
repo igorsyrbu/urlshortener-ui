@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import { getBackendApiBaseUrl } from "./src/lib/backend-url";
 import { AUTH_ROUTE_HEADERS, buildSecurityHeaders } from "./src/lib/security-headers";
+import { SETTINGS_ROUTES } from "./src/lib/settings-constants";
 
 const securityHeaders = buildSecurityHeaders({
   isProduction: process.env.NODE_ENV === "production",
@@ -30,6 +31,10 @@ const nextConfig: NextConfig = {
         destination: `${getBackendApiBaseUrl()}/:path*`,
       },
     ];
+  },
+  async redirects() {
+    // Answer /settings with an HTTP redirect before any HTML; settings/page.tsx stays as a fallback.
+    return [{ source: "/settings", destination: SETTINGS_ROUTES.DEFAULT, permanent: false }];
   },
   async headers() {
     return [

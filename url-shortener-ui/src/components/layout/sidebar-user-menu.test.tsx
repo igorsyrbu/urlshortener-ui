@@ -6,6 +6,7 @@ import {fetchWithAuth} from "@/lib/api";
 import {logger} from "@/lib/logger";
 import {useAuthStore} from "@/lib/store/auth";
 import {ICON_BUTTON_LABELS} from "@/lib/constants";
+import {SETTINGS_ROUTES} from "@/lib/settings-constants";
 
 const mediaQuery = vi.hoisted(() => ({isDesktop: true}));
 const navigation = vi.hoisted(() => {
@@ -79,7 +80,7 @@ describe.each([
         await openMenu(user);
         await user.click(await screen.findByText("Settings"));
 
-        expect(navigation.router.push).toHaveBeenCalledExactlyOnceWith("/settings");
+        expect(navigation.router.push).toHaveBeenCalledExactlyOnceWith(SETTINGS_ROUTES.DEFAULT);
         expect(onNavigate).toHaveBeenCalledOnce();
     });
 
