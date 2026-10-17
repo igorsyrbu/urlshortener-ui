@@ -25,7 +25,7 @@ Defined in [`src/lib/api.ts`](../url-shortener-ui/src/lib/api.ts). Signature: `f
 
 - `endpoint` is a path such as `API_ENDPOINTS.SHORTLINKS` (never a full URL). The helper prepends `API_BASE_URL` (`"/api"`), so the browser calls the Next.js origin and the `/api/:path*` rewrite in `next.config.ts` forwards to the backend (see [configuration.md](configuration.md)).
 - All endpoint paths are in `API_ENDPOINTS` in [`src/lib/constants.ts`](../url-shortener-ui/src/lib/constants.ts). Dynamic ones are functions (`SHORTLINKS_EXISTS(key)`, `SHORTLINKS_PREVIEW(key)`). Add new paths there.
-- Headers: `Content-Type: application/json` is always set (callers override it, e.g. `text/csv`), `Authorization: Bearer <token>` is added when a token exists. Caller headers are merged on top of the defaults.
+- Headers are built with `new Headers(options.headers)`: caller headers are kept, `Content-Type: application/json` is added only when the body is a string and the caller set no content type (a body-less GET or POST sends none; CSV upload sets `text/csv`), and `Authorization: Bearer <token>` is added when a token exists.
 - It returns the raw `Response`; it does not throw on non-2xx. Callers check `res.ok`.
 - Network errors and aborts (`signal`) propagate as thrown errors.
 
@@ -33,12 +33,15 @@ Defined in [`src/lib/api.ts`](../url-shortener-ui/src/lib/api.ts). Signature: `f
 
 The access token lives only in memory, in `useAuthStore.accessToken` (see [features/auth.md](features/auth.md)). It is not persisted; a page reload starts without a token and the first request refreshes it using the HTTP-only cookie.
 
-1. **No token yet** (`ensureValidToken`): the first caller sets the module-level `isRefreshing` flag and calls `POST /api/token/refresh` with `credentials: "include"` (accepts `accessToken` or `access_token` in the body). Callers arriving meanwhile are parked in `failedQueue` and released when that refresh settles.
-2. **Refresh fails**: `redirectToLogin()` does a hard `window.location.href = ROUTES.LOGIN` and `fetchWithAuth` resolves with a synthetic `new Response(null, {status: 401})`.
-3. **401 on a request with a token** (`retryOnUnauthorized`): refresh once and replay the original request with the new token. If a refresh is already in flight, the 401 response is returned as is. If the refresh fails, redirect to login and return the 401.
-4. **Logout exception**: `DELETE /users/sessions/current` skips the token check and the 401 retry (`isLogoutRequest`), so logging out never triggers a refresh or redirect loop.
+All token work goes through **one shared refresh** (`refreshSessionOnce`): the first caller that needs a new token starts `POST /api/token/refresh` (`credentials: "include"`, accepts `accessToken` or `access_token` in the body), and every caller arriving before it settles awaits the same promise. N concurrent callers cause exactly one refresh.
 
-Callers can therefore treat a 401 from `fetchWithAuth` as "session is gone, redirect already happening".
+1. **No token yet**: wait for the shared refresh, then send the request with the new token.
+2. **401 on a request with a token**: if the store already holds a different token (another request refreshed meanwhile), replay once with it; otherwise wait for the shared refresh and replay once. A second 401 is returned as is.
+3. **Refresh rejected** (refresh answers 401/403, or 200 without a token): the shared refresh does one hard `window.location.href = ROUTES.LOGIN`; every waiting caller gets a 401 (the original 401 response when there was one) and no request is sent without a token.
+4. **Refresh unavailable** (network error, 5xx, 429): no redirect and no sign-out, because the user may only be offline; every waiting caller gets a synthetic `503` (`HTTP_SERVICE_UNAVAILABLE`); a network error is logged.
+5. **Logout exception**: `DELETE /users/sessions/current` skips the token check and the 401 retry (`isLogoutRequest`), so logging out never triggers a refresh or redirect loop.
+
+Callers can therefore treat a 401 from `fetchWithAuth` as "session is gone, redirect already happening", and a 503 as "temporarily unable to authenticate, show a retryable error".
 
 ### Raw `fetch` call sites (exceptions)
 
@@ -46,7 +49,7 @@ Requests that must not carry or refresh a token use plain `fetch`:
 
 | Site | Why |
 |---|---|
-| `refreshAccessToken` in `src/lib/api.ts` | Is the refresh itself |
+| `requestAccessToken` in `src/lib/api.ts` | Is the refresh itself |
 | [`src/app/auth/exchange/page.tsx`](../url-shortener-ui/src/app/auth/exchange/page.tsx) | OAuth code exchange before any token exists |
 | [`src/app/login/page.tsx`](../url-shortener-ui/src/app/login/page.tsx) | `POST /ott/generate` (magic link), pre-login |
 | [`src/components/abuse/ReportAbuseForm.tsx`](../url-shortener-ui/src/components/abuse/ReportAbuseForm.tsx) | Public endpoint, anonymous |
@@ -142,8 +145,6 @@ Non-OK responses throw `BillingApiError` with a generic message; the hooks in `s
 ## Known limitations and existing exceptions
 
 - Observation: [`src/app/inspect/[key]/page.tsx`](../url-shortener-ui/src/app/inspect/[key]/page.tsx) fetches `/public/preview/:key` on the server. Existing exception to the rule above, described in [architecture.md](architecture.md#known-limitations-and-existing-exceptions); not a template.
-- Observation: concurrent 401s are not coalesced. If a refresh is already running when a second request gets a 401, `retryOnUnauthorized` returns the 401 unchanged instead of waiting and replaying. Existing exception, not a template.
-- Observation: callers parked in `failedQueue` are released with `null` when the refresh fails, and then continue to send their request without an `Authorization` header (the refreshing caller performs the login redirect). Existing exception, not a template.
 - Observation: `src/components/layout/sidebar-user-menu.tsx` calls `fetchWithAuth("/users/sessions/current")` with a literal path instead of `API_ENDPOINTS.USERS_SESSIONS_CURRENT`, and `src/app/(dashboard)/settings/general/page.tsx` builds `/users/sessions/${id}` inline. Existing exceptions, not templates.
 - Observation: `useTagMutations` and several component handlers (`CreateLinkModal`, `EditLinkModal`, `LinkFormFields`, `ProfileCard`, the settings general page) call `fetchWithAuth` directly in components or hooks rather than through a `lib/*-api.ts` module; error bodies are surfaced differently in each (`parseProblemDetail` in tag mutations, status text elsewhere).
 - Observation: status literals `401`, `403`, `400`, `409`, `422`, `429` appear inline in `useUrlCleaner`, `login/page.tsx`, `ReportAbuseForm`, `CreateLinkModal`, `EditLinkModal`, contrary to the named-constants rule in [coding-patterns.md](coding-patterns.md). Existing exceptions, not templates.

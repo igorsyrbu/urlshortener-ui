@@ -44,7 +44,7 @@ Why server vs client per file is in [architecture](architecture.md#rendering-mod
 Guarding is client-side only; there is no server-side check.
 
 - Everything inside the `(dashboard)` group is protected by the layout gate in [`src/app/(dashboard)/layout.tsx`](../url-shortener-ui/src/app/(dashboard)/layout.tsx): without a token and user it calls `/users/me` through `fetchWithAuth`; failure -> `router.replace("/login")`. While it runs, "Securing session..." is shown and the page is not rendered. Full description: [architecture](architecture.md#app-bootstrapping).
-- Any later 401 that cannot be recovered by a token refresh makes `fetchWithAuth` hard-redirect to `/login` ([api-layer](api-layer.md)).
+- Any later 401 that cannot be recovered by a token refresh makes `fetchWithAuth` hard-redirect to `/login` once ([api-layer](api-layer.md#token-refresh)); a refresh that cannot reach the server (offline, 5xx) does not redirect.
 - Logout (sidebar user menu and the current-session card in settings) calls `DELETE /users/sessions/current`, clears `useAuthStore` and `router.replace`s to `/login` ([features/auth](features/auth.md)).
 - Public pages (no gate): `/login`, `/auth/exchange`, `/auth/ott`, `/inspect/[key]`, `/report-abuse`, `not-found`. The login page does not redirect an already signed-in user away.
 

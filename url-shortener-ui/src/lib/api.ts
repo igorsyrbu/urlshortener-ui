@@ -3,57 +3,54 @@ import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 
 export const API_BASE_URL = "/api";
-// ---------------------------------------------------------------------------
-// Token refresh queue
-// ---------------------------------------------------------------------------
+export const HTTP_UNAUTHORIZED = 401;
+export const HTTP_FORBIDDEN = 403;
+export const HTTP_SERVICE_UNAVAILABLE = 503;
 
-interface QueueItem {
-    resolve: (token: string | null) => void;
-    reject: (error: unknown) => void;
+const JSON_CONTENT_TYPE = "application/json";
+const REFRESH_LOG_ERROR = "Failed to refresh token";
+
+type RefreshResult =
+    | {kind: "token"; token: string}
+    /** The session is over (401/403 or no token in the response): the user has to sign in again. */
+    | {kind: "rejected"}
+    /** The session could not be checked (offline, 5xx, rate limit): signing out would be wrong. */
+    | {kind: "unavailable"};
+
+type FailedRefresh = Exclude<RefreshResult, {kind: "token"}>;
+
+const REJECTED: FailedRefresh = {kind: "rejected"};
+const UNAVAILABLE: FailedRefresh = {kind: "unavailable"};
+
+let sharedRefresh: Promise<RefreshResult> | null = null;
+
+function isSessionRejection(status: number): boolean {
+    return status === HTTP_UNAUTHORIZED || status === HTTP_FORBIDDEN;
 }
 
-let isRefreshing = false;
-let failedQueue: QueueItem[] = [];
-
-function processQueue(error: unknown, token: string | null = null): void {
-    for (const item of failedQueue) {
-        if (error) {
-            item.reject(error);
-        } else {
-            item.resolve(token);
-        }
-    }
-    failedQueue = [];
+function readAccessToken(payload: unknown): string | null {
+    if (typeof payload !== "object" || payload === null) return null;
+    const token = ("accessToken" in payload && payload.accessToken) || ("access_token" in payload && payload.access_token);
+    return typeof token === "string" && token.length > 0 ? token : null;
 }
 
-// ---------------------------------------------------------------------------
-// Token refresh
-// ---------------------------------------------------------------------------
-
-async function refreshAccessToken(): Promise<string | null> {
+async function requestAccessToken(): Promise<RefreshResult> {
     try {
         const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.TOKEN_REFRESH}`, {
             method: "POST",
             credentials: "include",
         });
+        if (!response.ok) return isSessionRejection(response.status) ? REJECTED : UNAVAILABLE;
 
-        if (!response.ok) return null;
-
-        const data = await response.json();
-        const newToken: string | undefined = data.accessToken || data.access_token;
-        if (newToken) {
-            useAuthStore.getState().setAccessToken(newToken);
-        }
-        return newToken ?? null;
+        const token = readAccessToken(await response.json());
+        if (token === null) return REJECTED;
+        useAuthStore.getState().setAccessToken(token);
+        return {kind: "token", token};
     } catch (error) {
-        logger.error("Failed to refresh token", error);
-        return null;
+        logger.error(REFRESH_LOG_ERROR, error);
+        return UNAVAILABLE;
     }
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function redirectToLogin(): void {
     if (typeof window !== "undefined") {
@@ -61,114 +58,80 @@ function redirectToLogin(): void {
     }
 }
 
+async function refreshSession(): Promise<RefreshResult> {
+    const result = await requestAccessToken();
+    if (result.kind === "rejected") redirectToLogin();
+    return result;
+}
+
+/** Every caller that needs a new token while a refresh is running waits for that same refresh. */
+function refreshSessionOnce(): Promise<RefreshResult> {
+    sharedRefresh ??= refreshSession().finally(() => {
+        sharedRefresh = null;
+    });
+    return sharedRefresh;
+}
+
+function resolveAccessToken(): Promise<RefreshResult> {
+    const token = useAuthStore.getState().accessToken;
+    if (token) return Promise.resolve({kind: "token", token});
+    return refreshSessionOnce();
+}
+
+function resolveTokenAfterRejection(rejectedToken: string): Promise<RefreshResult> {
+    const currentToken = useAuthStore.getState().accessToken;
+    // Another request refreshed while this one was in flight: retry with its token instead of refreshing again.
+    if (currentToken && currentToken !== rejectedToken) return Promise.resolve({kind: "token", token: currentToken});
+    return refreshSessionOnce();
+}
+
+function respondToFailedRefresh(result: FailedRefresh, unauthorizedResponse?: Response): Response {
+    if (result.kind === "unavailable") return new Response(null, {status: HTTP_SERVICE_UNAVAILABLE});
+    return unauthorizedResponse ?? new Response(null, {status: HTTP_UNAUTHORIZED});
+}
+
 function isLogoutRequest(endpoint: string, method: string | undefined): boolean {
     return endpoint === API_ENDPOINTS.USERS_SESSIONS_CURRENT && method === "DELETE";
 }
 
-function buildHeaders(options: RequestInit, token: string | null): Record<string, string> {
-    const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        ...(options.headers as Record<string, string>),
-    };
-    if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+function buildHeaders(options: RequestInit, token: string | null): Headers {
+    const headers = new Headers(options.headers);
+    if (typeof options.body === "string" && !headers.has("Content-Type")) {
+        headers.set("Content-Type", JSON_CONTENT_TYPE);
     }
+    if (token) headers.set("Authorization", `Bearer ${token}`);
     return headers;
 }
 
-// ---------------------------------------------------------------------------
-// Ensure the auth store has a valid access token before making a request.
-// If the token is missing, triggers a refresh. If already refreshing, queues.
-// Returns `false` when authentication cannot be recovered.
-// ---------------------------------------------------------------------------
-
-async function ensureValidToken(isLogout: boolean): Promise<boolean> {
-    const token = useAuthStore.getState().accessToken;
-    if (token || isLogout) return true;
-
-    if (!isRefreshing) {
-        isRefreshing = true;
-        try {
-            const newToken = await refreshAccessToken();
-            isRefreshing = false;
-            processQueue(null, newToken);
-
-            if (!newToken) {
-                redirectToLogin();
-                return false;
-            }
-        } catch (e) {
-            processQueue(e, null);
-            isRefreshing = false;
-            redirectToLogin();
-            return false;
-        }
-    } else {
-        try {
-            await new Promise<string | null>((resolve, reject) => {
-                failedQueue.push({resolve, reject});
-            });
-        } catch {
-            return false;
-        }
-    }
-
-    return true;
+function sendRequest(endpoint: string, options: RequestInit, token: string | null): Promise<Response> {
+    return fetch(`${API_BASE_URL}${endpoint}`, {...options, headers: buildHeaders(options, token)});
 }
 
-// ---------------------------------------------------------------------------
-// Retry the original request once after a 401 response.
-// ---------------------------------------------------------------------------
-
-async function retryOnUnauthorized(
+async function retryWithNewToken(
     endpoint: string,
     options: RequestInit,
-    headers: Record<string, string>,
-): Promise<Response | null> {
-    if (isRefreshing) return null;
-
-    isRefreshing = true;
-    const newToken = await refreshAccessToken();
-    isRefreshing = false;
-
-    if (!newToken) {
-        redirectToLogin();
-        return null;
-    }
-
-    return fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers: {...headers, Authorization: `Bearer ${newToken}`},
-    });
+    rejectedToken: string,
+    unauthorizedResponse: Response,
+): Promise<Response> {
+    const tokenResult = await resolveTokenAfterRejection(rejectedToken);
+    if (tokenResult.kind !== "token") return respondToFailedRefresh(tokenResult, unauthorizedResponse);
+    return sendRequest(endpoint, options, tokenResult.token);
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-export async function fetchWithAuth(
-    endpoint: string,
-    options: RequestInit = {},
-): Promise<Response> {
-    const isLogout = isLogoutRequest(endpoint, options.method);
-
-    const tokenValid = await ensureValidToken(isLogout);
-    if (!tokenValid) {
-        return new Response(null, {status: 401});
+/**
+ * Sends an authenticated API request. A missing or expired access token is replaced through one refresh shared by
+ * all concurrent callers. A rejected session redirects to login and answers 401; an unreachable refresh answers 503
+ * without signing the user out.
+ */
+export async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<Response> {
+    if (isLogoutRequest(endpoint, options.method)) {
+        return sendRequest(endpoint, options, useAuthStore.getState().accessToken);
     }
 
-    const currentToken = useAuthStore.getState().accessToken;
-    const headers = buildHeaders(options, currentToken);
+    const tokenResult = await resolveAccessToken();
+    if (tokenResult.kind !== "token") return respondToFailedRefresh(tokenResult);
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers,
-    });
-
-    if (response.status === 401 && !isLogout) {
-        const retryResponse = await retryOnUnauthorized(endpoint, options, headers);
-        if (retryResponse) return retryResponse;
-    }
-
-    return response;
+    const response = await sendRequest(endpoint, options, tokenResult.token);
+    if (response.status !== HTTP_UNAUTHORIZED) return response;
+    return retryWithNewToken(endpoint, options, tokenResult.token, response);
 }
