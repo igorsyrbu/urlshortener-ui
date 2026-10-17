@@ -2,49 +2,44 @@
 
 import {useEffect} from "react";
 import {useAnalyticsStore} from "@/lib/store/analytics";
-import {TooltipProvider} from "@/components/ui/tooltip";
 import {DateRange} from "react-day-picker";
 import {PeriodSelector} from "@/components/analytics/PeriodSelector";
 import {ComparisonBadge} from "@/components/analytics/ComparisonBadge";
 import {ClicksTimeSeriesChart} from "@/components/analytics/ClicksTimeSeriesChart";
-import {TopLinksTab} from "@/components/analytics/TopLinksTab";
-import {ReferrersTab} from "@/components/analytics/ReferrersTab";
-import {LocationTab} from "@/components/analytics/LocationTab";
-import {DeviceTab} from "@/components/analytics/DeviceTab";
 import {PageContainer} from "@/components/layout/PageContainer";
-import {AnalyticsCard} from "@/components/analytics/AnalyticsCard";
+import {AnalyticsBreakdownGrid} from "@/components/analytics/AnalyticsBreakdownGrid";
+import {AnalyticsError} from "@/components/analytics/AnalyticsError";
 import {AnalyticsPageSkeleton} from "@/components/analytics/AnalyticsSkeleton";
+import {Spinner} from "@/components/ui/spinner";
+import {ANALYTICS_COPY} from "@/lib/constants";
+import {cn} from "@/lib/utils";
+
+const LOAD_ERROR_CLASS = "rounded-xl border-[0.5px] border-border bg-card p-10";
 
 export default function AnalyticsPage() {
     const {
         period,
         setPeriod,
-        fetchAnalytics,
+        loadAnalytics,
+        retrySection,
         customDateRange,
         setCustomDateRange,
         totalClicks,
         previousTotalClicks,
         timeSeries,
-        countries,
-        continents,
-        devices,
-        os,
-        referrers,
-        topLinks,
-        loading,
-        isLocationLoading,
-        isDeviceLoading,
-        locationTab,
-        deviceTab,
-        setLocationTab,
-        setDeviceTab,
+        status,
+        overviewLoadedAt,
     } = useAnalyticsStore();
 
     useEffect(() => {
-        fetchAnalytics();
-    }, [fetchAnalytics]);
+        loadAnalytics();
+    }, [loadAnalytics]);
 
-    if (loading && timeSeries.length === 0) {
+    const hasOverview = overviewLoadedAt !== null;
+    const isRefreshing = hasOverview && status.overview === "loading";
+    const hasOverviewError = status.overview === "error";
+
+    if (!hasOverview && !hasOverviewError) {
         return (
             <PageContainer>
                 <AnalyticsPageSkeleton />
@@ -56,12 +51,18 @@ export default function AnalyticsPage() {
         setCustomDateRange(range);
     };
 
-    const locationData = locationTab === "countries" ? countries : continents;
-    const deviceData = deviceTab === "devices" ? devices : os;
+    const handleRetryOverview = () => retrySection("overview");
+    const refreshingClass = cn("transition-opacity", isRefreshing && "opacity-60");
 
     return (
         <PageContainer>
-            <div className="flex min-h-10 items-center justify-end">
+            <div className="flex min-h-10 items-center justify-end gap-3">
+                {isRefreshing && (
+                    <span role="status" className="flex items-center">
+                        <Spinner size="sm"/>
+                        <span className="sr-only">{ANALYTICS_COPY.UPDATING}</span>
+                    </span>
+                )}
                 <PeriodSelector
                     period={period}
                     customDateRange={customDateRange}
@@ -70,62 +71,33 @@ export default function AnalyticsPage() {
                 />
             </div>
 
-            <div className="flex flex-col gap-6 rounded-xl border-[0.5px] border-border bg-card p-4 sm:p-6">
-                <div>
-                    <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Total Clicks</p>
-                    <div className="mt-2 flex flex-wrap items-center gap-4">
-                        <h3 className="text-4xl font-extrabold text-foreground">{totalClicks.toLocaleString()}</h3>
-                        <ComparisonBadge
-                            period={period}
-                            totalClicks={totalClicks}
-                            previousTotalClicks={previousTotalClicks}
-                        />
+            {!hasOverview ? (
+                <AnalyticsError message={ANALYTICS_COPY.LOAD_FAILED} onRetry={handleRetryOverview} className={LOAD_ERROR_CLASS}/>
+            ) : (
+                <>
+                    {hasOverviewError && (
+                        <AnalyticsError message={ANALYTICS_COPY.REFRESH_FAILED} onRetry={handleRetryOverview}
+                                        className="rounded-xl border-[0.5px] border-border bg-card p-4 sm:flex-row sm:justify-between sm:text-left"/>
+                    )}
+                    <div aria-busy={isRefreshing}
+                         className={cn("flex flex-col gap-6 rounded-xl border-[0.5px] border-border bg-card p-4 sm:p-6", refreshingClass)}>
+                        <div>
+                            <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Total Clicks</p>
+                            <div className="mt-2 flex flex-wrap items-center gap-4">
+                                <h3 className="text-4xl font-extrabold text-foreground">{totalClicks.toLocaleString()}</h3>
+                                <ComparisonBadge
+                                    period={period}
+                                    totalClicks={totalClicks}
+                                    previousTotalClicks={previousTotalClicks}
+                                />
+                            </div>
+                        </div>
+                        <ClicksTimeSeriesChart timeSeries={timeSeries} onZoom={handleZoom}/>
                     </div>
-                </div>
-                <ClicksTimeSeriesChart timeSeries={timeSeries} onZoom={handleZoom}/>
-            </div>
 
-            <div className="md:mt-2 grid grid-cols-1 gap-y-4 md:gap-y-6 gap-x-4 md:grid-cols-2 md:gap-x-5">
-                <AnalyticsCard title="Top Links">
-                    <TopLinksTab topLinks={topLinks} isLoading={loading} totalClicks={totalClicks}/>
-                </AnalyticsCard>
-
-                <AnalyticsCard title="Referrers">
-                    <ReferrersTab referrers={referrers} isLoading={loading} totalClicks={totalClicks}/>
-                </AnalyticsCard>
-
-                <AnalyticsCard
-                    tabs={[
-                        {label: "Countries", value: "countries", isActive: locationTab === "countries"},
-                        {label: "Continents", value: "continents", isActive: locationTab === "continents"},
-                    ]}
-                    onTabChange={(tab) => setLocationTab(tab as "countries" | "continents")}
-                >
-                    <TooltipProvider>
-                        <LocationTab
-                            locationTab={locationTab}
-                            data={locationData}
-                            isLoading={isLocationLoading}
-                            totalClicks={totalClicks}
-                        />
-                    </TooltipProvider>
-                </AnalyticsCard>
-
-                <AnalyticsCard
-                    tabs={[
-                        {label: "Devices", value: "devices", isActive: deviceTab === "devices"},
-                        {label: "OS", value: "os", isActive: deviceTab === "os"},
-                    ]}
-                    onTabChange={(tab) => setDeviceTab(tab as "devices" | "os")}
-                >
-                    <DeviceTab
-                        deviceTab={deviceTab}
-                        data={deviceData}
-                        isLoading={isDeviceLoading}
-                        totalClicks={totalClicks}
-                    />
-                </AnalyticsCard>
-            </div>
+                    <AnalyticsBreakdownGrid className={refreshingClass}/>
+                </>
+            )}
         </PageContainer>
     );
 }

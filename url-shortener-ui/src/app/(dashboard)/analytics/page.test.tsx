@@ -2,11 +2,13 @@ import {render, screen, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import AnalyticsPage from "@/app/(dashboard)/analytics/page";
-import {useAnalyticsStore} from "@/lib/store/analytics";
+import {ANALYTICS_COPY} from "@/lib/constants";
+import {type AnalyticsSection, type SectionStatus, useAnalyticsStore} from "@/lib/store/analytics";
 import {createGroupedClick} from "@/test/analytics-utils";
 
 const mocks = vi.hoisted(() => ({
-    fetchAnalytics: vi.fn(),
+    loadAnalytics: vi.fn(),
+    retrySection: vi.fn(),
     setPeriod: vi.fn(),
     setCustomDateRange: vi.fn(),
     setLocationTab: vi.fn(),
@@ -26,14 +28,17 @@ vi.mock("@/components/analytics/ClicksTimeSeriesChart", () => ({
 }));
 
 const initialStoreState = useAnalyticsStore.getState();
+const LOADED_AT = Date.UTC(2026, 9, 12);
+const ALL_READY: Record<AnalyticsSection, SectionStatus> = {
+    overview: "ready", topLinks: "ready", location: "ready", device: "ready",
+};
 
 function loadAnalytics(overrides: Partial<ReturnType<typeof useAnalyticsStore.getState>> = {}): void {
     useAnalyticsStore.setState({
         ...initialStoreState,
         ...mocks,
-        loading: false,
-        isLocationLoading: false,
-        isDeviceLoading: false,
+        status: ALL_READY,
+        overviewLoadedAt: LOADED_AT,
         totalClicks: 1234,
         previousTotalClicks: 617,
         timeSeries: [{date: "2026-10-01", clicks: 5}],
@@ -55,11 +60,11 @@ describe("AnalyticsPage", () => {
     it("requests analytics when it mounts", () => {
         render(<AnalyticsPage/>);
 
-        expect(mocks.fetchAnalytics).toHaveBeenCalledOnce();
+        expect(mocks.loadAnalytics).toHaveBeenCalledOnce();
     });
 
     it("shows the skeleton while the first load has no data", () => {
-        loadAnalytics({loading: true, timeSeries: []});
+        loadAnalytics({overviewLoadedAt: null, status: {...ALL_READY, overview: "loading"}});
 
         render(<AnalyticsPage/>);
 
@@ -67,13 +72,56 @@ describe("AnalyticsPage", () => {
         expect(screen.queryByText("Total Clicks")).not.toBeInTheDocument();
     });
 
-    it("keeps the page visible while refreshing when a time series is already loaded", () => {
-        loadAnalytics({loading: true});
+    it("offers a retry instead of an empty page when the first load fails", async () => {
+        const user = userEvent.setup();
+        loadAnalytics({overviewLoadedAt: null, status: {...ALL_READY, overview: "error"}});
+        render(<AnalyticsPage/>);
+
+        expect(screen.getByRole("alert")).toHaveTextContent(ANALYTICS_COPY.LOAD_FAILED);
+        await user.click(screen.getByRole("button", {name: ANALYTICS_COPY.RETRY}));
+
+        expect(mocks.retrySection).toHaveBeenCalledExactlyOnceWith("overview");
+        expect(screen.queryByText("Total Clicks")).not.toBeInTheDocument();
+    });
+
+    it("keeps the loaded numbers visible and marks them busy while a new period loads", () => {
+        loadAnalytics({status: {...ALL_READY, overview: "loading"}});
 
         render(<AnalyticsPage/>);
 
-        expect(screen.getByText("Total Clicks")).toBeInTheDocument();
+        expect(screen.getByText("Total Clicks").closest("[aria-busy]")).toHaveAttribute("aria-busy", "true");
+        expect(screen.getByRole("status")).toHaveTextContent(ANALYTICS_COPY.UPDATING);
         expect(screen.queryByTestId("analytics-skeleton")).not.toBeInTheDocument();
+    });
+
+    it("is not marked busy once the data is loaded", () => {
+        render(<AnalyticsPage/>);
+
+        expect(screen.getByText("Total Clicks").closest("[aria-busy]")).toHaveAttribute("aria-busy", "false");
+        expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
+
+    it("keeps the last numbers and offers a retry when a refresh fails", async () => {
+        const user = userEvent.setup();
+        loadAnalytics({status: {...ALL_READY, overview: "error"}});
+        render(<AnalyticsPage/>);
+
+        expect(screen.getByRole("alert")).toHaveTextContent(ANALYTICS_COPY.REFRESH_FAILED);
+        expect(screen.getByRole("heading", {name: (1234).toLocaleString()})).toBeInTheDocument();
+        await user.click(screen.getByRole("button", {name: ANALYTICS_COPY.RETRY}));
+
+        expect(mocks.retrySection).toHaveBeenCalledExactlyOnceWith("overview");
+    });
+
+    it("shows a failed card with its own retry while the other cards keep their data", async () => {
+        const user = userEvent.setup();
+        loadAnalytics({status: {...ALL_READY, location: "error"}, devices: [createGroupedClick({label: "Desktop"})]});
+        render(<AnalyticsPage/>);
+
+        await user.click(within(getCard("Countries")).getByRole("button", {name: ANALYTICS_COPY.RETRY}));
+
+        expect(mocks.retrySection).toHaveBeenCalledExactlyOnceWith("location");
+        expect(within(getCard("Devices")).getByText("Desktop")).toBeInTheDocument();
     });
 
     it("shows the localized total and the comparison with the previous period", () => {
@@ -142,10 +190,18 @@ describe("AnalyticsPage", () => {
     });
 
     it("shows a section-specific loading state while location data loads", () => {
-        loadAnalytics({isLocationLoading: true, countries: []});
+        loadAnalytics({status: {...ALL_READY, location: "loading"}, countries: []});
 
         render(<AnalyticsPage/>);
 
         expect(screen.getByText("Loading countries...")).toBeInTheDocument();
+    });
+
+    it("shows the top links spinner before their first answer instead of an empty state", () => {
+        loadAnalytics({status: {...ALL_READY, topLinks: "idle"}, topLinks: []});
+
+        render(<AnalyticsPage/>);
+
+        expect(screen.getByText("Loading top links...")).toBeInTheDocument();
     });
 });

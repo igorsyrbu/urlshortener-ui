@@ -12,7 +12,7 @@ Where fetches live today (use these homes for new code):
 
 | Home | What goes there | Examples |
 |---|---|---|
-| Zustand store action | Data shared across components or pages: lists, filters, loading/error flags | `fetchLinks` in [`src/lib/store/links.ts`](../url-shortener-ui/src/lib/store/links.ts), `fetchAnalytics` in [`src/lib/store/analytics.ts`](../url-shortener-ui/src/lib/store/analytics.ts) |
+| Zustand store action | Data shared across components or pages: lists, filters, loading/error flags | `fetchLinks` in [`src/lib/store/links.ts`](../url-shortener-ui/src/lib/store/links.ts), `loadAnalytics` in [`src/lib/store/analytics.ts`](../url-shortener-ui/src/lib/store/analytics.ts) |
 | `lib/*-api.ts` module | A group of related endpoints with DTO parsing and typed errors | [`src/lib/billing-api.ts`](../url-shortener-ui/src/lib/billing-api.ts), [`src/lib/link-transfer.ts`](../url-shortener-ui/src/lib/link-transfer.ts) (CSV import/export) |
 | Hook in `lib/hooks` | Mutations or loads owned by one feature, with local pending/error state | `useTagMutations`, `useUrlCleaner`, `useBillingSubscription` in `src/lib/hooks/` |
 | Component handler | One-off mutations tied to a single form or dialog | `CreateLinkModal`, `EditLinkModal` |

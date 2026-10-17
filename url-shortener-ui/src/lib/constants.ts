@@ -192,6 +192,14 @@ export const DEFAULT_PAGE_SIZE = 20;
 
 export const DEFAULT_PERIOD_DAYS = 30;
 
+export const ANALYTICS_COPY = {
+    LOAD_FAILED: "Couldn't load analytics for this period.",
+    REFRESH_FAILED: "Couldn't update analytics. The numbers below are from your previous selection.",
+    SECTION_FAILED: "Couldn't load this section.",
+    RETRY: "Try again",
+    UPDATING: "Updating analytics",
+} as const;
+
 /** Earliest year with analytics data; the date pickers allow every year from this one to the current one. */
 export const FIRST_ANALYTICS_YEAR = 2026;
 

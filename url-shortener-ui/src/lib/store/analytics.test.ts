@@ -3,7 +3,7 @@ import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {formatLocalIsoDate} from "@/lib/date-utils";
 import {logger} from "@/lib/logger";
-import {useAnalyticsStore} from "@/lib/store/analytics";
+import {ANALYTICS_STALE_AFTER_MS, useAnalyticsStore} from "@/lib/store/analytics";
 import {createLinkItem} from "@/test/link-utils";
 import {FAR_FROM_UTC_TIME_ZONES} from "@/test/time-zone-utils";
 
@@ -51,11 +51,29 @@ function requestedUrls(): string[] {
 }
 
 async function settleRequests(): Promise<void> {
-    await vi.waitFor(() => expect(useAnalyticsStore.getState().isLocationLoading).toBe(false));
-    await vi.waitFor(() => expect(useAnalyticsStore.getState().isDeviceLoading).toBe(false));
+    await vi.waitFor(() => expect(Object.values(useAnalyticsStore.getState().status)).not.toContain("loading"));
 }
 
-describe("analytics store fetching", () => {
+async function loadOnce(): Promise<void> {
+    useAnalyticsStore.getState().loadAnalytics();
+    await settleRequests();
+}
+
+function loadedAt(): number {
+    const {overviewLoadedAt} = useAnalyticsStore.getState();
+    if (overviewLoadedAt === null) throw new Error("The overview has not loaded");
+    return overviewLoadedAt;
+}
+
+function signalOf(urlPart: string): AbortSignal | undefined {
+    const call = vi.mocked(fetchWithAuth).mock.calls.find(([url]) => url.includes(urlPart));
+    return call?.[1]?.signal ?? undefined;
+}
+
+const SERVER_ERROR = 500;
+const TIME_SERIES = [{date: "2026-10-11", clicks: 5}];
+
+describe("analytics store loading", () => {
     beforeEach(() => {
         vi.useFakeTimers({toFake: ["Date"]});
         vi.setSystemTime(NOW);
@@ -66,40 +84,41 @@ describe("analytics store fetching", () => {
         useAnalyticsStore.setState(initialState, true);
     });
 
-    it("starts in a loading state that has not fetched anything", () => {
-        expect(useAnalyticsStore.getState().loading).toBe(true);
-        expect(useAnalyticsStore.getState().hasFetched).toBe(false);
-        expect(useAnalyticsStore.getState().period).toBe("P7D");
+    it("starts with nothing loaded", () => {
+        const state = useAnalyticsStore.getState();
+
+        expect(state.overviewLoadedAt).toBeNull();
+        expect(Object.values(state.status)).toEqual(["idle", "idle", "idle", "idle"]);
+        expect(state.period).toBe("P7D");
     });
 
     it("loads every analytics section for the default period", async () => {
         mockAnalyticsApi({
             total: Response.json(42),
             previous: Response.json(30),
-            date: Response.json([{date: "2026-10-11", clicks: 5}]),
+            date: Response.json(TIME_SERIES),
             referrer: Response.json([{label: "google.com", clicks: 3}]),
             country: Response.json([{label: "Canada", clicks: 7}]),
             device: Response.json([{label: "Mobile", clicks: 9}]),
         });
 
-        useAnalyticsStore.getState().fetchAnalytics();
-        await vi.waitFor(() => expect(useAnalyticsStore.getState().loading).toBe(false));
-        await settleRequests();
+        await loadOnce();
 
         const state = useAnalyticsStore.getState();
         expect(state.totalClicks).toBe(42);
-        expect(state.timeSeries).toEqual([{date: "2026-10-11", clicks: 5}]);
+        expect(state.previousTotalClicks).toBe(30);
+        expect(state.timeSeries).toEqual(TIME_SERIES);
         expect(state.referrers).toEqual([{label: "google.com", clicks: 3}]);
         expect(state.countries).toEqual([{label: "Canada", clicks: 7}]);
         expect(state.devices).toEqual([{label: "Mobile", clicks: 9}]);
-        await vi.waitFor(() => expect(useAnalyticsStore.getState().previousTotalClicks).toBe(30));
+        expect(state.overviewLoadedAt).toBeGreaterThanOrEqual(NOW.getTime());
+        expect(Object.values(state.status)).toEqual(["ready", "ready", "ready", "ready"]);
     });
 
     it("queries each breakdown for the selected period", async () => {
         mockAnalyticsApi();
 
-        useAnalyticsStore.getState().fetchAnalytics();
-        await settleRequests();
+        await loadOnce();
 
         const base = `${API_ENDPOINTS.ANALYTICS}?period=P7D`;
         expect(requestedUrls()).toEqual(expect.arrayContaining([
@@ -114,76 +133,124 @@ describe("analytics store fetching", () => {
 
     it("compares against the preceding period of the same length", async () => {
         mockAnalyticsApi();
-        useAnalyticsStore.setState({period: "P7D"});
 
-        useAnalyticsStore.getState().fetchAnalytics();
-        await settleRequests();
+        await loadOnce();
 
         const periodEnd = new Date(NOW.getTime() - 7 * MS_PER_DAY);
         const periodStart = new Date(NOW.getTime() - 14 * MS_PER_DAY);
         expect(requestedUrls()).toContain(`${API_ENDPOINTS.ANALYTICS}?start=${formatLocalIsoDate(periodStart)}&end=${formatLocalIsoDate(periodEnd)}`);
     });
 
-    it("does not fetch again once data has been fetched unless forced", async () => {
-        mockAnalyticsApi();
-        useAnalyticsStore.getState().fetchAnalytics();
-        await settleRequests();
-        const callsAfterFirstFetch = vi.mocked(fetchWithAuth).mock.calls.length;
-
-        useAnalyticsStore.getState().fetchAnalytics();
-        expect(fetchWithAuth).toHaveBeenCalledTimes(callsAfterFirstFetch);
-
-        useAnalyticsStore.getState().fetchAnalytics(true);
-        await settleRequests();
-        expect(vi.mocked(fetchWithAuth).mock.calls.length).toBeGreaterThan(callsAfterFirstFetch);
-    });
-
-    it("marks sections as loading while requests are pending", () => {
+    it("marks every section as loading while the first load is pending", () => {
         vi.mocked(fetchWithAuth).mockReturnValue(new Promise<Response>(() => undefined));
 
-        useAnalyticsStore.getState().fetchAnalytics();
+        useAnalyticsStore.getState().loadAnalytics();
 
-        expect(useAnalyticsStore.getState().loading).toBe(true);
-        expect(useAnalyticsStore.getState().isLocationLoading).toBe(true);
-        expect(useAnalyticsStore.getState().isDeviceLoading).toBe(true);
-        expect(useAnalyticsStore.getState().hasFetched).toBe(true);
+        expect(Object.values(useAnalyticsStore.getState().status)).toEqual(["loading", "loading", "loading", "loading"]);
     });
 
-    it("falls back to empty lists when breakdown requests fail with an HTTP error", async () => {
-        const failure = () => new Response(null, {status: 500});
-        mockAnalyticsApi({date: failure(), referrer: failure(), country: failure(), device: failure()});
-        useAnalyticsStore.setState({timeSeries: [{date: "2026-10-01", clicks: 1}]});
+    it("does not start a second load while the first one is running", () => {
+        vi.mocked(fetchWithAuth).mockReturnValue(new Promise<Response>(() => undefined));
+        useAnalyticsStore.getState().loadAnalytics();
+        const callsAfterFirstLoad = vi.mocked(fetchWithAuth).mock.calls.length;
 
-        useAnalyticsStore.getState().fetchAnalytics();
-        await settleRequests();
+        useAnalyticsStore.getState().loadAnalytics();
 
-        await vi.waitFor(() => expect(useAnalyticsStore.getState().timeSeries).toEqual([]));
-        expect(useAnalyticsStore.getState().referrers).toEqual([]);
-        expect(useAnalyticsStore.getState().countries).toEqual([]);
-        expect(useAnalyticsStore.getState().devices).toEqual([]);
+        expect(fetchWithAuth).toHaveBeenCalledTimes(callsAfterFirstLoad);
     });
 
-    it("keeps the previous total when the comparison request fails", async () => {
-        mockAnalyticsApi({previous: new Response(null, {status: 500})});
+    it("does not refetch data that is still fresh when the page is opened again", async () => {
+        mockAnalyticsApi();
+        await loadOnce();
+        vi.mocked(fetchWithAuth).mockClear();
+
+        vi.setSystemTime(loadedAt() + ANALYTICS_STALE_AFTER_MS - 1);
+        useAnalyticsStore.getState().loadAnalytics();
+
+        expect(fetchWithAuth).not.toHaveBeenCalled();
+    });
+
+    it("refreshes stale data in the background without a visible loading state", async () => {
+        mockAnalyticsApi({date: Response.json(TIME_SERIES)});
+        await loadOnce();
+        const refreshedSeries = [{date: "2026-10-12", clicks: 8}];
+        mockAnalyticsApi({date: Response.json(refreshedSeries)});
+        const refreshedAt = loadedAt() + ANALYTICS_STALE_AFTER_MS;
+        vi.setSystemTime(refreshedAt);
+
+        useAnalyticsStore.getState().loadAnalytics();
+
+        expect(useAnalyticsStore.getState().status.overview).toBe("ready");
+        await vi.waitFor(() => expect(useAnalyticsStore.getState().timeSeries).toEqual(refreshedSeries));
+        expect(loadedAt()).toBeGreaterThanOrEqual(refreshedAt);
+    });
+
+    it("keeps the data on screen and logs when a background refresh fails", async () => {
+        mockAnalyticsApi({date: Response.json(TIME_SERIES)});
+        await loadOnce();
+        mockAnalyticsApi({date: new Response(null, {status: SERVER_ERROR})});
+        vi.setSystemTime(loadedAt() + ANALYTICS_STALE_AFTER_MS);
+
+        useAnalyticsStore.getState().loadAnalytics();
+
+        await vi.waitFor(() => expect(logger.error).toHaveBeenCalledWith("Analytics overview fetch error", expect.any(Error)));
+        expect(useAnalyticsStore.getState().timeSeries).toEqual(TIME_SERIES);
+        expect(useAnalyticsStore.getState().status.overview).toBe("ready");
+    });
+});
+
+describe("analytics store errors", () => {
+    afterEach(() => {
+        useAnalyticsStore.setState(initialState, true);
+    });
+
+    it.each([
+        ["the total fails with an HTTP error", {total: new Response(null, {status: SERVER_ERROR})}],
+        ["the total is not a number", {total: Response.json({clicks: 3})}],
+        ["the time series fails", {date: new Response(null, {status: SERVER_ERROR})}],
+        ["the referrers request is offline", {referrer: new Error("offline")}],
+    ])("marks the overview failed instead of showing empty data when %s", async (_name, routes: Routes) => {
+        mockAnalyticsApi(routes);
+
+        await loadOnce();
+
+        expect(useAnalyticsStore.getState().status.overview).toBe("error");
+        expect(useAnalyticsStore.getState().overviewLoadedAt).toBeNull();
+        expect(logger.error).toHaveBeenCalledWith("Analytics overview fetch error", expect.any(Error));
+    });
+
+    it("hides the comparison without failing the overview when the previous period fails", async () => {
+        mockAnalyticsApi({previous: new Response(null, {status: SERVER_ERROR})});
         useAnalyticsStore.setState({previousTotalClicks: 12});
 
-        useAnalyticsStore.getState().fetchAnalytics();
-        await settleRequests();
+        await loadOnce();
 
-        expect(useAnalyticsStore.getState().previousTotalClicks).toBe(12);
+        expect(useAnalyticsStore.getState().previousTotalClicks).toBeNull();
+        expect(useAnalyticsStore.getState().status.overview).toBe("ready");
     });
 
-    it("logs network failures and stops the location and device spinners", async () => {
-        mockAnalyticsApi({country: new Error("offline"), device: new Error("offline"), date: new Error("offline")});
+    it("marks only the failed breakdowns as failed", async () => {
+        mockAnalyticsApi({country: new Response(null, {status: SERVER_ERROR}), device: new Error("offline")});
 
-        useAnalyticsStore.getState().fetchAnalytics();
+        await loadOnce();
+
+        expect(useAnalyticsStore.getState().status).toEqual({overview: "ready", topLinks: "ready", location: "error", device: "error"});
+        expect(logger.error).toHaveBeenCalledWith("Location analytics fetch error", expect.any(Error));
+        expect(logger.error).toHaveBeenCalledWith("Device analytics fetch error", expect.any(Error));
+    });
+
+    it("retries only the section that failed", async () => {
+        mockAnalyticsApi({country: new Response(null, {status: SERVER_ERROR})});
+        await loadOnce();
+        mockAnalyticsApi({country: Response.json([{label: "Canada", clicks: 7}])});
+        vi.mocked(fetchWithAuth).mockClear();
+
+        useAnalyticsStore.getState().retrySection("location");
         await settleRequests();
 
-        expect(useAnalyticsStore.getState().isLocationLoading).toBe(false);
-        expect(useAnalyticsStore.getState().isDeviceLoading).toBe(false);
-        expect(logger.error).toHaveBeenCalledWith("countries fetch error", expect.any(Error));
-        expect(logger.error).toHaveBeenCalledWith("devices fetch error", expect.any(Error));
-        expect(logger.error).toHaveBeenCalledWith("Time series fetch error", expect.any(Error));
+        expect(requestedUrls()).toEqual([`${API_ENDPOINTS.ANALYTICS}?period=P7D&groupBy=country`]);
+        expect(useAnalyticsStore.getState().status.location).toBe("ready");
+        expect(useAnalyticsStore.getState().countries).toEqual([{label: "Canada", clicks: 7}]);
     });
 });
 
@@ -199,9 +266,8 @@ describe("analytics store top links", () => {
             byIds: Response.json([details]),
         });
 
-        useAnalyticsStore.getState().fetchAnalytics();
+        await loadOnce();
 
-        await vi.waitFor(() => expect(useAnalyticsStore.getState().topLinks).toHaveLength(2));
         expect(useAnalyticsStore.getState().topLinks[0]).toEqual({shortLinkId: "link-1", clicks: 9, details});
         expect(useAnalyticsStore.getState().topLinks[1].details).toBeUndefined();
         expect(requestedUrls()).toContain(`${API_ENDPOINTS.SHORTLINKS_BY_IDS}?ids=link-1,link-2`);
@@ -210,8 +276,7 @@ describe("analytics store top links", () => {
     it("does not request details when there are no top links", async () => {
         mockAnalyticsApi({top_link: Response.json([])});
 
-        useAnalyticsStore.getState().fetchAnalytics();
-        await settleRequests();
+        await loadOnce();
 
         expect(requestedUrls().some((url) => url.startsWith(API_ENDPOINTS.SHORTLINKS_BY_IDS))).toBe(false);
         expect(useAnalyticsStore.getState().topLinks).toEqual([]);
@@ -220,12 +285,13 @@ describe("analytics store top links", () => {
     it("shows top links without details when the details request fails", async () => {
         mockAnalyticsApi({
             top_link: Response.json([{shortLinkId: "link-1", clicks: 9}]),
-            byIds: new Response(null, {status: 500}),
+            byIds: new Response(null, {status: SERVER_ERROR}),
         });
 
-        useAnalyticsStore.getState().fetchAnalytics();
+        await loadOnce();
 
-        await vi.waitFor(() => expect(useAnalyticsStore.getState().topLinks).toEqual([{shortLinkId: "link-1", clicks: 9}]));
+        expect(useAnalyticsStore.getState().topLinks).toEqual([{shortLinkId: "link-1", clicks: 9}]);
+        expect(useAnalyticsStore.getState().status.topLinks).toBe("ready");
     });
 
     it("shows top links without details and logs when the details request rejects", async () => {
@@ -234,27 +300,19 @@ describe("analytics store top links", () => {
             byIds: new Error("offline"),
         });
 
-        useAnalyticsStore.getState().fetchAnalytics();
+        await loadOnce();
 
-        await vi.waitFor(() => expect(useAnalyticsStore.getState().topLinks).toEqual([{shortLinkId: "link-1", clicks: 9}]));
+        expect(useAnalyticsStore.getState().topLinks).toEqual([{shortLinkId: "link-1", clicks: 9}]);
         expect(logger.error).toHaveBeenCalledWith("Top Links details fetch error", expect.any(Error));
     });
 
-    it("shows no top links when the top links request fails", async () => {
-        mockAnalyticsApi({top_link: new Response(null, {status: 500})});
-        useAnalyticsStore.setState({topLinks: [{shortLinkId: "old", clicks: 1}]});
+    it("marks top links failed when the top links request fails", async () => {
+        mockAnalyticsApi({top_link: new Response(null, {status: SERVER_ERROR})});
 
-        useAnalyticsStore.getState().fetchAnalytics();
+        await loadOnce();
 
-        await vi.waitFor(() => expect(useAnalyticsStore.getState().topLinks).toEqual([]));
-    });
-
-    it("logs when the top links request rejects", async () => {
-        mockAnalyticsApi({top_link: new Error("offline")});
-
-        useAnalyticsStore.getState().fetchAnalytics();
-
-        await vi.waitFor(() => expect(logger.error).toHaveBeenCalledWith("Top Links fetch error", expect.any(Error)));
+        expect(useAnalyticsStore.getState().status.topLinks).toBe("error");
+        expect(logger.error).toHaveBeenCalledWith("Top links fetch error", expect.any(Error));
     });
 });
 
@@ -269,10 +327,9 @@ describe("analytics store period selection", () => {
         useAnalyticsStore.setState(initialState, true);
     });
 
-    it("refetches with the new period even when data was already fetched", async () => {
+    it("refetches with the new period even when data is fresh", async () => {
         mockAnalyticsApi();
-        useAnalyticsStore.getState().fetchAnalytics();
-        await settleRequests();
+        await loadOnce();
         vi.mocked(fetchWithAuth).mockClear();
 
         useAnalyticsStore.getState().setPeriod("P30D");
@@ -281,6 +338,46 @@ describe("analytics store period selection", () => {
         expect(useAnalyticsStore.getState().period).toBe("P30D");
         expect(requestedUrls()).toContain(`${API_ENDPOINTS.ANALYTICS}?period=P30D`);
         expect(requestedUrls().every((url) => !url.includes("period=P7D"))).toBe(true);
+    });
+
+    it("keeps the previous data on screen while the new period loads", async () => {
+        mockAnalyticsApi({date: Response.json(TIME_SERIES)});
+        await loadOnce();
+        vi.mocked(fetchWithAuth).mockReturnValue(new Promise<Response>(() => undefined));
+
+        useAnalyticsStore.getState().setPeriod("P30D");
+
+        expect(useAnalyticsStore.getState().status.overview).toBe("loading");
+        expect(useAnalyticsStore.getState().timeSeries).toEqual(TIME_SERIES);
+    });
+
+    it("applies only the newest period when an older response arrives last", async () => {
+        const olderPeriod = Promise.withResolvers<Response>();
+        vi.mocked(fetchWithAuth).mockImplementation(async (url) => {
+            if (url === `${API_ENDPOINTS.ANALYTICS}?period=P7D&groupBy=date`) return olderPeriod.promise;
+            if (url.includes("groupBy=date")) return Response.json([{date: "2026-09-20", clicks: 30}]);
+            return DEFAULT_ROUTES[routeKeyFor(url)].clone();
+        });
+        useAnalyticsStore.getState().loadAnalytics();
+
+        useAnalyticsStore.getState().setPeriod("P30D");
+        await settleRequests();
+        olderPeriod.resolve(Response.json(TIME_SERIES));
+        await Promise.resolve();
+
+        expect(useAnalyticsStore.getState().timeSeries).toEqual([{date: "2026-09-20", clicks: 30}]);
+        expect(signalOf("period=P7D&groupBy=date")?.aborted).toBe(true);
+    });
+
+    it("forgets the hidden breakdown tabs so they reload for the new period", async () => {
+        mockAnalyticsApi();
+        useAnalyticsStore.setState({continents: [{label: "Europe", clicks: 2}], os: [{label: "iOS", clicks: 4}]});
+
+        useAnalyticsStore.getState().setPeriod("P30D");
+
+        expect(useAnalyticsStore.getState().continents).toEqual([]);
+        expect(useAnalyticsStore.getState().os).toEqual([]);
+        await settleRequests();
     });
 
     it("uses the number in the period to size the comparison window", async () => {
@@ -340,10 +437,11 @@ describe("analytics store tabs", () => {
         mockAnalyticsApi({continent: Response.json([{label: "Europe", clicks: 2}])});
 
         useAnalyticsStore.getState().setLocationTab("continents");
+        await settleRequests();
 
-        await vi.waitFor(() => expect(useAnalyticsStore.getState().continents).toEqual([{label: "Europe", clicks: 2}]));
+        expect(useAnalyticsStore.getState().continents).toEqual([{label: "Europe", clicks: 2}]);
         expect(useAnalyticsStore.getState().locationTab).toBe("continents");
-        expect(useAnalyticsStore.getState().isLocationLoading).toBe(false);
+        expect(useAnalyticsStore.getState().status.location).toBe("ready");
         expect(requestedUrls()).toEqual([`${API_ENDPOINTS.ANALYTICS}?period=P7D&groupBy=continent`]);
     });
 
@@ -360,8 +458,9 @@ describe("analytics store tabs", () => {
         mockAnalyticsApi({os: Response.json([{label: "iOS", clicks: 4}])});
 
         useAnalyticsStore.getState().setDeviceTab("os");
+        await settleRequests();
 
-        await vi.waitFor(() => expect(useAnalyticsStore.getState().os).toEqual([{label: "iOS", clicks: 4}]));
+        expect(useAnalyticsStore.getState().os).toEqual([{label: "iOS", clicks: 4}]);
         expect(useAnalyticsStore.getState().deviceTab).toBe("os");
         expect(requestedUrls()).toEqual([`${API_ENDPOINTS.ANALYTICS}?period=P7D&groupBy=os`]);
     });
@@ -375,7 +474,7 @@ describe("analytics store tabs", () => {
     });
 
     it("refetches the selected tab again when it has no data", async () => {
-        mockAnalyticsApi({country: Response.json([])});
+        mockAnalyticsApi({continent: Response.json([])});
         useAnalyticsStore.getState().setLocationTab("continents");
         await settleRequests();
         vi.mocked(fetchWithAuth).mockClear();
