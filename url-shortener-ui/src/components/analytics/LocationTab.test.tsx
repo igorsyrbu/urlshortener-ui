@@ -4,8 +4,8 @@ import {LocationTab} from "@/components/analytics/LocationTab";
 import {CHART_COLORS, FLAG_SERVICE_URL} from "@/lib/constants";
 import {createGroupedClick} from "@/test/analytics-utils";
 
-vi.mock("@/components/analytics/HorizontalBarChart", async () => ({
-    HorizontalBarChart: (await import("@/test/analytics-utils")).MockHorizontalBarChart,
+vi.mock("@/components/analytics/LazyHorizontalBarChart", async () => ({
+    LazyHorizontalBarChart: (await import("@/test/analytics-utils")).MockHorizontalBarChart,
 }));
 
 describe("LocationTab", () => {

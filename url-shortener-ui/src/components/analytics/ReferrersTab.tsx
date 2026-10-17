@@ -3,7 +3,8 @@
 import {ANALYTICS_CARD_BODY_HEIGHT_CLASS} from "@/components/analytics/analytics-layout";
 import {cn} from "@/lib/utils";
 import {AnalyticsGroupedClick} from "@/lib/store/analytics";
-import {BarLabelProps, HorizontalBarChart} from "@/components/analytics/HorizontalBarChart";
+import type {BarLabelProps} from "@/components/analytics/HorizontalBarChart";
+import {LazyHorizontalBarChart} from "@/components/analytics/LazyHorizontalBarChart";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
 import {Link2} from "lucide-react";
 import {Spinner} from "@/components/ui/spinner";
@@ -73,7 +74,7 @@ export function ReferrersTab({referrers, isLoading, totalClicks}: ReferrersTabPr
     };
 
     return (
-        <HorizontalBarChart
+        <LazyHorizontalBarChart
             data={chartData}
             color={CHART_COLORS.REFERRERS}
             totalClicks={totalClicks}

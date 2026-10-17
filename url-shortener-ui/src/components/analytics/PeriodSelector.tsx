@@ -1,14 +1,14 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {Calendar} from "@/components/ui/calendar";
 import {Calendar as CalendarIcon} from "lucide-react";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {DateRange} from "react-day-picker";
 import {useIsMobile} from "@/lib/hooks/useMediaQuery";
 import {FIRST_ANALYTICS_YEAR, FOCUS_RING_CLASS} from "@/lib/constants";
 import {getTodayAtMidnight} from "@/lib/date-utils";
-import {DateRangeDrawer} from "@/components/analytics/DateRangeDrawer";
+import {LazyCalendar, preloadCalendar} from "@/components/analytics/LazyCalendar";
+import {LazyDateRangeDrawer, preloadDateRangeDrawer} from "@/components/analytics/LazyDateRangeDrawer";
 
 interface PeriodSelectorProps {
     period: string;
@@ -46,6 +46,8 @@ export function PeriodSelector({
     const [date, setDate] = useState<DateRange | undefined>(customDateRange);
     const isMobile = useIsMobile();
     const [drawerOpen, setDrawerOpen] = useState(false);
+    // The drawer (calendar, wheel picker) is downloaded and mounted only once the user asks for a custom range.
+    const [hasOpenedDrawer, setHasOpenedDrawer] = useState(false);
     const today = getTodayAtMidnight();
     const disabledDays = [{before: MIN_DATE}, {after: today}];
 
@@ -79,6 +81,11 @@ export function PeriodSelector({
         }
     };
 
+    const handleOpenDrawer = () => {
+        setHasOpenedDrawer(true);
+        setDrawerOpen(true);
+    };
+
     const handleDrawerDateRangeSelect = (range: DateRange) => {
         setDate(range);
         onCustomDateRangeChange(range);
@@ -100,24 +107,29 @@ export function PeriodSelector({
             {isMobile ? (
                 <>
                     <button
-                        onClick={() => setDrawerOpen(true)}
+                        onPointerDown={preloadDateRangeDrawer}
+                        onClick={handleOpenDrawer}
                         className={`flex-[1.5] px-2 py-1.5 justify-center rounded-md transition-colors flex items-center gap-1.5 ${period === "custom" ? activeClasses : inactiveClasses}`}
                     >
                         <CalendarIcon className="size-3.75"/>
                         Custom
                     </button>
-                    <DateRangeDrawer
-                        open={drawerOpen}
-                        onOpenChange={setDrawerOpen}
-                        onDateRangeSelect={handleDrawerDateRangeSelect}
-                        initialRange={customDateRange}
-                        period={period}
-                    />
+                    {hasOpenedDrawer && (
+                        <LazyDateRangeDrawer
+                            open={drawerOpen}
+                            onOpenChange={setDrawerOpen}
+                            onDateRangeSelect={handleDrawerDateRangeSelect}
+                            initialRange={customDateRange}
+                            period={period}
+                        />
+                    )}
                 </>
             ) : (
                 <Popover>
                     <PopoverTrigger asChild>
                         <button
+                            onPointerEnter={preloadCalendar}
+                            onFocus={preloadCalendar}
                             className={`flex-none px-2 sm:px-3 py-1.5 justify-center rounded-md transition-colors flex items-center gap-1.5 sm:gap-2 ${period === "custom" ? activeClasses : inactiveClasses}`}
                         >
                             <CalendarIcon className="size-3.75 sm:size-4"/>
@@ -125,7 +137,7 @@ export function PeriodSelector({
                         </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="end">
-                        <Calendar
+                        <LazyCalendar
                             autoFocus
                             mode="range"
                             defaultMonth={date?.from || new Date()}

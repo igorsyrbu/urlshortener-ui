@@ -4,8 +4,8 @@ import {DeviceTab} from "@/components/analytics/DeviceTab";
 import {CHART_COLORS} from "@/lib/constants";
 import {createGroupedClick} from "@/test/analytics-utils";
 
-vi.mock("@/components/analytics/HorizontalBarChart", async () => ({
-    HorizontalBarChart: (await import("@/test/analytics-utils")).MockHorizontalBarChart,
+vi.mock("@/components/analytics/LazyHorizontalBarChart", async () => ({
+    LazyHorizontalBarChart: (await import("@/test/analytics-utils")).MockHorizontalBarChart,
 }));
 
 describe("DeviceTab", () => {

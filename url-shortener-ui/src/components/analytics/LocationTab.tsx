@@ -3,7 +3,8 @@
 import {ANALYTICS_CARD_BODY_HEIGHT_CLASS} from "@/components/analytics/analytics-layout";
 import {cn} from "@/lib/utils";
 import {AnalyticsGroupedClick} from "@/lib/store/analytics";
-import {BarLabelProps, HorizontalBarChart} from "@/components/analytics/HorizontalBarChart";
+import type {BarLabelProps} from "@/components/analytics/HorizontalBarChart";
+import {LazyHorizontalBarChart} from "@/components/analytics/LazyHorizontalBarChart";
 import {getCountryName, LocationIcon} from "@/components/analytics/LocationIcon";
 import {Spinner} from "@/components/ui/spinner";
 import {CHART_COLORS} from "@/lib/constants";
@@ -63,7 +64,7 @@ export function LocationTab({locationTab, data, isLoading, totalClicks}: Locatio
     };
 
     return (
-        <HorizontalBarChart
+        <LazyHorizontalBarChart
             data={chartData}
             color={CHART_COLORS.LOCATIONS}
             totalClicks={totalClicks}

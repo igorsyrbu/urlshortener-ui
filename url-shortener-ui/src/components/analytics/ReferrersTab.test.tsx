@@ -4,8 +4,8 @@ import {ReferrersTab} from "@/components/analytics/ReferrersTab";
 import {CHART_COLORS} from "@/lib/constants";
 import {createGroupedClick} from "@/test/analytics-utils";
 
-vi.mock("@/components/analytics/HorizontalBarChart", async () => ({
-    HorizontalBarChart: (await import("@/test/analytics-utils")).MockHorizontalBarChart,
+vi.mock("@/components/analytics/LazyHorizontalBarChart", async () => ({
+    LazyHorizontalBarChart: (await import("@/test/analytics-utils")).MockHorizontalBarChart,
 }));
 vi.mock("@/components/links/LinkFavicon", () => ({
     LinkFavicon: ({longUrl}: {longUrl: string}) => <svg role="img" aria-label="favicon" data-long-url={longUrl}/>,

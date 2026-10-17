@@ -15,14 +15,17 @@ const mocks = vi.hoisted(() => ({
     setDeviceTab: vi.fn(),
 }));
 
-vi.mock("@/components/analytics/HorizontalBarChart", async () => ({
-    HorizontalBarChart: (await import("@/test/analytics-utils")).MockHorizontalBarChart,
+vi.mock("@/components/analytics/LazyHorizontalBarChart", async () => ({
+    LazyHorizontalBarChart: (await import("@/test/analytics-utils")).MockHorizontalBarChart,
 }));
 vi.mock("@/components/analytics/AnalyticsSkeleton", () => ({
     AnalyticsPageSkeleton: () => <div data-testid="analytics-skeleton"/>,
 }));
-vi.mock("@/components/analytics/ClicksTimeSeriesChart", () => ({
-    ClicksTimeSeriesChart: ({onZoom}: {onZoom: (range: {from: Date; to: Date}) => void}) => (
+const loadAnalyticsCharts = vi.hoisted(() => vi.fn());
+
+vi.mock("@/components/analytics/load-analytics-charts", () => ({loadAnalyticsCharts}));
+vi.mock("@/components/analytics/LazyClicksTimeSeriesChart", () => ({
+    LazyClicksTimeSeriesChart: ({onZoom}: {onZoom: (range: {from: Date; to: Date}) => void}) => (
         <button onClick={() => onZoom({from: new Date("2026-10-01"), to: new Date("2026-10-03")})}>zoom chart</button>
     ),
 }));
@@ -61,6 +64,12 @@ describe("AnalyticsPage", () => {
         render(<AnalyticsPage/>);
 
         expect(mocks.loadAnalytics).toHaveBeenCalledOnce();
+    });
+
+    it("starts downloading the charts while the data loads", () => {
+        render(<AnalyticsPage/>);
+
+        expect(loadAnalyticsCharts).toHaveBeenCalledOnce();
     });
 
     it("shows the skeleton while the first load has no data", () => {

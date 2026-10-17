@@ -5,7 +5,8 @@ import {useAnalyticsStore} from "@/lib/store/analytics";
 import {DateRange} from "react-day-picker";
 import {PeriodSelector} from "@/components/analytics/PeriodSelector";
 import {ComparisonBadge} from "@/components/analytics/ComparisonBadge";
-import {ClicksTimeSeriesChart} from "@/components/analytics/ClicksTimeSeriesChart";
+import {LazyClicksTimeSeriesChart} from "@/components/analytics/LazyClicksTimeSeriesChart";
+import {loadAnalyticsCharts} from "@/components/analytics/load-analytics-charts";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {AnalyticsBreakdownGrid} from "@/components/analytics/AnalyticsBreakdownGrid";
 import {AnalyticsError} from "@/components/analytics/AnalyticsError";
@@ -37,6 +38,7 @@ export default function AnalyticsPage() {
     } = useAnalyticsStore();
 
     useEffect(() => {
+        void loadAnalyticsCharts();
         loadAnalytics();
     }, [loadAnalytics]);
 
@@ -97,7 +99,7 @@ export default function AnalyticsPage() {
                                 />
                             </div>
                         </div>
-                        <ClicksTimeSeriesChart timeSeries={timeSeries} onZoom={handleZoom}/>
+                        <LazyClicksTimeSeriesChart timeSeries={timeSeries} onZoom={handleZoom}/>
                     </div>
 
                     <AnalyticsBreakdownGrid className={refreshingClass}/>
