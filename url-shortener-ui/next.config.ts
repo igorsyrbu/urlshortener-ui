@@ -14,15 +14,6 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['radix-ui', 'lucide-react']
   },
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'www.google.com',
-        pathname: '/s2/favicons/**',
-      },
-    ],
-  },
   output: 'standalone',
   async rewrites() {
     return [

@@ -61,7 +61,6 @@ The request header `x-mock-error: true` simulates a 500 on any request (not an e
 |---|---|---|
 | `reactCompiler` | `true` | React Compiler is on (`babel-plugin-react-compiler` is a devDependency). Memoisation guidance: [coding-patterns](coding-patterns.md). |
 | `experimental.optimizePackageImports` | `radix-ui`, `lucide-react` | Barrel-import optimisation. |
-| `images.remotePatterns` | `https://www.google.com/s2/favicons/**` | Only host allowed for `next/image`; `LinkFavicon` is the only `next/image` user. |
 | `output` | `standalone` | Production build emits a self-contained server. |
 | `rewrites()` | `/api/:path*` -> `${getBackendApiBaseUrl()}/:path*` | The browser's only path to the backend. The route handler `app/api/shortlinks/import/updates/route.ts` is a filesystem route, so it is served instead of the rewrite for that one path ([architecture](architecture.md#sse-pass-through-route-handler)). |
 | `redirects()` | `/settings` -> `SETTINGS_ROUTES.DEFAULT` (307) | Answers before any HTML; links target the destination directly ([routing-and-navigation](routing-and-navigation.md#redirects)). |
@@ -74,7 +73,7 @@ The request header `x-mock-error: true` simulates a 500 on any request (not an e
 
 There is no `middleware.ts`/`proxy.ts` and no `env` block.
 
-- Observation: other remote images (OG images through `wsrv.nl` in `OgImage`, flags from `hatscripts.github.io` in `LocationIcon`) are plain `<img>` elements and so are not covered by `remotePatterns`. Existing exception - not a template; new images use `next/image` ([coding-patterns](coding-patterns.md)).
+- Observation: other remote images (OG images through `wsrv.nl` in `OgImage`, flags from `hatscripts.github.io` in `LocationIcon`) are plain `<img>` elements. There is no `images.remotePatterns`: the favicon `next/image` is `unoptimized`, so the old Google entry was dead config and was removed. Existing exception - not a template; new images use `next/image` ([coding-patterns](coding-patterns.md)).
 
 ## TypeScript and path alias
 

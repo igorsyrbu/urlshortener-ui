@@ -57,6 +57,9 @@ export function LinkFavicon({longUrl}: LinkFaviconProps) {
             width={36}
             height={36}
             unoptimized
+            // The icon service must not learn which page of the app the user was on.
+            referrerPolicy="no-referrer"
+            fetchPriority="low"
             className="size-full object-cover rounded-full"
             onLoad={(e) => {
                 // The globe placeholder (and blank 1x1 icons) come back tiny.

@@ -5,6 +5,7 @@ import {cn} from "@/lib/utils";
 import {AnalyticsGroupedClick} from "@/lib/store/analytics";
 import type {BarLabelProps} from "@/components/analytics/HorizontalBarChart";
 import {LazyHorizontalBarChart} from "@/components/analytics/LazyHorizontalBarChart";
+import {CappedRows} from "@/components/analytics/CappedRows";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
 import {Link2} from "lucide-react";
 import {Spinner} from "@/components/ui/spinner";
@@ -74,11 +75,15 @@ export function ReferrersTab({referrers, isLoading, totalClicks}: ReferrersTabPr
     };
 
     return (
-        <LazyHorizontalBarChart
-            data={chartData}
-            color={CHART_COLORS.REFERRERS}
-            totalClicks={totalClicks}
-            renderLabel={renderReferrerLabel}
-        />
+        <CappedRows rows={chartData}>
+            {(visibleRows) => (
+                <LazyHorizontalBarChart
+                    data={visibleRows}
+                    color={CHART_COLORS.REFERRERS}
+                    totalClicks={totalClicks}
+                    renderLabel={renderReferrerLabel}
+                />
+            )}
+        </CappedRows>
     );
 }

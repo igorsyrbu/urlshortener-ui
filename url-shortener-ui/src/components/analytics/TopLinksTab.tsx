@@ -4,6 +4,7 @@ import {ANALYTICS_CARD_BODY_HEIGHT_CLASS} from "@/components/analytics/analytics
 import {cn} from "@/lib/utils";
 import type {BarLabelProps} from "@/components/analytics/HorizontalBarChart";
 import {LazyHorizontalBarChart} from "@/components/analytics/LazyHorizontalBarChart";
+import {CappedRows} from "@/components/analytics/CappedRows";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
 import {Spinner} from "@/components/ui/spinner";
 import {FaviconPlaceholder} from "@/components/icons/FaviconPlaceholder";
@@ -80,11 +81,15 @@ export function TopLinksTab({topLinks, isLoading, totalClicks}: TopLinksTabProps
     };
 
     return (
-        <LazyHorizontalBarChart
-            data={chartData}
-            color={CHART_COLORS.TOP_LINKS}
-            totalClicks={totalClicks}
-            renderLabel={renderLinkLabel}
-        />
+        <CappedRows rows={chartData}>
+            {(visibleRows) => (
+                <LazyHorizontalBarChart
+                    data={visibleRows}
+                    color={CHART_COLORS.TOP_LINKS}
+                    totalClicks={totalClicks}
+                    renderLabel={renderLinkLabel}
+                />
+            )}
+        </CappedRows>
     );
 }

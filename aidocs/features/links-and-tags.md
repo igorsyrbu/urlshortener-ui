@@ -31,7 +31,7 @@ Keyboard shortcuts (desktop, no modal open, focus not in an input):
 - `A` (registered in the page, capture phase): with a hovered card opens the archive modal; with no hover toggles the "show archived" filter and refetches page 1.
 - `isModalOpen()` from [`src/lib/utils.ts`](../../url-shortener-ui/src/lib/utils.ts) prevents shortcuts while a dialog is open.
 
-`LinkFavicon` loads `https://www.google.com/s2/favicons?sz&domain` through `next/image` with `unoptimized`. It falls back to a link icon for non-public hosts (`.local`, `.internal`, private IP ranges), for hosts without a dot, on load error, and when the returned image is 16 px or smaller (the service's placeholder globe). Failed domains are remembered in a module-level `Set` for the page lifetime. The host is allowed in `next.config.ts` (see [Configuration](../configuration.md)).
+`LinkFavicon` loads `https://www.google.com/s2/favicons?sz&domain` through `next/image` with `unoptimized`, `referrerPolicy="no-referrer"` (Google does not get the app page as `Referer`) and `fetchPriority="low"`. It falls back to a link icon for non-public hosts (`.local`, `.internal`, private IP ranges), for hosts without a dot, on load error, and when the returned image is 16 px or smaller (the service's placeholder globe). Failed domains are remembered in a module-level `Set` for the page lifetime. No `next.config.ts` entry is needed because the image is `unoptimized` (see [Configuration](../configuration.md)).
 
 ### Archive and delete
 
