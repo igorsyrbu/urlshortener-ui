@@ -71,12 +71,12 @@ describe("GeneralSettingsPage sessions", () => {
         useAuthStore.setState({accessToken: createAccessToken(), user: {email: "ada@example.com", name: "Ada"}});
     });
 
-    it("shows loading skeletons for both session sections while the sessions load", () => {
+    it("shows a skeleton only for the current device while the sessions load", () => {
         vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise(() => undefined));
         render(<GeneralSettingsPage/>);
 
         expect(screen.getByRole("status", {name: "Loading sessions"})).toBeInTheDocument();
-        expect(screen.getByRole("status", {name: "Loading other sessions"})).toBeInTheDocument();
+        expect(screen.queryByText("Active Sessions")).not.toBeInTheDocument();
     });
 
     it("loads sessions and shows the current device apart from the other ones", async () => {

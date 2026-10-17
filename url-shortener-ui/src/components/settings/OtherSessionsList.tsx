@@ -3,7 +3,6 @@
 import {Card, CardContent} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {formatDeviceText, formatLocation, getIconForDevice, UserSession} from "@/lib/session-utils";
-import {SessionRowSkeleton} from "@/components/settings/SessionCardSkeleton";
 
 interface OtherSessionsListProps {
     sessions: UserSession[];
@@ -13,23 +12,9 @@ interface OtherSessionsListProps {
 }
 
 export function OtherSessionsList({sessions, isLoading, sessionActionLoading, onLogoutSession}: OtherSessionsListProps) {
-    if (isLoading) {
-        return (
-            <div className="mt-4" role="status" aria-label="Loading other sessions">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
-                    Active Sessions
-                </h3>
-                <Card className="overflow-hidden border-border">
-                    <CardContent className="p-0 -mt-6 -mb-6 divide-y-[0.5px] divide-border" aria-hidden="true">
-                        <SessionRowSkeleton/>
-                        <SessionRowSkeleton/>
-                    </CardContent>
-                </Card>
-            </div>
-        );
-    }
-
-    if (sessions.length === 0) return null;
+    // No placeholder while loading: most users have no other sessions, so reserving rows for an unknown count
+    // would make everything below jump up once the list turns out to be empty.
+    if (isLoading || sessions.length === 0) return null;
 
     return (
         <div className="mt-4">

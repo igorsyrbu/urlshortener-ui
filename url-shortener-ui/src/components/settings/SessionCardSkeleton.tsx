@@ -8,8 +8,8 @@ export function SessionRowSkeleton() {
             <div className="flex items-center gap-4">
                 <div className="h-10 w-10 rounded-lg bg-muted animate-pulse shrink-0"/>
                 <div>
-                    <div className="h-4 w-32 rounded bg-muted animate-pulse"/>
-                    <div className="mt-2 h-3 w-40 rounded bg-muted animate-pulse"/>
+                    <div className="h-5 w-32 rounded bg-muted animate-pulse"/>
+                    <div className="mt-1 h-4 w-40 rounded bg-muted animate-pulse"/>
                 </div>
             </div>
             <div className="h-8 w-20 rounded-md bg-muted animate-pulse"/>
@@ -24,7 +24,7 @@ export function SessionCardSkeleton() {
                 This Device
             </h3>
             <Card className="overflow-hidden border-border">
-                <CardContent className="p-0 -mt-6 -mb-6">
+                <CardContent className="p-0 -mt-6">
                     <SessionRowSkeleton/>
                 </CardContent>
             </Card>

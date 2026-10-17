@@ -27,12 +27,10 @@ function renderList(overrides: Partial<Parameters<typeof OtherSessionsList>[0]> 
 }
 
 describe("OtherSessionsList", () => {
-    it("shows a loading skeleton while the sessions are loading", () => {
-        renderList({sessions: [], isLoading: true});
+    it("reserves no space while the sessions are loading, because their number is unknown", () => {
+        const {container} = render(<OtherSessionsList sessions={[]} isLoading sessionActionLoading={null} onLogoutSession={vi.fn()}/>);
 
-        expect(screen.getByRole("status", {name: "Loading other sessions"})).toBeInTheDocument();
-        expect(screen.getByText("Active Sessions")).toBeInTheDocument();
-        expect(screen.queryByRole("button", {name: "Log out"})).not.toBeInTheDocument();
+        expect(container).toBeEmptyDOMElement();
     });
 
     it("renders nothing when loading finished with no other sessions", () => {
