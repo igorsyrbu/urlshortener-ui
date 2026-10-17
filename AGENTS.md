@@ -17,6 +17,7 @@ Rules for AI agents and contributors. Details, explanations and examples live in
 | Dev (UI on :3000 + mock on :8080) | `pnpm dev` |
 | Build | `pnpm build` |
 | Tests (UI + mock server) | `pnpm test` |
+| Compiled tests, render budgets | `pnpm --filter=url-shortener-ui test:compiled && pnpm --filter=url-shortener-ui test:perf` |
 | Type-check | `pnpm --filter=url-shortener-ui type-check && pnpm typecheck` |
 | Lint | `pnpm lint` (not green yet: pre-existing `react-hooks` errors; add no new findings) |
 
@@ -60,7 +61,8 @@ Read [aidocs/README.md](aidocs/README.md), then the guides for your task before 
 10. Internal navigation uses `next/link` or the router, never a raw `<a>`. No route-level `loading.tsx`. Images use
     `next/image`, fonts use `next/font`.
 11. Every change to logic or user-facing behaviour ships with tests that follow [testing](aidocs/testing.md):
-    behaviour over implementation, mocks only at boundaries, `vi.mocked`, no snapshots.
+    behaviour over implementation, mocks only at boundaries, `vi.mocked`, no snapshots. Render counts only in
+    `*.perf.test.tsx`.
 12. Code listed under "Known limitations and existing exceptions" in a guide is not a template. Do not copy it and do
     not change it as a drive-by.
 13. Components and hooks must compile with the React Compiler (the build fails otherwise): no `try/finally`,

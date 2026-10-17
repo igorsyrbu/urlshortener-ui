@@ -17,6 +17,8 @@ Every change to logic (stores, hooks, `lib/` utilities, API handling) or to user
 | `pnpm test:coverage` | `url-shortener-ui/` | Coverage report (`coverage/index.html`) |
 | `pnpm test:ui` | `url-shortener-ui/` | Vitest UI |
 | `pnpm type-check` | `url-shortener-ui/` | `tsc --noEmit` for the app, then again with `tsconfig.test.json` (app **and** test files) |
+| `pnpm test:compiled` | `url-shortener-ui/` | The whole unit suite with the React Compiler on (see below); run it after changing components or hooks |
+| `pnpm test:perf` | `url-shortener-ui/` | Render-count thresholds (`*.perf.test.tsx`) with the React Compiler on |
 | `pnpm test` | repository root | UI `test:run` followed by the mock-server suite, both once |
 | `pnpm --filter=@url-shortener/url-shortener-mock-server test` | repository root | Mock-server suite only |
 
@@ -24,12 +26,19 @@ UI scripts set `NODE_OPTIONS=--no-deprecation` (see [`package.json`](../url-shor
 
 Counts, measured on 2026-10-16 on Node 24 and 26: 136 UI test files (1,666 passed, none skipped) and 25 mock-server test files (400 passed). Treat these as a snapshot, not a contract. Do not add `it.skip`; fix the test or the code.
 
+## React Compiler in tests
+
+The unit suite runs **without** the React Compiler (`@vitejs/plugin-react` v6 has no `babel` option), while production compiles every component (`panicThreshold: "all_errors"`, see [configuration](configuration.md)). Compiled code can behave differently: a non-null assertion inside a callback became a render-time read and crashed `/settings/general` while every unit test passed. [`vitest.compiler.config.ts`](../url-shortener-ui/vitest.compiler.config.ts) adds the compiler (`@babel/core` + `babel-plugin-react-compiler`, server components under `src/app/inspect/` excluded) for two scripts:
+
+- `pnpm test:compiled` runs every `*.test.ts(x)` compiled (`COMPILED_TEST_INCLUDE`). It caught that crash (17 failing settings tests on the unfixed page).
+- `pnpm test:perf` runs `*.perf.test.tsx`, the **only** place where render counts may be asserted: count renders by wrapping the real component in a `vi.mock` (`LinkCard` in [`links/page.perf.test.tsx`](../url-shortener-ui/src/app/(dashboard)/links/page.perf.test.tsx)), assert thresholds (`0` for interactions that must not re-render, `<=` budgets for mounts), keep the router mock referentially stable, and mock `@/lib/api` with `importOriginal` so module-level constants stay real.
+
 ## Vitest configuration
 
 Defined in [`vitest.config.ts`](../url-shortener-ui/vitest.config.ts):
 
 - Environment `jsdom`, `globals: true` (every existing test file nevertheless imports what it uses from `vitest` explicitly), plugin `@vitejs/plugin-react`, alias `@` to `src`.
-- `include`: `src/**/*.{test,spec}.{ts,tsx}`. Setup file: [`src/test/setup.ts`](../url-shortener-ui/src/test/setup.ts).
+- `include`: `src/**/*.{test,spec}.{ts,tsx}`, `exclude`: `src/**/*.perf.test.tsx`. Setup file: [`src/test/setup.ts`](../url-shortener-ui/src/test/setup.ts).
 - Auto-reset flags: `clearMocks`, `restoreMocks`, `unstubGlobals`, `unstubEnvs` are all `true`. Do not repeat that cleanup by hand.
 - Coverage: provider `v8`, reporters `text`, `json`, `html`. Thresholds: statements 90, branches 85, functions 88, lines 90. Excluded: `src/test/**`, test files, `src/components/ui/**`, `**/*.d.ts`.
 
@@ -56,7 +65,7 @@ Add new global polyfills here, never inside individual tests.
 
 ## What to test
 
-- **Behaviour, not implementation.** Assert on what the user sees (text, roles, enabled/disabled state) or on the public contract (store state, hook return value, request sent). Never assert on internal state, private helpers, CSS classes used purely for styling, or the number of renders.
+- **Behaviour, not implementation.** Assert on what the user sees (text, roles, enabled/disabled state) or on the public contract (store state, hook return value, request sent). Never assert on internal state, private helpers, CSS classes used purely for styling, or the number of renders (render-count budgets live only in `*.perf.test.tsx`, see [React Compiler in tests](#react-compiler-in-tests)).
 - Cover the **happy path, every error/empty branch, and boundaries** (0, 1, max, invalid input, long strings; see the truncation rules in [styling-and-theming](styling-and-theming.md)).
 - **One behaviour per test.** Several `expect`s are fine when they describe the same outcome.
 - Do not test third-party libraries or thin shadcn wrappers in `components/ui/` unless the project added logic to them.

@@ -133,6 +133,9 @@ importers:
         specifier: ^5.0.10
         version: 5.0.13(@types/react@19.2.15)(immer@11.1.8)(react@19.2.6)(use-sync-external-store@1.6.0(react@19.2.6))
     devDependencies:
+      '@babel/core':
+        specifier: 7.29.7
+        version: 7.29.7
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.0
