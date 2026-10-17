@@ -35,7 +35,7 @@ Why server vs client per file is in [architecture](architecture.md#rendering-mod
 
 - `/` and `/settings` are `redirect()`-only server pages (`next/navigation`). Keep such pages free of other logic. `/settings` is also redirected over HTTP in `next.config.ts` (`redirects()`, 307), so the server answers before any HTML; links go straight to the destination (`SETTINGS_ROUTES.DEFAULT`) instead of through a redirect.
 - `inspect/[key]` calls `redirect("/")` when the backend has no preview for the key (observation, see limitations).
-- Client redirects use `router.replace` when the previous entry must not stay in history (login after a failed auth check, after logout) and `router.push` otherwise (`auth/exchange` -> `/links` after `AUTH_REDIRECT_DELAY_MS`, link creation and import -> `/links`).
+- Client redirects use `router.replace` when the previous entry must not stay in history (login after a failed auth check, after logout, `auth/exchange` -> `/links` so Back cannot resend the spent code) and `router.push` otherwise (link creation and import -> `/links`).
 - Hard navigations (`window.location`) exist for things the router cannot do: `fetchWithAuth` goes to `/login` when refresh fails ([api-layer](api-layer.md)), Google sign-in goes to `/api/oauth2/authorization/google` (cross-origin redirect chain through the proxy), billing checkout/portal go to provider URLs (`src/lib/billing-redirect.ts`).
 - Route constants: `ROUTES` (`LOGIN`, `LINKS`, `SETTINGS`) in [`src/lib/constants.ts`](../url-shortener-ui/src/lib/constants.ts) and `SETTINGS_ROUTES` in [`src/lib/settings-constants.ts`](../url-shortener-ui/src/lib/settings-constants.ts). Prefer them over string literals for these paths.
 

@@ -99,7 +99,6 @@ export const COPIED_ANNOUNCEMENT = "Copied to clipboard";
 
 export const COPY_FEEDBACK_DURATION_MS = 2000;
 export const GLOW_FADE_DELAY_MS = 1000;
-export const AUTH_REDIRECT_DELAY_MS = 1000;
 export const KEY_AVAILABILITY_CHECK_DEBOUNCE_MS = 600;
 export const URL_CLEANER_DEBOUNCE_MS = 500;
 export const URL_CLEANER_SUCCESS_DURATION_MS = 3000;

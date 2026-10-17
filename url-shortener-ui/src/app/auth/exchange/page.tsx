@@ -6,7 +6,8 @@ import {Card, CardContent, CardHeader, CardTitle, CardDescription} from "@/compo
 import {Suspense} from "react";
 import {API_BASE_URL} from "@/lib/api";
 import {useAuthStore} from "@/lib/store/auth";
-import {API_ENDPOINTS, ROUTES, AUTH_REDIRECT_DELAY_MS} from "@/lib/constants";
+import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
+import {setSessionHint} from "@/lib/session-hint";
 
 interface AccessTokenContainer {
     accessToken: string
@@ -44,10 +45,9 @@ function ExchangeProcessor() {
                 const data: AccessTokenContainer = await response.json();
 
                 useAuthStore.getState().setAccessToken(data.accessToken);
-
-                setTimeout(() => {
-                    router.push(ROUTES.LINKS);
-                }, AUTH_REDIRECT_DELAY_MS);
+                setSessionHint();
+                // Replace, not push: Back must not return here and resend the spent single-use code.
+                router.replace(ROUTES.LINKS);
 
                 setError(null);
             } catch (err) {

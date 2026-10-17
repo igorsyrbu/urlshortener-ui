@@ -1,14 +1,16 @@
 import {StrictMode} from "react";
-import {act, render, screen} from "@testing-library/react";
-import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act, render, screen, waitFor} from "@testing-library/react";
+import {afterEach, describe, expect, it, vi} from "vitest";
 import ExchangePage from "./page";
 import {API_BASE_URL} from "@/lib/api";
-import {API_ENDPOINTS, AUTH_REDIRECT_DELAY_MS, ROUTES} from "@/lib/constants";
+import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
+import {hasSessionHint} from "@/lib/session-hint";
 import {useAuthStore} from "@/lib/store/auth";
 
 const navigation = vi.hoisted(() => {
     const push = vi.fn();
-    return {searchParams: new URLSearchParams(), push, router: {push}};
+    const replace = vi.fn();
+    return {searchParams: new URLSearchParams(), push, replace, router: {push, replace}};
 });
 
 vi.mock("next/navigation", () => ({
@@ -24,12 +26,7 @@ async function openWithQuery(query: string): Promise<void> {
 }
 
 describe("auth code exchange page", () => {
-    beforeEach(() => {
-        vi.useFakeTimers({shouldAdvanceTime: true});
-    });
-
     afterEach(() => {
-        vi.useRealTimers();
         useAuthStore.setState({accessToken: null, user: null});
     });
 
@@ -62,7 +59,7 @@ describe("auth code exchange page", () => {
         navigation.searchParams = new URLSearchParams("code=abc");
         const {rerender} = render(<ExchangePage/>);
 
-        navigation.router = {push: navigation.push};
+        navigation.router = {push: navigation.push, replace: navigation.replace};
         await act(async () => {
             rerender(<ExchangePage/>);
         });
@@ -82,17 +79,22 @@ describe("auth code exchange page", () => {
         );
     });
 
-    it("stores the access token and redirects to links after a short delay", async () => {
+    it("stores the access token and goes to links at once, replacing this page in history", async () => {
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({accessToken: "jwt"})));
+
         await openWithQuery("code=abc");
 
         expect(useAuthStore.getState().accessToken).toBe("jwt");
+        await waitFor(() => expect(navigation.replace).toHaveBeenCalledExactlyOnceWith(ROUTES.LINKS));
         expect(navigation.push).not.toHaveBeenCalled();
-        act(() => {
-            vi.advanceTimersByTime(AUTH_REDIRECT_DELAY_MS);
-        });
+    });
 
-        expect(navigation.push).toHaveBeenCalledExactlyOnceWith(ROUTES.LINKS);
+    it("remembers the session so the dashboard renders its shell at once", async () => {
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({accessToken: "jwt"})));
+
+        await openWithQuery("code=abc");
+
+        expect(hasSessionHint()).toBe(true);
     });
 
     it("shows the failing status and does not redirect when the exchange is rejected", async () => {
@@ -100,11 +102,9 @@ describe("auth code exchange page", () => {
         await openWithQuery("code=abc");
 
         expect(await screen.findByText("Exchange failed: 401 Unauthorized")).toBeInTheDocument();
-        act(() => {
-            vi.advanceTimersByTime(AUTH_REDIRECT_DELAY_MS);
-        });
-        expect(navigation.push).not.toHaveBeenCalled();
+        expect(navigation.replace).not.toHaveBeenCalled();
         expect(useAuthStore.getState().accessToken).toBeNull();
+        expect(hasSessionHint()).toBe(false);
     });
 
     it("shows the network error when the request cannot be made", async () => {
