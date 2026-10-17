@@ -260,13 +260,13 @@ describe("link store archiving", () => {
         return JSON.parse(String(body));
     }
 
-    it("sends the full link with inverted activity and refetches the list", async () => {
+    it("sends the full link with inverted activity and refetches the list in the background", async () => {
         const link = createLinkItem({id: "a", tagIds: ["t1"]});
         useLinkStore.setState({links: [link]});
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null));
-        mockLinksPage([createShortLink({id: "a", isActive: false})]);
+        mockLinksPage([]);
 
-        await useLinkStore.getState().setLinkArchived("a", true);
+        await expect(useLinkStore.getState().setLinkArchived("a", true)).resolves.toBe(true);
 
         expect(vi.mocked(fetchWithAuth).mock.calls[0][0]).toBe(API_ENDPOINTS.SHORTLINKS);
         expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.method).toBe("PUT");
@@ -274,11 +274,34 @@ describe("link store archiving", () => {
             id: "a", title: link.title, longUrl: link.longUrl, key: link.key, isActive: false, tagIds: ["t1"],
         });
         expect(fetchWithAuth).toHaveBeenCalledTimes(2);
+    });
+
+    it("removes an archived link from the list before the server answers when archived links are hidden", async () => {
+        const save = Promise.withResolvers<Response>();
+        useLinkStore.setState({links: [createLinkItem({id: "a"}), createLinkItem({id: "b"})], totalElements: 2});
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(save.promise);
+        mockLinksPage([]);
+
+        const archiving = useLinkStore.getState().setLinkArchived("a", true);
+
+        expect(useLinkStore.getState().links.map((link) => link.id)).toEqual(["b"]);
+        expect(useLinkStore.getState().totalElements).toBe(1);
+        save.resolve(new Response(null));
+        await archiving;
+    });
+
+    it("keeps an archived link in the list, marked archived, when archived links are shown", async () => {
+        useLinkStore.setState({links: [createLinkItem({id: "a"})], showArchived: true});
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise<Response>(() => undefined));
+
+        void useLinkStore.getState().setLinkArchived("a", true);
+
+        expect(useLinkStore.getState().links).toHaveLength(1);
         expect(useLinkStore.getState().links[0].isActive).toBe(false);
     });
 
     it("reactivates a link when unarchiving", async () => {
-        useLinkStore.setState({links: [createLinkItem({id: "a", isActive: false})]});
+        useLinkStore.setState({links: [createLinkItem({id: "a", isActive: false})], showArchived: true});
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null));
         mockLinksPage([]);
 
@@ -297,39 +320,69 @@ describe("link store archiving", () => {
         expect(sentBody().tagIds).toEqual([]);
     });
 
-    it("reports an error without calling the API when the link is unknown", async () => {
-        await useLinkStore.getState().setLinkArchived("missing", true);
+    it.each([
+        ["the link is unknown", [] as ReturnType<typeof createLinkItem>[]],
+        ["the link has no key", [createLinkItem({id: "missing", key: undefined})]],
+    ])("refuses without calling the API when %s", async (_name, links) => {
+        useLinkStore.setState({links});
 
-        expect(useLinkStore.getState().error).toBe("Failed to update archive status: link not found");
+        await expect(useLinkStore.getState().setLinkArchived("missing", true)).resolves.toBe(false);
+
         expect(fetchWithAuth).not.toHaveBeenCalled();
+        expect(useLinkStore.getState().error).toBeNull();
     });
 
-    it("reports an error without calling the API when the link has no key", async () => {
-        useLinkStore.setState({links: [createLinkItem({id: "a", key: undefined})]});
+    it.each([
+        ["refuses", () => vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 409}))],
+        ["cannot be reached", () => vi.mocked(fetchWithAuth).mockRejectedValueOnce(new Error("offline"))],
+    ])("restores the list and reports failure when the server %s", async (_name, arrangeFailure) => {
+        const links = [createLinkItem({id: "a"}), createLinkItem({id: "b"})];
+        useLinkStore.setState({links, totalElements: 2});
+        arrangeFailure();
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise<Response>(() => undefined));
 
-        await useLinkStore.getState().setLinkArchived("a", true);
+        await expect(useLinkStore.getState().setLinkArchived("a", true)).resolves.toBe(false);
 
-        expect(useLinkStore.getState().error).toBe("Failed to update archive status: missing key");
-        expect(fetchWithAuth).not.toHaveBeenCalled();
+        expect(useLinkStore.getState().links).toEqual(links);
+        expect(useLinkStore.getState().totalElements).toBe(2);
+        expect(useLinkStore.getState().error).toBeNull();
+        expect(logger.error).toHaveBeenCalled();
+    });
+});
+
+describe("link store deleting", () => {
+    afterEach(() => {
+        useLinkStore.setState(initialState, true);
     });
 
-    it("exposes the HTTP status and does not refetch when the update fails", async () => {
-        useLinkStore.setState({links: [createLinkItem({id: "a"})]});
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 409}));
+    it("removes the link before the server answers, then deletes it and refetches in the background", async () => {
+        const deletion = Promise.withResolvers<Response>();
+        useLinkStore.setState({links: [createLinkItem({id: "a"}), createLinkItem({id: "b"})], totalElements: 2});
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(deletion.promise);
+        mockLinksPage([]);
 
-        await useLinkStore.getState().setLinkArchived("a", true);
+        const deleting = useLinkStore.getState().deleteLink("a");
 
-        expect(useLinkStore.getState().error).toBe("Failed to update archive status: 409");
-        expect(fetchWithAuth).toHaveBeenCalledOnce();
+        expect(useLinkStore.getState().links.map((link) => link.id)).toEqual(["b"]);
+        deletion.resolve(new Response(null, {status: 204}));
+        await expect(deleting).resolves.toBe(true);
+        expect(vi.mocked(fetchWithAuth).mock.calls[0]).toEqual([`${API_ENDPOINTS.SHORTLINKS}/a`, {method: "DELETE"}]);
+        expect(fetchWithAuth).toHaveBeenCalledTimes(2);
     });
 
-    it("exposes the error message when the update request rejects", async () => {
-        useLinkStore.setState({links: [createLinkItem({id: "a"})]});
-        vi.mocked(fetchWithAuth).mockRejectedValueOnce(new Error("offline"));
+    it.each([
+        ["refuses", () => vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 500}))],
+        ["cannot be reached", () => vi.mocked(fetchWithAuth).mockRejectedValueOnce(new Error("offline"))],
+    ])("puts the link back and reports failure when the server %s", async (_name, arrangeFailure) => {
+        const links = [createLinkItem({id: "a"}), createLinkItem({id: "b"})];
+        useLinkStore.setState({links, totalElements: 2});
+        arrangeFailure();
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise<Response>(() => undefined));
 
-        await useLinkStore.getState().setLinkArchived("a", true);
+        await expect(useLinkStore.getState().deleteLink("a")).resolves.toBe(false);
 
-        expect(useLinkStore.getState().error).toBe("offline");
-        expect(logger.error).toHaveBeenCalledOnce();
+        expect(useLinkStore.getState().links).toEqual(links);
+        expect(useLinkStore.getState().totalElements).toBe(2);
+        expect(logger.error).toHaveBeenCalled();
     });
 });

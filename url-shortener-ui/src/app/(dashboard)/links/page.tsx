@@ -2,7 +2,6 @@
 
 import {Suspense, useCallback, useEffect, useState} from "react";
 import {useRouter, useSearchParams} from "next/navigation";
-import {fetchWithAuth} from "@/lib/api";
 import {EditLinkModal} from "@/components/links/EditLinkModal";
 import {DeleteLinkModal} from "@/components/links/DeleteLinkModal";
 import {ArchiveLinkModal} from "@/components/links/ArchiveLinkModal";
@@ -22,12 +21,11 @@ import {IMPORT_TRACKING_STATUS, useImportTracker} from "@/lib/store/import";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {PageToolbar} from "@/components/layout/PageToolbar";
-import {API_ENDPOINTS, DEFAULT_PAGE_SIZE, ROUTES} from "@/lib/constants";
+import {DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, ROUTES} from "@/lib/constants";
+import {toast} from "sonner";
 import {buildLinksPageUrl, parseLinksPageParam} from "@/lib/pagination";
-import {logger} from "@/lib/logger";
 import {isModalOpen} from "@/lib/utils";
 import {useDebounce} from "@/lib/hooks/useDebounce";
-import {withPending} from "@/lib/async-utils";
 
 const LINKS_LIST_TOP_ID = "links-list-top";
 
@@ -38,18 +36,6 @@ function scrollLinksToTop(): void {
         return;
     }
     document.getElementById(LINKS_LIST_TOP_ID)?.scrollIntoView({behavior: "smooth", block: "start"});
-}
-
-/** Deletes a link and logs any failure; `true` when the backend confirmed the deletion. */
-async function deleteShortLink(linkId: string): Promise<boolean> {
-    try {
-        const res = await fetchWithAuth(`${API_ENDPOINTS.SHORTLINKS}/${linkId}`, {method: "DELETE"});
-        if (!res.ok) logger.error("Failed to delete link", undefined, {status: res.status, linkId});
-        return res.ok;
-    } catch (e) {
-        logger.error("Error deleting link", e, {linkId});
-        return false;
-    }
 }
 
 function LinksPageContent() {
@@ -67,6 +53,7 @@ function LinksPageContent() {
         showArchived,
         setShowArchived,
         setLinkArchived,
+        deleteLink,
         hydrateShowArchived,
         searchQuery
     } = useLinkStore();
@@ -75,13 +62,11 @@ function LinksPageContent() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [linkToDelete, setLinkToDelete] = useState<LinkItem | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
     const [isQrCodeModalOpen, setIsQrCodeModalOpen] = useState(false);
     const [linkForQrCode, setLinkForQrCode] = useState<LinkItem | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [archiveModalLink, setArchiveModalLink] = useState<LinkItem | null>(null);
-    const [isArchiving, setIsArchiving] = useState(false);
     const [searchInput, setSearchInput] = useState("");
     const debouncedSearch = useDebounce(searchInput, 500);
 
@@ -192,14 +177,22 @@ function LinksPageContent() {
         fetchLinks(nextPage);
     };
 
-    const handleArchiveConfirm = async () => {
-        if (!archiveModalLink) return;
-        const {id, isActive} = archiveModalLink;
-        await withPending(setIsArchiving, async () => {
-            await setLinkArchived(id, isActive);
-            setArchiveModalLink(null);
+    const archiveLink = async (link: LinkItem): Promise<void> => {
+        const isSaved = await setLinkArchived(link.id, link.isActive);
+        if (isSaved) {
             await syncPageAfterRemoval();
+            return;
+        }
+        toast.error(link.isActive ? LINK_ACTION_COPY.ARCHIVE_FAILED : LINK_ACTION_COPY.UNARCHIVE_FAILED, {
+            action: {label: LINK_ACTION_COPY.RETRY, onClick: () => void archiveLink(link)},
         });
+    };
+
+    const handleArchiveConfirm = () => {
+        if (!archiveModalLink) return;
+        const link = archiveModalLink;
+        setArchiveModalLink(null);
+        void archiveLink(link);
     };
 
     const handleDeleteClick = (link: LinkItem) => {
@@ -207,17 +200,22 @@ function LinksPageContent() {
         setDeleteModalOpen(true);
     };
 
-    const confirmDelete = async () => {
-        if (!linkToDelete) return;
-        const linkId = linkToDelete.id;
-        await withPending(setIsDeleting, async () => {
-            if (!await deleteShortLink(linkId)) return;
-            const store = useLinkStore.getState();
-            await store.fetchLinks(store.currentPage);
-            setDeleteModalOpen(false);
-            setLinkToDelete(null);
+    const removeLink = async (link: LinkItem): Promise<void> => {
+        if (await deleteLink(link.id)) {
             await syncPageAfterRemoval();
+            return;
+        }
+        toast.error(LINK_ACTION_COPY.DELETE_FAILED, {
+            action: {label: LINK_ACTION_COPY.RETRY, onClick: () => void removeLink(link)},
         });
+    };
+
+    const confirmDelete = () => {
+        if (!linkToDelete) return;
+        const link = linkToDelete;
+        setDeleteModalOpen(false);
+        setLinkToDelete(null);
+        void removeLink(link);
     };
 
     const handleEdit = (link: LinkItem) => {
@@ -329,7 +327,7 @@ function LinksPageContent() {
                     open={deleteModalOpen}
                     onOpenChange={setDeleteModalOpen}
                     onConfirm={confirmDelete}
-                    loading={isDeleting}
+                    loading={false}
                     shortUrl={linkToDelete?.shortUrl}
                     longUrl={linkToDelete?.longUrl}
                 />
@@ -345,7 +343,6 @@ function LinksPageContent() {
                     onOpenChange={(open) => !open && setArchiveModalLink(null)}
                     link={archiveModalLink}
                     onConfirm={handleArchiveConfirm}
-                    loading={isArchiving}
                 />
 
                 <ImportCsvModal

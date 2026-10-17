@@ -35,8 +35,11 @@ Keyboard shortcuts (desktop, no modal open, focus not in an input):
 
 ### Archive and delete
 
-- Archive: `ArchiveLinkModal` (shared `DeleteConfirmationModal`, default variant). `setLinkArchived(id, archived)` in the store sends a full `PUT /shortlinks` with `isActive: !archived` and the existing title, URL, key and tag ids, then refetches the current page. Failures set `error` in the store (shown in the banner).
-- Delete: `DeleteLinkModal` requires typing the short-link handle (the path of `shortUrl`) as confirmation. `confirmDelete` in the page calls `DELETE /shortlinks/{id}` directly through `fetchWithAuth`, refetches the current page and closes the modal.
+Both are **optimistic**: confirming closes the dialog and changes the list at once; the request and a quiet refetch of the current page run in the background.
+
+- Archive: `ArchiveLinkModal` (shared `DeleteConfirmationModal`, default variant). `setLinkArchived(id, archived)` in the store first updates the list (without "show archived" the link leaves the list and `totalElements` drops; with it the link stays with `isActive` flipped), then sends a full `PUT /shortlinks` with `isActive: !archived` and the existing title, URL, key and tag ids.
+- Delete: `DeleteLinkModal` requires typing the short-link handle (the path of `shortUrl`) as confirmation. `deleteLink(id)` in the store removes the link from the list, then calls `DELETE /shortlinks/{id}`.
+- Both resolve `true`/`false` and never write the store `error`. On `false` the store has already put the previous list back; the page shows a toast (`LINK_ACTION_COPY`) with a **Retry** action that repeats the action.
 - After archive or delete, `syncPageAfterRemoval` steps back one page (URL and fetch) when the current page became empty while `totalElements > 0`.
 
 ### QR code

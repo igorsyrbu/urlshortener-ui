@@ -20,7 +20,10 @@ interface LinkStore {
     setShowArchived: (show: boolean) => void;
     setSearchQuery: (query: string) => void;
     hydrateShowArchived: () => void;
-    setLinkArchived: (id: string, archived: boolean) => Promise<void>;
+    /** Updates the list at once, then saves; restores the list and resolves `false` when the server refuses. */
+    setLinkArchived: (id: string, archived: boolean) => Promise<boolean>;
+    /** Removes the link from the list at once, then deletes it; restores the list and resolves `false` on failure. */
+    deleteLink: (id: string) => Promise<boolean>;
 }
 
 function mapResponseToLinkItem(item: ShortLinkDTO): LinkItem {
@@ -36,6 +39,38 @@ function mapResponseToLinkItem(item: ShortLinkDTO): LinkItem {
 }
 
 const linksRequests = createLatestRequestTracker();
+
+async function saveArchiveStatus(link: LinkItem, archived: boolean): Promise<boolean> {
+    try {
+        const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS, {
+            method: "PUT",
+            body: JSON.stringify({
+                id: link.id,
+                title: link.title,
+                longUrl: link.longUrl,
+                key: link.key,
+                isActive: !archived,
+                tagIds: [...(link.tagIds ?? [])],
+            }),
+        });
+        if (!res.ok) logger.error("Failed to update link archive status", undefined, {status: res.status, linkId: link.id});
+        return res.ok;
+    } catch (error) {
+        logger.error("Error updating link archive status", error);
+        return false;
+    }
+}
+
+async function deleteShortLink(linkId: string): Promise<boolean> {
+    try {
+        const res = await fetchWithAuth(`${API_ENDPOINTS.SHORTLINKS}/${linkId}`, {method: "DELETE"});
+        if (!res.ok) logger.error("Failed to delete link", undefined, {status: res.status, linkId});
+        return res.ok;
+    } catch (error) {
+        logger.error("Error deleting link", error, {linkId});
+        return false;
+    }
+}
 
 export const useLinkStore = create<LinkStore>((set, get) => ({
     links: [],
@@ -114,35 +149,29 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
     },
 
     setLinkArchived: async (id, archived) => {
-        const link = get().links.find((item) => item.id === id);
-        if (!link) {
-            set({error: `Failed to update archive status: link not found`});
-            return;
+        const {links, totalElements, showArchived} = get();
+        const link = links.find((item) => item.id === id);
+        if (!link?.key) {
+            logger.error("Cannot update archive status of an unknown link", undefined, {linkId: id});
+            return false;
         }
-        if (!link.key) {
-            set({error: `Failed to update archive status: missing key`});
-            return;
-        }
-        try {
-            const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS, {
-                method: "PUT",
-                body: JSON.stringify({
-                    id: link.id,
-                    title: link.title,
-                    longUrl: link.longUrl,
-                    key: link.key,
-                    isActive: !archived,
-                    tagIds: [...(link.tagIds ?? [])],
-                }),
-            });
-            if (res.ok) {
-                await get().fetchLinks();
-            } else {
-                set({error: `Failed to update archive status: ${res.status}`});
-            }
-        } catch (error) {
-            logger.error("Error updating link archive status", error);
-            set({error: error instanceof Error ? error.message : "Unknown error occurred"});
-        }
+        // Without "show archived" an archived link leaves the list; with it the link stays and changes state.
+        const leavesList = archived && !showArchived;
+        set(leavesList
+            ? {links: links.filter((item) => item.id !== id), totalElements: totalElements - 1}
+            : {links: links.map((item) => (item.id === id ? {...item, isActive: !archived} : item))});
+        const isSaved = await saveArchiveStatus(link, archived);
+        if (!isSaved) set({links, totalElements});
+        void get().fetchLinks();
+        return isSaved;
+    },
+
+    deleteLink: async (id) => {
+        const {links, totalElements} = get();
+        set({links: links.filter((item) => item.id !== id), totalElements: totalElements - 1});
+        const isDeleted = await deleteShortLink(id);
+        if (!isDeleted) set({links, totalElements});
+        void get().fetchLinks();
+        return isDeleted;
     },
 }));

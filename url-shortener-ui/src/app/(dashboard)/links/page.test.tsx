@@ -9,7 +9,8 @@ import {
     IMPORT_FROM_CSV_LABEL,
     IMPORT_PROCESSED_TITLE,
 } from "@/components/links/import-export-constants";
-import {API_ENDPOINTS, DEFAULT_PAGE_SIZE, ROUTES, SHOW_ARCHIVED_STORAGE_KEY} from "@/lib/constants";
+import {API_ENDPOINTS, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, ROUTES, SHOW_ARCHIVED_STORAGE_KEY} from "@/lib/constants";
+import {toast} from "sonner";
 import {useLinkStore} from "@/lib/store/links";
 import {IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
@@ -27,6 +28,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
+vi.mock("sonner", () => ({toast: {error: vi.fn(), success: vi.fn()}}));
 vi.mock("@/lib/hooks/useMediaQuery", () => ({useIsDesktop: () => true, useIsMobile: () => false}));
 vi.mock("next/navigation", () => ({
     useRouter: () => ({push: mocks.routerPush}),
@@ -51,6 +53,8 @@ interface ApiScenario {
     totalElements?: number;
     linksStatus?: number;
     deleteStatus?: number;
+    putStatus?: number;
+    deleteResponse?: Promise<Response>;
 }
 
 function createLinks(count: number): ShortLinkDTO[] {
@@ -59,10 +63,10 @@ function createLinks(count: number): ShortLinkDTO[] {
     }));
 }
 
-function mockApi({links, totalElements = links.length, linksStatus, deleteStatus}: ApiScenario): void {
+function mockApi({links, totalElements = links.length, linksStatus, deleteStatus, putStatus, deleteResponse}: ApiScenario): void {
     const routes = {
         [API_ENDPOINTS.SHORTLINKS]: (init: RequestInit | undefined) => {
-            if (init?.method === "PUT") return Response.json({});
+            if (init?.method === "PUT") return putStatus ? new Response(null, {status: putStatus}) : Response.json({});
             if (linksStatus) return new Response(null, {status: linksStatus});
             return Response.json(createPage(links, {page: {totalPages: Math.ceil(totalElements / DEFAULT_PAGE_SIZE), totalElements, size: DEFAULT_PAGE_SIZE, number: 0}}));
         },
@@ -70,7 +74,7 @@ function mockApi({links, totalElements = links.length, linksStatus, deleteStatus
         [API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES]: () => new Response("", {headers: {"Content-Type": "text/event-stream"}}),
         ...Object.fromEntries(links.map((link) => [
             `${API_ENDPOINTS.SHORTLINKS}/${link.id}`,
-            () => new Response(null, {status: deleteStatus ?? 204}),
+            () => deleteResponse ?? new Response(null, {status: deleteStatus ?? 204}),
         ])),
     };
     routeFetchWithAuth(routes);
@@ -83,6 +87,19 @@ function openUpdatesStream(): void {
         options?.signal?.addEventListener("abort", () => { streamController?.error(new DOMException("Aborted", "AbortError")); }, {once: true});
         return new Response(stream, {headers: {"Content-Type": "text/event-stream"}});
     });
+}
+
+async function confirmDelete(user: ReturnType<typeof userEvent.setup>, linkIndex: number): Promise<void> {
+    await openLinkActions(user, linkIndex);
+    await user.click(await screen.findByRole("menuitem", {name: /Delete/}));
+    await user.type(await screen.findByPlaceholderText("Type the short link handle here"), `key${linkIndex}`);
+    await user.click(screen.getByRole("button", {name: "Delete link"}));
+}
+
+async function confirmArchive(user: ReturnType<typeof userEvent.setup>, linkIndex: number): Promise<void> {
+    await openLinkActions(user, linkIndex);
+    await user.click(await screen.findByRole("menuitem", {name: /Archive/}));
+    await user.click(await screen.findByRole("button", {name: "Archive link"}));
 }
 
 async function openLinkActions(user: ReturnType<typeof userEvent.setup>, linkIndex: number): Promise<void> {
@@ -206,42 +223,60 @@ describe("links page", () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(2)});
             render(<LinksPage/>);
-            await openLinkActions(user, 1);
 
-            await user.click(await screen.findByRole("menuitem", {name: /Delete/}));
-            await user.type(await screen.findByPlaceholderText("Type the short link handle here"), "key1");
-            await user.click(screen.getByRole("button", {name: "Delete link"}));
+            await confirmDelete(user, 1);
 
             await waitFor(() => expect(getRequestsTo(`${API_ENDPOINTS.SHORTLINKS}/link-1`, "DELETE")).toHaveLength(1));
-            await waitFor(() => expect(screen.queryByText("Delete this link?")).not.toBeInTheDocument());
+            expect(screen.queryByText("Delete this link?")).not.toBeInTheDocument();
         });
 
-        it("keeps the delete dialog open when the server refuses to delete", async () => {
+        it("closes the dialog and removes the link before the server answers", async () => {
+            const user = userEvent.setup();
+            const deletion = Promise.withResolvers<Response>();
+            mockApi({links: createLinks(2), deleteResponse: deletion.promise});
+            render(<LinksPage/>);
+
+            await confirmDelete(user, 1);
+
+            expect(screen.queryByText("Delete this link?")).not.toBeInTheDocument();
+            expect(screen.queryByRole("heading", {name: "Link 1"})).not.toBeInTheDocument();
+            expect(screen.getByRole("heading", {name: "Link 0"})).toBeInTheDocument();
+            deletion.resolve(new Response(null, {status: 204}));
+        });
+
+        it("puts the link back and offers a retry when the server refuses to delete", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1), deleteStatus: HTTP_SERVER_ERROR});
             render(<LinksPage/>);
-            await openLinkActions(user, 0);
 
-            await user.click(await screen.findByRole("menuitem", {name: /Delete/}));
-            await user.type(await screen.findByPlaceholderText("Type the short link handle here"), "key0");
-            await user.click(screen.getByRole("button", {name: "Delete link"}));
+            await confirmDelete(user, 0);
 
-            await waitFor(() => expect(getRequestsTo(`${API_ENDPOINTS.SHORTLINKS}/link-0`, "DELETE")).toHaveLength(1));
-            await waitFor(() => expect(screen.getByRole("button", {name: "Delete link"})).toBeEnabled());
-            expect(screen.getByText("Delete this link?")).toBeInTheDocument();
+            await waitFor(() => expect(toast.error).toHaveBeenCalledWith(LINK_ACTION_COPY.DELETE_FAILED, expect.objectContaining({
+                action: expect.objectContaining({label: LINK_ACTION_COPY.RETRY}),
+            })));
+            expect(screen.getByRole("heading", {name: "Link 0"})).toBeInTheDocument();
         });
 
         it("archives a link after confirmation", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
             render(<LinksPage/>);
-            await openLinkActions(user, 0);
 
-            await user.click(await screen.findByRole("menuitem", {name: /Archive/}));
-            await user.click(await screen.findByRole("button", {name: "Archive link"}));
+            await confirmArchive(user, 0);
 
             await waitFor(() => expect(getRequestsTo(API_ENDPOINTS.SHORTLINKS, "PUT")).toHaveLength(1));
             expect(parseRequestBody(getRequestsTo(API_ENDPOINTS.SHORTLINKS, "PUT")[0])).toMatchObject({id: "link-0", isActive: false});
+        });
+
+        it("puts the link back and offers a retry when the server refuses to archive", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(1), putStatus: HTTP_SERVER_ERROR});
+            render(<LinksPage/>);
+
+            await confirmArchive(user, 0);
+
+            await waitFor(() => expect(toast.error).toHaveBeenCalledWith(LINK_ACTION_COPY.ARCHIVE_FAILED, expect.anything()));
+            expect(screen.getByRole("heading", {name: "Link 0"})).toBeInTheDocument();
         });
 
         it("opens the edit form prefilled with the link", async () => {

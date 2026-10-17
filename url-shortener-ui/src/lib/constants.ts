@@ -63,6 +63,13 @@ export const API_ENDPOINTS = {
 export const MAIN_CONTENT_ID = "main-content";
 export const SKIP_TO_CONTENT_LABEL = "Skip to main content";
 
+export const LINK_ACTION_COPY = {
+    ARCHIVE_FAILED: "Couldn't archive the link. It's back in the list.",
+    UNARCHIVE_FAILED: "Couldn't restore the link from the archive.",
+    DELETE_FAILED: "Couldn't delete the link. It's back in the list.",
+    RETRY: "Retry",
+} as const;
+
 export const SESSION_CHECK_COPY = {
     CHECKING: "Securing session...",
     UNAVAILABLE_TITLE: "Can't reach the server",
