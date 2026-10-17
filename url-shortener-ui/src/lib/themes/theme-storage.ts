@@ -1,6 +1,7 @@
 import {THEME_PALETTE_STORAGE_KEY} from "@/lib/constants";
 import {logger} from "@/lib/logger";
-import {CustomColors, CustomThemeDerived, isValidHex} from "@/lib/themes/custom-theme";
+import type {CustomColors, CustomThemeDerived} from "@/lib/themes/custom-theme";
+import {isValidHex} from "@/lib/themes/hex";
 import {isKnownPaletteId} from "@/lib/themes/palettes";
 import {PaletteMode, ThemeTokenMap, TOKEN_CSS_VAR_NAMES} from "@/lib/themes/theme-tokens";
 

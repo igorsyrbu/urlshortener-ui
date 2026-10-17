@@ -4,8 +4,9 @@ import {toast} from "sonner";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {CustomThemeBuilder} from "@/components/settings/CustomThemeBuilder";
 import {COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
-import {CustomColors, DEFAULT_CUSTOM_COLORS, isValidHex, serializeCustomColors} from "@/lib/themes/custom-theme";
-import {getPresetCustomColors, normalizeCustomColorsToHex} from "@/lib/themes/palettes";
+import {CustomColors, DEFAULT_CUSTOM_COLORS, normalizeCustomColorsToHex, serializeCustomColors} from "@/lib/themes/custom-theme";
+import {isValidHex} from "@/lib/themes/hex";
+import {getPresetCustomColors} from "@/lib/themes/palettes";
 import {
     readStoredSelection,
     renderWithPalette,

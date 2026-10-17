@@ -7,13 +7,15 @@ import {ClipboardCheck, Share2, Sparkles, Upload} from "lucide-react";
 import {CustomColorRow} from "@/components/settings/CustomColorRow";
 import {ImportThemeDialog} from "@/components/settings/ImportThemeDialog";
 import {
+    buildCustomTheme,
     CustomColors,
     DEFAULT_CUSTOM_COLORS,
+    normalizeCustomColorsToHex,
     parseCustomColorsInput,
     serializeCustomColors,
     surpriseMe,
 } from "@/lib/themes/custom-theme";
-import {getPresetCustomColors, normalizeCustomColorsToHex} from "@/lib/themes/palettes";
+import {getPresetCustomColors} from "@/lib/themes/palettes";
 import {PaletteMode} from "@/lib/themes/theme-tokens";
 import {usePalette} from "@/providers/palette-provider";
 import {THEME_COPY_FAILED_MESSAGE} from "@/lib/settings-constants";
@@ -55,12 +57,16 @@ export function CustomThemeBuilder() {
         return DEFAULT_CUSTOM_COLORS[mode];
     })();
 
+    const applyColors = (next: CustomColors) => {
+        applyCustomColors(next, mode, buildCustomTheme(next, mode));
+    };
+
     const handleColorChange = (slot: keyof CustomColors, value: string) => {
-        applyCustomColors({...colors, [slot]: value}, mode);
+        applyColors({...colors, [slot]: value});
     };
 
     const handleSurpriseMe = () => {
-        applyCustomColors(surpriseMe(mode), mode);
+        applyColors(surpriseMe(mode));
     };
 
     const handleShare = () => copy(serializeCustomColors(colors));
@@ -79,7 +85,7 @@ export function CustomThemeBuilder() {
             setHasImportError(true);
             return;
         }
-        applyCustomColors(parsed, mode);
+        applyColors(parsed);
         handleImportOpenChange(false);
         toast.success("Theme imported");
     };

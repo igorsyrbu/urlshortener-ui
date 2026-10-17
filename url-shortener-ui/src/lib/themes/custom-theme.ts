@@ -1,4 +1,6 @@
 import {converter, formatHex, interpolate, wcagContrast} from "culori";
+import {normalizeHex} from "@/lib/themes/hex";
+import type {PaletteCustomColors} from "@/lib/themes/palettes";
 import {PaletteMode, ThemeTokenMap} from "@/lib/themes/theme-tokens";
 
 export interface CustomColors {
@@ -55,30 +57,12 @@ const SURPRISE_DESTRUCTIVE_HUE: [number, number] = [15, 40];
 const SURPRISE_DESTRUCTIVE_CHROMA: [number, number] = [0.15, 0.24];
 const FULL_HUE_CIRCLE = 360;
 
-const HEX_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-
 const toOklch = converter("oklch");
 
 export const DEFAULT_CUSTOM_COLORS: Record<PaletteMode, CustomColors> = {
     light: {background: "#f5f4ef", card: "#ffffff", accent: "#d96a47", destructive: "#cc2525"},
     dark: {background: "#121212", card: "#1e1e1e", accent: "#c95d3c", destructive: "#c93336"},
 };
-
-export function isValidHex(value: string): boolean {
-    return HEX_PATTERN.test(value.trim());
-}
-
-export function normalizeHex(value: string): string | null {
-    const trimmed = value.trim();
-    if (!isValidHex(trimmed)) {
-        return null;
-    }
-    const hex = trimmed.slice(1);
-    if (hex.length === 3) {
-        return `#${hex.split("").map((char) => char + char).join("")}`.toLowerCase();
-    }
-    return `#${hex}`.toLowerCase();
-}
 
 export function serializeCustomColors(colors: CustomColors): string {
     return [colors.background, colors.card, colors.accent, colors.destructive].join(",");
@@ -268,5 +252,14 @@ export function surpriseMe(mode: PaletteMode): CustomColors {
         card: randomOklchHex(cardLRange, [0, SURPRISE_SURFACE_MAX_CHROMA], Math.random() * FULL_HUE_CIRCLE),
         accent: randomOklchHex(accentLRange, SURPRISE_ACCENT_CHROMA, accentHue),
         destructive: randomOklchHex(accentLRange, SURPRISE_DESTRUCTIVE_CHROMA, randomInRange(SURPRISE_DESTRUCTIVE_HUE)),
+    };
+}
+
+export function normalizeCustomColorsToHex(colors: PaletteCustomColors): CustomColors {
+    return {
+        background: formatHex(colors.background) ?? colors.background,
+        card: formatHex(colors.card) ?? colors.card,
+        accent: formatHex(colors.primary) ?? colors.primary,
+        destructive: formatHex(colors.destructive) ?? colors.destructive,
     };
 }

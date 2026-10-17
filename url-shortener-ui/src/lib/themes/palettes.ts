@@ -1,4 +1,3 @@
-import {formatHex} from "culori";
 import {PaletteMode} from "@/lib/themes/theme-tokens";
 
 export const DEFAULT_PALETTE_ID = "default";
@@ -11,7 +10,7 @@ export interface PaletteSwatch {
     foreground: string;
 }
 
-interface PaletteCustomColors {
+export interface PaletteCustomColors {
     background: string;
     card: string;
     primary: string;
@@ -164,13 +163,4 @@ export function getPresetCustomColors(paletteId: string, mode: PaletteMode): Pal
         return null;
     }
     return palette.customColors[mode];
-}
-
-export function normalizeCustomColorsToHex(colors: PaletteCustomColors): {background: string; card: string; accent: string; destructive: string} {
-    return {
-        background: formatHex(colors.background) ?? colors.background,
-        card: formatHex(colors.card) ?? colors.card,
-        accent: formatHex(colors.primary) ?? colors.primary,
-        destructive: formatHex(colors.destructive) ?? colors.destructive,
-    };
 }

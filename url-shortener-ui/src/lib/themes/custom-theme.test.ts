@@ -4,12 +4,12 @@ import {
     buildCustomTheme,
     CustomColors,
     DEFAULT_CUSTOM_COLORS,
-    isValidHex,
-    normalizeHex,
+    normalizeCustomColorsToHex,
     parseCustomColorsInput,
     serializeCustomColors,
     surpriseMe,
 } from "@/lib/themes/custom-theme";
+import {getPresetCustomColors, PALETTES} from "@/lib/themes/palettes";
 import {TOKEN_CSS_VAR_NAMES} from "@/lib/themes/theme-tokens";
 
 const MIN_TEXT_CONTRAST = 4.5;
@@ -23,31 +23,6 @@ const DARK_COLORS: CustomColors = {background: "#000000", card: "#050505", accen
 function luminanceOf(color: string): number {
     return wcagLuminance(color);
 }
-
-describe("isValidHex", () => {
-    it.each(["#fff", "#FFF", "#a1b2c3", "#A1B2C3", "  #fff  "])("accepts %j", (value) => {
-        expect(isValidHex(value)).toBe(true);
-    });
-
-    it.each(["", "fff", "#ff", "#ffff", "#fffff", "#fffffff", "#ggg", "rgb(0,0,0)", "#12 345"])("rejects %j", (value) => {
-        expect(isValidHex(value)).toBe(false);
-    });
-});
-
-describe("normalizeHex", () => {
-    it.each([
-        ["#FFF", "#ffffff"],
-        ["#a1b", "#aa11bb"],
-        ["#A1B2C3", "#a1b2c3"],
-        ["  #abc  ", "#aabbcc"],
-    ])("normalizes %j to %s", (value, expected) => {
-        expect(normalizeHex(value)).toBe(expected);
-    });
-
-    it.each(["", "abc", "#abcd", "red"])("returns null for %j", (value) => {
-        expect(normalizeHex(value)).toBeNull();
-    });
-});
 
 describe("custom color serialization", () => {
     it("joins the four colors in a fixed order", () => {
@@ -185,5 +160,39 @@ describe("surpriseMe", () => {
         const theme = buildCustomTheme(surpriseMe("dark"), "dark");
 
         expect(theme.light.background).toMatch(HEX_COLOR);
+    });
+});
+
+describe("normalizeCustomColorsToHex", () => {
+    it("converts oklch colors to hex and renames primary to accent", () => {
+        const colors = getPresetCustomColors("mono", "light");
+        if (!colors) throw new Error("mono palette is missing");
+
+        const normalized = normalizeCustomColorsToHex(colors);
+
+        expect(Object.keys(normalized).sort()).toEqual(["accent", "background", "card", "destructive"]);
+        expect(Object.values(normalized).every((value) => HEX_COLOR.test(value))).toBe(true);
+        expect(normalized.accent).toBe("#000000");
+    });
+
+    it("keeps hex colors equivalent while lower-casing them", () => {
+        const normalized = normalizeCustomColorsToHex({background: "#FAFAFA", card: "#FFFFFF", primary: "#FA8D3E", destructive: "#E65050"});
+
+        expect(normalized).toEqual({background: "#fafafa", card: "#ffffff", accent: "#fa8d3e", destructive: "#e65050"});
+    });
+
+    it("keeps a value it cannot parse instead of dropping it", () => {
+        const normalized = normalizeCustomColorsToHex({background: "not-a-color", card: "#fff", primary: "#000", destructive: "#f00"});
+
+        expect(normalized.background).toBe("not-a-color");
+    });
+
+    it.each(PALETTES.map((palette) => palette.id))("converts every color of %s to hex", (id) => {
+        for (const mode of ["light", "dark"] as const) {
+            const colors = getPresetCustomColors(id, mode);
+            if (!colors) throw new Error(`${id} has no ${mode} colors`);
+
+            expect(Object.values(normalizeCustomColorsToHex(colors)).every((value) => HEX_COLOR.test(value))).toBe(true);
+        }
     });
 });

@@ -4,11 +4,8 @@ import {
     DEFAULT_PALETTE_ID,
     getPresetCustomColors,
     isKnownPaletteId,
-    normalizeCustomColorsToHex,
     PALETTES,
 } from "@/lib/themes/palettes";
-
-const HEX_COLOR = /^#[0-9a-f]{6}$/;
 
 describe("PALETTES", () => {
     it("has unique ids", () => {
@@ -55,39 +52,5 @@ describe("getPresetCustomColors", () => {
 
     it("returns null for an unknown palette", () => {
         expect(getPresetCustomColors("missing", "light")).toBeNull();
-    });
-});
-
-describe("normalizeCustomColorsToHex", () => {
-    it("converts oklch colors to hex and renames primary to accent", () => {
-        const colors = getPresetCustomColors("mono", "light");
-        if (!colors) throw new Error("mono palette is missing");
-
-        const normalized = normalizeCustomColorsToHex(colors);
-
-        expect(Object.keys(normalized).sort()).toEqual(["accent", "background", "card", "destructive"]);
-        expect(Object.values(normalized).every((value) => HEX_COLOR.test(value))).toBe(true);
-        expect(normalized.accent).toBe("#000000");
-    });
-
-    it("keeps hex colors equivalent while lower-casing them", () => {
-        const normalized = normalizeCustomColorsToHex({background: "#FAFAFA", card: "#FFFFFF", primary: "#FA8D3E", destructive: "#E65050"});
-
-        expect(normalized).toEqual({background: "#fafafa", card: "#ffffff", accent: "#fa8d3e", destructive: "#e65050"});
-    });
-
-    it("keeps a value it cannot parse instead of dropping it", () => {
-        const normalized = normalizeCustomColorsToHex({background: "not-a-color", card: "#fff", primary: "#000", destructive: "#f00"});
-
-        expect(normalized.background).toBe("not-a-color");
-    });
-
-    it.each(PALETTES.map((palette) => palette.id))("converts every color of %s to hex", (id) => {
-        for (const mode of ["light", "dark"] as const) {
-            const colors = getPresetCustomColors(id, mode);
-            if (!colors) throw new Error(`${id} has no ${mode} colors`);
-
-            expect(Object.values(normalizeCustomColorsToHex(colors)).every((value) => HEX_COLOR.test(value))).toBe(true);
-        }
     });
 });

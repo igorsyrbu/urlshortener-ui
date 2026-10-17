@@ -4,7 +4,7 @@ import {useState} from "react";
 import {HexColorPicker} from "react-colorful";
 import {Input} from "@/components/ui/input";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
-import {isValidHex, normalizeHex} from "@/lib/themes/custom-theme";
+import {isValidHex, normalizeHex} from "@/lib/themes/hex";
 
 interface CustomColorRowProps {
     label: string;

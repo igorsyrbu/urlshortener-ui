@@ -22,7 +22,7 @@ function PaletteConsumer(): React.ReactElement {
         <div>
             <output>{activePaletteId}</output>
             <button onClick={() => selectPreset(PRESET_ID)}>select preset</button>
-            <button onClick={() => applyCustomColors(DEFAULT_CUSTOM_COLORS.light, "light")}>apply custom</button>
+            <button onClick={() => applyCustomColors(DEFAULT_CUSTOM_COLORS.light, "light", buildCustomTheme(DEFAULT_CUSTOM_COLORS.light, "light"))}>apply custom</button>
             <button onClick={resetToDefault}>reset</button>
         </div>
     );

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {useTheme} from "next-themes";
-import {buildCustomTheme, CustomColors} from "@/lib/themes/custom-theme";
+import type {CustomColors, CustomThemeDerived} from "@/lib/themes/custom-theme";
 import {CUSTOM_PALETTE_ID, DEFAULT_PALETTE_ID} from "@/lib/themes/palettes";
 import {
     clearThemeSelection,
@@ -18,7 +18,8 @@ interface PaletteContextValue {
     selection: ThemeSelection;
     activePaletteId: string;
     selectPreset: (paletteId: string) => void;
-    applyCustomColors: (colors: CustomColors, authoredMode: PaletteMode) => void;
+    /** `derived` comes from `buildCustomTheme`; the caller builds it so the colour library stays out of the root layout. */
+    applyCustomColors: (colors: CustomColors, authoredMode: PaletteMode, derived: CustomThemeDerived) => void;
     resetToDefault: () => void;
 }
 
@@ -87,14 +88,8 @@ export function PaletteProvider({children}: { children: React.ReactNode }) {
         setSelection(next);
     }, []);
 
-    const applyCustomColors = React.useCallback((colors: CustomColors, authoredMode: PaletteMode) => {
-        const next: ThemeSelection = {
-            v: DEFAULT_THEME_SELECTION.v,
-            kind: "custom",
-            colors,
-            authoredMode,
-            derived: buildCustomTheme(colors, authoredMode),
-        };
+    const applyCustomColors = React.useCallback((colors: CustomColors, authoredMode: PaletteMode, derived: CustomThemeDerived) => {
+        const next: ThemeSelection = {v: DEFAULT_THEME_SELECTION.v, kind: "custom", colors, authoredMode, derived};
         setThemeSelection(next);
         setSelection(next);
     }, []);
