@@ -836,45 +836,21 @@
     color: var(--foreground);
 }
 
-.ios-wheel-picker__mask {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: calc(50% - 36px / 2);
-    z-index: 1;
-    pointer-events: none;
-}
-
-.ios-wheel-picker__mask--top {
-    top: 0;
-    background: linear-gradient(
-            to top,
-            rgba(255, 255, 255, 0.65) 0%,
-            rgba(255, 255, 255, 1) 100%
-    );
-}
-
-.dark .ios-wheel-picker__mask--top {
-    background: linear-gradient(
-            to top,
-            rgba(30, 30, 30, 0.65) 0%,
-            rgba(30, 30, 30, 1) 100%
-    );
-}
-
-.ios-wheel-picker__mask--bottom {
-    bottom: 0;
-    background: linear-gradient(
+/*
+ * Fades the rows above and below the selection band by masking the wheel itself rather than painting overlays: it
+ * shows whatever surface is behind it (every palette, light and dark) and has no overlay edges to show as lines.
+ * The step sits on the edges of the h-10 selection band; rows next to it stay 35% visible, as on iOS.
+ */
+.ios-wheel-picker__fade {
+    --wheel-band-half-height: 1.25rem;
+    --wheel-dimmed-row: rgb(0 0 0 / 0.35);
+    mask-image: linear-gradient(
             to bottom,
-            rgba(255, 255, 255, 0.65) 0%,
-            rgba(255, 255, 255, 1) 100%
-    );
-}
-
-.dark .ios-wheel-picker__mask--bottom {
-    background: linear-gradient(
-            to bottom,
-            rgba(30, 30, 30, 0.65) 0%,
-            rgba(30, 30, 30, 1) 100%
+            transparent 0%,
+            var(--wheel-dimmed-row) calc(50% - var(--wheel-band-half-height)),
+            black calc(50% - var(--wheel-band-half-height)),
+            black calc(50% + var(--wheel-band-half-height)),
+            var(--wheel-dimmed-row) calc(50% + var(--wheel-band-half-height)),
+            transparent 100%
     );
 }

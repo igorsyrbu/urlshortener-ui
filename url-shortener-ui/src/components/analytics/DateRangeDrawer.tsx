@@ -295,9 +295,7 @@ export function DateRangeDrawer({
                         </div>
                         <div
                             className={cn("absolute inset-0 flex flex-col", !showWheelPicker && "invisible pointer-events-none")}>
-                            <div className="relative px-4 flex-1 flex items-center justify-center" data-vaul-no-drag>
-                                <div className="ios-wheel-picker__mask ios-wheel-picker__mask--top"/>
-                                <div className="ios-wheel-picker__mask ios-wheel-picker__mask--bottom"/>
+                            <div className="ios-wheel-picker__fade relative px-4 flex-1 flex items-center justify-center" data-vaul-no-drag>
                                 <div
                                     className="absolute inset-x-4 top-1/2 -translate-y-1/2 h-10 rounded-xl bg-muted/50 pointer-events-none"/>
                                 <div className="flex items-center justify-center gap-2">

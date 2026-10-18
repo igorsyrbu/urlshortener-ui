@@ -25,7 +25,7 @@ The visual specification (default palette values, typography, spacing shells, ra
 - `@theme inline` maps every semantic token to a Tailwind colour (`--color-primary: var(--primary)`), defines `--font-sans`, `--font-mono`, the radius scale and `--shadow-soft`. Because it is `inline`, utilities read the live CSS variable, which is what lets palettes and custom themes swap values at runtime.
 - `@layer base` applies `border-border outline-ring/50` to everything and `bg-background text-foreground font-sans antialiased` to `body`.
 - `@layer utilities` adds two project utilities: `animate-vertical-scroll` (32 s linear loop over `EMPTY_STATE_SCROLL_ROW_COUNT` = 8 rows, the duration proportional to that count; used by the decorative lists in `EmptyLinksState`, `EmptyTagsState` and `NoResultsState`, each `aria-hidden` and stopped with `motion-reduce:animate-none`) and `hairline-divider` (0.5px bottom border in `--border`, used by `ActionDrawer`). `shadow-soft` comes from `@theme`.
-- Non-Tailwind CSS blocks in the same file: react-colorful styling (`.react-colorful*`), the vaul overlay blur override (`[data-slot="drawer-overlay"]`, uses `!important` to beat vaul's inline opacity), Recharts outline reset, and the `ios-wheel-picker*` classes for `IosWheelPicker`.
+- Non-Tailwind CSS blocks in the same file: react-colorful styling (`.react-colorful*`), the vaul overlay blur override (`[data-slot="drawer-overlay"]`, uses `!important` to beat vaul's inline opacity), Recharts outline reset, and the `ios-wheel-picker*` classes for `IosWheelPicker`. Its fade is `.ios-wheel-picker__fade`, a `mask-image` on the wheel area (rows beside the `h-10` selection band at 35%, fading to none), so it shows the surface behind it in every palette and mode; do not fade with coloured overlays, which only match one palette and leave visible edges.
 - Scale notes: Tailwind v4 numeric utilities accept any number (`max-w-106.25`, `size-4.5`); the `border-[0.5px]` hairline is the standard border width of cards, popovers and most bespoke panels (inputs and dialogs use the default 1px).
 
 ## Token layers
@@ -126,7 +126,7 @@ Hardcoded values (outside the documented exceptions):
 
 - Observation: arbitrary pixel text sizes `text-[10px]`, `text-[11px]`, `text-[12px]`, `text-[13px]` (about 17 uses, e.g. `LinkCard`, `DeviceTab`, `Kbd`) and about 40 other bracketed pixel/rem sizes exist.
 - Observation: `CHART_COLORS` in `lib/constants.ts` duplicates the categorical hex values from `globals.css` (comment says they "mirror" the CSS variables); the two must be changed together.
-- Observation: `ios-wheel-picker` mask gradients in `globals.css` hardcode white and `rgba(30, 30, 30, ...)`, so they match only the default palette's card colour; `react-colorful` styles hardcode `#fff`/`#000`.
+- Observation: `react-colorful` styles hardcode `#fff`/`#000`.
 - Observation: `viewport.themeColor` in `layout.tsx` and `theme_color` / `background_color` in `app/manifest.ts` are hex literals (the former is rewritten at runtime by `PaletteProvider`).
 - Observation: `PresetPaletteGrid` and `CustomColorRow` apply user/palette data colours through inline `style={{backgroundColor}}`; `GoogleIcon` has brand fills; `QrCodeModal` uses `bg-white`; `TagColorPicker` and `TagSelect` use `zinc` palette classes. Data-driven or brand colours, kept as is.
 - Observation: repeated class strings that are not extracted: the three identical action buttons in `CustomThemeBuilder`, the theme option buttons in `AppearanceCard`, and the repeated dialog width `sm:max-w-106.25` across modals.
