@@ -63,3 +63,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Lighthouse CI results
+.lighthouseci/

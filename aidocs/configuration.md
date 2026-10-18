@@ -114,6 +114,7 @@ Root ([`package.json`](../package.json)), run from the repository root:
 | `pnpm clean` | Removes the UI `.next`. |
 | `pnpm check` | `lint`, `type-check`, `test` (UI + mock), UI `test:perf`, UI `check:compiler-bailouts`; about 40 s. Run before every commit. |
 | `pnpm check:full` | `check`, UI `test:compiled`, `check:bundle-budgets`; about 75 s. Run when a change touches imports, layouts, pages or lazy boundaries. There is no CI workflow, so these are the gate. Not included yet: `pnpm audit` (fails until Next.js is upgraded past the open advisories) and git hooks. |
+| `pnpm perf:lighthouse` | Builds the UI against a mock on :8095 (`BACKEND_API_BASE_URL`, Turnstile off), then `npx @lhci/cli@0.15.1 collect` and `assert` with [`lighthouserc.json`](../url-shortener-ui/lighthouserc.json): starts its own mock (:8095) and `next start` (:3095), signs in before each dashboard page through [`lhci-login.mjs`](../url-shortener-ui/lhci-login.mjs) (`/auth/exchange?code=mock-auth-code-…`), runs Lighthouse 3 times on 8 pages (mobile, simulated throttling, third-party image hosts blocked). About 4 minutes; results in `.lighthouseci/` (git-ignored). It overwrites `.next`, so run `pnpm build` before a normal `next start`. See below for what fails. |
 | `pnpm type-check` | UI `type-check` (app and tests) then mock-server `typecheck`. |
 | `pnpm lint` | UI `eslint` only. Pre-existing errors are recorded in [`eslint-suppressions.json`](../url-shortener-ui/eslint-suppressions.json) (ESLint bulk suppressions), so `lint` is green and any new error fails. The file only shrinks: after fixing a suppressed error run `pnpm --filter=url-shortener-ui exec eslint --prune-suppressions` (ESLint fails on suppressions that no longer match). Warnings do not fail. |
 | `pnpm check:bundle-budgets` | UI production build with `NEXT_PUBLIC_ENABLE_TURNSTILE=false`, then [`scripts/check-bundle-budgets.mjs`](../url-shortener-ui/scripts/check-bundle-budgets.mjs). |
@@ -121,6 +122,10 @@ Root ([`package.json`](../package.json)), run from the repository root:
 | `pnpm typecheck` | Mock server `tsc --noEmit` only. |
 
 `url-shortener-ui` scripts: `dev`, `dev:clean`, `clean`, `build`, `start`, `lint`, `test` (watch), `test:run`, `test:ui`, `test:coverage`, `type-check` (app and tests), `check:bundle-budgets`, `check:compiler-bailouts` ([`scripts/check-compiler-bailouts.mjs`](../url-shortener-ui/scripts/check-compiler-bailouts.mjs): runs the React Compiler over every source file and fails, listing file, line and reason, when any function is skipped; the build fails on the same condition, this finds it in about 2 s). Test scripts set `NODE_OPTIONS=--no-deprecation`. Test details: [testing](testing.md).
+
+### Lighthouse budgets
+
+Errors (fail the run): cumulative layout shift above 0.02 in any run, page weight above the per-page `total-byte-weight` limit, and any third-party request on `/login` and `/report-abuse`. Warnings only (printed, never fail): LCP, total blocking time and the performance score, because simulated LCP moved by up to 800 ms between identical builds (Analytics 4.5–5.3 s); size regressions are caught exactly by the bundle budgets. Measured 2026-10-17: CLS 0 on all 8 pages; median LCP 2.8 s (`/login`) to 5.3 s (`/analytics`). Use `@lhci/cli` 0.15.1 or later: 0.14 (Lighthouse 12.1) reported CLS 0 for a page that shifted by 0.055 with Chrome 155, while 0.15.1 (Lighthouse 12.6.1) caught it. `autorun` is not used because its health check does not find Chrome on macOS; `collect` launches it.
 
 ### Bundle budgets
 

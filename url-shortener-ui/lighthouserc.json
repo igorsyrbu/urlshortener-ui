@@ -1,0 +1,290 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "startServerCommand": "sh -c '(pnpm --dir url-shortener-mock-server exec tsx src/index.ts &) && exec pnpm --dir url-shortener-ui exec next start -p 3095'",
+      "startServerReadyPattern": "Ready in",
+      "startServerReadyTimeout": 60000,
+      "puppeteerScript": "url-shortener-ui/lhci-login.mjs",
+      "puppeteerLaunchOptions": {
+        "args": [
+          "--no-sandbox"
+        ]
+      },
+      "url": [
+        "http://localhost:3095/login",
+        "http://localhost:3095/report-abuse",
+        "http://localhost:3095/inspect/springboot",
+        "http://localhost:3095/links",
+        "http://localhost:3095/tags",
+        "http://localhost:3095/analytics",
+        "http://localhost:3095/settings/general",
+        "http://localhost:3095/settings/billing"
+      ],
+      "settings": {
+        "onlyCategories": [
+          "performance"
+        ],
+        "chromeFlags": "--no-sandbox",
+        "blockedUrlPatterns": [
+          "*wsrv.nl*",
+          "*gstatic.com*",
+          "*google.com/s2*",
+          "*hatscripts.github.io*",
+          "*dicebear.com*",
+          "*challenges.cloudflare.com*"
+        ]
+      }
+    },
+    "assert": {
+      "assertMatrix": [
+        {
+          "matchingUrlPattern": "^http://localhost:3095/(login|report-abuse)$",
+          "assertions": {
+            "cumulative-layout-shift": [
+              "error",
+              {
+                "maxNumericValue": 0.02,
+                "aggregationMethod": "pessimistic"
+              }
+            ],
+            "categories:performance": [
+              "warn",
+              {
+                "minScore": 0.9,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "largest-contentful-paint": [
+              "warn",
+              {
+                "maxNumericValue": 3300,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-blocking-time": [
+              "warn",
+              {
+                "maxNumericValue": 150,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-byte-weight": [
+              "error",
+              {
+                "maxNumericValue": 358400,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "resource-summary:third-party:count": [
+              "error",
+              {
+                "maxNumericValue": 0
+              }
+            ]
+          }
+        },
+        {
+          "matchingUrlPattern": "^http://localhost:3095/inspect/",
+          "assertions": {
+            "cumulative-layout-shift": [
+              "error",
+              {
+                "maxNumericValue": 0.02,
+                "aggregationMethod": "pessimistic"
+              }
+            ],
+            "categories:performance": [
+              "warn",
+              {
+                "minScore": 0.8,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "largest-contentful-paint": [
+              "warn",
+              {
+                "maxNumericValue": 4600,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-blocking-time": [
+              "warn",
+              {
+                "maxNumericValue": 150,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-byte-weight": [
+              "error",
+              {
+                "maxNumericValue": 348160,
+                "aggregationMethod": "median-run"
+              }
+            ]
+          }
+        },
+        {
+          "matchingUrlPattern": "^http://localhost:3095/links$",
+          "assertions": {
+            "cumulative-layout-shift": [
+              "error",
+              {
+                "maxNumericValue": 0.02,
+                "aggregationMethod": "pessimistic"
+              }
+            ],
+            "categories:performance": [
+              "warn",
+              {
+                "minScore": 0.8,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "largest-contentful-paint": [
+              "warn",
+              {
+                "maxNumericValue": 4800,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-blocking-time": [
+              "warn",
+              {
+                "maxNumericValue": 150,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-byte-weight": [
+              "error",
+              {
+                "maxNumericValue": 624640,
+                "aggregationMethod": "median-run"
+              }
+            ]
+          }
+        },
+        {
+          "matchingUrlPattern": "^http://localhost:3095/tags$",
+          "assertions": {
+            "cumulative-layout-shift": [
+              "error",
+              {
+                "maxNumericValue": 0.02,
+                "aggregationMethod": "pessimistic"
+              }
+            ],
+            "categories:performance": [
+              "warn",
+              {
+                "minScore": 0.8,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "largest-contentful-paint": [
+              "warn",
+              {
+                "maxNumericValue": 4500,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-blocking-time": [
+              "warn",
+              {
+                "maxNumericValue": 150,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-byte-weight": [
+              "error",
+              {
+                "maxNumericValue": 593920,
+                "aggregationMethod": "median-run"
+              }
+            ]
+          }
+        },
+        {
+          "matchingUrlPattern": "^http://localhost:3095/analytics$",
+          "assertions": {
+            "cumulative-layout-shift": [
+              "error",
+              {
+                "maxNumericValue": 0.02,
+                "aggregationMethod": "pessimistic"
+              }
+            ],
+            "categories:performance": [
+              "warn",
+              {
+                "minScore": 0.7,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "largest-contentful-paint": [
+              "warn",
+              {
+                "maxNumericValue": 5200,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-blocking-time": [
+              "warn",
+              {
+                "maxNumericValue": 400,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-byte-weight": [
+              "error",
+              {
+                "maxNumericValue": 716800,
+                "aggregationMethod": "median-run"
+              }
+            ]
+          }
+        },
+        {
+          "matchingUrlPattern": "^http://localhost:3095/settings/(general|billing)$",
+          "assertions": {
+            "cumulative-layout-shift": [
+              "error",
+              {
+                "maxNumericValue": 0.02,
+                "aggregationMethod": "pessimistic"
+              }
+            ],
+            "categories:performance": [
+              "warn",
+              {
+                "minScore": 0.8,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "largest-contentful-paint": [
+              "warn",
+              {
+                "maxNumericValue": 4600,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-blocking-time": [
+              "warn",
+              {
+                "maxNumericValue": 150,
+                "aggregationMethod": "median-run"
+              }
+            ],
+            "total-byte-weight": [
+              "error",
+              {
+                "maxNumericValue": 537600,
+                "aggregationMethod": "median-run"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
