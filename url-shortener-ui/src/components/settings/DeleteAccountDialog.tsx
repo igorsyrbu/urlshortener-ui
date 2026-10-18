@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {useAuthStore} from "@/lib/store/auth";
@@ -21,6 +21,7 @@ import {
     DrawerTitle,
 } from "@/components/ui/drawer";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
+import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 
 interface DeleteAccountDialogProps {
     open: boolean;
@@ -35,11 +36,9 @@ export function DeleteAccountDialog({open, onClose, onConfirm}: DeleteAccountDia
 
     const [confirmEmail, setConfirmEmail] = useState("");
 
-    useEffect(() => {
-        if (!open) {
-            setConfirmEmail("");
-        }
-    }, [open]);
+    useOnValueChange(open, (isOpen) => {
+        if (!isOpen) setConfirmEmail("");
+    });
 
     // The profile can still be loading while this dialog renders; an unknown email must never match an empty field.
     const isEmailConfirmed = userEmail !== "" && confirmEmail.trim().toLowerCase() === userEmail.trim().toLowerCase();

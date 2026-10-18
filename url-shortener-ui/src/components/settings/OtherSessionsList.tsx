@@ -2,7 +2,8 @@
 
 import {Card, CardContent} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
-import {formatDeviceText, formatLocation, getIconForDevice, UserSession} from "@/lib/session-utils";
+import {formatDeviceText, formatLocation, UserSession} from "@/lib/session-utils";
+import {DeviceIcon} from "@/components/settings/DeviceIcon";
 
 interface OtherSessionsListProps {
     sessions: UserSession[];
@@ -24,7 +25,6 @@ export function OtherSessionsList({sessions, isLoading, sessionActionLoading, on
             <Card className="overflow-hidden border-border">
                 <CardContent className="p-0 -mt-6 -mb-6 divide-y-[0.5px] divide-border max-h-[385px] overflow-y-auto">
                     {sessions.map((session) => {
-                        const Icon = getIconForDevice(session.device, session.os);
                         const isActionLoading = sessionActionLoading === session.id;
 
                         return (
@@ -35,7 +35,7 @@ export function OtherSessionsList({sessions, isLoading, sessionActionLoading, on
                                 <div className="flex items-center gap-4">
                                     <div
                                         className="h-10 w-10 flex items-center justify-center rounded-lg bg-muted text-foreground shrink-0 transition-colors">
-                                        <Icon className="h-5 w-5"/>
+                                        <DeviceIcon session={session} className="h-5 w-5"/>
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">

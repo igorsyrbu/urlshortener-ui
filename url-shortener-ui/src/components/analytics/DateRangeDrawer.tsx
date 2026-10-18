@@ -16,6 +16,7 @@ import {cn} from "@/lib/utils";
 import {ChevronDown, ChevronLeft, ChevronRight} from "lucide-react";
 import {FIRST_ANALYTICS_YEAR, ICON_BUTTON_LABELS} from "@/lib/constants";
 import {getSelectableAnalyticsYears, getTodayAtMidnight} from "@/lib/date-utils";
+import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 
 const MONTHS = [
     "January",
@@ -56,6 +57,19 @@ function getDefaultRange(period: string): DateRange {
     return {from, to: today};
 }
 
+interface OpeningView {
+    range: DateRange;
+    month: number;
+    year: number;
+}
+
+/** What the drawer shows when it opens: the current custom range (or the period's range) and its end month. */
+function getOpeningView(initialRange: DateRange | undefined, period: DateRangeDrawerProps["period"]): OpeningView {
+    const range = initialRange ?? getDefaultRange(period);
+    const reference = range.to ?? new Date();
+    return {range, month: reference.getMonth(), year: reference.getFullYear()};
+}
+
 export function DateRangeDrawer({
                                     open,
                                     onOpenChange,
@@ -63,9 +77,9 @@ export function DateRangeDrawer({
                                     initialRange,
                                     period,
                                 }: DateRangeDrawerProps) {
-    const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(initialRange);
-    const [displayMonth, setDisplayMonth] = useState(() => new Date().getMonth());
-    const [displayYear, setDisplayYear] = useState<number>(() => new Date().getFullYear());
+    const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(() => getOpeningView(initialRange, period).range);
+    const [displayMonth, setDisplayMonth] = useState(() => getOpeningView(initialRange, period).month);
+    const [displayYear, setDisplayYear] = useState<number>(() => getOpeningView(initialRange, period).year);
     const [showWheelPicker, setShowWheelPicker] = useState(false);
     const bounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const today = getTodayAtMidnight();
@@ -78,15 +92,14 @@ export function DateRangeDrawer({
         };
     }, []);
 
-    useEffect(() => {
-        if (!open) return;
+    useOnValueChange(open, (isOpen) => {
+        if (!isOpen) return;
+        const view = getOpeningView(initialRange, period);
         setShowWheelPicker(false);
-        const range = initialRange ?? getDefaultRange(period);
-        setSelectedRange(range);
-        const ref = range.to ?? new Date();
-        setDisplayMonth(ref.getMonth());
-        setDisplayYear(ref.getFullYear());
-    }, [open, initialRange, period]);
+        setSelectedRange(view.range);
+        setDisplayMonth(view.month);
+        setDisplayYear(view.year);
+    });
 
     const handleOpenChange = useCallback(
         (nextOpen: boolean) => {

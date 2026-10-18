@@ -2,6 +2,7 @@
 
 import {useEffect, useRef, useState} from "react";
 import {ImageIcon} from "lucide-react";
+import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 
 interface OgImageProps {
     src?: string | null;
@@ -20,10 +21,10 @@ export function OgImage({src, alt}: OgImageProps) {
     const [status, setStatus] = useState<"loading" | "success" | "error">(() => (src ? "loading" : "error"));
     const imgRef = useRef<HTMLImageElement>(null);
 
-    useEffect(() => {
-        setImageSrc(src ? getProxyUrl(src) : null);
-        setStatus(src ? "loading" : "error");
-    }, [src]);
+    useOnValueChange(src, (nextSrc) => {
+        setImageSrc(nextSrc ? getProxyUrl(nextSrc) : null);
+        setStatus(nextSrc ? "loading" : "error");
+    });
 
     useEffect(() => {
         const img = imgRef.current;

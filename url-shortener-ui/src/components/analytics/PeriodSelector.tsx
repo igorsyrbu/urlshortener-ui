@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {Calendar as CalendarIcon} from "lucide-react";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {DateRange} from "react-day-picker";
@@ -9,6 +9,7 @@ import {FIRST_ANALYTICS_YEAR, FOCUS_RING_CLASS} from "@/lib/constants";
 import {getTodayAtMidnight} from "@/lib/date-utils";
 import {LazyCalendar, preloadCalendar} from "@/components/analytics/LazyCalendar";
 import {LazyDateRangeDrawer, preloadDateRangeDrawer} from "@/components/analytics/LazyDateRangeDrawer";
+import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 
 interface PeriodSelectorProps {
     period: string;
@@ -51,9 +52,7 @@ export function PeriodSelector({
     const today = getTodayAtMidnight();
     const disabledDays = [{before: MIN_DATE}, {after: today}];
 
-    useEffect(() => {
-        setDate(customDateRange);
-    }, [customDateRange]);
+    useOnValueChange(customDateRange, setDate);
 
     const handleCalendarSelect = (_range: DateRange | undefined, selectedDay: Date) => {
         if (isDateDisabled(selectedDay, today)) {

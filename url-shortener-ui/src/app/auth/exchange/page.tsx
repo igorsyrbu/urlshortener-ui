@@ -39,10 +39,7 @@ function ExchangeProcessor() {
     const exchangedCodeRef = useRef<string | null>(null)
 
     useEffect(() => {
-        if (!code) {
-            setError("No authorization code provided")
-            return
-        }
+        if (!code) return
         // The code is single-use: a re-run of this effect (StrictMode, new router identity) must not send it again.
         if (exchangedCodeRef.current === code) {
             return

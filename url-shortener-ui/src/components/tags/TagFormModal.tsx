@@ -25,6 +25,7 @@ import {TagColorPicker} from "@/components/tags/TagColorPicker";
 import {BadgeVariant} from "@/components/ui/badge";
 import {ALLOWED_TAG_COLORS, TAG_SAVE_FAILED_MESSAGE} from "@/lib/tag-constants";
 import {FieldError} from "@/components/ui/field-error";
+import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 
 interface TagFormModalProps {
     open: boolean;
@@ -56,14 +57,13 @@ export function TagFormModal({
     const inputRef = useRef<HTMLInputElement>(null);
     const isDesktop = useIsDesktop();
 
-    useEffect(() => {
-        if (open) {
-            setName(initialName);
-            setSelectedColor(initialColor);
-            setIsSubmitting(false);
-            setSubmitError(null);
-        }
-    }, [open, initialName, initialColor]);
+    useOnValueChange(open, (isOpen) => {
+        if (!isOpen) return;
+        setName(initialName);
+        setSelectedColor(initialColor);
+        setIsSubmitting(false);
+        setSubmitError(null);
+    });
 
     useEffect(() => {
         if (!open || !isDesktop) return;

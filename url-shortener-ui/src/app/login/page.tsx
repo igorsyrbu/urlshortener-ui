@@ -163,6 +163,8 @@ export default function LoginPage() {
     };
 
     const handleGoogleSignIn = () => {
+        // A full page load on purpose: /api is proxied to the backend, which starts the OAuth redirect chain.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
     };
 

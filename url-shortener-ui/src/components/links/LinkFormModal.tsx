@@ -35,6 +35,8 @@ export function LinkFormModal({
                                   enableTitleSuggestion = false,
                               }: LinkFormModalProps) {
     const isDesktop = useIsDesktop();
+    // New initial values remount the form, which resets every field, error and screen at once.
+    const formKey = JSON.stringify([initialLongUrl, initialTitle, initialKey, initialTagIds]);
     const handleSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {
         await onSubmit(longUrl, title, key, tagIds);
         onOpenChange(false);
@@ -54,6 +56,7 @@ export function LinkFormModal({
                     </DialogHeader>
                     <div className="px-6 pb-6">
                         <LinkFormFields
+                            key={formKey}
                             title={title}
                             initialLongUrl={initialLongUrl}
                             initialTitle={initialTitle}
@@ -79,6 +82,7 @@ export function LinkFormModal({
                 <DrawerDescription className="sr-only">Form to edit or create short link</DrawerDescription>
                 <div className="px-6 pt-6">
                     <LinkFormFields
+                        key={formKey}
                         title={title}
                         initialLongUrl={initialLongUrl}
                         initialTitle={initialTitle}

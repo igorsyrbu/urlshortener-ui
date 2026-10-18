@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {Check, Copy} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {
@@ -22,6 +22,7 @@ import {
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
 import {Button} from "@/components/ui/button";
+import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 
 interface DeleteConfirmationModalProps {
     open: boolean;
@@ -104,11 +105,9 @@ export function DeleteConfirmationModal({
     const isDesktop = useIsDesktop();
     const [inputValue, setInputValue] = useState("");
 
-    useEffect(() => {
-        if (!open) {
-            setInputValue("");
-        }
-    }, [open]);
+    useOnValueChange(open, (isOpen) => {
+        if (!isOpen) setInputValue("");
+    });
 
     const isConfirmed = !confirmationValue || inputValue === confirmationValue;
 

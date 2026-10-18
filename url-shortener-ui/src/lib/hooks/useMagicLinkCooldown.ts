@@ -2,6 +2,7 @@
 
 import {useCallback, useEffect, useState} from "react";
 import {MAGIC_LINK_COOLDOWN_INTERVAL_MS, MAGIC_LINK_COOLDOWN_STORAGE_KEY} from "@/lib/constants";
+import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 
 interface UseMagicLinkCooldownResult {
     remainingSeconds: number;
@@ -60,7 +61,7 @@ function getRemainingSecondsForEmail(email: string): number {
 export function useMagicLinkCooldown(email: string): UseMagicLinkCooldownResult {
     const trimmedEmail = email.trim();
 
-    const [remainingSeconds, setRemainingSeconds] = useState(0);
+    const [remainingSeconds, setRemainingSeconds] = useState(() => getRemainingSecondsForEmail(trimmedEmail));
 
     const clearCooldown = useCallback(() => {
         if (!trimmedEmail) return;
@@ -82,9 +83,7 @@ export function useMagicLinkCooldown(email: string): UseMagicLinkCooldownResult 
         setRemainingSeconds(retryAfterSeconds);
     }, [trimmedEmail]);
 
-    useEffect(() => {
-        setRemainingSeconds(getRemainingSecondsForEmail(trimmedEmail));
-    }, [trimmedEmail]);
+    useOnValueChange(trimmedEmail, (nextEmail) => setRemainingSeconds(getRemainingSecondsForEmail(nextEmail)));
 
     useEffect(() => {
         if (remainingSeconds <= 0) return;

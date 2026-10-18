@@ -2,7 +2,8 @@
 
 import {Card, CardContent} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
-import {formatDeviceText, formatLocation, getIconForDevice, UserSession} from "@/lib/session-utils";
+import {formatDeviceText, formatLocation, UserSession} from "@/lib/session-utils";
+import {DeviceIcon} from "@/components/settings/DeviceIcon";
 import {SessionCardSkeleton} from "@/components/settings/SessionCardSkeleton";
 
 interface CurrentSessionCardProps {
@@ -73,7 +74,6 @@ interface SessionRowProps {
 }
 
 function SessionRow({session, isCurrent, isActionDisabled, isLoggingOut, onLogout}: SessionRowProps) {
-    const Icon = getIconForDevice(session.device, session.os);
     const deviceText = formatDeviceText(session);
 
     return (
@@ -81,7 +81,7 @@ function SessionRow({session, isCurrent, isActionDisabled, isLoggingOut, onLogou
             <div className="flex items-center gap-4">
                 <div
                     className="h-10 w-10 flex items-center justify-center rounded-lg bg-muted text-foreground shrink-0 transition-colors">
-                    <Icon className="h-5 w-5"/>
+                    <DeviceIcon session={session} className="h-5 w-5"/>
                 </div>
                 <div>
                     <div className="flex items-center gap-2">

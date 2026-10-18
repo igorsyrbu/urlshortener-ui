@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -12,6 +12,7 @@ import {logger} from "@/lib/logger";
 import {PROFILE_LABEL_CLASS, ProfileCardSkeleton} from "@/components/settings/ProfileCardSkeleton";
 import {PROFILE_FIELD_LABELS} from "@/lib/settings-constants";
 import {withPending} from "@/lib/async-utils";
+import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 
 type NameSaveOutcome = "saved" | "rejected" | "failed";
 
@@ -39,16 +40,15 @@ export function ProfileCard() {
     const user = useAuthStore((state) => state.user);
     const setUser = useAuthStore((state) => state.setUser);
 
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
+    const [name, setName] = useState(user?.name ?? "");
+    const [email, setEmail] = useState(user?.email ?? "");
     const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        if (user) {
-            setName(user.name || "");
-            setEmail(user.email || "");
-        }
-    }, [user]);
+    useOnValueChange(user, (nextUser) => {
+        if (!nextUser) return;
+        setName(nextUser.name || "");
+        setEmail(nextUser.email || "");
+    });
 
     const handleSaveName = async () => {
         await withPending(setIsSaving, async () => {

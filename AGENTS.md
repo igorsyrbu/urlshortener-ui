@@ -23,7 +23,7 @@ Rules for AI agents and contributors. Details, explanations and examples live in
 | Compiled tests, render budgets | `pnpm --filter=url-shortener-ui test:compiled && pnpm --filter=url-shortener-ui test:perf` |
 | Type-check (UI app and tests, mock server) | `pnpm type-check` |
 | Bundle budgets (after touching imports, layouts, pages or lazy boundaries) | `pnpm check:bundle-budgets` |
-| Lint | `pnpm lint` (green; 14 pre-existing `react-hooks` errors are recorded in `url-shortener-ui/eslint-suppressions.json`. Never add to that file; after fixing one, run `pnpm --filter=url-shortener-ui exec eslint --prune-suppressions`) |
+| Lint | `pnpm lint` (green, no suppressions; any error fails) |
 | React Compiler check (no component or hook skipped) | `pnpm --filter=url-shortener-ui check:compiler-bailouts` |
 
 ## Required reading

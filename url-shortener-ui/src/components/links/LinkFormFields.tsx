@@ -19,6 +19,7 @@ import {consumePrefetchedRandomKey, peekPrefetchedRandomKey, takeRandomKey} from
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useDebounce} from "@/lib/hooks/useDebounce";
 import {useUrlCleaner} from "@/lib/hooks/useUrlCleaner";
+import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {usePreferencesStore} from "@/lib/store/preferences";
 import {useTagMutations} from "@/lib/hooks/useTagMutations";
@@ -97,7 +98,7 @@ export function LinkFormFields({
                                }: LinkFormFieldsProps) {
     const isDesktop = useIsDesktop();
     const [activeScreen, setActiveScreen] = useState<"form" | "tags" | "review">("form");
-    const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
+    const [slideDirection, setSlideDirection] = useState<1 | -1>(-1);
 
     const [longUrl, setLongUrl] = useState(initialLongUrl);
     const [urlError, setUrlError] = useState<string | null>(null);
@@ -148,20 +149,6 @@ export function LinkFormFields({
     );
 
     const showCreateOption = tagSearch.trim() !== "" && !hasExactMatch;
-
-    useEffect(() => {
-        setLongUrl(initialLongUrl);
-        setTitleText(initialTitle);
-        setSelectedTagIds(initialTagIds);
-        setUrlError(null);
-        setKeyError(null);
-        setCleanedTrackerCount(null);
-        setKeptTrackers(new Set());
-        setAppliedUrl(null);
-        setActiveScreen("form");
-        setSlideDirection(-1);
-        hasUserEditedKeyRef.current = false;
-    }, [initialLongUrl, initialTitle, initialTagIds]);
 
     useEffect(() => {
         if (!hasUserEditedKeyRef.current) {
@@ -270,23 +257,23 @@ export function LinkFormFields({
     const displayCleanerResult =
         trackerMode !== TRACKER_MODE.SUGGEST || (appliedUrl !== null && longUrl === appliedUrl) ? null : cleanerResult;
 
-    useEffect(() => {
+    useOnValueChange(cleanerResult, (result) => {
         if (trackerMode !== TRACKER_MODE.AUTO_CLEAN) return;
-        if (!cleanerResult) return;
+        if (!result) return;
         if (appliedUrl !== null && longUrl === appliedUrl) return;
-        if (cleanerResult.url === longUrl) return;
-        const removedCount = cleanerResult.removedParams.length;
+        if (result.url === longUrl) return;
+        const removedCount = result.removedParams.length;
         if (removedCount === 0) return;
 
-        setLongUrl(cleanerResult.url);
-        setAppliedUrl(cleanerResult.url);
+        setLongUrl(result.url);
+        setAppliedUrl(result.url);
         setCleanedTrackerCount(removedCount);
         setUrlError(null);
         if (activeScreen === "review") {
             setSlideDirection(-1);
             setActiveScreen("form");
         }
-    }, [cleanerResult, trackerMode, longUrl, appliedUrl, activeScreen]);
+    });
 
     const handleUrlChange = (value: string) => {
         setLongUrl(value);

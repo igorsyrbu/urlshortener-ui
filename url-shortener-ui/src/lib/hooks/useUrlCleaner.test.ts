@@ -134,6 +134,32 @@ describe("useUrlCleaner", () => {
         expect(fetchWithAuth).toHaveBeenCalledOnce();
     });
 
+    it("shows the suggestion again when an edit is undone, without asking the server again", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValue(Response.json(createCleanerResponse()));
+        const {result, rerender} = renderCleaner(DIRTY_URL);
+        await typeAndSettle();
+
+        rerender({url: `${DIRTY_URL}x`, enabled: true});
+        expect(result.current.result).toBeNull();
+        rerender({url: DIRTY_URL, enabled: true});
+
+        expect(result.current.result).toEqual(createCleanerResponse());
+        expect(fetchWithAuth).toHaveBeenCalledOnce();
+    });
+
+    it("does not bring back a suggestion it forgot while disabled", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValue(Response.json(createCleanerResponse()));
+        const {result, rerender} = renderCleaner(DIRTY_URL);
+        await typeAndSettle();
+
+        rerender({url: DIRTY_URL, enabled: false});
+        rerender({url: DIRTY_URL, enabled: true});
+        await typeAndSettle();
+
+        expect(result.current.result).toBeNull();
+        expect(fetchWithAuth).toHaveBeenCalledOnce();
+    });
+
     it("hides the stale suggestion as soon as the url changes", async () => {
         vi.mocked(fetchWithAuth).mockResolvedValue(Response.json(createCleanerResponse()));
         const {result, rerender} = renderCleaner(DIRTY_URL);

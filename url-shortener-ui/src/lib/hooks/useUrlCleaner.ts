@@ -7,6 +7,7 @@ import { API_ENDPOINTS, URL_CLEANER_DEBOUNCE_MS } from "@/lib/constants";
 import type { UrlCleanerResponse } from "@/lib/api-types";
 import { isValidUrl, normalizeUrl } from "@/lib/url-utils";
 import { useDebounce } from "@/lib/hooks/useDebounce";
+import { useOnValueChange } from "@/lib/hooks/useOnValueChange";
 import { logger } from "@/lib/logger";
 
 interface UseUrlCleanerOptions {
@@ -53,40 +54,26 @@ function shouldSkipCleaner(url: string): boolean {
     return false;
 }
 
+interface CleanedUrl {
+    requestedUrl: string;
+    result: UrlCleanerResponse | null;
+}
+
 export function useUrlCleaner({ enabled, url }: UseUrlCleanerOptions): UseUrlCleanerResult {
     const debouncedUrl = useDebounce(url, URL_CLEANER_DEBOUNCE_MS);
-    const [result, setResult] = useState<UrlCleanerResponse | null>(null);
+    const [cleaned, setCleaned] = useState<CleanedUrl | null>(null);
     const lastRequestedUrlRef = useRef<string | null>(null);
 
-    // Suppress stale banner as soon as the input changes and dedupe identical URLs.
-    useEffect(() => {
-        if (shouldSkipCleaner(url)) {
-            setResult(null);
-            return;
-        }
-
-        const normalizedImmediate = normalizeUrl(url);
-        if (lastRequestedUrlRef.current !== null && normalizedImmediate !== lastRequestedUrlRef.current) {
-            setResult(null);
-        }
-    }, [url]);
+    // Turning the cleaner off forgets the result, so retyping an already cleaned URL does not clean it again.
+    useOnValueChange(enabled, (isEnabled) => {
+        if (!isEnabled) setCleaned(null);
+    });
 
     useEffect(() => {
-        if (!enabled) {
-            setResult(null);
-            return;
-        }
-
-        if (shouldSkipCleaner(debouncedUrl)) {
-            setResult(null);
-            return;
-        }
+        if (!enabled || shouldSkipCleaner(debouncedUrl)) return;
 
         const normalized = normalizeUrl(debouncedUrl);
-
-        if (lastRequestedUrlRef.current === normalized) {
-            return;
-        }
+        if (lastRequestedUrlRef.current === normalized) return;
 
         let cancelled = false;
         const controller = new AbortController();
@@ -95,7 +82,7 @@ export function useUrlCleaner({ enabled, url }: UseUrlCleanerOptions): UseUrlCle
         const checkUrl = async (): Promise<void> => {
             const cleanedUrl = await requestTrackerCleanup(normalized, controller.signal);
             if (cancelled || controller.signal.aborted) return;
-            setResult(cleanedUrl);
+            setCleaned({requestedUrl: normalized, result: cleanedUrl});
         };
 
         void checkUrl();
@@ -106,5 +93,7 @@ export function useUrlCleaner({ enabled, url }: UseUrlCleanerOptions): UseUrlCle
         };
     }, [debouncedUrl, enabled]);
 
-    return { result };
+    // A result belongs to the URL it was requested for: it disappears as soon as the input changes.
+    const isForCurrentUrl = cleaned !== null && enabled && !shouldSkipCleaner(url) && normalizeUrl(url) === cleaned.requestedUrl;
+    return { result: isForCurrentUrl ? cleaned.result : null };
 }
