@@ -132,7 +132,8 @@ The `QrCodeModal` generation settings in [`src/components/links/QrCodeModal.tsx`
 ## 6. Motion & Micro-animations
 
 ### Library Choice
-* **`framer-motion` for JS-driven motion** (`motion`, `AnimatePresence`, `useMotionValue` / `useSpring`, and the imperative `animate()` used by `GlowingEffect`). It is already a dependency — do not introduce new animation libraries.
+* **CSS first** (`tw-animate-css` `animate-in` / `animate-out`, Tailwind `transition-*`) for fades, slides and enter/exit swaps (`BillingPrice` cross-fades with CSS).
+* **`framer-motion` only for what CSS cannot do** (layout animation, springs, motion values, the imperative `animate()` used by `GlowingEffect`), and never in a layout shell, a shared `components/ui` primitive or a settings page; code in a page's first load uses `LazyMotion` + `m.*` (`PageToolbar`). It is already a dependency — do not introduce new animation libraries.
 * **Tailwind `transition-*` utilities for simple state changes** (hover, active, disabled, open/close styling).
 
 ### Timing Scale
@@ -144,7 +145,7 @@ The `QrCodeModal` generation settings in [`src/components/links/QrCodeModal.tsx`
 ### What May Animate
 * **Transform and opacity only** — never layout properties (width, height, margin). Motion layers must be `pointer-events-none` + `aria-hidden` and must not shift siblings.
 * **Hover/active:** `transition-colors` by default; `transition-all` only where size or transform intentionally changes (buttons, cards). Press feedback: `active:scale-95` on primary actions.
-* **Mount/unmount transitions** go through `AnimatePresence`; rapidly toggling states (e.g. drag-over) bind `animate` directly to avoid flicker.
+* **Mount/unmount transitions:** CSS `animate-in` / `animate-out` where a fade or slide is enough (keep the leaving element until `onAnimationEnd`); `AnimatePresence` only when the exit needs layout or spring motion. Rapidly toggling states (e.g. drag-over) bind `animate` directly to avoid flicker. Every animation honours reduced motion (`motion-reduce:` / `motion-safe:`).
 * **High-frequency updates** (e.g. cursor tracking during file drag) must use motion values + springs, never `setState` per event.
 
 ### Loader Conventions

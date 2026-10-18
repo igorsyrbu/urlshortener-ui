@@ -21,6 +21,9 @@ Every change to logic (stores, hooks, `lib/` utilities, API handling) or to user
 | `pnpm test:perf` | `url-shortener-ui/` | Render-count thresholds (`*.perf.test.tsx`) with the React Compiler on |
 | `pnpm test` | repository root | UI `test:run` followed by the mock-server suite, both once |
 | `pnpm --filter=@url-shortener/url-shortener-mock-server test` | repository root | Mock-server suite only |
+| `pnpm check` | repository root | The commit gate: lint, both type-checks, UI and mock tests, `test:perf`, React Compiler check (about 40 s) |
+| `pnpm check:full` | repository root | `check` plus `test:compiled`, bundle budgets and `pnpm audit` (about 80 s); after changes to imports, layouts, pages or lazy boundaries |
+| `pnpm perf:lighthouse` | repository root | Lighthouse on 8 pages, fails on layout shift (about 4 min); after changes to loading states or skeletons. Details: [configuration](configuration.md#lighthouse-budgets) |
 
 UI scripts set `NODE_OPTIONS=--no-deprecation` (see [`package.json`](../url-shortener-ui/package.json)).
 

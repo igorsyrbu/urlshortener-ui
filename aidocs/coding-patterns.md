@@ -33,7 +33,7 @@ Rules:
 | Non-component modules in `lib/` | `kebab-case.ts` | `url-utils.ts`, `billing-redirect.ts` |
 | Constants | `UPPER_SNAKE_CASE`; files `*-constants.ts` | `MAGIC_LINK_COOLDOWN_STORAGE_KEY` |
 | Test helpers | `*-utils.ts` / `*-utils.tsx` in `src/test/` | `link-utils.ts` |
-| Booleans (state, props, derived) | read as a question: `is*`, `has*`, `can*`, `should*` | `isSubmitting`, `hasReducedMotion`, `isCooldownActive` |
+| Booleans (state, props, derived) | read as a question: `is*`, `has*`, `can*`, `should*` | `isSubmitting`, `hasOpenedMenu`, `isCooldownActive` |
 | Event handlers | `handle` + event, defined inside the component | `handleSubmit`, `handleEmailChange` |
 | Callback props | `on` + event | `onSubmit`, `onOpenChange` |
 
