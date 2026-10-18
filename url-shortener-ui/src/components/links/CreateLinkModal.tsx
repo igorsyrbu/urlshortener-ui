@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {useRouter} from "next/navigation";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/components/ui/drawer";
@@ -29,8 +29,12 @@ interface CreateLinkModalBodyProps {
 const CONFETTI_ORIGIN_Y = 0.6;
 const HTTP_CONFLICT = 409;
 
+function loadConfetti() {
+    return import("canvas-confetti").then((confettiModule) => confettiModule.default);
+}
+
 async function celebrateCreatedLink(): Promise<void> {
-    const confetti = (await import("canvas-confetti")).default;
+    const confetti = await loadConfetti();
     confetti({
         particleCount: CONFETTI_PARTICLE_COUNT,
         spread: CONFETTI_SPREAD,
@@ -113,6 +117,11 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
 
 export function CreateLinkModal({open, onOpenChange}: CreateLinkModalProps) {
     const isDesktop = useIsDesktop();
+
+    // Download the confetti while the form is filled in, so it fires the moment the link is created.
+    useEffect(() => {
+        if (open) void loadConfetti();
+    }, [open]);
 
     if (isDesktop) {
         return (

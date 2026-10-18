@@ -135,6 +135,7 @@ The mock server has its own suite; run it with `pnpm --filter=@url-shortener/url
 
 ## Known limitations and existing exceptions
 
+- Observation: `palette-provider.test.tsx` "follows selection changes made in another tab" failed once in about ten full-suite runs on 2026-10-17 (passes alone 5/5); not investigated yet.
 - Observation: `createTestApp()` in the mock server is a copy of the setup in `src/index.ts`, not an import of it, so the two can drift. Existing exception — not a template; do not refactor as a drive-by.
 - Observation: UI coverage thresholds are enforced only by `pnpm test:coverage`; `pnpm test:run` does not check them.
 - Observation: about 1 in 8 full runs ends with "Vitest caught 1 unhandled error" (`ReferenceError: window is not defined`) from an `input-otp` timer that fires after `src/app/login/page.test.tsx` has torn down its environment. All tests pass, but the run exits with code 1.

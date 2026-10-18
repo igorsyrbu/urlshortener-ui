@@ -44,7 +44,7 @@ Both are **optimistic**: confirming closes the dialog and changes the list at on
 
 ### QR code
 
-`QrCodeModal` ([`src/components/links/QrCodeModal.tsx`](../../url-shortener-ui/src/components/links/QrCodeModal.tsx)) lazy-loads `qr-code-styling` once per page lifetime (module-level cache). A 500 px preview is cached per link id; a 2048 px instance is built on demand for download or copy. Actions: download PNG or SVG (file name `<key>-qrcode`), copy as PNG image or SVG text (uses `ClipboardItem` when supported). Dots are black on a white background on purpose (scan reliability), so this component is a documented exception to theme tokens; do not "fix" it to use theme colours.
+`QrCodeModal` ([`src/components/links/QrCodeModal.tsx`](../../url-shortener-ui/src/components/links/QrCodeModal.tsx)) lazy-loads `qr-code-styling` once per page lifetime (module-level cache). The page renders it as `LazyQrCodeModal`; opening a card's action menu (dropdown or drawer) calls `preloadQrCodeModal()`, which starts both the dialog chunk and the library before "QR Code" is chosen. A 500 px preview is cached per link id; a 2048 px instance is built on demand for download or copy. Actions: download PNG or SVG (file name `<key>-qrcode`), copy as PNG image or SVG text (uses `ClipboardItem` when supported). Dots are black on a white background on purpose (scan reliability), so this component is a documented exception to theme tokens; do not "fix" it to use theme colours.
 
 ## Create and edit link form
 
@@ -69,7 +69,7 @@ EditLinkModal -> LinkFormModal (Dialog | Drawer) -> LinkFormFields
 | `tags` | mobile only: tap the tags field (desktop uses the inline `TagSelect` popover, so this screen is unreachable there) | Back arrow, or its own submit button |
 | `review` | "Review" in `UrlCleanerBanner` | Back, Apply, or editing the URL (which returns to `form`) |
 
-Create adds a second state in `CreateLinkModal`: `viewState` `"form"` then `"success"`. On a `2xx` it stores the new link, switches to `CreateLinkSuccess` (copyable short URL, "Done"), fires `canvas-confetti` (dynamically imported), pushes `/links` and refetches page 1.
+Create adds a second state in `CreateLinkModal`: `viewState` `"form"` then `"success"`. On a `2xx` it stores the new link, switches to `CreateLinkSuccess` (copyable short URL, "Done"), fires `canvas-confetti` (downloaded when the dialog opens, never awaited), pushes `/links` and refetches page 1.
 
 Edit closes the modal on success (`LinkFormModal.handleSubmit`) and reports the link as saved (`onSuccess(savedLink)`: the submitted values, with the short URL rebuilt by `withShortKey` when the key changed). The page passes it to `applySavedLink`, which shows it in place at once and then refetches the current page quietly, so any server-side normalisation replaces it a round trip later. It does not rely on the `PUT` response body.
 

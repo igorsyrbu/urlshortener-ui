@@ -23,6 +23,7 @@ import {buildLinksPageUrl, parseLinksPageParam} from "@/lib/pagination";
 import {isModalOpen} from "@/lib/utils";
 import {useDebounce} from "@/lib/hooks/useDebounce";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
+import {LazyQrCodeModal} from "@/components/links/lazy-qr-code-modal";
 import {preloadOnIdle} from "@/lib/preload-on-idle";
 
 const LINKS_LIST_TOP_ID = "links-list-top";
@@ -42,7 +43,6 @@ function loadArchiveLinkModal() {
 const EditLinkModal = dynamic(loadEditLinkModal, {ssr: false});
 const DeleteLinkModal = dynamic(loadDeleteLinkModal, {ssr: false});
 const ArchiveLinkModal = dynamic(loadArchiveLinkModal, {ssr: false});
-const QrCodeModal = dynamic(() => import("@/components/links/QrCodeModal").then((modalModule) => modalModule.QrCodeModal), {ssr: false});
 const ImportCsvModal = dynamic(() => import("@/components/links/ImportCsvModal").then((modalModule) => modalModule.ImportCsvModal), {ssr: false});
 const ExportCsvModal = dynamic(() => import("@/components/links/ExportCsvModal").then((modalModule) => modalModule.ExportCsvModal), {ssr: false});
 
@@ -372,7 +372,7 @@ function LinksPageContent() {
                 )}
 
                 {hasOpenedQrCode && (
-                    <QrCodeModal
+                    <LazyQrCodeModal
                         open={isQrCodeModalOpen}
                         onOpenChange={setIsQrCodeModalOpen}
                         link={linkForQrCode}

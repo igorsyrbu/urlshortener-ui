@@ -37,6 +37,7 @@ import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
 import {LazyActionDrawer, preloadActionDrawer} from "@/components/ui/lazy-action-drawer";
+import {preloadQrCodeModal} from "@/components/links/lazy-qr-code-modal";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 
 interface LinkCardProps {
@@ -109,6 +110,11 @@ export function LinkCard({
     const {isCopied, copy} = useCopyToClipboard();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const hasOpenedMenu = useHasBeenOpened(isMenuOpen);
+
+    const handleMenuOpenChange = (open: boolean): void => {
+        if (open) preloadQrCodeModal();
+        setIsMenuOpen(open);
+    };
     const cardRef = useRef<HTMLDivElement>(null);
     const storeTags = useTagStoreWithoutCount((state) => state.tags);
     const isDesktop = useIsDesktop();
@@ -219,7 +225,7 @@ export function LinkCard({
                     <TagsSection tags={resolvedTags}/>
                 )}
                 {isDesktop ? (
-                    <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                    <DropdownMenu open={isMenuOpen} onOpenChange={handleMenuOpenChange}>
                         <DropdownMenuTrigger asChild>
                             <button
                                 className={MORE_ACTIONS_BUTTON_CLASS}
@@ -263,7 +269,7 @@ export function LinkCard({
                 ) : (
                     <>
                         <button
-                            onClick={() => setIsMenuOpen(true)}
+                            onClick={() => handleMenuOpenChange(true)}
                             onPointerDown={preloadActionDrawer}
                             className={MORE_ACTIONS_BUTTON_CLASS}
                             aria-label="More actions for link">

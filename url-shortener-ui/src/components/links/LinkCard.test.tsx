@@ -10,11 +10,14 @@ import {createLinkItem} from "@/test/link-utils";
 import {createTag} from "@/test/tag-utils";
 
 const media = vi.hoisted(() => ({isDesktop: true}));
+const qrCodePreload = vi.hoisted(() => ({preloadQrCodeModal: vi.fn()}));
 
 vi.mock("@/lib/hooks/useMediaQuery", () => ({
     useIsDesktop: () => media.isDesktop,
     useIsMobile: () => !media.isDesktop,
 }));
+
+vi.mock("@/components/links/lazy-qr-code-modal", () => qrCodePreload);
 
 interface CardHandlers {
     onEdit: ReturnType<typeof vi.fn<(link: LinkItem) => void>>;
@@ -40,6 +43,26 @@ function renderCard(link: LinkItem, withArchive = true): CardHandlers {
 async function openActions(user: ReturnType<typeof userEvent.setup>): Promise<void> {
     await user.click(screen.getByRole("button", {name: "More actions for link"}));
 }
+
+describe.each([
+    {layout: "desktop menu", isDesktop: true},
+    {layout: "mobile drawer", isDesktop: false},
+])("LinkCard QR code preload in the $layout", ({isDesktop}) => {
+    beforeEach(() => {
+        media.isDesktop = isDesktop;
+        useTagStoreWithoutCount.setState({tags: [], loading: false, error: null});
+    });
+
+    it("starts loading the QR code dialog when the action menu opens, not before", async () => {
+        const user = userEvent.setup();
+        renderCard(createLinkItem());
+        expect(qrCodePreload.preloadQrCodeModal).not.toHaveBeenCalled();
+
+        await openActions(user);
+
+        expect(qrCodePreload.preloadQrCodeModal).toHaveBeenCalledOnce();
+    });
+});
 
 describe("LinkCard", () => {
     beforeEach(() => {
