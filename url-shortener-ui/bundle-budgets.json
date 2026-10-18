@@ -2,19 +2,19 @@
   "defaultRouteKb": 215,
   "maxSingleChunkKb": 116,
   "routes": {
-    "/": 178,
-    "/_not-found": 178,
-    "/auth/exchange": 181,
-    "/auth/ott": 181,
-    "/inspect/[key]": 187,
-    "/login": 190,
-    "/report-abuse": 218,
-    "/dashboard": 223,
-    "/settings": 225,
-    "/settings/billing": 234,
-    "/settings/general": 234,
-    "/analytics": 245,
-    "/tags": 259,
-    "/links": 275
+    "/": 166,
+    "/_not-found": 166,
+    "/auth/exchange": 168,
+    "/auth/ott": 169,
+    "/inspect/[key]": 176,
+    "/login": 178,
+    "/report-abuse": 204,
+    "/dashboard": 210,
+    "/settings": 212,
+    "/settings/billing": 222,
+    "/settings/general": 222,
+    "/analytics": 233,
+    "/tags": 248,
+    "/links": 263
   }
 }

@@ -27,7 +27,7 @@
     "type-check": "pnpm --filter=url-shortener-ui run type-check && pnpm --filter=@url-shortener/url-shortener-mock-server run typecheck",
     "check": "pnpm lint && pnpm type-check && pnpm test && pnpm --filter=url-shortener-ui run test:perf && pnpm --filter=url-shortener-ui run check:compiler-bailouts",
     "perf:lighthouse": "BACKEND_API_BASE_URL=http://localhost:8095 NEXT_PUBLIC_ENABLE_TURNSTILE=false pnpm --filter=url-shortener-ui exec next build && PORT=8095 FRONTEND_URL=http://localhost:3095 npx -y @lhci/cli@0.15.1 collect --config=url-shortener-ui/lighthouserc.json && npx -y @lhci/cli@0.15.1 assert --config=url-shortener-ui/lighthouserc.json",
-    "check:full": "pnpm check && pnpm --filter=url-shortener-ui run test:compiled && pnpm check:bundle-budgets"
+    "check:full": "pnpm check && pnpm --filter=url-shortener-ui run test:compiled && pnpm check:bundle-budgets && pnpm audit --prod --audit-level=high"
   },
   "dependencies": {
     "next": "^16.2.6"

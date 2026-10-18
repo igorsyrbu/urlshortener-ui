@@ -14,7 +14,7 @@ Rules for AI agents and contributors. Details, explanations and examples live in
 | Purpose | Command |
 |---|---|
 | **Before every commit** (lint, type-check, all tests, render budgets, compiler check; ~40 s) | `pnpm check` |
-| **Before a commit touching imports, layouts, pages or lazy boundaries** (`check` + compiled tests + bundle budgets; ~75 s) | `pnpm check:full` |
+| **Before a commit touching imports, layouts, pages or lazy boundaries** (`check` + compiled tests + bundle budgets + `pnpm audit`; ~80 s) | `pnpm check:full` |
 | **After a change to loading states, skeletons, layouts or images** (Lighthouse on 8 pages, fails on layout shift; ~4 min, downloads `@lhci/cli` on first use; run `pnpm build` afterwards) | `pnpm perf:lighthouse` |
 | Install | `pnpm install` |
 | Dev (UI on :3000 + mock on :8080) | `pnpm dev` |
