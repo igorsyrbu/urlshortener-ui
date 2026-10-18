@@ -3,8 +3,8 @@
 import {Tag as TagIcon, MousePointerClick} from "lucide-react";
 import {useUIStore} from "@/lib/store/ui";
 import {Button} from "@/components/ui/button";
+import {EMPTY_STATE_SCROLL_ROW_COUNT} from "@/lib/constants";
 
-const SCROLL_ITEM_COUNT = 30;
 const LOOP_COUNT = 2;
 
 export function EmptyTagsState() {
@@ -14,6 +14,7 @@ export function EmptyTagsState() {
         <div
             className="flex flex-col items-center justify-center py-20 px-4 bg-card border-[0.5px] border-border rounded-xl relative overflow-hidden">
             <div
+                aria-hidden="true"
                 className="flex flex-col items-center pointer-events-none select-none h-44 overflow-hidden relative w-full mb-8 mask-[linear-gradient(to_bottom,transparent,black_30%,black_70%,transparent)]">
                 {/* Blur Overlays */}
                 <div
@@ -21,13 +22,13 @@ export function EmptyTagsState() {
                 <div
                     className="absolute inset-x-0 bottom-0 h-16 z-10 backdrop-blur-[3px] bg-background/10 mask-[linear-gradient(to_top,black,transparent)]"/>
 
-                <div className="animate-vertical-scroll flex flex-col gap-3">
+                <div className="animate-vertical-scroll motion-reduce:animate-none flex flex-col gap-3">
                     {[...Array(LOOP_COUNT)].map((_, loopIndex) => (
                         <div key={loopIndex} className="flex flex-col gap-3 pb-3">
-                            {[...Array(SCROLL_ITEM_COUNT)].map((_, i) => (
+                            {[...Array(EMPTY_STATE_SCROLL_ROW_COUNT)].map((_, i) => (
                                 <div
                                     key={i}
-                                    className="shrink-0 mx-auto w-70 sm:w-[320px] h-10 bg-background border-[0.5px] border-border/80 rounded-xl flex items-center px-4 transition-all duration-300 opacity-100"
+                                    className="shrink-0 mx-auto w-70 sm:w-[320px] h-10 bg-background border-[0.5px] border-border/80 rounded-xl flex items-center px-4"
                                 >
                                     <TagIcon className="size-4 text-muted-foreground/50 mr-3 shrink-0"/>
                                     <div className="h-2.5 w-16 bg-muted-foreground/20 rounded-full shrink-0"/>

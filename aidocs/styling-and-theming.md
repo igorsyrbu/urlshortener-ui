@@ -24,7 +24,7 @@ The visual specification (default palette values, typography, spacing shells, ra
 - `@custom-variant dark (&:is(.dark *))`: the `dark:` variant applies to descendants of an element with class `dark` (next-themes puts it on `<html>`).
 - `@theme inline` maps every semantic token to a Tailwind colour (`--color-primary: var(--primary)`), defines `--font-sans`, `--font-mono`, the radius scale and `--shadow-soft`. Because it is `inline`, utilities read the live CSS variable, which is what lets palettes and custom themes swap values at runtime.
 - `@layer base` applies `border-border outline-ring/50` to everything and `bg-background text-foreground font-sans antialiased` to `body`.
-- `@layer utilities` adds two project utilities: `animate-vertical-scroll` (120 s linear loop, used by `NoResultsState`) and `hairline-divider` (0.5px bottom border in `--border`, used by `ActionDrawer`). `shadow-soft` comes from `@theme`.
+- `@layer utilities` adds two project utilities: `animate-vertical-scroll` (32 s linear loop over `EMPTY_STATE_SCROLL_ROW_COUNT` = 8 rows, the duration proportional to that count; used by the decorative lists in `EmptyLinksState`, `EmptyTagsState` and `NoResultsState`, each `aria-hidden` and stopped with `motion-reduce:animate-none`) and `hairline-divider` (0.5px bottom border in `--border`, used by `ActionDrawer`). `shadow-soft` comes from `@theme`.
 - Non-Tailwind CSS blocks in the same file: react-colorful styling (`.react-colorful*`), the vaul overlay blur override (`[data-slot="drawer-overlay"]`, uses `!important` to beat vaul's inline opacity), Recharts outline reset, and the `ios-wheel-picker*` classes for `IosWheelPicker`.
 - Scale notes: Tailwind v4 numeric utilities accept any number (`max-w-106.25`, `size-4.5`); the `border-[0.5px]` hairline is the standard border width of cards, popovers and most bespoke panels (inputs and dialogs use the default 1px).
 
@@ -116,7 +116,7 @@ DESIGN.md versus code:
 
 - Observation: DESIGN.md states `rounded-xl` is `var(--radius)` (about 8px). In code `--radius-lg` is `var(--radius)` (8px) and `--radius-xl` is `calc(var(--radius) + 4px)` (12px); cards, inputs and toolbars use `rounded-xl`, so they are 12px.
 - Observation: DESIGN.md says the mono font is Geist Mono loaded via a variable. `layout.tsx` loads only Manrope; `--font-geist-mono` is never defined, so `--font-mono` points at an undefined variable and no monospace face is actually loaded by the app.
-- Observation: DESIGN.md says nothing honours `prefers-reduced-motion`; five components do (see Motion). `NoResultsState`'s 120 s `animate-vertical-scroll` loop and `animate-pulse` skeletons do not.
+- Observation: DESIGN.md says nothing honours `prefers-reduced-motion`; five components do (see Motion). `animate-pulse` skeletons do not (the empty-state scrolling lists do since 2026-10-17).
 - Observation: DESIGN.md says `PageToolbar` and `PeriodSelector` use `min-h-10 items-center`; neither file contains `min-h-10` (the 40px height comes from `h-10` on the search bar and option buttons).
 - Observation: DESIGN.md's drawer rule forbids manual bottom padding (`px-6 pb-6`), yet the mobile (Drawer) branch of `TagFormModal` uses `px-6 pb-6` on its form. `LinksPagination` positions itself with `env(safe-area-inset-bottom)` directly.
 - Observation: DESIGN.md links `GlowingEffect`, `constants.ts` and `QrCodeModal` with absolute `file:///Users/igorsyrbu/...` paths from another machine; they do not resolve here.

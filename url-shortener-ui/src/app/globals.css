@@ -728,7 +728,7 @@
 /* Custom Utilities from Design */
 @layer utilities {
     .animate-vertical-scroll {
-        animation: vertical-scroll 120s linear infinite;
+        animation: vertical-scroll 32s linear infinite;
     }
 
     @keyframes vertical-scroll {
