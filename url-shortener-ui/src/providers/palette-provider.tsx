@@ -66,7 +66,9 @@ export function PaletteProvider({children}: { children: React.ReactNode }) {
         });
     }, []);
 
-    React.useEffect(() => {
+    // A layout effect: the palette must reach <html> before the browser paints, or one frame shows the new content in
+    // the old colours.
+    React.useLayoutEffect(() => {
         const root = document.documentElement;
         clearInlineTokens(root);
         if (selection.kind === "preset") {
