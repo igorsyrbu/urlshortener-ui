@@ -73,7 +73,7 @@ Adding or renaming a colour token touches all of: the `:root` and `.dark` blocks
 
 ## Fonts
 
-Manrope is loaded with `next/font/google` in the root layout (`--font-manrope`, latin subset) and exposed as `--font-sans`. Never link font CDNs in markup. `--font-mono` is declared as `var(--font-geist-mono)` but no Geist Mono font is loaded (see observations); `font-mono` is used for hex inputs and `Kbd`.
+Manrope is loaded with `next/font/google` in the root layout (`--font-manrope`, latin subset) and exposed as `--font-sans`. Never link font CDNs in markup. `--font-mono` is the system monospace stack (`ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace`): zero bytes, and Geist Mono via `next/font` would add about 20 KB for a few short uses (`Kbd` hints, hex inputs, tracker review URLs, report ids, chart tooltips). `src/app/globals-css.test.ts` fails when a `--font-*` token references a variable that neither `globals.css` nor the root layout's `next/font` defines.
 
 ## Class composition: `cn()`, cva, shadcn
 
@@ -115,7 +115,6 @@ Observations, not templates: do not copy them and do not change them as a drive-
 DESIGN.md versus code:
 
 - Observation: DESIGN.md states `rounded-xl` is `var(--radius)` (about 8px). In code `--radius-lg` is `var(--radius)` (8px) and `--radius-xl` is `calc(var(--radius) + 4px)` (12px); cards, inputs and toolbars use `rounded-xl`, so they are 12px.
-- Observation: DESIGN.md says the mono font is Geist Mono loaded via a variable. `layout.tsx` loads only Manrope; `--font-geist-mono` is never defined, so `--font-mono` points at an undefined variable and no monospace face is actually loaded by the app.
 - Observation: DESIGN.md says nothing honours `prefers-reduced-motion`; five components do (see Motion). `animate-pulse` skeletons do not (the empty-state scrolling lists do since 2026-10-17).
 - Observation: DESIGN.md says `PageToolbar` and `PeriodSelector` use `min-h-10 items-center`; neither file contains `min-h-10` (the 40px height comes from `h-10` on the search bar and option buttons).
 - Observation: DESIGN.md's drawer rule forbids manual bottom padding (`px-6 pb-6`), yet the mobile (Drawer) branch of `TagFormModal` uses `px-6 pb-6` on its form. `LinksPagination` positions itself with `env(safe-area-inset-bottom)` directly.

@@ -44,7 +44,7 @@ The application ships with a **default warm, cream/terracotta-based palette** (r
 ## 2. Typography
 * **Primary Sans-Serif Font:** [Manrope](https://fonts.google.com/specimen/Manrope) (`--font-manrope` variable, loaded dynamically via `next/font/google`).
 * **Fallback Fonts:** `ui-sans-serif`, `system-ui`, `sans-serif`, `Apple Color Emoji`, `Segoe UI Emoji`, `Segoe UI Symbol`.
-* **Mono Font (for URL short keys, codes, tables):** Geist Mono (`--font-geist-mono`).
+* **Mono Font (for URL short keys, codes, tables):** the system monospace stack (`--font-mono`: `ui-monospace`, SF Mono, Menlo, Consolas, ...); no web font is loaded for it.
 
 ---
 
