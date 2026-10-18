@@ -86,6 +86,16 @@ describe.each([
         expect(screen.getByText(DROPZONE_HINT)).toBeInTheDocument();
     });
 
+    it("orders the actions the way its container expects: Cancel then Import in a dialog, Import first in a drawer", () => {
+        renderModal();
+
+        const actionNames = screen.getAllByRole("button")
+            .map((button) => button.textContent?.trim())
+            .filter((name) => name === CANCEL_LABEL || name === IMPORT_LABEL);
+
+        expect(actionNames).toEqual(isDesktop ? [CANCEL_LABEL, IMPORT_LABEL] : [IMPORT_LABEL, CANCEL_LABEL]);
+    });
+
     it("uploads the chosen file and switches to the progress view", async () => {
         const user = userEvent.setup();
         mockAcceptedJob();

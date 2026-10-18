@@ -123,6 +123,7 @@ The `QrCodeModal` generation settings in [`src/components/links/QrCodeModal.tsx`
 
 - `DrawerContent` (`src/components/ui/drawer.tsx`) is the sole owner of bottom safe-area spacing. It wraps `{children}` with `DRAWER_CONTENT_SAFE_AREA_BOTTOM_CLASS` (`pb-[calc(1.5rem+env(safe-area-inset-bottom,0))]`) or `DRAWER_CONTENT_SAFE_AREA_BOTTOM_MOBILE_MENU_CLASS` (`pb-[calc(2.25rem+env(safe-area-inset-bottom,0))]`) when `mobileMenuSpacing` is set — both exported from `src/lib/constants.ts`.
 - Never add manual `env(safe-area-inset-bottom)` or `pb-[calc(...)]` on outer `DrawerContent` (`className="px-6 pb-6"` → use `px-6`) or on inner content (`px-6 pb-6` → `px-6` / `pt-6`). Inner forms should use `px-6` / `gap-*` / `mt-4` for layout; bottom inset comes only from the wrapper.
+- Button order in a drawer: the primary (filled) action first, then the secondary ones, with `Cancel` (ghost) last, so the last row next to the home indicator is a text button. Dialogs keep the row order (secondary left, primary right).
 - Minimum spacing bottom ↔ last button is the wrapper's `1.5rem` + iPhone safe area (≈24px + 34px on home-indicator devices). For menu drawers use `mobileMenuSpacing`.
 - New drawers must import the constants above, never hardcode `1.5rem` / `2.25rem` / `0.75rem` literals.
 
