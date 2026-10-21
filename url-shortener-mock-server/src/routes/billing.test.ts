@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { after, before, beforeEach, describe, it } from "node:test";
-import { createTestUser, requestJson, startTestServer, type TestServer, type TestUser } from "../test-utils";
-import { billingService } from "../services/BillingService";
+import {
+  createTestUser, requestJson, startTestServer, TEST_CONFIG, testBillingService, type TestServer, type TestUser,
+} from "../test-utils";
 import {
   BILLING_READ_RATE_LIMIT, BILLING_RETRY_AFTER_HEADER, BILLING_SESSION_TTL_MS, BILLING_WRITE_RATE_LIMIT,
   HTTP_OK, HTTP_BAD_REQUEST, HTTP_CONFLICT, HTTP_GONE, HTTP_NOT_FOUND,
@@ -12,7 +13,7 @@ import {
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 const HTTP_UNAUTHORIZED = 401;
 const INVALID_LONG_VALUE = "x".repeat(250);
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+const FRONTEND_URL = TEST_CONFIG.frontendUrl;
 const JSON_CONTENT_TYPE = "application/json";
 let server: TestServer;
 let user: TestUser;
@@ -21,7 +22,7 @@ before(async () => { server = await startTestServer(); });
 after(async () => { await server.close(); });
 beforeEach(() => {
   user = createTestUser();
-  billingService.setScenario(user.uuid, "free");
+  testBillingService.setScenario(user.uuid, "free");
 });
 
 function readObject(value: unknown): Record<string, unknown> {
@@ -63,7 +64,7 @@ describe("billing subscription endpoint", () => {
   });
 
   it("returns a pending yearly switch after it is scheduled", async () => {
-    billingService.setScenario(user.uuid, "pro-monthly");
+    testBillingService.setScenario(user.uuid, "pro-monthly");
     const scheduled = await requestJson(server, "POST", "/billing/subscription/upgrade", { authorization: user.authorization });
 
     const subscription = await requestJson(server, "GET", "/billing/subscription", { authorization: user.authorization });
@@ -98,20 +99,20 @@ describe("billing checkout endpoint", () => {
       const url = await createCheckoutUrl(billingPeriod);
       const page = await fetch(url);
       assert.match(await page.text(), /Complete checkout/);
-      assert.equal(billingService.getSubscription(user.uuid).plan, "FREE");
+      assert.equal(testBillingService.getSubscription(user.uuid).plan, "FREE");
 
       const completed = await fetch(url, { method: "POST", redirect: "manual" });
 
       assert.equal(completed.status, HTTP_SEE_OTHER);
       assert.equal(completed.headers.get("location"), `${FRONTEND_URL}/settings/billing`);
-      assert.equal(billingService.getSubscription(user.uuid).plan, "PRO");
-      assert.equal(billingService.getState(user.uuid).billingPeriod, billingPeriod);
+      assert.equal(testBillingService.getSubscription(user.uuid).plan, "PRO");
+      assert.equal(testBillingService.getState(user.uuid).billingPeriod, billingPeriod);
       assert.equal((await fetch(url, { method: "POST", redirect: "manual" })).status, HTTP_GONE);
     });
   }
 
   it("rejects checkout when already on Pro", async () => {
-    billingService.setScenario(user.uuid, "pro-monthly");
+    testBillingService.setScenario(user.uuid, "pro-monthly");
 
     const response = await requestJson(server, "POST", "/billing/checkout", { authorization: user.authorization, body: { billingPeriod: "MONTHLY" } });
 
@@ -119,7 +120,7 @@ describe("billing checkout endpoint", () => {
   });
 
   it("does not expose a portal session through the checkout route", async () => {
-    billingService.setScenario(user.uuid, "pro-monthly");
+    testBillingService.setScenario(user.uuid, "pro-monthly");
     const portalUrl = await createPortalUrl();
 
     const response = await fetch(portalUrl.replace("/portal/", "/checkout/"));
@@ -135,7 +136,7 @@ describe("billing upgrade endpoint", () => {
   ];
   for (const [scenario, status] of scenarios) {
     it(`returns ${status} for ${scenario}`, async () => {
-      billingService.setScenario(user.uuid, scenario);
+      testBillingService.setScenario(user.uuid, scenario);
 
       const response = await requestJson(server, "POST", "/billing/subscription/upgrade", { authorization: user.authorization });
 
@@ -152,7 +153,7 @@ describe("billing portal endpoint", () => {
   });
 
   it("returns a fresh preauthenticated one-hour session URL with remaining whole seconds", async () => {
-    billingService.setScenario(user.uuid, "pro-monthly");
+    testBillingService.setScenario(user.uuid, "pro-monthly");
     const requestStartedAt = Date.now();
 
     const response = await requestJson(server, "POST", "/billing/portal", { authorization: user.authorization });
@@ -176,7 +177,7 @@ describe("billing portal endpoint", () => {
 
   for (const mode of ["omitted", "invalid", "expired"] satisfies PortalExpiryMode[]) {
     it(`supports a ${mode} expiration payload for return-flag tests`, async () => {
-      billingService.setScenario(user.uuid, "pro-monthly", mode);
+      testBillingService.setScenario(user.uuid, "pro-monthly", mode);
 
       const response = await requestJson(server, "POST", "/billing/portal", { authorization: user.authorization });
       const payload = readObject(response.body);
@@ -192,7 +193,7 @@ describe("billing portal endpoint", () => {
   }
 
   it("clears pending switch fields after cancelling through the portal", async () => {
-    billingService.setScenario(user.uuid, "pro-pending");
+    testBillingService.setScenario(user.uuid, "pro-pending");
     const url = await createPortalUrl();
     assert.match(await (await fetch(url)).text(), /Cancel yearly switch/);
 
@@ -206,50 +207,50 @@ describe("billing portal endpoint", () => {
   });
 
   it("cancels and resumes renewal through browser form submissions", async () => {
-    billingService.setScenario(user.uuid, "pro-monthly");
+    testBillingService.setScenario(user.uuid, "pro-monthly");
     const url = await createPortalUrl();
 
     const canceled = await postPortalAction(url, "cancel-subscription");
 
-    assert.equal(billingService.getSubscription(user.uuid).cancelAtPeriodEnd, true);
+    assert.equal(testBillingService.getSubscription(user.uuid).cancelAtPeriodEnd, true);
     assert.match(await canceled.text(), /Resume subscription/);
 
     await postPortalAction(url, "resume-subscription");
 
-    assert.equal(billingService.getSubscription(user.uuid).cancelAtPeriodEnd, false);
+    assert.equal(testBillingService.getSubscription(user.uuid).cancelAtPeriodEnd, false);
   });
 
   it("keeps changes confined to the user who opened the portal", async () => {
-    billingService.setScenario(user.uuid, "pro-monthly");
+    testBillingService.setScenario(user.uuid, "pro-monthly");
     const otherUser = createTestUser();
-    billingService.setScenario(otherUser.uuid, "pro-monthly");
+    testBillingService.setScenario(otherUser.uuid, "pro-monthly");
     const url = await createPortalUrl();
 
     await postPortalAction(url, "cancel-subscription");
 
-    assert.equal(billingService.getSubscription(user.uuid).cancelAtPeriodEnd, true);
-    assert.equal(billingService.getSubscription(otherUser.uuid).cancelAtPeriodEnd, false);
+    assert.equal(testBillingService.getSubscription(user.uuid).cancelAtPeriodEnd, true);
+    assert.equal(testBillingService.getSubscription(otherUser.uuid).cancelAtPeriodEnd, false);
   });
 
   it("rejects a missing session without applying an action", async () => {
     const response = await postPortalAction(`${server.baseUrl}/mock/billing/portal/unknown`, "cancel-subscription");
 
     assert.equal(response.status, HTTP_GONE);
-    assert.equal(billingService.getSubscription(user.uuid).cancelAtPeriodEnd, false);
+    assert.equal(testBillingService.getSubscription(user.uuid).cancelAtPeriodEnd, false);
   });
 
   it("rejects invalid actions without changing the subscription", async () => {
-    billingService.setScenario(user.uuid, "pro-monthly");
+    testBillingService.setScenario(user.uuid, "pro-monthly");
     const url = await createPortalUrl();
 
     const response = await postPortalAction(url, INVALID_LONG_VALUE);
 
     assert.equal(response.status, HTTP_BAD_REQUEST);
-    assert.equal(billingService.getSubscription(user.uuid).cancelAtPeriodEnd, false);
+    assert.equal(testBillingService.getSubscription(user.uuid).cancelAtPeriodEnd, false);
   });
 
   it("supports scenario changes through the portal form", async () => {
-    billingService.setScenario(user.uuid, "pro-monthly");
+    testBillingService.setScenario(user.uuid, "pro-monthly");
     const url = await createPortalUrl();
 
     const response = await fetch(`${url}/scenario`, {
@@ -259,7 +260,7 @@ describe("billing portal endpoint", () => {
 
     assert.equal(response.status, HTTP_SEE_OTHER);
     assert.equal(response.headers.get("location"), `${FRONTEND_URL}/settings/billing`);
-    assert.equal(billingService.getSubscription(user.uuid).pendingBillingPeriod, "YEARLY");
+    assert.equal(testBillingService.getSubscription(user.uuid).pendingBillingPeriod, "YEARLY");
     assert.equal((await fetch(url)).status, HTTP_GONE);
   });
 });
@@ -272,7 +273,7 @@ describe("mock billing scenario endpoint", () => {
 
     assert.equal(response.status, HTTP_OK);
     assert.equal(readObject(response.body).pendingBillingPeriod, "YEARLY");
-    assert.equal(billingService.getState(user.uuid).portalExpiryMode, "omitted");
+    assert.equal(testBillingService.getState(user.uuid).portalExpiryMode, "omitted");
   });
 
   const invalidBodies: unknown[] = [undefined, {}, { scenario: INVALID_LONG_VALUE }, { scenario: "pro-monthly", portalExpiryMode: "unknown" }];
@@ -281,7 +282,7 @@ describe("mock billing scenario endpoint", () => {
       const response = await requestJson(server, "POST", "/mock/billing/scenario", { authorization: user.authorization, body });
 
       assert.equal(response.status, HTTP_BAD_REQUEST);
-      assert.equal(billingService.getSubscription(user.uuid).plan, "FREE");
+      assert.equal(testBillingService.getSubscription(user.uuid).plan, "FREE");
     });
   }
 
@@ -340,13 +341,13 @@ describe("billing rate limits and provider failures", () => {
 
   for (const [path, body] of writeEndpoints) {
     it(`simulates a provider failure for ${path} without changing state`, async () => {
-      billingService.setScenario(user.uuid, "pro-monthly");
-      const initial = billingService.getSubscription(user.uuid);
+      testBillingService.setScenario(user.uuid, "pro-monthly");
+      const initial = testBillingService.getSubscription(user.uuid);
 
       const response = await requestJson(server, "POST", path, { authorization: user.authorization, body, headers: { "x-mock-error": "true" } });
 
       assert.equal(response.status, HTTP_INTERNAL_SERVER_ERROR);
-      assert.deepEqual(billingService.getSubscription(user.uuid), initial);
+      assert.deepEqual(testBillingService.getSubscription(user.uuid), initial);
     });
   }
 });

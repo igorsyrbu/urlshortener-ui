@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import type { BillingDefaults } from "../config";
 import {
   BILLING_SESSION_TTL_MS, HTTP_CONFLICT, HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY,
-  MONTHLY_PERIOD_MS, YEARLY_PERIOD_MS, isBillingScenario, isPortalExpiryMode,
+  MONTHLY_PERIOD_MS, YEARLY_PERIOD_MS,
   type BillingPeriod, type BillingScenario, type BillingSession, type BillingState,
   type PortalAction, type PortalExpiryMode, type SubscriptionDto,
 } from "./billing-constants";
@@ -17,13 +18,15 @@ export class BillingService {
   private states = new Map<string, BillingState>();
   private sessions = new Map<string, BillingSession>();
 
-  constructor(private readonly now: () => number = Date.now) {}
+  constructor(
+    private readonly now: () => number = Date.now,
+    private readonly defaults: BillingDefaults = { scenario: "free", portalExpiry: "reported" },
+  ) {}
 
   getState(uuid: string): BillingState {
     const existing = this.states.get(uuid);
     if (existing) return existing;
-    const configured = process.env.MOCK_BILLING_SCENARIO;
-    return this.setScenario(uuid, isBillingScenario(configured) ? configured : "free");
+    return this.setScenario(uuid, this.defaults.scenario);
   }
 
   getSubscription(uuid: string): SubscriptionDto {
@@ -33,8 +36,7 @@ export class BillingService {
 
   setScenario(uuid: string, scenario: BillingScenario, expiryMode?: PortalExpiryMode): BillingState {
     const state = this.createScenario(scenario);
-    const configured = process.env.MOCK_BILLING_PORTAL_EXPIRY;
-    state.portalExpiryMode = expiryMode ?? (isPortalExpiryMode(configured) ? configured : "reported");
+    state.portalExpiryMode = expiryMode ?? this.defaults.portalExpiry;
     this.states.set(uuid, state);
     this.invalidateSessions(uuid);
     return state;
@@ -164,5 +166,3 @@ export class BillingService {
     }
   }
 }
-
-export const billingService = new BillingService();

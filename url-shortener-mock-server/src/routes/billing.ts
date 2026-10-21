@@ -2,10 +2,8 @@ import { Router } from "express";
 import { BillingController } from "../controllers/BillingController";
 import { authentication } from "../middleware/authentication";
 import { billingRateLimit } from "../middleware/billingRateLimit";
-import { billingTrace } from "../middleware/billingTrace";
 
 const router: Router = Router();
-router.use("/billing", billingTrace);
 
 router.get("/billing/subscription", authentication, billingRateLimit, BillingController.getSubscription);
 router.post("/billing/checkout", authentication, billingRateLimit, BillingController.createCheckout);

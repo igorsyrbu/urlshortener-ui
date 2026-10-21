@@ -1,48 +1,14 @@
 import "dotenv/config";
-import express from "express";
-import { cors } from "./middleware/cors";
-import { delay } from "./middleware/delay";
-import { errorSimulation } from "./middleware/errorSimulation";
-import { jsonErrors } from "./middleware/jsonErrors";
-import authRoutes from "./routes/auth";
-import usersRoutes from "./routes/users";
-import shortLinksRoutes from "./routes/shortlinks";
-import analyticsRoutes from "./routes/analytics";
-import tagsRoutes from "./routes/tags";
-import abuseRoutes from "./routes/abuse";
-import billingRoutes from "./routes/billing";
+import { createApp } from "./app";
+import { readMockConfig } from "./config";
 
-const app = express();
-const PORT = parseInt(process.env.PORT || "8080", 10);
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-app.use(cors);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.text({ type: "text/csv", limit: "100kb" }));
-app.use(delay);
-app.use(errorSimulation);
+const config = readMockConfig();
 
-app.use(authRoutes);
-app.use(usersRoutes);
-app.use(shortLinksRoutes);
-app.use(analyticsRoutes);
-app.use(tagsRoutes);
-app.use(abuseRoutes);
-app.use(billingRoutes);
-app.use(jsonErrors);
-
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-app.listen(PORT, () => {
-  const delayMs = process.env.MOCK_DELAY || "0";
-  const cookieSameSite = process.env.MOCK_COOKIE_SAMESITE || "lax";
-  const cookieSecure = process.env.MOCK_COOKIE_SECURE === "true";
-
-  console.log(`\n🚀 Mock server running at http://localhost:${PORT}`);
-  console.log(`  Frontend URL: ${FRONTEND_URL}`);
-  console.log(`  Artificial delay: ${delayMs}ms`);
+createApp({ config }).listen(config.port, () => {
+  console.log(`\n🚀 Mock server running at http://localhost:${config.port}`);
+  console.log(`  Frontend URL: ${config.frontendUrl}`);
+  console.log(`  Artificial delay: ${config.delayMs}ms`);
   console.log(`  Error simulation: send header "x-mock-error: true"`);
-  console.log(`  Cookie settings: sameSite=${cookieSameSite}, secure=${cookieSecure}\n`);
+  console.log(`  Cookie settings: sameSite=${config.cookie.sameSite}, secure=${config.cookie.secure}`);
+  console.log(`  Billing: scenario=${config.billing.scenario}, portal expiry=${config.billing.portalExpiry}\n`);
 });

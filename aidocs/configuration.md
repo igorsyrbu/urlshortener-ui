@@ -27,21 +27,21 @@ Facts that matter when changing them:
 
 ## Mock server
 
-Env files: copy [`.env.example`](../url-shortener-mock-server/.env.example) to `.env` inside `url-shortener-mock-server/`; `dotenv/config` is imported first in `src/index.ts`. Variables are read directly from `process.env` (there is no config module). Behaviour of each feature: [mock-server](mock-server.md).
+Env files: copy [`.env.example`](../url-shortener-mock-server/.env.example) to `.env` inside `url-shortener-mock-server/`; `dotenv/config` is imported first in `src/index.ts`. Every variable is read once, at startup, by `readMockConfig()` in [`src/config.ts`](../url-shortener-mock-server/src/config.ts) and reaches the code as a `MockConfig` (through `createApp({config})` and the per-app context, see [mock-server](mock-server.md#request-pipeline)); nothing else reads `process.env`, so restart the mock after a change. An invalid value (unknown enum, a number that is not a whole number of 0 or more, a URL that is not http(s), a boolean other than `true`/`false`) logs `[mock config] NAME="value" ...; using ...` and falls back to the default; empty and blank values count as unset. Behaviour of each feature: [mock-server](mock-server.md).
 
 | Variable | Default | Effect (code reference) |
 |---|---|---|
 | `PORT` | `8080` | Listen port (`src/index.ts`). |
 | `FRONTEND_URL` | `http://localhost:3000` | Where OAuth/OTT flows and hosted billing pages redirect back to (`AuthController`, `BillingController`, startup log). |
-| `MOCK_DELAY` | `0` | Milliseconds of artificial latency on every response (`middleware/delay.ts`); only values above 0 delay. |
-| `RANDOM_ANALYTICS_DATA` | `false` | When exactly `"true"`, analytics responses are randomised per request (`AnalyticsController`). |
-| `MOCK_COOLDOWN_ENABLED` | enabled | Magic-link cooldown is on unless the value is exactly `"false"` (`AuthController`). |
+| `MOCK_DELAY` | `0` | Milliseconds of artificial latency on every response (`createDelay` in `middleware/delay.ts`); 0 turns it off. |
+| `RANDOM_ANALYTICS_DATA` | `false` | `true` randomises analytics responses per request (`AnalyticsController`). |
+| `MOCK_COOLDOWN_ENABLED` | `true` | `false` turns the magic-link cooldown off (`AuthController`). |
 | `MOCK_COOLDOWN_SECONDS` | `60` | Cooldown length in seconds (`AuthController`). |
 | `MOCK_COOKIE_SAMESITE` | `lax` | `SameSite` of the `refresh_token` cookie (`lax`, `strict`, `none`). Use `none` for cross-domain deployments (`AuthController`). |
-| `MOCK_COOKIE_SECURE` | `false` | `Secure` flag of the cookie when exactly `"true"`; required by browsers with `SameSite=none`. |
-| `MOCK_BILLING_SCENARIO` | `free` | Initial billing state of each new sandbox user: `free`, `pro-monthly`, `pro-yearly`, `pro-pending`, `pro-canceling`, `trialing`, `past-due`, `canceled`, `expired`. Unknown values fall back to `free` (`BillingService`). |
-| `MOCK_BILLING_PORTAL_EXPIRY` | `reported` | Portal expiry payload: `reported`, `omitted`, `invalid`, `expired`. Unknown values fall back to `reported`. |
-| `MOCK_BILLING_TRACE` | `false` | When exactly `"true"`, logs `[mock billing] METHOD path status` per billing request (no query strings, tokens or session URLs) (`middleware/billingTrace.ts`). |
+| `MOCK_COOKIE_SECURE` | `false` | `true` sets the `Secure` flag on the cookie; required by browsers with `SameSite=none`. |
+| `MOCK_BILLING_SCENARIO` | `free` | Initial billing state of each new sandbox user: `free`, `pro-monthly`, `pro-yearly`, `pro-pending`, `pro-canceling`, `trialing`, `past-due`, `canceled`, `expired`. Unknown values warn and fall back to `free` (`BillingService`). |
+| `MOCK_BILLING_PORTAL_EXPIRY` | `reported` | Portal expiry payload: `reported`, `omitted`, `invalid`, `expired`. Unknown values warn and fall back to `reported`. |
+| `MOCK_BILLING_TRACE` | `false` | `true` logs `[mock billing] METHOD path status` per billing request (no query strings, tokens or session URLs) (`middleware/billingTrace.ts`). |
 | `MOCK_PUBLIC_URL` | request protocol + host | Origin used to build hosted checkout/portal URLs; set it when the mock server sits behind a proxy (`BillingController`). Commented out in `.env.example`. |
 
 The request header `x-mock-error: true` simulates a 500 on any request (not an env var; see [mock-server](mock-server.md)).

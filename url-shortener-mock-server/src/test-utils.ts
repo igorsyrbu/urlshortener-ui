@@ -1,22 +1,18 @@
 import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import express from "express";
-import { cors } from "./middleware/cors";
-import { delay } from "./middleware/delay";
-import { errorSimulation } from "./middleware/errorSimulation";
-import { jsonErrors } from "./middleware/jsonErrors";
-import abuseRoutes from "./routes/abuse";
-import analyticsRoutes from "./routes/analytics";
-import authRoutes from "./routes/auth";
-import shortLinksRoutes from "./routes/shortlinks";
-import tagsRoutes from "./routes/tags";
-import usersRoutes from "./routes/users";
-import billingRoutes from "./routes/billing";
+import type express from "express";
+import { createApp } from "./app";
+import { DEFAULT_MOCK_CONFIG, type MockConfig } from "./config";
+import { BillingService } from "./services/BillingService";
 import { authService } from "./services/AuthService";
 import { memoryStore, type UserState } from "./services/MemoryStore";
 
-const CSV_BODY_LIMIT = "100kb";
+/** Fixed settings, so a developer's shell environment or `.env` cannot change test results. */
+export const TEST_CONFIG: MockConfig = DEFAULT_MOCK_CONFIG;
+
+/** The billing service behind `createTestApp()`; tests seed scenarios through it. */
+export const testBillingService = new BillingService();
 
 export interface TestServer {
   baseUrl: string;
@@ -51,23 +47,8 @@ export function createUnregisteredAuthorization(): string {
   return `Bearer ${authService.getMockAccessToken(randomUUID())}`;
 }
 
-export function createTestApp(): express.Express {
-  const app = express();
-  app.use(cors);
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.use(express.text({ type: "text/csv", limit: CSV_BODY_LIMIT }));
-  app.use(delay);
-  app.use(errorSimulation);
-  app.use(authRoutes);
-  app.use(usersRoutes);
-  app.use(shortLinksRoutes);
-  app.use(analyticsRoutes);
-  app.use(tagsRoutes);
-  app.use(abuseRoutes);
-  app.use(billingRoutes);
-  app.use(jsonErrors);
-  return app;
+export function createTestApp(config: MockConfig = TEST_CONFIG): express.Express {
+  return createApp({ config, billing: testBillingService });
 }
 
 export async function startTestServer(app: express.Express = createTestApp()): Promise<TestServer> {

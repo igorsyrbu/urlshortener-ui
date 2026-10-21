@@ -12,5 +12,3 @@ export function createBillingTrace(
     next();
   };
 }
-
-export const billingTrace = createBillingTrace(process.env.MOCK_BILLING_TRACE === "true");

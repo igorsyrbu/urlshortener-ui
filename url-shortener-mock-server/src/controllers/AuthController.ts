@@ -3,16 +3,10 @@ import { Request, Response } from "express";
 import { authService } from "../services/AuthService";
 import { getLoginPageHtml } from "../views/loginPage";
 import { memoryStore } from "../services/MemoryStore";
+import { getAppContext } from "../app-context";
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-
-const COOKIE_SAMESITE = (process.env.MOCK_COOKIE_SAMESITE || "lax") as "lax" | "strict" | "none";
-const COOKIE_SECURE = process.env.MOCK_COOKIE_SECURE === "true";
-
-const MOCK_COOLDOWN_ENABLED = process.env.MOCK_COOLDOWN_ENABLED !== "false";
-const MOCK_COOLDOWN_SECONDS = parseInt(process.env.MOCK_COOLDOWN_SECONDS || "60", 10);
-
-const cooldownStore = new Map<string, number>();
+const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const SECOND_MS = 1000;
 
 function parseCookies(cookieHeader?: string): Record<string, string> {
   const list: Record<string, string> = {};
@@ -42,18 +36,19 @@ export class AuthController {
       return;
     }
 
-    if (MOCK_COOLDOWN_ENABLED) {
+    const { config, magicLinkCooldowns } = getAppContext(req);
+    if (config.magicLinkCooldown.enabled) {
       const now = Date.now();
-      const expiry = cooldownStore.get(email);
+      const expiry = magicLinkCooldowns.get(email);
 
       if (expiry && expiry > now) {
-        const remainingSeconds = Math.ceil((expiry - now) / 1000);
+        const remainingSeconds = Math.ceil((expiry - now) / SECOND_MS);
         res.setHeader("Retry-After", String(remainingSeconds));
         res.status(429).json({ error: "Too Many Requests", message: `Please wait ${remainingSeconds} seconds before trying again.` });
         return;
       }
 
-      cooldownStore.set(email, now + MOCK_COOLDOWN_SECONDS * 1000);
+      magicLinkCooldowns.set(email, now + config.magicLinkCooldown.seconds * SECOND_MS);
     }
     res.status(200).json({ message: "Magic link sent" });
   }
@@ -82,7 +77,7 @@ export class AuthController {
     }
 
     const uuid = crypto.randomUUID();
-    res.redirect(`${FRONTEND_URL}/auth/exchange?code=mock-auth-code-${uuid}`);
+    res.redirect(`${getAppContext(req).config.frontendUrl}/auth/exchange?code=mock-auth-code-${uuid}`);
   }
 
   static codeExchange(req: Request, res: Response) {
@@ -103,12 +98,13 @@ export class AuthController {
 
     memoryStore.registerUserSession(uuid);
 
+    const { cookie } = getAppContext(req).config;
     res.cookie("refresh_token", `mock-refresh-token-${uuid}`, {
       httpOnly: true,
-      secure: COOKIE_SECURE,
-      sameSite: COOKIE_SAMESITE,
+      secure: cookie.secure,
+      sameSite: cookie.sameSite,
       path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: REFRESH_COOKIE_MAX_AGE_MS,
     });
 
     res.json({ accessToken: authService.getMockAccessToken(uuid) });
@@ -137,6 +133,6 @@ export class AuthController {
 
   static oauth2Google(req: Request, res: Response) {
     res.setHeader("Content-Type", "text/html");
-    res.send(getLoginPageHtml(FRONTEND_URL));
+    res.send(getLoginPageHtml(getAppContext(req).config.frontendUrl));
   }
 }

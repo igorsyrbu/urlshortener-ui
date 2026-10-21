@@ -1,15 +1,12 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, RequestHandler, Response } from "express";
 
-/**
- * Adds artificial latency to every response.
- * Controlled by the MOCK_DELAY environment variable (milliseconds).
- * Defaults to 0 (no delay) if not set.
- */
-export function delay(req: Request, res: Response, next: NextFunction): void {
-  const ms = parseInt(process.env.MOCK_DELAY || "0", 10);
-  if (ms > 0) {
-    setTimeout(next, ms);
-  } else {
+/** Adds artificial latency to every response (`MOCK_DELAY`, milliseconds; 0 turns it off). */
+export function createDelay(delayMs: number): RequestHandler {
+  return (_req: Request, _res: Response, next: NextFunction): void => {
+    if (delayMs > 0) {
+      setTimeout(next, delayMs);
+      return;
+    }
     next();
-  }
+  };
 }

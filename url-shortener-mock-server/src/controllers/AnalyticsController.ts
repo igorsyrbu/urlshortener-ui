@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { analyticsService } from "../services/AnalyticsService";
 import { shortLinksService } from "../services/ShortLinksService";
 import { AuthenticatedRequest } from "../middleware/authentication";
+import { getAppContext } from "../app-context";
 
 export class AnalyticsController {
   public static getAnalytics(req: Request, res: Response): void {
@@ -20,7 +21,7 @@ export class AnalyticsController {
       return;
     }
 
-    const isRandom = process.env.RANDOM_ANALYTICS_DATA === "true";
+    const isRandom = getAppContext(req).config.randomAnalytics;
     const isTrending = AnalyticsController.determineTrendingDirection(period, days);
 
     // Pre-calculate the trend and expected total for all endpoints
