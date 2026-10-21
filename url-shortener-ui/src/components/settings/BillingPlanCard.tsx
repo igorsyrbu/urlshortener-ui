@@ -17,6 +17,8 @@ interface BillingPlanCardProps {
     isSchedulingPeriod: boolean;
     onUpgrade: () => void;
     isLoading?: boolean;
+    /** Another billing action is running (portal, checkout, switch). */
+    isActionPending?: boolean;
 }
 
 function renderFeatures(plan: BillingPlan): React.ReactNode {
@@ -49,7 +51,7 @@ function renderAction(plan: BillingPlan, props: BillingPlanCardProps): React.Rea
     const isFree = plan.id === "free";
     const isUpgradePending = !isCurrent && !isFree && isUpgrading;
     const isSwitchPending = isPeriodSwitchable && isSchedulingPeriod;
-    const isButtonDisabled = (isCurrent && !isPeriodSwitchable) || isFree || isUpgrading || isSchedulingPeriod;
+    const isButtonDisabled = (isCurrent && !isPeriodSwitchable) || isFree || isUpgrading || isSchedulingPeriod || props.isActionPending === true;
     const busyLabel = isSwitchPending ? BILLING_COPY.SWITCHING_PERIOD : isUpgradePending ? BILLING_COPY.UPGRADING : undefined;
     return (
         <Button className="w-full" variant={isFree || (isCurrent && !isPeriodSwitchable) ? "outline" : "default"}

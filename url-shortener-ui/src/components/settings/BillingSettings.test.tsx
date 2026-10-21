@@ -398,6 +398,31 @@ describe("BillingSettings period switch", () => {
         mockBillingRedirect();
     });
 
+    it("disables Manage while a switch to yearly billing is being scheduled", async () => {
+        routeFetchWithAuth({
+            [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => Response.json(PRO_SUBSCRIPTION),
+            [API_ENDPOINTS.BILLING_SUBSCRIPTION_UPGRADE]: () => new Promise<Response>(() => undefined),
+        });
+        const user = await renderProWithYearlySelected();
+
+        await user.click(switchToYearlyButton());
+        await confirmPeriodSwitch(user);
+
+        await waitFor(() => expect(screen.getByRole("button", {name: BILLING_COPY.MANAGE_SUBSCRIPTION})).toBeDisabled());
+    });
+
+    it("disables the switch to yearly billing while the portal opens", async () => {
+        routeFetchWithAuth({
+            [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => Response.json(PRO_SUBSCRIPTION),
+            [API_ENDPOINTS.BILLING_PORTAL]: () => new Promise<Response>(() => undefined),
+        });
+        const user = await renderProWithYearlySelected();
+
+        await user.click(screen.getByRole("button", {name: BILLING_COPY.MANAGE_SUBSCRIPTION}));
+
+        await waitFor(() => expect(switchToYearlyButton()).toBeDisabled());
+    });
+
     it("enables the period switch on the Pro plan when yearly billing is selected", async () => {
         routeFetchWithAuth({
             [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => Response.json(PRO_SUBSCRIPTION),

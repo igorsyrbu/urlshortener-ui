@@ -6,6 +6,7 @@ import {useBillingCheckout, type BillingCheckoutState} from "@/lib/hooks/useBill
 import {useBillingPeriodUpgrade, type BillingPeriodUpgradeState} from "@/lib/hooks/useBillingPeriodUpgrade";
 import {useBillingPortal, type BillingPortalState} from "@/lib/hooks/useBillingPortal";
 import {useBillingSubscription, type BillingSubscriptionState} from "@/lib/hooks/useBillingSubscription";
+import {useBillingActionLock} from "@/lib/hooks/useBillingActionLock";
 
 interface BillingSettingsContextValue {
     cycle: BillingCycle;
@@ -16,6 +17,8 @@ interface BillingSettingsContextValue {
     checkout: BillingCheckoutState;
     periodUpgrade: BillingPeriodUpgradeState;
     portal: BillingPortalState;
+    /** True while any billing action (checkout, portal, period switch) runs; every action button is disabled then. */
+    isActionPending: boolean;
 }
 
 interface BillingSettingsProviderProps {
@@ -27,9 +30,14 @@ const BillingSettingsContext = createContext<BillingSettingsContextValue | null>
 export function BillingSettingsProvider({children}: BillingSettingsProviderProps) {
     const [cycle, setCycle] = useState<BillingCycle>("monthly");
     const subscription = useBillingSubscription();
-    const portal = useBillingPortal();
-    const checkout = useBillingCheckout(cycle, subscription.handleRetry);
-    const periodUpgrade = useBillingPeriodUpgrade(subscription.handleRetry, subscription.refreshSilently);
+    const lock = useBillingActionLock();
+    const portalState = useBillingPortal();
+    const checkoutState = useBillingCheckout(cycle, subscription.handleRetry);
+    const periodUpgradeState = useBillingPeriodUpgrade(subscription.handleRetry, subscription.refreshSilently);
+    const portal = {...portalState, handleManage: () => lock.run(portalState.handleManage)};
+    const checkout = {...checkoutState, handleUpgrade: () => lock.run(checkoutState.handleUpgrade)};
+    const periodUpgrade = {...periodUpgradeState, handleSwitch: () => lock.run(periodUpgradeState.handleSwitch)};
+    const isActionPending = lock.isLocked || checkout.isRedirecting || portal.isManaging || periodUpgrade.isScheduling;
     const {refreshSilently} = subscription;
     const {clearScheduledSwitch} = periodUpgrade;
     const handlePortalReturn = useCallback(async (): Promise<boolean> => {
@@ -41,7 +49,7 @@ export function BillingSettingsProvider({children}: BillingSettingsProviderProps
 
     return (
         <BillingSettingsContext.Provider
-            value={{cycle, handleCycleChange: setCycle, handlePortalReturn, subscription, checkout, periodUpgrade, portal}}>
+            value={{cycle, handleCycleChange: setCycle, handlePortalReturn, subscription, checkout, periodUpgrade, portal, isActionPending}}>
             {children}
         </BillingSettingsContext.Provider>
     );

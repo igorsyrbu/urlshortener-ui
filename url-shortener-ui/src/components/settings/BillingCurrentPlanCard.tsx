@@ -20,6 +20,8 @@ interface BillingCurrentPlanCardProps {
     scheduledSwitch: ScheduledPeriodSwitch | null;
     portal: BillingPortalState;
     isLoading: boolean;
+    /** Another billing action is running; Manage waits for it. */
+    isActionPending?: boolean;
 }
 
 interface PlanStatus {
@@ -77,9 +79,9 @@ function renderLoadingContent(): React.ReactNode {
     );
 }
 
-function renderManageButton(portal: BillingPortalState): React.ReactNode {
+function renderManageButton(portal: BillingPortalState, isActionPending: boolean): React.ReactNode {
     return (
-        <Button variant="outline" disabled={portal.isManaging} aria-busy={portal.isManaging}
+        <Button variant="outline" disabled={portal.isManaging || isActionPending} aria-busy={portal.isManaging}
                 aria-label={portal.isManaging ? BILLING_COPY.MANAGING_SUBSCRIPTION : BILLING_COPY.MANAGE_SUBSCRIPTION}
                 onClick={() => void portal.handleManage()}>
             {portal.isManaging ? <ButtonSpinner/> : <ExternalLink aria-hidden="true"/>}
@@ -88,7 +90,7 @@ function renderManageButton(portal: BillingPortalState): React.ReactNode {
     );
 }
 
-export function BillingCurrentPlanCard({subscription, scheduledSwitch, portal, isLoading}: BillingCurrentPlanCardProps) {
+export function BillingCurrentPlanCard({subscription, scheduledSwitch, portal, isLoading, isActionPending = false}: BillingCurrentPlanCardProps) {
     if (isLoading) {
         // The status lives on the card, not beside the sections: an extra first child would cost "Current plan" its first:pt-0.
         return (
@@ -113,7 +115,7 @@ export function BillingCurrentPlanCard({subscription, scheduledSwitch, portal, i
                 {effectiveSwitch !== null && renderScheduledSwitch(effectiveSwitch)}
                 {portal.errorMessage && <SettingsCallout tone="destructive" isAlert>{portal.errorMessage}</SettingsCallout>}
             </CardContent>
-            {isPro && <SettingsCardFooter>{renderManageButton(portal)}</SettingsCardFooter>}
+            {isPro && <SettingsCardFooter>{renderManageButton(portal, isActionPending)}</SettingsCardFooter>}
         </Card>
     );
 }

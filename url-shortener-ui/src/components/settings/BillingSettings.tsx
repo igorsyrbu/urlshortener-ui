@@ -20,9 +20,9 @@ const PeriodSwitchConfirmModal = dynamic(
 );
 
 export function BillingSettings() {
-    const {cycle, handleCycleChange, handlePortalReturn, subscription, checkout, periodUpgrade, portal} = useBillingSettings();
+    const {cycle, handleCycleChange, handlePortalReturn, subscription, checkout, periodUpgrade, portal, isActionPending} = useBillingSettings();
     const isPro = isProSubscription(subscription.subscription);
-    const isBusy = subscription.isLoading || checkout.isRedirecting || periodUpgrade.isScheduling || portal.isManaging;
+    const isBusy = subscription.isLoading || isActionPending;
     const hasScheduledSwitch = periodUpgrade.scheduledSwitch !== null || subscription.subscription.pendingSwitch !== null;
     const [isSwitchConfirmOpen, setIsSwitchConfirmOpen] = useState(false);
     const hasOpenedSwitchConfirm = useHasBeenOpened(isSwitchConfirmOpen);
@@ -82,7 +82,7 @@ export function BillingSettings() {
         <div className={SETTINGS_SECTION_LIST_CLASS}>
             <SettingsSection {...SETTINGS_SECTION_COPY.CURRENT_PLAN}>
                 <BillingCurrentPlanCard subscription={subscription.subscription} scheduledSwitch={periodUpgrade.scheduledSwitch}
-                                        portal={portal} isLoading={subscription.isLoading}/>
+                                        portal={portal} isLoading={subscription.isLoading} isActionPending={isActionPending}/>
             </SettingsSection>
             <section aria-labelledby={plansHeadingId} className="flex min-w-0 flex-col gap-4 py-8 last:pb-0">
                 <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -99,7 +99,7 @@ export function BillingSettings() {
                                              cycle={cycle} isUpgrading={checkout.isRedirecting}
                                              isPeriodSwitchable={isPeriodSwitchable(plan.id)}
                                              isSchedulingPeriod={periodUpgrade.isScheduling} onUpgrade={handleUpgrade}
-                                             isLoading={subscription.isLoading}/>
+                                             isLoading={subscription.isLoading} isActionPending={isActionPending}/>
                         ))}
                     </div>
                 </div>
