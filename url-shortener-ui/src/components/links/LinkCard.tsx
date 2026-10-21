@@ -151,6 +151,10 @@ export function LinkCard({
             event.preventDefault();
             setIsMenuOpen(false);
             onQrCode(link);
+        } else if (event.key.toLowerCase() === "a" && onArchiveRequest) {
+            event.preventDefault();
+            setIsMenuOpen(false);
+            onArchiveRequest(link);
         }
     });
 

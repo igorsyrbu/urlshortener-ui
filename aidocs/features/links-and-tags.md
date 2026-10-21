@@ -27,8 +27,8 @@ Notes on `fetchLinks`: it returns immediately if `loading` is already true, so o
 
 Keyboard shortcuts (desktop, no modal open, focus not in an input):
 
-- On a hovered or menu-open card: `E` edit, `Q` QR code, `D` delete. Each card adds one `keydown` listener on mount; the handler is a `useEffectEvent`, so it sees the latest menu state and link without the listener being re-registered on re-renders.
-- `A` (registered in the page, capture phase): with a hovered card (found with `[data-link-id]:hover`) opens the archive modal; with no hover toggles the "show archived" filter and refetches page 1. The page keeps no hover state, so moving the pointer across cards renders nothing (render budget in `links/page.perf.test.tsx`).
+- On a hovered or menu-open card: `E` edit, `Q` QR code, `A` archive or unarchive, `D` delete. Each card adds one `keydown` listener on mount; the handler is a `useEffectEvent`, so it sees the latest menu state and link without the listener being re-registered on re-renders.
+- `A` without an active card toggles the "show archived" filter and refetches page 1. The page listens on `window` and skips an event a card already handled (`defaultPrevented`); card listeners are on `document`, so they always run first, whichever cards mounted last. The page keeps no hover state, so moving the pointer across cards renders nothing (render budget in `links/page.perf.test.tsx`).
 - `isModalOpen()` from [`src/lib/utils.ts`](../../url-shortener-ui/src/lib/utils.ts) prevents shortcuts while a dialog is open.
 
 `LinkFavicon` loads `https://www.google.com/s2/favicons?sz&domain` through `next/image` with `unoptimized`, `referrerPolicy="no-referrer"` (Google does not get the app page as `Referer`) and `fetchPriority="low"`. It falls back to a link icon for non-public hosts (`.local`, `.internal`, private IP ranges), for hosts without a dot, on load error, and when the returned image is 16 px or smaller (the service's placeholder globe). Failed domains are remembered in a module-level `Set` for the page lifetime. No `next.config.ts` entry is needed because the image is `unoptimized` (see [Configuration](../configuration.md)).

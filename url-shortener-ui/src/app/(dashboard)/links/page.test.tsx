@@ -431,6 +431,19 @@ describe("links page", () => {
             expect(localStorage.getItem(SHOW_ARCHIVED_STORAGE_KEY)).toBe("true");
         });
 
+        it("archives the link whose menu is open instead of switching the filter", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(1)});
+            render(<LinksPage/>);
+            await openLinkActions(user, 0);
+            await screen.findByRole("menu");
+
+            await user.keyboard("a");
+
+            expect(await screen.findByRole("dialog")).toHaveTextContent(/archive/i);
+            expect(useLinkStore.getState().showArchived).toBe(false);
+        });
+
         it("ignores the a key while typing in the search field", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});

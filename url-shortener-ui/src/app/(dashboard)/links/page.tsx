@@ -148,43 +148,23 @@ function LinksPageContent() {
         fetchTags();
     }, [fetchTags]);
 
+    // Without an active card, A switches the archived filter. A card with its menu open or under the pointer takes A
+    // first (its listener is on document and calls preventDefault); this one is on window, so it always runs after.
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (
-                e.key.toLowerCase() !== "a" ||
-                e.metaKey ||
-                e.ctrlKey ||
-                e.altKey
-            ) {
-                return;
-            }
-
-            const target = e.target as HTMLElement;
-            if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
-            if (target.closest('[role="dialog"], [role="menu"]')) return;
-            if (archiveModalLink) return;
-            if (isModalOpen()) return;
+            if (e.defaultPrevented || e.key.toLowerCase() !== "a" || e.metaKey || e.ctrlKey || e.altKey) return;
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            if (e.target instanceof Element && e.target.closest('[role="dialog"], [role="menu"]')) return;
+            if (archiveModalLink || isModalOpen()) return;
 
             e.preventDefault();
-            e.stopPropagation();
-
-            const hoveredCard = document.querySelector<HTMLElement>("[data-link-id]:hover");
-            const hoveredId = hoveredCard?.dataset.linkId ?? null;
-
-            if (hoveredId) {
-                const hoveredLink = useLinkStore.getState().links.find((l) => l.id === hoveredId);
-                if (hoveredLink) {
-                    setArchiveModalLink(hoveredLink);
-                }
-            } else {
-                setShowArchived(!showArchived);
-                resetUrlToFirstPage();
-                fetchLinks(0);
-            }
+            setShowArchived(!showArchived);
+            resetUrlToFirstPage();
+            fetchLinks(0);
         };
 
-        document.addEventListener("keydown", handleKeyDown, true);
-        return () => document.removeEventListener("keydown", handleKeyDown, true);
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
     }, [showArchived, fetchLinks, setShowArchived, archiveModalLink, resetUrlToFirstPage]);
 
     const handleShowArchivedChange = (value: boolean) => {

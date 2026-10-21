@@ -218,6 +218,7 @@ describe("LinkCard", () => {
             ["e", "onEdit"],
             ["q", "onQrCode"],
             ["d", "onDelete"],
+            ["a", "onArchiveRequest"],
         ] as const)("runs the action bound to %s", async (key, handlerName) => {
             const user = userEvent.setup();
             const link = createLinkItem();
