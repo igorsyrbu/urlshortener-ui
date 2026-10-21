@@ -11,7 +11,7 @@ interface FieldErrorProps {
 /** Validation message for one form field; `role="alert"` announces it as soon as it appears. */
 export function FieldError({id, children, className}: FieldErrorProps) {
     return (
-        <p id={id} role="alert" className={cn("text-sm text-destructive break-words", className)}>
+        <p id={id} role="alert" className={cn("text-sm text-destructive wrap-anywhere", className)}>
             {children}
         </p>
     );

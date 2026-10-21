@@ -99,7 +99,7 @@ function TagsSection({tags}: { tags: TagItem[] }) {
                     </TagBadge>
                     {isHovering && (
                         <div
-                            className="absolute bottom-full right-0 mb-1.5 flex items-center gap-2 z-50 bg-background border-[0.5px] border-border rounded-md px-2 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] whitespace-nowrap">
+                            className="absolute bottom-full right-0 mb-1.5 flex items-center gap-2 z-50 bg-background border-[0.5px] border-border rounded-md px-2 py-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex-wrap justify-end w-max max-w-64">
                             {hidden.map((tag) => (
                                 <TagBadge key={tag.name} tag={tag}/>
                             ))}
@@ -181,10 +181,10 @@ export function LinkCard({
             )}
 
             <div className="flex-1 min-w-0 flex flex-col gap-1">
-                <h3 className="text-sm font-bold text-card-foreground leading-tight pt-0.5 truncate">{link.title}</h3>
+                <h3 className="text-sm font-bold text-card-foreground leading-tight pt-0.5 truncate" title={link.title}>{link.title}</h3>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 mt-0.5 min-w-0">
                     <div className="flex items-center gap-1 min-w-0 shrink">
-                        <span className="text-[11px] font-bold text-foreground bg-muted px-1.5 py-0.5 rounded truncate">
+                        <span className="text-[11px] font-bold text-foreground bg-muted px-1.5 py-0.5 rounded truncate" title={link.shortUrl}>
                             {link.shortUrl}
                         </span>
                         <button
@@ -205,7 +205,7 @@ export function LinkCard({
                         <CornerDownRight className="size-3 text-muted-foreground/70 sm:hidden shrink-0"/>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <span className="text-[11px] text-muted-foreground truncate max-w-50">
+                                <span className="text-[11px] text-muted-foreground truncate max-w-50" title={link.longUrl}>
                                     {getSafeDomain(link.longUrl)}
                                 </span>
                             </TooltipTrigger>

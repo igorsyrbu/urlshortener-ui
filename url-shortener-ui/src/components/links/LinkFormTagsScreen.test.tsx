@@ -85,6 +85,13 @@ describe("TagsScreenContent", () => {
         expect(onCreateTag).toHaveBeenCalledOnce();
     });
 
+    it("exposes a very long search text in the create option as a tooltip", () => {
+        const longSearch = "x".repeat(300);
+        renderScreen({tagSearch: longSearch, filteredTags: [], showCreateOption: true});
+
+        expect(screen.getByTitle(longSearch)).toHaveTextContent(`Create tag "${longSearch}"`);
+    });
+
     it("disables tag creation while a creation is in flight", () => {
         renderScreen({tagSearch: "Fresh", filteredTags: [], showCreateOption: true, createTagLoading: true});
 

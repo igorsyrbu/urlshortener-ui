@@ -20,8 +20,8 @@ export function AccountMenuDrawer({open, onOpenChange, user, onSettingsClick, on
                 <DrawerDescription className="sr-only">Settings and log out</DrawerDescription>
 
                 <div className="flex flex-col px-6 py-3 mt-3">
-                    <p className="text-sm font-semibold text-foreground truncate">{user?.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    <p className="text-sm font-semibold text-foreground truncate" title={user?.name}>{user?.name}</p>
+                    <p className="text-xs text-muted-foreground truncate" title={user?.email}>{user?.email}</p>
                 </div>
 
                 <div className="hairline-divider my-1"/>

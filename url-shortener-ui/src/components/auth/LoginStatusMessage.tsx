@@ -28,7 +28,7 @@ export function LoginStatusMessage({message}: LoginStatusMessageProps) {
                     : "border-destructive/20 bg-destructive/10 text-destructive",
             )}
         >
-            <p className="flex items-center gap-2 text-sm font-medium">
+            <p className="flex items-center gap-2 text-sm font-medium wrap-anywhere">
                 {isSuccess ? "✓ " : "✗ "}
                 {message.text}
             </p>

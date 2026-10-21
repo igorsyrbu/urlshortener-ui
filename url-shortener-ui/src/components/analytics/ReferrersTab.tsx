@@ -66,7 +66,8 @@ export function ReferrersTab({referrers, isLoading, totalClicks}: ReferrersTabPr
                             </div>
                         )}
                         <span
-                            className="text-[13px] font-medium text-foreground/90 dark:text-foreground truncate">
+                            className="text-[13px] font-medium text-foreground/90 dark:text-foreground truncate"
+                            title={value}>
                             {value}
                         </span>
                     </div>

@@ -127,7 +127,7 @@ export function TagsScreenContent({
                         onClick={onCreateTag}
                         disabled={createTagLoading}
                         className={cn(
-                            "flex w-full items-center gap-3 rounded-xl border border-dashed border-border px-3 py-2.5 text-sm text-left transition-colors hover:bg-muted/10",
+                            "flex w-full min-w-0 items-center gap-3 rounded-xl border border-dashed border-border px-3 py-2.5 text-sm text-left transition-colors hover:bg-muted/10",
                             createTagLoading && "cursor-not-allowed opacity-50",
                         )}
                     >
@@ -136,7 +136,7 @@ export function TagsScreenContent({
                         ) : (
                             <Plus className="size-4.5 text-muted-foreground shrink-0"/>
                         )}
-                        <span className="truncate text-foreground text-sm">
+                        <span className="truncate text-foreground text-sm" title={tagSearch}>
                             Create tag <span className="font-semibold text-primary">&quot;{tagSearch}&quot;</span>
                         </span>
                     </button>

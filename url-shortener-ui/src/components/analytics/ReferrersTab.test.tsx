@@ -24,6 +24,15 @@ describe("ReferrersTab", () => {
         expect(screen.getByText("No referrer data active.")).toBeInTheDocument();
     });
 
+    it("exposes a very long referrer as a tooltip so its bar label can be truncated", () => {
+        const longLabel = `${"x".repeat(300)}.example.com`;
+        const referrers = [createGroupedClick({label: longLabel, clicks: 5, hostname: longLabel})];
+
+        render(<ReferrersTab referrers={referrers} isLoading={false} totalClicks={5}/>);
+
+        expect(screen.getByText(longLabel)).toHaveAttribute("title", longLabel);
+    });
+
     it("renders each referrer with the referrer colour", () => {
         const referrers = [createGroupedClick({label: "Google", clicks: 5, hostname: "google.com"})];
 

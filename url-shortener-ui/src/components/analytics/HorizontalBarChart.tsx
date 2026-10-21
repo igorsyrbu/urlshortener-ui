@@ -132,12 +132,12 @@ export function HorizontalBarChart({
 
                                 return (
                                     <div
-                                        className="bg-popover text-popover-foreground rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-[0.5px] border-border/40 p-2.5 pr-4 flex items-stretch gap-3 min-w-37.5">
+                                        className="bg-popover text-popover-foreground rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-[0.5px] border-border/40 p-2.5 pr-4 flex items-stretch gap-3 min-w-37.5 max-w-xs">
                                         <div className="w-1.5 rounded-full shrink-0"
                                              style={{backgroundColor: payloadData.fill}}/>
-                                        <div className="flex flex-col flex-1 gap-1">
+                                        <div className="flex flex-col flex-1 min-w-0 gap-1">
                                             <span
-                                                className="text-[13px] font-medium leading-none mb-1">{payloadData.name}</span>
+                                                className="text-[13px] font-medium leading-tight mb-1 wrap-anywhere">{payloadData.name}</span>
                                             <div className="flex justify-between items-center w-full">
                                                 <span className="text-[12px] text-muted-foreground mr-4">Clicks</span>
                                                 <div className="flex items-center gap-2">

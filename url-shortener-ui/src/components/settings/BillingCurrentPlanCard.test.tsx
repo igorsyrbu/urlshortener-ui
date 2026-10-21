@@ -44,6 +44,13 @@ describe("BillingCurrentPlanCard", () => {
         expect(screen.getByText((content) => content.startsWith(BILLING_COPY.CANCELS_ON))).toBeInTheDocument();
     });
 
+    it("puts the whole renewal sentence in the tooltip, not just the date", () => {
+        renderCard(PRO);
+
+        const renewal = screen.getByText((content) => content.startsWith(BILLING_COPY.RENEWS_ON));
+        expect(renewal).toHaveAttribute("title", renewal.textContent);
+    });
+
     it("marks a scheduled yearly switch as a pending change and says when it applies", () => {
         render(<BillingCurrentPlanCard subscription={PRO} scheduledSwitch={{effectiveDate: null}} portal={createPortal()} isLoading={false}/>);
 

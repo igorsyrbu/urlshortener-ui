@@ -62,6 +62,13 @@ describe("TagCard on desktop", () => {
         expect(screen.getByText("Marketing")).toBeInTheDocument();
     });
 
+    it("exposes a very long tag name as a tooltip so it can be truncated", () => {
+        const longName = "x".repeat(300);
+        renderCard(createTag({name: longName}));
+
+        expect(screen.getByText(longName)).toHaveAttribute("title", longName);
+    });
+
     it("edits the tag from the actions menu", async () => {
         const user = userEvent.setup();
         const tag = createTag();

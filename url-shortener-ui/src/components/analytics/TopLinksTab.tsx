@@ -70,7 +70,8 @@ export function TopLinksTab({topLinks, isLoading, totalClicks}: TopLinksTabProps
                             </div>
                         )}
                         <span
-                            className={`text-[13px] font-medium text-foreground/90 dark:text-foreground truncate ${item?.longUrl ? "" : "pl-7"}`}>
+                            className={`text-[13px] font-medium text-foreground/90 dark:text-foreground truncate ${item?.longUrl ? "" : "pl-7"}`}
+                            title={value}>
                             {value}
                         </span>
                     </div>

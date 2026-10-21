@@ -33,6 +33,16 @@ describe("InspectLinkPreviewCard", () => {
         expect(screen.getByRole("heading", {name: longTitle})).toHaveAttribute("title", longTitle);
     });
 
+    it("exposes a very long description and destination as tooltips", () => {
+        const long = "x".repeat(300);
+        const destination = `https://${long}.example.com/a`;
+
+        render(<InspectLinkPreviewCard title="Great article" description={long} longUrl={destination}/>);
+
+        expect(screen.getByText(long)).toHaveAttribute("title", long);
+        expect(screen.getByText(`${long}.example.com`)).toHaveAttribute("title", `${long}.example.com`);
+    });
+
     it("shows the unavailable placeholder without an image", () => {
         render(<InspectLinkPreviewCard title="Great article" ogImageUrl={null} longUrl={LONG_URL}/>);
 

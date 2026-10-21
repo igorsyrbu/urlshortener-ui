@@ -62,7 +62,7 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
                 >
                     <Tag className="size-3.5 shrink-0"/>
                 </Badge>
-                <span className="text-sm font-medium text-foreground truncate">
+                <span className="text-sm font-medium text-foreground truncate" title={tag.name}>
                     {tag.name}
                 </span>
             </div>

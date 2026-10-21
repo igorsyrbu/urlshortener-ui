@@ -41,6 +41,14 @@ describe.each([
         expect(screen.getByText(LONG_URL)).toBeInTheDocument();
     });
 
+    it("exposes very long addresses as tooltips so they can be truncated", () => {
+        const long = "x".repeat(300);
+        renderDeleteModal({shortUrl: `https://sho.rt/${long}`, longUrl: `https://example.com/${long}`});
+
+        expect(screen.getByText(`https://sho.rt/${long}`)).toHaveAttribute("title", `https://sho.rt/${long}`);
+        expect(screen.getByText(`https://example.com/${long}`)).toHaveAttribute("title", `https://example.com/${long}`);
+    });
+
     it("requires typing the short link handle before deleting", async () => {
         const user = userEvent.setup();
         const {onConfirm} = renderDeleteModal();

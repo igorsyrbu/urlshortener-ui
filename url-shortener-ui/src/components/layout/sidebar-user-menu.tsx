@@ -78,7 +78,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
             </Avatar>
             <div className="flex flex-col justify-center overflow-hidden text-sm">
                 {user ? (
-                    <p className="truncate text-sidebar-foreground">{user.name || user.email}</p>
+                    <p className="truncate text-sidebar-foreground" title={user.name || user.email}>{user.name || user.email}</p>
                 ) : (
                     <div className="h-4 w-24 rounded bg-muted animate-pulse" aria-hidden="true"/>
                 )}
@@ -96,8 +96,8 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
                     <DropdownMenuContent className="w-56" align="start" forceMount>
                         <DropdownMenuLabel className="font-normal">
                             <div className="flex flex-col space-y-1">
-                                <p className="truncate pb-1 text-sm font-medium leading-none">{user?.name}</p>
-                                <p className="truncate pb-1 text-xs leading-none text-muted-foreground">{user?.email}</p>
+                                <p className="truncate pb-1 text-sm font-medium leading-none" title={user?.name}>{user?.name}</p>
+                                <p className="truncate pb-1 text-xs leading-none text-muted-foreground" title={user?.email}>{user?.email}</p>
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator/>

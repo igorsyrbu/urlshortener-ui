@@ -54,7 +54,8 @@ function renderPeriodNote(subscription: BillingSubscription): React.ReactNode {
     const periodEnd = formatPeriodEnd(subscription.currentPeriodEnd);
     if (periodEnd === null) return null;
     const label = subscription.cancelAtPeriodEnd ? BILLING_COPY.CANCELS_ON : BILLING_COPY.RENEWS_ON;
-    return <p className="min-w-0 truncate text-sm text-muted-foreground" title={periodEnd}>{`${label} ${periodEnd}`}</p>;
+    const text = `${label} ${periodEnd}`;
+    return <p className="min-w-0 truncate text-sm text-muted-foreground" title={text}>{text}</p>;
 }
 
 function renderScheduledSwitch(scheduledSwitch: ScheduledPeriodSwitch): React.ReactNode {

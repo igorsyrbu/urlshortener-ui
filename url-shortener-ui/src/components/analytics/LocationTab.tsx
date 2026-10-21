@@ -54,7 +54,7 @@ export function LocationTab({locationTab, data, isLoading, totalClicks}: Locatio
                 <foreignObject x={x + 10} y={y} width="100%" height={height}>
                     <div {...{ xmlns: "http://www.w3.org/1999/xhtml" }} className="w-[calc(100%-110px)] h-full flex items-center pr-2 gap-3">
                         <LocationIcon label={item?.rawLabel || ""} isCountry={isCountry}/>
-                        <span className="text-[13px] font-medium text-foreground/90 dark:text-foreground truncate">
+                        <span className="text-[13px] font-medium text-foreground/90 dark:text-foreground truncate" title={value}>
                             {value}
                         </span>
                     </div>

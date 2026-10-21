@@ -74,6 +74,17 @@ describe("LinkCard", () => {
     afterEach(() => { vi.useRealTimers(); });
 
     describe("content", () => {
+        it("exposes a very long title, short URL and destination as tooltips so they can be truncated", () => {
+            const long = "x".repeat(300);
+            const link = createLinkItem({title: `Title ${long}`, shortUrl: `https://sho.rt/${long}`, longUrl: `https://example.com/${long}`});
+
+            renderCard(link);
+
+            expect(screen.getByRole("heading", {name: link.title})).toHaveAttribute("title", link.title);
+            expect(screen.getByText(link.shortUrl)).toHaveAttribute("title", link.shortUrl);
+            expect(screen.getByTitle(link.longUrl)).toHaveTextContent("example.com");
+        });
+
         it("shows the title, short URL and destination domain", () => {
             renderCard(createLinkItem({title: "My article", shortUrl: "https://sho.rt/abc", longUrl: "https://www.example.com/a/b?x=1"}));
 

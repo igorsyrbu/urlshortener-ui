@@ -41,10 +41,10 @@ export function LinkPreviewCard({shortUrl, longUrl}: LinkPreviewCardProps) {
                 <LinkFavicon longUrl={longUrl}/>
             </div>
             <div className="flex flex-col min-w-0">
-                <span className="text-sm font-bold text-foreground truncate">{shortUrl}</span>
+                <span className="text-sm font-bold text-foreground truncate" title={shortUrl}>{shortUrl}</span>
                 <span className="flex items-center gap-1 text-xs text-muted-foreground min-w-0 overflow-hidden">
                     <CornerDownRight className="size-3 shrink-0"/>
-                    <span className="truncate">{longUrl}</span>
+                    <span className="truncate" title={longUrl}>{longUrl}</span>
                 </span>
             </div>
         </div>

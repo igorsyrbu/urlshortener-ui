@@ -79,7 +79,7 @@ export function DeviceTab({deviceTab, data, isLoading, totalClicks}: DeviceTabPr
                                 className="size-full object-contain dark:invert"
                             />
                         </div>
-                        <span className="text-[13px] font-medium text-foreground/90 dark:text-foreground truncate">
+                        <span className="text-[13px] font-medium text-foreground/90 dark:text-foreground truncate" title={value}>
                             {value}
                         </span>
                     </div>

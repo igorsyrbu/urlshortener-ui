@@ -31,7 +31,7 @@ export function InspectLinkPreviewCard({
                     <span className="size-5 shrink-0 overflow-hidden rounded-full">
                         <LinkFavicon longUrl={longUrl}/>
                     </span>
-                    <span className="text-xs text-muted-foreground truncate">
+                    <span className="text-xs text-muted-foreground truncate" title={getDomain(longUrl)}>
                         {getDomain(longUrl)}
                     </span>
                 </div>
@@ -39,7 +39,7 @@ export function InspectLinkPreviewCard({
                     {title}
                 </h2>
                 {description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
+                    <p className="text-sm text-muted-foreground line-clamp-2 wrap-anywhere" title={description}>
                         {description}
                     </p>
                 )}

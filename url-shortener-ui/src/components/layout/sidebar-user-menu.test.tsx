@@ -150,6 +150,14 @@ describe("SidebarUserMenu trigger", () => {
         mediaQuery.isDesktop = true;
     });
 
+    it("exposes a very long name as a tooltip so it can be truncated", () => {
+        const longName = "x".repeat(300);
+        useAuthStore.setState({user: {email: USER.email, name: longName}});
+        render(<SidebarUserMenu/>);
+
+        expect(screen.getByText(longName)).toHaveAttribute("title", longName);
+    });
+
     it("falls back to the email when the user has no name", () => {
         useAuthStore.setState({user: {email: USER.email, name: ""}});
         render(<SidebarUserMenu/>);
