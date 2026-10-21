@@ -6,15 +6,16 @@ import {API_ENDPOINTS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import type {ShortLinkPreviewDTO} from "@/lib/api-types";
 
-const REDIRECT_SIGNAL = "NEXT_REDIRECT";
+const NOT_FOUND_SIGNAL = "NEXT_HTTP_ERROR_FALLBACK;404";
 
 const navigation = vi.hoisted(() => ({
-    redirect: vi.fn((): never => {
-        throw new Error("NEXT_REDIRECT");
+    notFound: vi.fn((): never => {
+        throw new Error("NEXT_HTTP_ERROR_FALLBACK;404");
     }),
+    redirect: vi.fn(),
 }));
 
-vi.mock("next/navigation", () => ({redirect: navigation.redirect}));
+vi.mock("next/navigation", () => ({notFound: navigation.notFound, redirect: navigation.redirect}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn()}}));
 
 const PREVIEW: ShortLinkPreviewDTO = {
@@ -62,12 +63,13 @@ describe("inspect page", () => {
             .toHaveAttribute("href", `/report-abuse?shortUrl=${encodeURIComponent(PREVIEW.shortUrl)}`);
     });
 
-    it("sends the visitor home when the link does not exist", async () => {
+    it("answers with the not-found page instead of redirecting when the link does not exist", async () => {
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, {status: 404})));
 
-        await expect(renderInspectPage()).rejects.toThrow(REDIRECT_SIGNAL);
+        await expect(renderInspectPage()).rejects.toThrow(NOT_FOUND_SIGNAL);
 
-        expect(navigation.redirect).toHaveBeenCalledExactlyOnceWith("/");
+        expect(navigation.notFound).toHaveBeenCalledOnce();
+        expect(navigation.redirect).not.toHaveBeenCalled();
     });
 
     it("logs and rethrows when the preview service fails", async () => {

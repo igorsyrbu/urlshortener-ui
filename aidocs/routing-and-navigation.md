@@ -21,7 +21,7 @@ The UI uses the App Router exclusively (`src/app/`); there is no Pages Router an
 | `/settings` | `(dashboard)/settings/page.tsx` | HTTP 307 from `next.config.ts` `redirects()`; the `redirect()`-only page is a fallback | Redirects to `SETTINGS_ROUTES.DEFAULT` (`/settings/general`). Nothing in the app links here. |
 | `/settings/general` | `(dashboard)/settings/general/page.tsx` | client | Profile, appearance, theme, preferences, sessions, danger zone. |
 | `/settings/billing` | `(dashboard)/settings/billing/page.tsx` | server wrapper | `BillingSettingsProvider` + `BillingSettings` (client). |
-| `/inspect/[key]` | `inspect/[key]/page.tsx` | server, async | Public link inspector (preview card, destination URL, report link). Redirects to `/` when the preview returns 404. |
+| `/inspect/[key]` | `inspect/[key]/page.tsx` | server, async | Public link inspector (preview card, destination URL, report link). Answers HTTP 404 with its own `not-found.tsx` ("Link not found") when the preview returns 404. |
 | `/report-abuse?shortUrl=` | `(legal)/report-abuse/page.tsx` | server, async | Public abuse report form; `shortUrl` prefills the field. |
 | `/api/shortlinks/import/updates` | `api/shortlinks/import/updates/route.ts` | route handler | SSE pass-through, not a page. See [architecture](architecture.md#sse-pass-through-route-handler). |
 | `/manifest.webmanifest` | `manifest.ts` | metadata route | PWA manifest with `start_url: "/links"`. |
@@ -34,7 +34,7 @@ Why server vs client per file is in [architecture](architecture.md#rendering-mod
 ## Redirects
 
 - `/` and `/settings` are `redirect()`-only server pages (`next/navigation`). Keep such pages free of other logic. `/settings` is also redirected over HTTP in `next.config.ts` (`redirects()`, 307), so the server answers before any HTML; links go straight to the destination (`SETTINGS_ROUTES.DEFAULT`) instead of through a redirect.
-- `inspect/[key]` calls `redirect("/")` when the backend has no preview for the key (observation, see limitations).
+- `inspect/[key]` calls `notFound()` when the backend has no preview for the key, so a visitor sees "Link not found" instead of being bounced through `/` -> `/links` -> `/login`. Not-found pages share `components/layout/NotFoundView` (404 mark, heading, text, action buttons as children).
 - Client redirects use `router.replace` when the previous entry must not stay in history (login after a failed auth check, after logout, `auth/exchange` -> `/links` so Back cannot resend the spent code) and `router.push` otherwise (link creation and import -> `/links`).
 - Hard navigations (`window.location`) exist for things the router cannot do: `fetchWithAuth` goes to `/login` when refresh fails ([api-layer](api-layer.md)), Google sign-in goes to `/api/oauth2/authorization/google` (cross-origin redirect chain through the proxy), billing checkout/portal go to provider URLs (`src/lib/billing-redirect.ts`).
 - Route constants: `ROUTES` (`LOGIN`, `LINKS`, `SETTINGS`) in [`src/lib/constants.ts`](../url-shortener-ui/src/lib/constants.ts) and `SETTINGS_ROUTES` in [`src/lib/settings-constants.ts`](../url-shortener-ui/src/lib/settings-constants.ts). Prefer them over string literals for these paths.
@@ -110,7 +110,7 @@ Details of the links and tags behaviours: [features/links-and-tags](features/lin
 
 - Observation: `/dashboard` is a placeholder page, yet it is the target of "Go to Dashboard" in `not-found.tsx` and the first sidebar item, while `/` redirects to `/links`. Existing behaviour - do not change as a drive-by.
 - Observation: `not-found.tsx` and `sidebar-user-menu.tsx` use string literals (`"/dashboard"`, `"/login"`) instead of `ROUTES`; `ROUTES` has no entries for `/dashboard`, `/tags`, `/analytics`, `/inspect` or `/report-abuse`. Existing exception - not a template.
-- Observation: `inspect/[key]/page.tsx` (server fetch, `redirect("/")` on a missing key) and `report-abuse/page.tsx` (async server page) are exceptions to the client-rendered model; see [architecture](architecture.md#known-limitations-and-existing-exceptions).
+- Observation: `inspect/[key]/page.tsx` (server fetch, `notFound()` on a missing key) and `report-abuse/page.tsx` (async server page) are exceptions to the client-rendered model; see [architecture](architecture.md#known-limitations-and-existing-exceptions).
 - Observation: the auth gate is client-side, so a protected page's JS bundle is delivered before the check completes; nothing user-specific is rendered until it passes.
 - Observation: `app/error.tsx` exports a component named `GlobalError`, but the file is a regular segment boundary, not `global-error.tsx`.
 - Observation (dev server only): Back to a dashboard page that was opened with a full page load (for example from the mock checkout) reloads it from the HTTP cache (`Cache-Control: no-cache`), and React never hydrates, so the page stays on "Securing session..." until a reload. Seen with `next dev` in the in-app browser; the same Back on a production build (`next start`) hydrates normally. Reload the page; this is not an app bug to fix.

@@ -2,7 +2,7 @@ import type {Metadata} from "next";
 import {ShortLinkPreviewDTO} from "@/lib/api-types";
 import {getBackendApiBaseUrl} from "@/lib/backend-url";
 import {API_ENDPOINTS, DASHBOARD_CONTENT_SHELL_CLASS, PAGE_TITLES} from "@/lib/constants";
-import {redirect} from "next/navigation";
+import {notFound} from "next/navigation";
 import {logger} from "@/lib/logger";
 import Link from "next/link";
 import {LinkIcon, Flag} from "lucide-react";
@@ -35,7 +35,7 @@ export default async function InspectPage({params}: InspectPageProps) {
     const preview = await fetchPreview(key);
 
     if (!preview) {
-        redirect("/");
+        notFound();
     }
 
     const reportUrl = `/report-abuse?shortUrl=${encodeURIComponent(preview.shortUrl)}`;

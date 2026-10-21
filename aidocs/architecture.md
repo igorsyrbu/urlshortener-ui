@@ -99,7 +99,7 @@ Rules that follow from this:
 
 ## Known limitations and existing exceptions
 
-- Observation: `src/app/inspect/[key]/page.tsx` is an async server component that calls `fetch` on `getBackendApiBaseUrl()` with `cache: "no-store"` and `redirect("/")`s on 404. This is server-side data fetching and contradicts the product decision above. Existing exception - not a template; do not copy it and do not change it as a drive-by.
+- Observation: `src/app/inspect/[key]/page.tsx` is an async server component that calls `fetch` on `getBackendApiBaseUrl()` with `cache: "no-store"` and calls `notFound()` on 404 (HTTP 404 with `inspect/[key]/not-found.tsx`). This is server-side data fetching and contradicts the product decision above. Existing exception - not a template; do not copy it and do not change it as a drive-by.
 - Observation: `src/app/(legal)/report-abuse/page.tsx` is an async server component that awaits `searchParams` and reads the Turnstile env vars; it makes no data fetch (the form posts from the browser). Existing exception - not a template.
 - Observation: the inspect page (server side) calls the backend directly through `getBackendApiBaseUrl()`, not the `/api` proxy. See [configuration](configuration.md#ui) and [features/links-and-tags](features/links-and-tags.md).
 - Observation: `src/lib/types.ts`, `src/lib/tag-constants.ts` and `src/lib/hooks/useTagMutations.ts` import `BadgeVariant` from `@/components/ui/badge`, and `src/lib/hooks/useLinkImport.ts` imports from `@/components/links/import-export-constants`. This is `lib` depending on `components`, against the intended direction. Existing exception - not a template.
