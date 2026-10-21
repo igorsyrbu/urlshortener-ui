@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useId, useRef, useState} from "react";
 import {Check, ChevronDown, Loader2, Plus, Tag} from "lucide-react";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {BadgeVariant} from "@/components/ui/badge";
@@ -55,6 +55,7 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
     const [createLoading, setCreateLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const listboxId = useId();
 
     const handleCreate = async () => {
         const tagName = search.trim();
@@ -155,9 +156,12 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
                     value={search}
                     onChange={handleSearchChange}
                     inputRef={searchInputRef}
+                    listboxId={listboxId}
+                    activeOptionId={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
                 />
 
-                <div className="max-h-48 overflow-y-auto p-1" style={{WebkitOverflowScrolling: 'touch'}}>
+                <div id={listboxId} role="listbox" aria-label="Tags" aria-multiselectable="true"
+                     className="max-h-48 overflow-y-auto p-1" style={{WebkitOverflowScrolling: 'touch'}}>
                     {loading && tags.length === 0 ? (
                         <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
                             <Loader2 className="size-4 animate-spin"/>
@@ -174,6 +178,8 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
                             return (
                                 <button
                                     key={t.id}
+                                    id={`${listboxId}-option-${index}`}
+                                    tabIndex={-1}
                                     type="button"
                                     role="option"
                                     aria-selected={isSelected}
@@ -214,6 +220,8 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
 
                     {showCreateOption && (
                         <button
+                            id={`${listboxId}-option-${filteredTags.length}`}
+                            tabIndex={-1}
                             type="button"
                             role="option"
                             aria-selected={false}

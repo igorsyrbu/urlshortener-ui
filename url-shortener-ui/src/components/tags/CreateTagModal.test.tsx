@@ -37,7 +37,7 @@ describe("CreateTagModal", () => {
         const onOpenChange = renderCreateModal();
 
         await user.type(screen.getByLabelText("Name"), "Sales");
-        await user.click(screen.getByRole("button", {name: "Purple"}));
+        await user.click(screen.getByRole("radio", {name: "Purple"}));
         await user.click(screen.getByRole("button", {name: /^Create/}));
 
         expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.TAGS, {

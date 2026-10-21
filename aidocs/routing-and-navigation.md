@@ -70,7 +70,7 @@ There are no `loading.tsx` files and none may be added. Loading states are compo
 - Internal navigation uses `next/link` (`Link`): sidebar items (`sidebar-nav.tsx`), settings tabs (`SettingsTabs`: `Link`s inside a `<nav>` with `aria-current="page"`), and the inspect page header/report links.
 - Programmatic navigation uses `useRouter` from `next/navigation`.
 - The only raw `<a>` is the skip link in the dashboard layout (`href="#main-content"`, an in-page fragment, not a route). Internal routes always use `Link`. External provider URLs are opened with `window.location.assign` / `window.open` ([`src/lib/billing-redirect.ts`](../url-shortener-ui/src/lib/billing-redirect.ts)).
-- Active state: `sidebar-nav.tsx` marks an item active when `isPathWithin(pathname, matchPrefix ?? href)`: the path equals the prefix or starts with `prefix + "/"`. Settings links to `/settings/general` with `matchPrefix: ROUTES.SETTINGS`, so it stays active on every settings tab.
+- Active state: `sidebar-nav.tsx` marks an item active when `isPathWithin(pathname, matchPrefix ?? href)`: the path equals the prefix or starts with `prefix + "/"`. The active link carries `aria-current="page"` (the bold text alone was not announced). Settings links to `/settings/general` with `matchPrefix: ROUTES.SETTINGS`, so it stays active on every settings tab.
 
 ## Sidebar and settings tabs
 

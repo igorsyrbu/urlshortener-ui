@@ -61,6 +61,14 @@ describe("SidebarNav", () => {
         expect(isHighlighted(screen.getByRole("link", {name: "Links"}))).toBe(true);
     });
 
+    it("marks only the current section with aria-current", () => {
+        navigation.pathname = "/settings/billing";
+        render(<SidebarNav/>);
+
+        expect(screen.getByRole("link", {name: /Settings/, current: "page"})).toBeInTheDocument();
+        expect(screen.getAllByRole("link").filter((link) => link.getAttribute("aria-current") === "page")).toHaveLength(1);
+    });
+
     it("does not highlight a section whose name merely prefixes the current route", () => {
         renderAt("/linksfoo");
 

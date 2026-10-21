@@ -81,7 +81,7 @@ Check this catalogue and the feature folders before writing a new component. All
 | Tooltip only when text is truncated | `OverflowTooltip` (`overflow-tooltip.tsx`) |
 | Keyboard hints | `Kbd`, `KbdGroup` (`kbd.tsx`), `EnterKbd` (`enter-kbd.tsx`), `SHORTCUT_KEY_CLASS` |
 | Avatar | `Avatar*` (`avatar.tsx`) |
-| Date picking | `Calendar` (`calendar.tsx`, react-day-picker), `IosWheelPicker` (`ios-wheel-picker.tsx`, embla; styles in `globals.css`) |
+| Date picking | `Calendar` (`calendar.tsx`, react-day-picker), `IosWheelPicker` (`ios-wheel-picker.tsx`, embla; styles in `globals.css`). The wheel is a focusable `role="listbox"` with an `ariaLabel` (required), `role="option"` items with `aria-selected` / `aria-disabled` and `aria-activedescendant`; Up / Down (skipping disabled items, wrapping when `loop`), Page Up / Down (5), Home / End call `onChange`. The listbox is the flat outer element, so its focus ring is not drawn on the 3D-rotated container |
 | Charts | `ChartContainer` and friends (`chart.tsx`, Recharts wrapper); see [features/analytics.md](features/analytics.md) |
 | Hover glow | `GlowingEffect` (`glowing-effect.tsx`); used only in `CreateLinkTitleField` |
 | Toasts | `Toaster` (`sonner.tsx`), mounted once in the root layout; call `toast` from `sonner` (Sonner renders in a live region, so toasts are announced) |

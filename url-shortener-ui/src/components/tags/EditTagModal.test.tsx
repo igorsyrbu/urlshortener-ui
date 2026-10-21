@@ -37,7 +37,7 @@ describe("EditTagModal", () => {
 
         await user.clear(screen.getByLabelText("Name"));
         await user.type(screen.getByLabelText("Name"), "Sales");
-        await user.click(screen.getByRole("button", {name: "Green"}));
+        await user.click(screen.getByRole("radio", {name: "Green"}));
         await user.click(screen.getByRole("button", {name: /^Save/}));
 
         expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.TAGS, {

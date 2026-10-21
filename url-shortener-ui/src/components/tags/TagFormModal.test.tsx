@@ -89,7 +89,7 @@ describe.each([
         renderModal({onSubmit});
 
         await user.type(getNameInput(), "Sales");
-        await user.click(screen.getByRole("button", {name: "Purple"}));
+        await user.click(screen.getByRole("radio", {name: "Purple"}));
         await user.click(getSubmitButton());
 
         expect(onSubmit).toHaveBeenCalledExactlyOnceWith("Sales", "purple");

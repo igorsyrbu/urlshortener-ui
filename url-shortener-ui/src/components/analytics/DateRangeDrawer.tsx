@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useState, useCallback, useMemo, useRef, useEffect} from "react";
+import React, {useState, useCallback, useMemo, useRef, useEffect, useId} from "react";
 import {DateRange} from "react-day-picker";
 import {
     Drawer,
@@ -77,6 +77,7 @@ export function DateRangeDrawer({
                                     initialRange,
                                     period,
                                 }: DateRangeDrawerProps) {
+    const wheelPickerId = useId();
     const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(() => getOpeningView(initialRange, period).range);
     const [displayMonth, setDisplayMonth] = useState(() => getOpeningView(initialRange, period).month);
     const [displayYear, setDisplayYear] = useState<number>(() => getOpeningView(initialRange, period).year);
@@ -230,9 +231,12 @@ export function DateRangeDrawer({
 
                 <div className="relative h-105 flex flex-col">
                     <div className="pl-9 pr-7 mt-4 flex items-center justify-between shrink-0">
+                        <span className="sr-only" aria-live="polite">{headerLabel}</span>
                         <button
                             type="button"
                             onClick={handleTogglePicker}
+                            aria-expanded={showWheelPicker}
+                            aria-controls={wheelPickerId}
                             className={cn("flex items-center gap-1 font-semibold text-sm antialiased", showWheelPicker ? "text-primary" : "text-foreground")}
                         >
                             {headerLabel}
@@ -294,6 +298,7 @@ export function DateRangeDrawer({
                             </div>
                         </div>
                         <div
+                            id={wheelPickerId}
                             className={cn("absolute inset-0 flex flex-col", !showWheelPicker && "invisible pointer-events-none")}>
                             <div className="ios-wheel-picker__fade relative px-4 flex-1 flex items-center justify-center" data-vaul-no-drag>
                                 <div
@@ -301,6 +306,7 @@ export function DateRangeDrawer({
                                 <div className="flex items-center justify-center gap-2">
                                     <div className="flex-none w-34">
                                         <IosWheelPicker
+                                            ariaLabel="Month"
                                             items={monthItems}
                                             selectedIndex={displayMonth}
                                             onChange={handleMonthChange}
@@ -310,6 +316,7 @@ export function DateRangeDrawer({
                                     </div>
                                     <div className="flex-none w-30">
                                         <IosWheelPicker
+                                            ariaLabel="Year"
                                             items={yearItems}
                                             selectedIndex={yearIndex >= 0 ? yearIndex : 0}
                                             onChange={handleYearChange}

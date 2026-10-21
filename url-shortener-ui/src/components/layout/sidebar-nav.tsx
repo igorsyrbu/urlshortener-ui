@@ -53,6 +53,7 @@ export function SidebarNav({onNavigate}: SidebarNavProps) {
                         <Link
                             key={item.name}
                             href={item.href}
+                            aria-current={isActive ? "page" : undefined}
                             onClick={() => onNavigate?.()}
                             className={cn(
                                 "group flex items-center gap-3 rounded-lg px-4 py-1.5 transition-all outline-none",

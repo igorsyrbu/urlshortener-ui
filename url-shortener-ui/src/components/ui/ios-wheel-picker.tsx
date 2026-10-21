@@ -1,9 +1,10 @@
 "use client";
 
-import React, {useCallback, useEffect, useState} from "react";
+import React, {useCallback, useEffect, useId, useState} from "react";
 import {EmblaCarouselType} from "embla-carousel";
 import useEmblaCarousel from "embla-carousel-react";
 import {cn} from "@/lib/utils";
+import {FOCUS_RING_CLASS} from "@/lib/constants";
 
 const CIRCLE_DEGREES = 360;
 const WHEEL_ITEM_SIZE = 36;
@@ -72,6 +73,8 @@ export interface WheelPickerItem {
 }
 
 interface IosWheelPickerProps {
+    /** The list's accessible name, such as "Month". */
+    ariaLabel: string;
     items: WheelPickerItem[];
     selectedIndex: number;
     onChange: (index: number) => void;
@@ -80,7 +83,41 @@ interface IosWheelPickerProps {
     className?: string;
 }
 
+const PAGE_STEP = 5;
+
+/**
+ * The index `step` items away from `from` (negative moves up), skipping disabled items. It stops at the ends unless the
+ * wheel loops; when the target itself is disabled it settles on the last selectable item it passed.
+ */
+export function findSelectableIndex(items: WheelPickerItem[], from: number, step: number, loop: boolean): number {
+    const count = items.length;
+    const direction = Math.sign(step);
+    let index = from;
+    let lastSelectable = from;
+    for (let moved = 1; moved < count + Math.abs(step); moved += 1) {
+        const next = index + direction;
+        if (!loop && (next < 0 || next >= count)) break;
+        index = (next + count) % count;
+        if (items[index]?.disabled) continue;
+        lastSelectable = index;
+        if (moved >= Math.abs(step)) return index;
+    }
+    return lastSelectable;
+}
+
+function readKeyTarget(key: string, items: WheelPickerItem[], selectedIndex: number, loop: boolean): number | null {
+    const last = items.length - 1;
+    if (key === "ArrowDown") return findSelectableIndex(items, selectedIndex, 1, loop);
+    if (key === "ArrowUp") return findSelectableIndex(items, selectedIndex, -1, loop);
+    if (key === "PageDown") return findSelectableIndex(items, selectedIndex, PAGE_STEP, false);
+    if (key === "PageUp") return findSelectableIndex(items, selectedIndex, -PAGE_STEP, false);
+    if (key === "Home") return items[0]?.disabled ? findSelectableIndex(items, 0, 1, false) : 0;
+    if (key === "End") return items[last]?.disabled ? findSelectableIndex(items, last, -1, false) : last;
+    return null;
+}
+
 export function IosWheelPicker({
+                                    ariaLabel,
                                     items,
                                     selectedIndex,
                                     onChange,
@@ -180,8 +217,25 @@ export function IosWheelPicker({
         };
     }, [emblaApi, onChange]);
 
+    const optionIdPrefix = useId();
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+        const target = readKeyTarget(event.key, items, selectedIndex, loop);
+        if (target === null) return;
+        event.preventDefault();
+        if (target !== selectedIndex) onChange(target);
+    };
+
     return (
-        <div className={cn("ios-wheel-picker", className)}>
+        // The listbox is the flat outer element: the 3D-rotated container inside would draw a skewed focus ring.
+        <div
+            className={cn("ios-wheel-picker rounded-xl outline-none", FOCUS_RING_CLASS, className)}
+            role="listbox"
+            tabIndex={0}
+            aria-label={ariaLabel}
+            aria-activedescendant={items.length > 0 ? `${optionIdPrefix}-${selectedIndex}` : undefined}
+            onKeyDown={handleKeyDown}
+        >
             <div className="ios-wheel-picker__scene">
                 <div
                     className={cn(
@@ -195,6 +249,10 @@ export function IosWheelPicker({
                     <div className="ios-wheel-picker__container">
                         {items.map((item, index) => (
                             <div
+                                id={`${optionIdPrefix}-${index}`}
+                                role="option"
+                                aria-selected={index === selectedIndex}
+                                aria-disabled={item.disabled || undefined}
                                 className="ios-wheel-picker__slide"
                                 key={`${item.label}-${index}`}
                             >

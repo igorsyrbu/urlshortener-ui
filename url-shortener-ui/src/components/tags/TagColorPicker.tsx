@@ -1,5 +1,8 @@
-import React from "react";
+import {useId} from "react";
+import {RadioGroup} from "radix-ui";
 import {Badge} from "@/components/ui/badge";
+import {FOCUS_RING_CLASS} from "@/lib/constants";
+import {cn} from "@/lib/utils";
 import {ALLOWED_TAG_COLORS} from "@/lib/tag-constants";
 import {BadgeVariant} from "@/components/ui/badge";
 
@@ -23,17 +26,25 @@ const SELECTED_BORDER: Record<string, string> = {
     gray: "border-zinc-700 dark:border-zinc-300",
 };
 
+/** A radio group: one tab stop, arrow keys move and select, the checked colour is announced. */
 export function TagColorPicker({selectedColor, onChange}: TagColorPickerProps) {
+    const labelId = useId();
+
+    const handleValueChange = (value: string): void => {
+        const color = ALLOWED_TAG_COLORS.find((allowed) => allowed === value);
+        if (color) onChange(color);
+    };
+
     return (
         <div className="grid gap-2">
-            <label className="text-sm font-medium">Color</label>
-            <div className="flex flex-wrap gap-2">
+            <span id={labelId} className="text-sm font-medium">Color</span>
+            <RadioGroup.Root aria-labelledby={labelId} value={selectedColor} onValueChange={handleValueChange} loop
+                             className="flex flex-wrap gap-2">
                 {ALLOWED_TAG_COLORS.map((color) => (
-                    <button
+                    <RadioGroup.Item
                         key={color}
-                        type="button"
-                        onClick={() => onChange(color)}
-                        className="rounded-lg p-1 transition-all hover:opacity-80"
+                        value={color}
+                        className={cn("rounded-lg p-1 outline-none transition-all hover:opacity-80", FOCUS_RING_CLASS)}
                     >
                         <Badge
                             variant={color as never}
@@ -45,9 +56,9 @@ export function TagColorPicker({selectedColor, onChange}: TagColorPickerProps) {
                         >
                             {capitalize(color)}
                         </Badge>
-                    </button>
+                    </RadioGroup.Item>
                 ))}
-            </div>
+            </RadioGroup.Root>
         </div>
     );
 }

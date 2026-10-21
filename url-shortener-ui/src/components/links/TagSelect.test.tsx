@@ -296,4 +296,32 @@ describe("TagSelect", () => {
             expect(screen.getByPlaceholderText(SEARCH_PLACEHOLDER)).toBeInTheDocument();
         });
     });
+
+    describe("combobox semantics", () => {
+        it("ties the search box to the listbox and announces the active option", async () => {
+            const user = userEvent.setup();
+            renderSelect();
+            await user.click(getTrigger());
+
+            const combobox = screen.getByRole("combobox", {name: "Search or add tags"});
+            const listbox = screen.getByRole("listbox", {name: "Tags"});
+            expect(combobox).toHaveAttribute("aria-controls", listbox.id);
+            expect(listbox).toHaveAttribute("aria-multiselectable", "true");
+
+            await user.keyboard("{ArrowDown}");
+
+            const activeId = combobox.getAttribute("aria-activedescendant");
+            expect(activeId).not.toBeNull();
+            expect(document.getElementById(activeId ?? "")).toHaveAttribute("role", "option");
+            expect(combobox).toHaveFocus();
+        });
+
+        it("keeps the options out of the tab order, so focus stays in the search box", async () => {
+            const user = userEvent.setup();
+            renderSelect();
+            await user.click(getTrigger());
+
+            for (const option of screen.getAllByRole("option")) expect(option).toHaveAttribute("tabindex", "-1");
+        });
+    });
 });

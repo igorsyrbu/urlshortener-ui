@@ -53,6 +53,17 @@ function renderDrawer({open = true, period = "P30D", initialRange}: DrawerOption
 }
 
 describe("DateRangeDrawer", () => {
+    it("tells assistive technology whether the month and year wheels are open", async () => {
+        const {user} = renderDrawer();
+        const toggle = screen.getByRole("button", {expanded: false});
+
+        await user.click(toggle);
+
+        expect(toggle).toHaveAttribute("aria-expanded", "true");
+        expect(document.getElementById(toggle.getAttribute("aria-controls") ?? "")).toContainElement(screen.getByRole("listbox", {name: "Month"}));
+        expect(screen.getByRole("listbox", {name: "Year"})).toBeInTheDocument();
+    });
+
     it("renders nothing while closed", () => {
         renderDrawer({open: false});
 
