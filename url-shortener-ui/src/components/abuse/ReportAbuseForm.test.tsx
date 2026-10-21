@@ -227,6 +227,17 @@ describe("ReportAbuseForm submission", () => {
         expect(await screen.findByText("Link is not shortened by us")).toBeInTheDocument();
     });
 
+    it("shows the detail of a problem-details 422", async () => {
+        const user = userEvent.setup();
+        mockFetch(Response.json({type: "about:blank", title: "Unprocessable Entity", status: 422, detail: "valid reason is required"}, {status: 422}));
+        renderForm();
+
+        await fillValidForm(user);
+        await submit(user);
+
+        expect(await screen.findByText("valid reason is required")).toBeInTheDocument();
+    });
+
     it("falls back to a generic message on a 422 without details", async () => {
         const user = userEvent.setup();
         mockFetch(Response.json({}, {status: 422}));

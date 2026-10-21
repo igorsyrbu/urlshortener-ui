@@ -73,7 +73,7 @@ There is no single error type; conventions by area:
 |---|---|
 | Stores | Set `error: string` in state (`"Failed to fetch links: <status>"` or the thrown message), log with `logger.error` for thrown errors; components render the message. Details in [state-management.md](state-management.md) |
 | Billing | `BillingApiError(status, message, retryAfterSeconds)` thrown by `billing-api.ts`; each billing hook maps `status` to a message from `BILLING_COPY` (400, 404, 409, 422, 429) |
-| CSV import/export | `TransferError(message, status)` from `link-transfer.ts`; message extracted by `parseProblemDetail` |
+| CSV import/export | `TransferError(message, status)` from `link-transfer.ts`; message extracted by `parseProblemDetail` (`problem-details.ts`) |
 | Tag mutations | `useTagMutations` rejects with a readable message; `TagFormModal` shows it inline, the tags page toasts delete failures. The list stores' `error` is never written by a mutation |
 | Forms (create/edit link) | Component handler throws a typed error (`ShortKeyConflictError` on 409) or generic `Error`; the form shows it |
 | Login / report abuse | Inline `if (response.status === 429)` branches in the component |
@@ -86,7 +86,7 @@ Rules for new code:
 
 ### Error body shape
 
-`parseProblemDetail(bodyText, status)` in [`src/lib/link-transfer.ts`](../url-shortener-ui/src/lib/link-transfer.ts) reads the first non-empty string among `detail`, `message`, `title`, `error` of a JSON body (problem-details style). A non-JSON body is used verbatim when 200 characters or fewer; otherwise, or when empty, the message is `Request failed: <status>`. The mock server answers framework errors with `{detail}` and some controller errors with `{error}` (see [mock-server.md](mock-server.md)).
+Error bodies are RFC 9457 problem details: `{ type, title, status, detail }` (the mock answers every error this way, see [mock-server.md](mock-server.md#request-pipeline)). [`src/lib/problem-details.ts`](../url-shortener-ui/src/lib/problem-details.ts) reads them: `readProblemDetail(body)` returns the first non-empty string among `detail`, `message`, `error`, `title` of a parsed body, or `null` (the generic `title`, such as "Bad Request", comes last; `message` and `error` cover older bodies); `parseProblemDetail(bodyText, status)` does the same for a body read as text, uses a non-JSON body verbatim when it is 200 characters or fewer, and otherwise, or when empty, returns `Request failed: <status>`. Show a server reason only through these two functions.
 
 ### Rate limits and `Retry-After`
 

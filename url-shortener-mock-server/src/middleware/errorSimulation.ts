@@ -1,4 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
+import { sendProblem } from "../problem";
+
+const HTTP_INTERNAL_SERVER_ERROR = 500;
 
 /**
  * Error simulation middleware.
@@ -7,10 +10,7 @@ import type { Request, Response, NextFunction } from "express";
  */
 export function errorSimulation(req: Request, res: Response, next: NextFunction): void {
   if (req.headers["x-mock-error"] === "true") {
-    res.status(500).json({
-      error: "Simulated server error",
-      message: "The x-mock-error header was set to true",
-    });
+    sendProblem(res, HTTP_INTERNAL_SERVER_ERROR, "Simulated server error: the x-mock-error header was set to true.");
     return;
   }
   next();

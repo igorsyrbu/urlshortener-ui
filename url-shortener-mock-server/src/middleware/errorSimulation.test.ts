@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { Request, Response } from "express";
 import { errorSimulation } from "./errorSimulation";
+import { createProblem } from "../problem";
 
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 
@@ -14,6 +15,7 @@ function createResponse(): { res: Response; statusCode: () => number | null; bod
   let payload: unknown = null;
   const res = {
     status(code: number) { statusCode = code; return this; },
+    type() { return this; },
     json(data: unknown) { payload = data; return this; },
   } as unknown as Response;
   return { res, statusCode: () => statusCode, body: () => payload };
@@ -31,10 +33,10 @@ describe("error simulation middleware", () => {
     const { response, hasCalledNext } = runMiddleware({ "x-mock-error": "true" });
     assert.equal(hasCalledNext, false);
     assert.equal(response.statusCode(), HTTP_INTERNAL_SERVER_ERROR);
-    assert.deepEqual(response.body(), {
-      error: "Simulated server error",
-      message: "The x-mock-error header was set to true",
-    });
+    assert.deepEqual(
+      response.body(),
+      createProblem(HTTP_INTERNAL_SERVER_ERROR, "Simulated server error: the x-mock-error header was set to true."),
+    );
   });
 
   const passThroughHeaders: Array<[string, Record<string, string>]> = [

@@ -9,6 +9,7 @@ import {
   HTTP_SEE_OTHER, HTTP_TOO_MANY_REQUESTS, HTTP_UNPROCESSABLE_ENTITY, SECOND_MS,
   type BillingScenario, type PortalExpiryMode,
 } from "../services/billing-constants";
+import { createProblem } from "../problem";
 
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 const HTTP_UNAUTHORIZED = 401;
@@ -290,6 +291,21 @@ describe("mock billing scenario endpoint", () => {
     const response = await requestJson(server, "POST", "/mock/billing/scenario", { body: { scenario: "pro-monthly" } });
 
     assert.equal(response.status, HTTP_UNAUTHORIZED);
+  });
+});
+
+describe("billing error bodies", () => {
+  it("answers malformed JSON with the problem format and no parser text", async () => {
+    const response = await fetch(`${server.baseUrl}/billing/checkout`, {
+      method: "POST", headers: { Authorization: user.authorization, "Content-Type": JSON_CONTENT_TYPE }, body: "{bad",
+    });
+    assert.equal(response.status, HTTP_BAD_REQUEST);
+    assert.deepEqual(await response.json(), createProblem(HTTP_BAD_REQUEST, "Malformed JSON body."));
+  });
+
+  it("answers a domain error with the problem format", async () => {
+    const response = await requestJson(server, "POST", "/billing/portal", { authorization: user.authorization });
+    assert.deepEqual(response.body, createProblem(HTTP_NOT_FOUND, "No billing customer exists for this user."));
   });
 });
 

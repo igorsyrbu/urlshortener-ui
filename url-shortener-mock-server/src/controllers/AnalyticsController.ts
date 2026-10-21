@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { analyticsService } from "../services/AnalyticsService";
 import { shortLinksService } from "../services/ShortLinksService";
-import { AuthenticatedRequest } from "../middleware/authentication";
+import { requireUserUuid } from "../middleware/authentication";
 import { getAppContext } from "../app-context";
 
 export class AnalyticsController {
   public static getAnalytics(req: Request, res: Response): void {
-    const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
+    const uuid = requireUserUuid(req);
     const groupBy = req.query.groupBy as string | undefined;
     const period = req.query.period as string | undefined;
     const start = req.query.start as string | undefined;

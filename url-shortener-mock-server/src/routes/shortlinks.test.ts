@@ -9,6 +9,7 @@ import {
   type TestUser,
 } from "../test-utils";
 import type { Page, ShortLink } from "../services/ShortLinksService";
+import { createProblem } from "../problem";
 
 const HTTP_OK = 200;
 const HTTP_CREATED = 201;
@@ -257,7 +258,7 @@ describe("URL cleaner and metadata endpoints", () => {
   ];
   for (const [description, body, error] of invalidCleanerBodies) {
     it(`rejects ${description} for the cleaner`, async () => {
-      assert.deepEqual(await request("POST", "/urlcleaner", body), { status: HTTP_BAD_REQUEST, body: { error } });
+      assert.deepEqual(await request("POST", "/urlcleaner", body), { status: HTTP_BAD_REQUEST, body: createProblem(HTTP_BAD_REQUEST, error) });
     });
   }
 
@@ -319,8 +320,9 @@ describe("GET /public/preview/:key", () => {
 
   it("answers a problem-detail 404 for an unknown or archived key", async () => {
     await createLink("archivedkey", { isActive: false });
-    const expected = { status: HTTP_NOT_FOUND, body: { type: "about:blank", title: "Not Found", status: HTTP_NOT_FOUND } };
-    assert.deepEqual(await requestJson(server, "GET", "/public/preview/archivedkey"), expected);
-    assert.deepEqual(await requestJson(server, "GET", "/public/preview/nope-nope"), expected);
+    const archived = await requestJson(server, "GET", "/public/preview/archivedkey");
+    const unknown = await requestJson(server, "GET", "/public/preview/nope-nope");
+    assert.deepEqual(archived, { status: HTTP_NOT_FOUND, body: createProblem(HTTP_NOT_FOUND, "No active short link has the key 'archivedkey'.") });
+    assert.deepEqual(unknown, { status: HTTP_NOT_FOUND, body: createProblem(HTTP_NOT_FOUND, "No active short link has the key 'nope-nope'.") });
   });
 });

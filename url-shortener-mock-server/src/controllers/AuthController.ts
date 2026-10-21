@@ -4,6 +4,7 @@ import { authService } from "../services/AuthService";
 import { getLoginPageHtml } from "../views/loginPage";
 import { memoryStore } from "../services/MemoryStore";
 import { getAppContext } from "../app-context";
+import { sendProblem } from "../problem";
 
 const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const SECOND_MS = 1000;
@@ -32,7 +33,7 @@ export class AuthController {
   static ottGenerate(req: Request, res: Response) {
     const email = req.body.username as string | undefined;
     if (!email) {
-      res.status(400).json({ error: "Bad Request", message: "Missing username" });
+      sendProblem(res, 400, "Missing username");
       return;
     }
 
@@ -44,7 +45,7 @@ export class AuthController {
       if (expiry && expiry > now) {
         const remainingSeconds = Math.ceil((expiry - now) / SECOND_MS);
         res.setHeader("Retry-After", String(remainingSeconds));
-        res.status(429).json({ error: "Too Many Requests", message: `Please wait ${remainingSeconds} seconds before trying again.` });
+        sendProblem(res, 429, `Please wait ${remainingSeconds} seconds before trying again.`);
         return;
       }
 
@@ -63,16 +64,16 @@ export class AuthController {
 
     if (loginType === "token") {
       if (!token || !email) {
-        res.status(400).json({ error: "Bad Request", message: "Missing token or email" });
+        sendProblem(res, 400, "Missing token or email");
         return;
       }
     } else if (loginType === "otp") {
       if (!email || !code) {
-        res.status(400).json({ error: "Bad Request", message: "Missing email or code" });
+        sendProblem(res, 400, "Missing email or code");
         return;
       }
     } else {
-      res.status(400).json({ error: "Bad Request", message: "Missing or invalid loginType" });
+      sendProblem(res, 400, "Missing or invalid loginType");
       return;
     }
 
@@ -92,7 +93,7 @@ export class AuthController {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuid || !uuidRegex.test(uuid)) {
       res.clearCookie("refresh_token");
-      res.status(401).json({ error: "Unauthorized", message: "Missing or invalid user UUID." });
+      sendProblem(res, 401, "Missing or invalid user UUID.");
       return;
     }
 
@@ -122,7 +123,7 @@ export class AuthController {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuid || !uuidRegex.test(uuid)) {
       res.clearCookie("refresh_token");
-      res.status(401).json({ error: "Unauthorized", message: "Missing or invalid refresh token." });
+      sendProblem(res, 401, "Missing or invalid refresh token.");
       return;
     }
 

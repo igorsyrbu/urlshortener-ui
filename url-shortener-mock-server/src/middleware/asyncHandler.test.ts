@@ -3,6 +3,7 @@ import { after, before, describe, it } from "node:test";
 import express from "express";
 import { asyncHandler } from "./asyncHandler";
 import { jsonErrors } from "./jsonErrors";
+import { createProblem } from "../problem";
 import { requestJson, startTestServer, type TestServer } from "../test-utils";
 
 const HTTP_OK = 200;
@@ -32,7 +33,7 @@ describe("asyncHandler", () => {
     const failed = await requestJson(server, "GET", "/rejects");
     const next = await requestJson(server, "GET", "/ok");
     assert.equal(failed.status, HTTP_INTERNAL_SERVER_ERROR);
-    assert.deepEqual(failed.body, { detail: "handler failed" });
+    assert.deepEqual(failed.body, createProblem(HTTP_INTERNAL_SERVER_ERROR, "handler failed"));
     assert.equal(next.status, HTTP_OK);
   });
 });

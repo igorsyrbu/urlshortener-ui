@@ -5,6 +5,7 @@ import {
   BILLING_READ_RATE_LIMIT, BILLING_RETRY_AFTER_HEADER, BILLING_WRITE_RATE_LIMIT,
   HTTP_TOO_MANY_REQUESTS, RATE_LIMIT_WINDOW_MS, SECOND_MS,
 } from "../services/billing-constants";
+import { sendProblem } from "../problem";
 
 export type BillingBucketKind = "read" | "write";
 
@@ -71,6 +72,6 @@ export function billingRateLimit(bucket: string, kind: BillingBucketKind): Reque
       return;
     }
     res.set(BILLING_RETRY_AFTER_HEADER, String(retryAfterSeconds)).set("Retry-After", String(retryAfterSeconds));
-    res.status(HTTP_TOO_MANY_REQUESTS).json({ detail: "Too many billing requests. Please try again later." });
+    sendProblem(res, HTTP_TOO_MANY_REQUESTS, "Too many billing requests. Please try again later.");
   };
 }

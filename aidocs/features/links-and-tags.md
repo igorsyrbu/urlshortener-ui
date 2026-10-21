@@ -118,7 +118,7 @@ Entry: the toolbar options menu on `/links` (`PageToolbar`) opens `ImportCsvModa
 |---|---|---|
 | Tracker store | [`src/lib/store/import.ts`](../../url-shortener-ui/src/lib/store/import.ts) `useImportTracker` | Status machine, progress, SSE subscription lifecycle |
 | Hook | [`src/lib/hooks/useLinkImport.ts`](../../url-shortener-ui/src/lib/hooks/useLinkImport.ts) | Pre-check, upload, maps tracker state to an `ImportSession` for the UI |
-| Transfer helpers | [`src/lib/link-transfer.ts`](../../url-shortener-ui/src/lib/link-transfer.ts) | `precheckCsv`, `uploadLinksImport`, `TransferError`, `parseProblemDetail` |
+| Transfer helpers | [`src/lib/link-transfer.ts`](../../url-shortener-ui/src/lib/link-transfer.ts) | `precheckCsv`, `uploadLinksImport`, `TransferError` (error text via `parseProblemDetail` from `problem-details.ts`) |
 | SSE client | [`src/lib/import-progress.ts`](../../url-shortener-ui/src/lib/import-progress.ts), [`src/lib/server-sent-events.ts`](../../url-shortener-ui/src/lib/server-sent-events.ts) | Stream reading, reconnect, validation |
 | Pass-through | [`src/app/api/shortlinks/import/updates/route.ts`](../../url-shortener-ui/src/app/api/shortlinks/import/updates/route.ts) | Streams the backend SSE response without buffering |
 

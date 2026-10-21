@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import type { Request, Response } from "express";
 import { createTestUser } from "../test-utils";
 import { authentication, type AuthenticatedRequest } from "./authentication";
+import { createProblem } from "../problem";
 
 const HTTP_UNAUTHORIZED = 401;
 
@@ -27,6 +28,7 @@ function runAuthentication(authorization?: string): MiddlewareRun {
   const run: MiddlewareRun = { request, statusCode: null, body: null, hasCalledNext: false };
   const res = {
     status(code: number) { run.statusCode = code; return this; },
+    type() { return this; },
     json(data: unknown) { run.body = data; return this; },
   } as unknown as Response;
   authentication(request, res, () => { run.hasCalledNext = true; });
@@ -36,7 +38,7 @@ function runAuthentication(authorization?: string): MiddlewareRun {
 function expectUnauthorized(run: MiddlewareRun, message: string): void {
   assert.equal(run.hasCalledNext, false);
   assert.equal(run.statusCode, HTTP_UNAUTHORIZED);
-  assert.deepEqual(run.body, { error: "Unauthorized", message });
+  assert.deepEqual(run.body, createProblem(HTTP_UNAUTHORIZED, message));
 }
 
 describe("authentication middleware", () => {

@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 import { createApp } from "./app";
 import { DEFAULT_MOCK_CONFIG } from "./config";
+import { createProblem } from "./problem";
 import { requestJson, startTestServer, type TestServer } from "./test-utils";
 
 const HTTP_OK = 200;
 const HTTP_FOUND = 302;
+const HTTP_NOT_FOUND = 404;
 const FRONTEND_URL = "http://localhost:4321";
 
 let server: TestServer;
@@ -32,6 +34,11 @@ describe("createApp", () => {
     const response = await requestJson(server, "GET", "/health");
     assert.equal(response.status, HTTP_OK);
     assert.equal((response.body as { status: string }).status, "ok");
+  });
+
+  it("answers an unknown route with a problem-details 404 instead of an HTML page", async () => {
+    const response = await requestJson(server, "DELETE", "/no/such/route");
+    assert.deepEqual(response, { status: HTTP_NOT_FOUND, body: createProblem(HTTP_NOT_FOUND, "No mock route for DELETE /no/such/route.") });
   });
 
   it("redirects sign-ins to the configured frontend", async () => {

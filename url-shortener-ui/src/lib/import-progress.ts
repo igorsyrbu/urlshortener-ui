@@ -1,7 +1,8 @@
 import {fetchWithAuth} from "@/lib/api";
 import type {LinkImportProgressDTO} from "@/lib/api-types";
 import {API_ENDPOINTS} from "@/lib/constants";
-import {parseProblemDetail, TransferError} from "@/lib/link-transfer";
+import {TransferError} from "@/lib/link-transfer";
+import {parseProblemDetail} from "@/lib/problem-details";
 import {readServerSentEvents, type ServerSentEvent} from "@/lib/server-sent-events";
 
 export type ImportConnectionState = "processing" | "reconnecting";

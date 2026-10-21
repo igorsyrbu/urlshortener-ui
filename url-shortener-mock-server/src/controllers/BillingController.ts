@@ -1,19 +1,14 @@
 import type { Request, Response } from "express";
-import type { AuthenticatedRequest } from "../middleware/authentication";
+import { requireUserUuid } from "../middleware/authentication";
 import { BillingError, type BillingService } from "../services/BillingService";
 import { getAppContext } from "../app-context";
 import {
-  HTTP_BAD_REQUEST, HTTP_GONE, HTTP_SEE_OTHER, HTTP_UNAUTHORIZED, SECOND_MS,
+  HTTP_BAD_REQUEST, HTTP_GONE, HTTP_SEE_OTHER, SECOND_MS,
   isBillingPeriod, isBillingScenario, isPortalAction, isPortalExpiryMode,
   type BillingSession,
 } from "../services/billing-constants";
 import { renderBillingPage } from "../views/billingPage";
-
-function getUserUuid(req: AuthenticatedRequest): string {
-  const uuid = req.user?.uuid;
-  if (!uuid) throw new BillingError(HTTP_UNAUTHORIZED, "Authentication is required.");
-  return uuid;
-}
+import { sendProblem } from "../problem";
 
 function handleBillingResponse(res: Response, handleResponse: () => void): void {
   res.set("Cache-Control", "no-store");
@@ -21,7 +16,7 @@ function handleBillingResponse(res: Response, handleResponse: () => void): void 
     handleResponse();
   } catch (error) {
     if (!(error instanceof BillingError)) throw error;
-    res.status(error.status).json({ detail: error.message });
+    sendProblem(res, error.status, error.message);
   }
 }
 
@@ -52,21 +47,21 @@ function sendSessionPage(req: Request, res: Response, session: BillingSession, m
 
 export class BillingController {
   static getSubscription(req: Request, res: Response): void {
-    handleBillingResponse(res, () => res.json(getBilling(req).getSubscription(getUserUuid(req))));
+    handleBillingResponse(res, () => res.json(getBilling(req).getSubscription(requireUserUuid(req))));
   }
 
   static createCheckout(req: Request, res: Response): void {
     handleBillingResponse(res, () => {
       const period: unknown = req.body?.billingPeriod;
       if (!isBillingPeriod(period)) throw new BillingError(HTTP_BAD_REQUEST, "billingPeriod must be MONTHLY or YEARLY.");
-      const session = getBilling(req).createCheckout(getUserUuid(req), period);
+      const session = getBilling(req).createCheckout(requireUserUuid(req), period);
       res.json({ url: getSessionUrl(req, session) });
     });
   }
 
   static createPortal(req: Request, res: Response): void {
     handleBillingResponse(res, () => {
-      const uuid = getUserUuid(req);
+      const uuid = requireUserUuid(req);
       const session = getBilling(req).createPortal(uuid);
       const expiryMode = getBilling(req).getState(uuid).portalExpiryMode;
       const expiresInSeconds = expiryMode === "invalid"
@@ -77,7 +72,7 @@ export class BillingController {
   }
 
   static scheduleUpgrade(req: Request, res: Response): void {
-    handleBillingResponse(res, () => res.json(getBilling(req).scheduleYearlyUpgrade(getUserUuid(req))));
+    handleBillingResponse(res, () => res.json(getBilling(req).scheduleYearlyUpgrade(requireUserUuid(req))));
   }
 
   static setScenario(req: Request, res: Response): void {
@@ -86,8 +81,8 @@ export class BillingController {
       const expiryMode: unknown = req.body?.portalExpiryMode;
       if (!isBillingScenario(scenario)) throw new BillingError(HTTP_BAD_REQUEST, "Unknown billing scenario.");
       if (expiryMode !== undefined && !isPortalExpiryMode(expiryMode)) throw new BillingError(HTTP_BAD_REQUEST, "Unknown portal expiry mode.");
-      getBilling(req).setScenario(getUserUuid(req), scenario, expiryMode);
-      res.json(getBilling(req).getSubscription(getUserUuid(req)));
+      getBilling(req).setScenario(requireUserUuid(req), scenario, expiryMode);
+      res.json(getBilling(req).getSubscription(requireUserUuid(req)));
     });
   }
 

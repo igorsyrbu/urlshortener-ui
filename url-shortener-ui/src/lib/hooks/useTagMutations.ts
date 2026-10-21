@@ -2,7 +2,7 @@ import {fetchWithAuth} from "@/lib/api";
 import {TagItem} from "@/lib/types";
 import {BadgeVariant} from "@/components/ui/badge";
 import {API_ENDPOINTS} from "@/lib/constants";
-import {parseProblemDetail} from "@/lib/link-transfer";
+import {parseProblemDetail} from "@/lib/problem-details";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
 

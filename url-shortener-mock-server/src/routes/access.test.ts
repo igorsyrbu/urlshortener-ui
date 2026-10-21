@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createProblem } from "../problem";
 import { after, before, describe, it } from "node:test";
 import { createTestUser, createUnregisteredAuthorization, requestJson, startTestServer, type TestServer } from "../test-utils";
 
@@ -60,7 +61,7 @@ describe("protected endpoints", () => {
 
   it("rejects a valid token of a user who never logged in", async () => {
     const response = await requestJson(server, "GET", "/users/me", { authorization: createUnregisteredAuthorization() });
-    assert.deepEqual(response.body, { error: "Unauthorized", message: "User not logged in." });
+    assert.deepEqual(response.body, createProblem(HTTP_UNAUTHORIZED, "User not logged in."));
   });
 
   it("accepts the token of a logged-in user", async () => {
@@ -97,7 +98,7 @@ describe("request body handling", () => {
       body: "x".repeat(CSV_LIMIT_BYTES + 1),
     });
     assert.equal(response.status, HTTP_PAYLOAD_TOO_LARGE);
-    assert.deepEqual(await response.json(), { detail: "request entity too large" });
+    assert.deepEqual(await response.json(), createProblem(HTTP_PAYLOAD_TOO_LARGE, "Request body is too large."));
   });
 
   it("answers malformed JSON with a JSON 400 detail", async () => {
@@ -108,6 +109,7 @@ describe("request body handling", () => {
       body: "{not json",
     });
     assert.equal(response.status, HTTP_BAD_REQUEST);
-    assert.ok(typeof ((await response.json()) as { detail: unknown }).detail === "string");
+    assert.equal(response.headers.get("content-type"), "application/problem+json; charset=utf-8");
+    assert.deepEqual(await response.json(), createProblem(HTTP_BAD_REQUEST, "Malformed JSON body."));
   });
 });

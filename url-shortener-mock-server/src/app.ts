@@ -15,8 +15,10 @@ import shortLinksRoutes from "./routes/shortlinks";
 import tagsRoutes from "./routes/tags";
 import usersRoutes from "./routes/users";
 import { BillingService } from "./services/BillingService";
+import { sendProblem } from "./problem";
 
 const CSV_BODY_LIMIT = "100kb";
+const HTTP_NOT_FOUND = 404;
 
 export interface AppOptions {
   config: MockConfig;
@@ -55,6 +57,9 @@ export function createApp({
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  app.use((req, res) => {
+    sendProblem(res, HTTP_NOT_FOUND, `No mock route for ${req.method} ${req.path}.`);
+  });
   app.use(jsonErrors);
   return app;
 }

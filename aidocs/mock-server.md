@@ -27,15 +27,16 @@ Scripts (from [`package.json`](../url-shortener-mock-server/package.json)): `dev
 | 2 | `express.json()`, `express.urlencoded()` | JSON and form bodies (forms are used by the fake billing pages) |
 | 3 | `express.text({ type: "text/csv", limit: "100kb" })` | CSV import body as a string; larger bodies produce 413 via `jsonErrors` |
 | 4 | `createDelay(config.delayMs)` ([`middleware/delay.ts`](../url-shortener-mock-server/src/middleware/delay.ts)) | Waits `MOCK_DELAY` ms before continuing |
-| 5 | `errorSimulation` ([`middleware/errorSimulation.ts`](../url-shortener-mock-server/src/middleware/errorSimulation.ts)) | Header `x-mock-error: true` returns 500 `{ error, message }` immediately, before any route |
+| 5 | `errorSimulation` ([`middleware/errorSimulation.ts`](../url-shortener-mock-server/src/middleware/errorSimulation.ts)) | Header `x-mock-error: true` returns a 500 problem immediately, before any route |
 | 6 | `createBillingTrace(config.billing.trace)` on `/billing` | See below |
 | 7 | Routers: auth, users, shortlinks, analytics, tags, abuse, billing | Endpoints (below) |
 | 8 | `GET /health` | Returns `{ status: "ok", timestamp }` |
-| 9 | `jsonErrors` ([`middleware/jsonErrors.ts`](../url-shortener-mock-server/src/middleware/jsonErrors.ts)) | Error handler: body-parser/unexpected errors become `{ detail }` with the error's `status` (default 500) |
+| 9 | Catch-all 404 | Any unmatched method and path: 404 problem `No mock route for METHOD path.` |
+| 10 | `jsonErrors` ([`middleware/jsonErrors.ts`](../url-shortener-mock-server/src/middleware/jsonErrors.ts)) | Error handler: body-parser errors become a problem with their status and a fixed message by `type` (`Malformed JSON body.`, `Request body is too large.`, ...; never the parser's own text); other errors become a problem with their `status` (default 500) and message |
 
 Per-route middleware:
 
-- `authentication` ([`middleware/authentication.ts`](../url-shortener-mock-server/src/middleware/authentication.ts)): requires `Authorization: Bearer <jwt>`. The token is not verified; the payload `sub` must be `mock-user-<uuid>` with a well-formed UUID, and that UUID must already have state in `memoryStore` (otherwise 401 `User not logged in.`). On success it sets `req.user.uuid`. All 401s are `{ error: "Unauthorized", message }`.
+- `authentication` ([`middleware/authentication.ts`](../url-shortener-mock-server/src/middleware/authentication.ts)): requires `Authorization: Bearer <jwt>`. The token is not verified; the payload `sub` must be `mock-user-<uuid>` with a well-formed UUID, and that UUID must already have state in `memoryStore` (otherwise 401 `User not logged in.`). On success it sets `req.user.uuid`; controllers read it with `requireUserUuid(req)` (throws, so a 500, when a route lacks `authentication`). All 401s are problems with the reason in `detail`.
 - `billingTrace` ([`middleware/billingTrace.ts`](../url-shortener-mock-server/src/middleware/billingTrace.ts)): mounted on `/billing` by `createApp`; when `MOCK_BILLING_TRACE=true` logs `[mock billing] METHOD path status` after each response (query string stripped, never tokens). Does not cover `/mock/billing/*`.
 - `billingRateLimit(bucket, kind)` ([`middleware/billingRateLimit.ts`](../url-shortener-mock-server/src/middleware/billingRateLimit.ts)): fixed one-minute window per user and **named bucket** given by the route (`subscription` read, `checkout`, `portal`, `upgrade` write); 60 requests for `read`, 10 for `write`. The key never contains the request path or method: Express routing ignores case and a trailing slash, so `/BILLING/PORTAL/` counts against `/billing/portal`, and HEAD shares the GET window. Over the limit: 429 `{ detail }` with `Retry-After` and `X-Rate-Limit-Retry-After-Seconds` (whole seconds, rounded up). The windows live in a `BillingRateLimiter` in the app context (one per `createApp()`; tests pass one with a fake clock); expired windows are dropped at most once per window. Constants live in [`services/billing-constants.ts`](../url-shortener-mock-server/src/services/billing-constants.ts).
 
@@ -56,7 +57,7 @@ Per-route middleware:
 
 Notes on behaviour that differs from what a REST API usually does:
 
-- Error body shapes are not uniform: most controllers return `{ error: "..." }`, import and billing return `{ detail: "..." }`, auth returns `{ error, message }`, public preview 404 returns `{ type: "about:blank", title, status }`. The UI error handling that copes with this is in [api-layer](api-layer.md).
+- Every error is an RFC 9457 problem: `sendProblem(res, status, detail)` from [`src/problem.ts`](../url-shortener-mock-server/src/problem.ts) answers `{ type: "about:blank", title, status, detail }` (`title` is the standard reason phrase) with `Content-Type: application/problem+json`. Never write an error body by hand. The UI reads it with `readProblemDetail` / `parseProblemDetail` ([api-layer](api-layer.md#error-body-shape)).
 - `DELETE /tags/:id` returns 204; `POST /abuse/report` returns 201 with `status: "RECEIVED"`; `GET /shortlinks/:key/exists` returns 404 `{ exists: false }` when free.
 - `GET /public/preview/:key` fetches the long URL's Open Graph data ([`services/OpenGraphService.ts`](../url-shortener-mock-server/src/services/OpenGraphService.ts): 3 s timeout, 50 KB cap) and `GET /longurl/title` does the same for the create-link form; failures degrade to empty data, not errors. This is the only outbound network access of the mock.
 - `POST /shortlinks` and `PUT /shortlinks` validate `longUrl` with the same rule (`validateLongUrl` in `ShortLinksService`: a non-blank `http`/`https` URL, else 400 `longUrl must not be blank` or `longUrl must be a valid URL`). CSV import is looser on purpose: like the backend's `new URI(url).getHost() != null`, any scheme with a host passes (`hasUrlHost`). `GET /public/preview/:key` therefore copes with a stored URL that does not parse: it skips the Open Graph fetch and answers `faviconDomain: null`.
@@ -103,7 +104,7 @@ When the UI gains or changes an endpoint (this is also required by [CONTRIBUTING
 1. Add the UI side first: types and call in the layers described in [api-layer](api-layer.md); remember the UI calls `/api/<path>`.
 2. Add the route in `routes/<area>.ts` with `authentication` unless the real endpoint is public; wire it to a static method in the controller.
 3. Put request parsing, status codes and response shape in the controller; put logic and state in the service; keep per-user state in `UserState` (extend its initialiser in `MemoryStore` and the seed JSON when new data is needed). Always read the user via `req.user.uuid`, never a shared global.
-4. Use the status codes and error body shape the real API uses for that area (see the non-uniform shapes above and what the UI error handling expects).
+4. Use the status codes the real API uses for that area, and answer errors with `sendProblem`.
 5. If it is a new router, register it in `createApp()` in `src/app.ts` (the tests use the same function). A new setting goes into `MockConfig` and `readMockConfig()`, with a test in `config.test.ts`; read it through `getAppContext(req).config`, never from `process.env`.
 6. Add `routes/<area>.test.ts` and service tests ([testing](testing.md#mock-server-tests)); update the endpoint table in the root [README](../README.md).
 7. For error-path UI testing, remember `x-mock-error: true` makes any endpoint fail with 500 without code changes.
@@ -115,4 +116,3 @@ When the UI gains or changes an endpoint (this is also required by [CONTRIBUTING
 - Observation: all state is lost on restart, and there is no endpoint to reset the non-billing state of a sandbox.
 - Observation: access-token expiry and signature are never checked, and the refresh cookie is not invalidated by logout/session deletion endpoints.
 - Observation: the CORS `methods` list lacks `PATCH`; adding a `PATCH` endpoint needs a change in `middleware/cors.ts`.
-- Observation: error body shapes are inconsistent across controllers (see Endpoints). Existing exception — not a template; do not unify as a drive-by, the UI error handling depends on the current shapes.

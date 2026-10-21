@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { memoryStore } from "../services/MemoryStore";
+import { sendProblem } from "../problem";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -11,13 +12,13 @@ export function authentication(req: Request, res: Response, next: NextFunction):
   const authHeader = req.headers["authorization"];
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Unauthorized", message: "Missing or invalid Authorization header." });
+    sendProblem(res, 401, "Missing or invalid Authorization header.");
     return;
   }
 
   const token = authHeader.slice(7).trim();
   if (!token) {
-    res.status(401).json({ error: "Unauthorized", message: "Bearer token is empty." });
+    sendProblem(res, 401, "Bearer token is empty.");
     return;
   }
 
@@ -33,7 +34,7 @@ export function authentication(req: Request, res: Response, next: NextFunction):
 
         if (uuidRegex.test(uuid)) {
           if (!memoryStore.hasUserState(uuid)) {
-            res.status(401).json({ error: "Unauthorized", message: "User not logged in." });
+            sendProblem(res, 401, "User not logged in.");
             return;
           }
           (req as AuthenticatedRequest).user = { uuid };
@@ -46,5 +47,12 @@ export function authentication(req: Request, res: Response, next: NextFunction):
     // Ignore error, proceed to unauthorized response
   }
 
-  res.status(401).json({ error: "Unauthorized", message: "Missing or invalid user UUID." });
+  sendProblem(res, 401, "Missing or invalid user UUID.");
+}
+
+/** For handlers behind `authentication` only; without it this is a wiring bug, answered as a 500 by `jsonErrors`. */
+export function requireUserUuid(req: Request): string {
+  const uuid = (req as AuthenticatedRequest).user?.uuid;
+  if (!uuid) throw new Error("This route is missing the authentication middleware.");
+  return uuid;
 }

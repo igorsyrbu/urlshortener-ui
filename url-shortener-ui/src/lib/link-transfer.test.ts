@@ -15,7 +15,6 @@ import {
     downloadLinksExport,
     ExportFilters,
     isRateLimitedError,
-    parseProblemDetail,
     precheckCsv,
     TransferError,
     uploadLinksImport,
@@ -27,7 +26,6 @@ vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn()}}));
 
 const HTTP_TOO_MANY_REQUESTS = 429;
-const FALLBACK_LENGTH_LIMIT = 200;
 const NO_FILTERS: ExportFilters = {showArchived: false, search: ""};
 
 function csvWithRows(rowCount: number): string {
@@ -155,42 +153,6 @@ describe("CSV precheck", () => {
         const rowCount = MAX_IMPORT_DATA_ROWS + 1;
 
         expect(precheckCsv(csvWithRows(rowCount))).toEqual({status: "too-many-rows", rowCount});
-    });
-});
-
-describe("parseProblemDetail", () => {
-    it.each([
-        ["detail", {detail: "Detailed reason", message: "m", title: "t"}, "Detailed reason"],
-        ["message when detail is missing", {message: "Message text", title: "t"}, "Message text"],
-        ["title when detail and message are missing", {title: "Title text"}, "Title text"],
-        ["error when the other fields are missing", {error: "Error text"}, "Error text"],
-        ["the first non-blank field", {detail: "   ", message: "Message text"}, "Message text"],
-        ["a trimmed value", {detail: "  padded  "}, "padded"],
-    ])("prefers %s", (_name, body, expected) => {
-        expect(parseProblemDetail(JSON.stringify(body), 400)).toBe(expected);
-    });
-
-    it.each([
-        ["an empty body", ""],
-        ["a blank body", "   "],
-        ["a JSON array without fields", "[1]"],
-        ["a JSON primitive", "42"],
-        ["JSON null", "null"],
-        ["an object without known fields", '{"other":"x"}'],
-        ["an object with non-string fields", '{"detail":5}'],
-        ["a plain-text body over the inline limit", "x".repeat(FALLBACK_LENGTH_LIMIT + 1)],
-    ])("falls back to the status for %s", (_name, body) => {
-        expect(parseProblemDetail(body, 418)).toBe("Request failed: 418");
-    });
-
-    it("surfaces a short plain-text body", () => {
-        expect(parseProblemDetail("  Bad gateway  ", 502)).toBe("Bad gateway");
-    });
-
-    it("surfaces a plain-text body at the inline limit", () => {
-        const body = "x".repeat(FALLBACK_LENGTH_LIMIT);
-
-        expect(parseProblemDetail(body, 500)).toBe(body);
     });
 });
 

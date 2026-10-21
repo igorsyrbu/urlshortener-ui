@@ -18,6 +18,7 @@ import {Label} from "@/components/ui/label";
 import {FieldError} from "@/components/ui/field-error";
 import {focusElementById} from "@/lib/utils";
 import {withPending} from "@/lib/async-utils";
+import {readProblemDetail} from "@/lib/problem-details";
 
 const ABUSE_FIELD_IDS = {SHORT_URL: "shortUrl", REASON: "reason", REPORTER_EMAIL: "reporterEmail"} as const;
 const ABUSE_FIELD_ERROR_IDS = {
@@ -65,8 +66,7 @@ async function readAbuseReportResponse(response: Response): Promise<AbuseReportR
         return {kind: "failed", message: buildRateLimitedMessage(parseRetryAfterSeconds(response.headers))};
     }
     if (response.status === HTTP_UNPROCESSABLE_ENTITY) {
-        const data = await response.json();
-        return {kind: "failed", message: data.message || data.error || "Invalid input. Please check your entries."};
+        return {kind: "failed", message: readProblemDetail(await response.json()) ?? "Invalid input. Please check your entries."};
     }
     if (!response.ok) return {kind: "failed", message: "An unexpected error occurred. Please try again later."};
     if (response.status !== HTTP_CREATED) return {kind: "unanswered"};

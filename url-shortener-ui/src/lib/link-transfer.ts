@@ -8,6 +8,7 @@ import {
 } from "@/lib/constants";
 import type {LinkImportJobDTO} from "@/lib/api-types";
 import {logger} from "@/lib/logger";
+import {parseProblemDetail} from "@/lib/problem-details";
 
 export interface ExportFilters {
     showArchived: boolean;
@@ -30,7 +31,6 @@ export class TransferError extends Error {
 }
 
 const HTTP_TOO_MANY_REQUESTS = 429;
-const PROBLEM_DETAIL_MAX_INLINE_LENGTH = 200;
 
 export function isRateLimitedError(error: unknown): boolean {
     return error instanceof TransferError && error.status === HTTP_TOO_MANY_REQUESTS;
@@ -71,37 +71,6 @@ export function precheckCsv(csvText: string): CsvPrecheckResult {
         return {status: "too-many-rows", rowCount};
     }
     return {status: "ok", rowCount};
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null;
-}
-
-function pickDetailField(record: Record<string, unknown>): string | null {
-    for (const key of ["detail", "message", "title", "error"]) {
-        const value = record[key];
-        if (typeof value === "string" && value.trim()) {
-            return value.trim();
-        }
-    }
-    return null;
-}
-
-export function parseProblemDetail(bodyText: string, status: number): string {
-    const fallback = `Request failed: ${status}`;
-    const trimmed = bodyText.trim();
-    if (!trimmed) {
-        return fallback;
-    }
-    try {
-        const parsed: unknown = JSON.parse(trimmed);
-        if (!isRecord(parsed)) {
-            return fallback;
-        }
-        return pickDetailField(parsed) ?? fallback;
-    } catch {
-        return trimmed.length <= PROBLEM_DETAIL_MAX_INLINE_LENGTH ? trimmed : fallback;
-    }
 }
 
 function delay(ms: number): Promise<void> {
