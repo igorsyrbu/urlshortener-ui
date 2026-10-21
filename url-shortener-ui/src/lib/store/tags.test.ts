@@ -10,8 +10,14 @@ vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 const DEFAULT_TAGS_PAGE_SIZE = "100";
 
 const storeCases = [
-    {name: "tag store without counts", useStore: useTagStoreWithoutCount, withLinksCount: "false"},
-    {name: "tag store with counts", useStore: useTagStoreWithCount, withLinksCount: "true"},
+    {
+        name: "tag store without counts", useStore: useTagStoreWithoutCount, withLinksCount: "false",
+        reset: () => useTagStoreWithoutCount.setState(useTagStoreWithoutCount.getInitialState(), true),
+    },
+    {
+        name: "tag store with counts", useStore: useTagStoreWithCount, withLinksCount: "true",
+        reset: () => useTagStoreWithCount.setState(useTagStoreWithCount.getInitialState(), true),
+    },
 ];
 
 function requestedParams(callIndex = 0): URLSearchParams {
@@ -20,11 +26,9 @@ function requestedParams(callIndex = 0): URLSearchParams {
     return new URLSearchParams(url.split("?")[1]);
 }
 
-describe.each(storeCases)("$name", ({useStore, withLinksCount}) => {
-    const initialState = useStore.getInitialState();
-
+describe.each(storeCases)("$name", ({useStore, withLinksCount, reset}) => {
     afterEach(() => {
-        useStore.setState(initialState, true);
+        reset();
     });
 
     it("loads tags beyond the first page, so a link's 21st tag still has a badge", async () => {
@@ -149,5 +153,44 @@ describe("tag store with counts", () => {
         useTagStoreWithCount.getState().clearError();
 
         expect(useTagStoreWithCount.getState().error).toBeNull();
+    });
+});
+
+describe("tag store without counts: ensureLoaded", () => {
+    const initialState = useTagStoreWithoutCount.getInitialState();
+
+    afterEach(() => {
+        useTagStoreWithoutCount.setState(initialState, true);
+    });
+
+    it("loads the tags once and then reuses them", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValue(Response.json({content: [createTag()]}));
+
+        useTagStoreWithoutCount.getState().ensureLoaded();
+        await vi.waitFor(() => expect(useTagStoreWithoutCount.getState().hasLoaded).toBe(true));
+        useTagStoreWithoutCount.getState().ensureLoaded();
+
+        expect(fetchWithAuth).toHaveBeenCalledOnce();
+    });
+
+    it("does not start a second request while one is loading", () => {
+        vi.mocked(fetchWithAuth).mockReturnValue(new Promise(() => {}));
+
+        useTagStoreWithoutCount.getState().ensureLoaded();
+        useTagStoreWithoutCount.getState().ensureLoaded();
+
+        expect(fetchWithAuth).toHaveBeenCalledOnce();
+    });
+
+    it("tries again later when the load failed", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 500}))
+            .mockResolvedValueOnce(Response.json({content: [createTag()]}));
+
+        useTagStoreWithoutCount.getState().ensureLoaded();
+        await vi.waitFor(() => expect(useTagStoreWithoutCount.getState().loading).toBe(false));
+        useTagStoreWithoutCount.getState().ensureLoaded();
+
+        await vi.waitFor(() => expect(useTagStoreWithoutCount.getState().hasLoaded).toBe(true));
+        expect(fetchWithAuth).toHaveBeenCalledTimes(2);
     });
 });

@@ -57,7 +57,29 @@ describe("CreateLinkModal", () => {
         mocks.isDesktop = true;
         fetchLinks.mockResolvedValue(undefined);
         useLinkStore.setState({fetchLinks});
-        useTagStoreWithoutCount.setState({tags: [], loading: false, error: null});
+        useTagStoreWithoutCount.setState({tags: [], loading: false, error: null, hasLoaded: false});
+    });
+
+    it("loads the tags for its picker when it opens outside the links page", async () => {
+        const tag = createTag({id: "tag-1", name: "Campaign"});
+        routeFetchWithAuth({
+            [API_ENDPOINTS.SHORTLINKS_RANDOM]: () => Response.json({key: GENERATED_KEY}),
+            [API_ENDPOINTS.TAGS]: () => Response.json({content: [tag]}),
+        });
+
+        renderModal();
+
+        await waitFor(() => expect(useTagStoreWithoutCount.getState().tags).toEqual([tag]));
+    });
+
+    it("reuses tags that are already loaded instead of asking again", async () => {
+        useTagStoreWithoutCount.setState({tags: [createTag()], hasLoaded: true});
+        mockCreateEndpoint(() => Response.json(createShortLink()));
+
+        renderModal();
+
+        await screen.findByLabelText("Destination URL");
+        expect(vi.mocked(fetchWithAuth).mock.calls.some(([url]) => String(url).startsWith(API_ENDPOINTS.TAGS))).toBe(false);
     });
 
     it("renders nothing of the form while closed", () => {

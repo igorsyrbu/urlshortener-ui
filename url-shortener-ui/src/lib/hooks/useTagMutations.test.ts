@@ -13,8 +13,16 @@ const initialPlainState = useTagStoreWithoutCount.getInitialState();
 const initialCountState = useTagStoreWithCount.getInitialState();
 const stores = [useTagStoreWithoutCount, useTagStoreWithCount];
 
+type SharedTagState = Pick<ReturnType<typeof useTagStoreWithCount.getState>, "tags" | "error">;
+
+/** The two stores have different shapes, so a union of them cannot be written to in one call. */
+function setBothStores(partial: Partial<SharedTagState>): void {
+    useTagStoreWithoutCount.setState(partial);
+    useTagStoreWithCount.setState(partial);
+}
+
 function seedTags(...tags: ReturnType<typeof createTag>[]): void {
-    stores.forEach((store) => store.setState({tags}));
+    setBothStores({tags});
 }
 
 function sentRequest(): {url: string; method: string | undefined; body: unknown} {
@@ -69,7 +77,7 @@ describe("useTagMutations", () => {
         });
 
         it("leaves the list error of both stores untouched when it fails", async () => {
-            stores.forEach((store) => store.setState({error: null}));
+            setBothStores({error: null});
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response("Tag already exists", {status: 409}));
             const {result} = renderHook(() => useTagMutations());
 

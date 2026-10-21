@@ -6,6 +6,7 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/components/ui/drawer";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useLinkStore} from "@/lib/store/links";
+import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {AnimatePresence, motion} from "framer-motion";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
 import {CreateLinkSuccess} from "@/components/links/CreateLinkSuccess";
@@ -118,9 +119,12 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
 export function CreateLinkModal({open, onOpenChange}: CreateLinkModalProps) {
     const isDesktop = useIsDesktop();
 
-    // Download the confetti while the form is filled in, so it fires the moment the link is created.
+    // Download the confetti while the form is filled in, so it fires the moment the link is created. The tag picker
+    // needs the tags, which only `/links` loads itself (the modal also opens from other pages and from the `c` key).
     useEffect(() => {
-        if (open) void loadConfetti();
+        if (!open) return;
+        void loadConfetti();
+        useTagStoreWithoutCount.getState().ensureLoaded();
     }, [open]);
 
     if (isDesktop) {

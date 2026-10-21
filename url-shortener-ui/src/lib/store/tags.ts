@@ -9,7 +9,11 @@ interface TagStore {
     loading: boolean;
     error: string | null;
     searchQuery: string;
+    /** True once a load succeeded; tag mutations keep `tags` current afterwards. */
+    hasLoaded: boolean;
     fetchTags: (params?: { size?: number }) => Promise<void>;
+    /** Loads the tags unless they are loaded or loading: for places that need them but do not own a refresh. */
+    ensureLoaded: () => void;
     setSearchQuery: (query: string) => void;
 }
 
@@ -20,6 +24,7 @@ export const useTagStoreWithoutCount = create<TagStore>((set, get) => ({
     loading: false,
     error: null,
     searchQuery: "",
+    hasLoaded: false,
 
     fetchTags: async (params) => {
         const request = tagRequests.begin();
@@ -37,13 +42,19 @@ export const useTagStoreWithoutCount = create<TagStore>((set, get) => ({
                 query.set("search", searchQuery);
             }
 
-            await fetchTagsResponse(query, setIfLatest, (url) => fetchWithAuth(url, {signal: request.signal}));
+            await fetchTagsResponse(query, (partial) => setIfLatest(partial.tags ? {...partial, hasLoaded: true} : partial),
+                (url) => fetchWithAuth(url, {signal: request.signal}));
         } catch (error) {
             if (request.signal.aborted) return;
             setIfLatest({error: error instanceof Error ? error.message : "Unknown error occurred"});
         } finally {
             setIfLatest({loading: false});
         }
+    },
+
+    ensureLoaded: () => {
+        const {hasLoaded, loading, fetchTags} = get();
+        if (!hasLoaded && !loading) void fetchTags();
     },
 
     setSearchQuery: (query) => set({searchQuery: query}),
