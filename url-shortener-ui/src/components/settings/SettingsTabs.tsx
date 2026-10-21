@@ -5,14 +5,14 @@ import {usePathname} from "next/navigation";
 import {cn} from "@/lib/utils";
 import {FOCUS_RING_CLASS} from "@/lib/constants";
 import {LinkPendingIndicator} from "@/components/ui/link-pending-indicator";
-import {SETTINGS_LABELS, SETTINGS_SECTIONS} from "@/lib/settings-constants";
+import {getActiveSettingsSectionHref, SETTINGS_LABELS, SETTINGS_SECTIONS} from "@/lib/settings-constants";
 
 export function SettingsTabs() {
-    const pathname = usePathname();
+    const activeHref = getActiveSettingsSectionHref(usePathname());
     return (
         <nav aria-label={SETTINGS_LABELS.NAVIGATION} className="flex h-10 min-w-0 items-stretch gap-6 border-b-[0.5px] border-border">
             {SETTINGS_SECTIONS.map((section) => {
-                const isActive = pathname === section.href;
+                const isActive = section.href === activeHref;
                 return (
                     <Link
                         key={section.href}

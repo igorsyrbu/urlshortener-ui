@@ -7,6 +7,7 @@ import {ChartBar, LayoutDashboard, Link as LinkIcon, Link as LogoIcon, Settings,
 import {FOCUS_RING_CLASS, ROUTES} from "@/lib/constants";
 import {SETTINGS_ROUTES} from "@/lib/settings-constants";
 import {LinkPendingIndicator} from "@/components/ui/link-pending-indicator";
+import {isPathWithin} from "@/lib/route-match";
 
 interface NavigationItem {
     name: string;
@@ -25,8 +26,7 @@ const navigation: NavigationItem[] = [
 ];
 
 function isNavigationItemActive(item: NavigationItem, pathname: string): boolean {
-    const prefix = item.matchPrefix ?? item.href;
-    return pathname === prefix || pathname.startsWith(`${prefix}/`);
+    return isPathWithin(pathname, item.matchPrefix ?? item.href);
 }
 
 interface SidebarNavProps {

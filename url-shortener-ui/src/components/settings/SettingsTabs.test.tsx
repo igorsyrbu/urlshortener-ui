@@ -75,4 +75,19 @@ describe.each([
         expect(screen.getByRole("link", {name: SETTINGS_LABELS.GENERAL})).toHaveAttribute("aria-current", "page");
         expect(screen.getByRole("link", {name: SETTINGS_LABELS.BILLING})).not.toHaveAttribute("aria-current");
     });
+
+    it.each([
+        ["/settings", SETTINGS_LABELS.GENERAL],
+        ["/settings/", SETTINGS_LABELS.GENERAL],
+        ["/settings/general/", SETTINGS_LABELS.GENERAL],
+        ["/settings/billing/", SETTINGS_LABELS.BILLING],
+        ["/settings/billing/history", SETTINGS_LABELS.BILLING],
+    ])("marks exactly one section as current on %s", (pathname, label) => {
+        navigation.pathname = pathname;
+
+        render(<SettingsTabs/>);
+
+        const currentLinks = within(settingsNavigation()).getAllByRole("link").filter((link) => link.getAttribute("aria-current") === "page");
+        expect(currentLinks.map((link) => link.textContent)).toEqual([label]);
+    });
 });

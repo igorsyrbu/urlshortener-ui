@@ -70,7 +70,7 @@ There are no `loading.tsx` files and none may be added. Loading states are compo
 - Internal navigation uses `next/link` (`Link`): sidebar items (`sidebar-nav.tsx`), settings tabs (`SettingsTabs`: `Link`s inside a `<nav>` with `aria-current="page"`), and the inspect page header/report links.
 - Programmatic navigation uses `useRouter` from `next/navigation`.
 - The only raw `<a>` is the skip link in the dashboard layout (`href="#main-content"`, an in-page fragment, not a route). Internal routes always use `Link`. External provider URLs are opened with `window.location.assign` / `window.open` ([`src/lib/billing-redirect.ts`](../url-shortener-ui/src/lib/billing-redirect.ts)).
-- Active state: `sidebar-nav.tsx` marks an item active when `pathname` equals its `matchPrefix` (defaults to `href`) or starts with `matchPrefix + "/"`. Settings links to `/settings/general` with `matchPrefix: ROUTES.SETTINGS`, so it stays active on every settings tab.
+- Active state: `sidebar-nav.tsx` marks an item active when `isPathWithin(pathname, matchPrefix ?? href)`: the path equals the prefix or starts with `prefix + "/"`. Settings links to `/settings/general` with `matchPrefix: ROUTES.SETTINGS`, so it stays active on every settings tab.
 
 ## Sidebar and settings tabs
 
@@ -78,7 +78,7 @@ There are no `loading.tsx` files and none may be added. Loading states are compo
 - Pending cue: every sidebar item and every settings tab (`SettingsTabs`) renders `LinkPendingIndicator` ([`components/ui/link-pending-indicator.tsx`](../url-shortener-ui/src/components/ui/link-pending-indicator.tsx)), a dot driven by `useLinkStatus()` from `next/link`. It is always rendered (opacity only, so it never moves the layout) and fades in after a 150 ms transition delay, so navigations that finish sooner show nothing (a local dev switch to Settings was pending about 106 ms). Tests that mock `next/link` must also provide `useLinkStatus`.
 - `SidebarUserMenu` offers Settings (`router.push(SETTINGS_ROUTES.DEFAULT)`) and Logout.
 - Header title is derived from `pathname` in `Header.tsx` (a fixed map; any `/settings/*` path shows "Settings"). A new top-level page must be added to that map and to the sidebar list.
-- Settings tabs: [`src/components/settings/SettingsTabs.tsx`](../url-shortener-ui/src/components/settings/SettingsTabs.tsx) renders `SETTINGS_SECTIONS` (General, Billing) from `settings-constants.ts` as underline tabs; the tab whose `href` equals the current `pathname` is the active one. Add a settings section by adding a route folder under `settings/` and an entry in `SETTINGS_SECTIONS`.
+- Settings tabs: [`src/components/settings/SettingsTabs.tsx`](../url-shortener-ui/src/components/settings/SettingsTabs.tsx) renders `SETTINGS_SECTIONS` (General, Billing) from `settings-constants.ts` as underline tabs. The active one is `getActiveSettingsSectionHref(pathname)` (`settings-constants.ts`): the section whose route is the path or a prefix of it (`isPathWithin` from [`lib/route-match.ts`](../url-shortener-ui/src/lib/route-match.ts), also used by the sidebar), and the default section for `/settings` and `/settings/`, so exactly one tab is current on every settings path. Add a settings section by adding a route folder under `settings/` and an entry in `SETTINGS_SECTIONS`.
 
 ## Search params and URL state
 
