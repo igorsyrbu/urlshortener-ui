@@ -1,7 +1,9 @@
 import {render, screen} from "@testing-library/react";
+import {useEffect, useRef} from "react";
 import userEvent from "@testing-library/user-event";
 import {describe, expect, it, vi} from "vitest";
 import {SegmentedControl, type SegmentedControlOption} from "@/components/ui/segmented-control";
+import {SEGMENTED_CONTROL_SELECTED_CLASS_NAME} from "@/components/ui/segmented-control-styles";
 
 const BUTTON_OPTIONS: readonly SegmentedControlOption[] = [
     {value: "monthly", label: "Monthly"},
@@ -109,6 +111,30 @@ describe("SegmentedControl indicator", () => {
         render(<SegmentedControl ariaLabel="Billing cycle" value="unknown" options={BUTTON_OPTIONS}/>);
 
         expect(screen.queryByTestId("segmented-control-thumb")).not.toBeInTheDocument();
+    });
+
+    it("shows the selection in the first painted frame, before the thumb is measured", () => {
+        let selectedClassesAtFirstEffect: string[] = [];
+        function PaintProbe() {
+            const probeRef = useRef<HTMLDivElement>(null);
+            // The first commit is what the browser paints first; its passive effect sees that DOM.
+            useEffect(() => {
+                const selected = probeRef.current?.querySelector("[aria-pressed='true']");
+                selectedClassesAtFirstEffect = selected ? [...selected.classList] : [];
+            }, []);
+            return <div ref={probeRef}><SegmentedControl ariaLabel="Billing cycle" value="monthly" options={BUTTON_OPTIONS}/></div>;
+        }
+
+        render(<PaintProbe/>);
+
+        expect(selectedClassesAtFirstEffect).toEqual(expect.arrayContaining(SEGMENTED_CONTROL_SELECTED_CLASS_NAME.split(" ")));
+    });
+
+    it("hands the selected background to the thumb once it is measured", () => {
+        render(<SegmentedControl ariaLabel="Billing cycle" value="monthly" options={BUTTON_OPTIONS}/>);
+
+        expect(screen.getByTestId("segmented-control-thumb")).toBeInTheDocument();
+        expect(screen.getByRole("button", {name: "Monthly"})).not.toHaveClass(...SEGMENTED_CONTROL_SELECTED_CLASS_NAME.split(" "));
     });
 
     it("positions the indicator without a ResizeObserver", () => {

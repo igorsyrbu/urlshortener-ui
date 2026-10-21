@@ -6,6 +6,7 @@ import {useSegmentedIndicator, type SegmentedIndicator} from "@/lib/hooks/useSeg
 import {
     SEGMENTED_CONTROL_HOVER_CLASS_NAME,
     SEGMENTED_CONTROL_LABEL_CLASS_NAME,
+    SEGMENTED_CONTROL_SELECTED_CLASS_NAME,
 } from "@/components/ui/segmented-control-styles";
 
 export interface SegmentedControlOption {
@@ -62,14 +63,15 @@ function renderThumb(indicator: SegmentedIndicator): ReactNode {
 
 export function SegmentedControl({options, value, onValueChange, ariaLabel, isDisabled = false}: SegmentedControlProps) {
     const selectedRef = useRef<HTMLElement | null>(null);
-    const indicator = useSegmentedIndicator(selectedRef, value);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const indicator = useSegmentedIndicator(selectedRef, containerRef, value);
 
     const assignSelectedRef = useCallback((element: HTMLElement | null): void => {
         selectedRef.current = element;
     }, []);
 
     return (
-        <div role="group" aria-label={ariaLabel} className={CONTAINER_CLASS_NAME}>
+        <div ref={containerRef} role="group" aria-label={ariaLabel} className={CONTAINER_CLASS_NAME}>
             {renderThumb(indicator)}
             {options.map((option) => {
                 const isSelected = option.value === value;
@@ -83,7 +85,13 @@ export function SegmentedControl({options, value, onValueChange, ariaLabel, isDi
                         onClick={() => onValueChange?.(option.value)}
                         onPointerEnter={option.onIntent}
                         onFocus={option.onIntent}
-                        className={cn(OPTION_CLASS_NAME, SEGMENTED_CONTROL_LABEL_CLASS_NAME, !isSelected && SEGMENTED_CONTROL_HOVER_CLASS_NAME)}
+                        className={cn(
+                            OPTION_CLASS_NAME,
+                            SEGMENTED_CONTROL_LABEL_CLASS_NAME,
+                            // The option's own background until the thumb is measured, so a failed measurement still shows it.
+                            isSelected && !indicator.isReady && SEGMENTED_CONTROL_SELECTED_CLASS_NAME,
+                            !isSelected && SEGMENTED_CONTROL_HOVER_CLASS_NAME,
+                        )}
                     >
                         {renderLabel(option)}
                     </button>

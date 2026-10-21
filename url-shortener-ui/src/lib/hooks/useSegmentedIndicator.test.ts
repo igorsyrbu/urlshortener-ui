@@ -15,6 +15,7 @@ interface OptionGeometry {
 
 interface IndicatorTestResult extends RenderHookResult<SegmentedIndicator, string> {
     element: HTMLElement;
+    container: HTMLElement;
     selectedRef: RefObject<HTMLElement | null>;
 }
 
@@ -23,10 +24,15 @@ function setGeometry(element: HTMLElement, geometry: OptionGeometry): void {
     Object.defineProperty(element, "offsetWidth", {configurable: true, value: geometry.width});
 }
 
+const observedElements: Element[] = [];
+
 function stubResizeObserver(): () => void {
     let notifyResize = (): void => undefined;
+    observedElements.length = 0;
     vi.stubGlobal("ResizeObserver", vi.fn(function (callback: ResizeObserverCallback): ResizeObserver {
-        const observer: ResizeObserver = {observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn()};
+        const observer: ResizeObserver = {
+            observe: vi.fn((element: Element) => { observedElements.push(element); }), unobserve: vi.fn(), disconnect: vi.fn(),
+        };
         notifyResize = (): void => callback([], observer);
         return observer;
     }));
@@ -36,11 +42,13 @@ function stubResizeObserver(): () => void {
 function renderIndicator(): IndicatorTestResult {
     const element = document.createElement("button");
     setGeometry(element, FIRST_OPTION);
+    const container = document.createElement("div");
     const selectedRef: RefObject<HTMLElement | null> = {current: element};
-    const hook = renderHook((value: string) => useSegmentedIndicator(selectedRef, value), {
+    const containerRef: RefObject<HTMLElement | null> = {current: container};
+    const hook = renderHook((value: string) => useSegmentedIndicator(selectedRef, containerRef, value), {
         initialProps: FIRST_OPTION.value,
     });
-    return {...hook, element, selectedRef};
+    return {...hook, element, container, selectedRef};
 }
 
 describe("useSegmentedIndicator", () => {
@@ -85,6 +93,19 @@ describe("useSegmentedIndicator", () => {
         notifyResize();
 
         expect(result.current).toEqual({x: RESIZED_OPTION.x, width: RESIZED_OPTION.width, isReady: true, shouldAnimate: false});
+    });
+
+    it("realigns when an earlier option changes width and the selected one keeps its own", () => {
+        const notifyResize = stubResizeObserver();
+        const {result, rerender, element, container} = renderIndicator();
+        setGeometry(element, SECOND_OPTION);
+        rerender(SECOND_OPTION.value);
+
+        setGeometry(element, {...SECOND_OPTION, x: SECOND_OPTION.x + 20});
+        notifyResize();
+
+        expect(observedElements).toContain(container);
+        expect(result.current.x).toBe(SECOND_OPTION.x + 20);
     });
 
     it("positions a selection that reappears without animating from a hidden indicator", () => {
