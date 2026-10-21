@@ -50,6 +50,44 @@ describe("fetchTagsResponse", () => {
         expect(set).toHaveBeenCalledExactlyOnceWith({error: "Failed to fetch tags: 503"});
     });
 
+    it("loads every page and stores all the tags together", async () => {
+        const first = [createTag({id: "tag-1", name: "One"})];
+        const second = [createTag({id: "tag-2", name: "Two"})];
+        const third = [createTag({id: "tag-21", name: "Twenty-one"})];
+        const fetchMock = vi.fn<(url: string) => Promise<Response>>()
+            .mockResolvedValueOnce(Response.json({content: first, page: {totalPages: 3, number: 0, size: 1, totalElements: 3}}))
+            .mockResolvedValueOnce(Response.json({content: second, page: {totalPages: 3, number: 1, size: 1, totalElements: 3}}))
+            .mockResolvedValueOnce(Response.json({content: third, totalPages: 3, number: 2, size: 1, totalElements: 3}));
+        const set = vi.fn();
+
+        await fetchTagsResponse(new URLSearchParams({size: "1"}), set, fetchMock);
+
+        expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+            `${API_ENDPOINTS.TAGS}?size=1`, `${API_ENDPOINTS.TAGS}?size=1&page=1`, `${API_ENDPOINTS.TAGS}?size=1&page=2`,
+        ]);
+        expect(set).toHaveBeenCalledExactlyOnceWith({tags: [...first, ...second, ...third]});
+    });
+
+    it("stores nothing but the error when a later page fails", async () => {
+        const fetchMock = vi.fn<(url: string) => Promise<Response>>()
+            .mockResolvedValueOnce(Response.json({content: [createTag()], totalPages: 2}))
+            .mockResolvedValueOnce(new Response(null, {status: 500}));
+        const set = vi.fn();
+
+        await fetchTagsResponse(new URLSearchParams(), set, fetchMock);
+
+        expect(set).toHaveBeenCalledExactlyOnceWith({error: "Failed to fetch tags: 500"});
+    });
+
+    it("stops after a bounded number of pages when the backend keeps reporting more", async () => {
+        const fetchMock = vi.fn<(url: string) => Promise<Response>>()
+            .mockImplementation(async () => Response.json({content: [], totalPages: Number.MAX_SAFE_INTEGER}));
+
+        await fetchTagsResponse(new URLSearchParams(), vi.fn(), fetchMock);
+
+        expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(100);
+    });
+
     it("lets a network failure propagate to the caller", async () => {
         const fetchMock = vi.fn<(url: string) => Promise<Response>>().mockRejectedValue(new Error("offline"));
 

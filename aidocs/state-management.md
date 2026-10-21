@@ -30,7 +30,7 @@ All stores are created with `create` from `zustand` (v5) and exported as hooks. 
 | `useAnnouncerStore` | [`src/lib/store/announcer.ts`](../url-shortener-ui/src/lib/store/announcer.ts) | `message`, `sequence` | `announce` (also exported as a plain `announce()` function) | `LiveAnnouncer` in the root layout, `useCopyToClipboard` |
 | `useImportTracker` | [`src/lib/store/import.ts`](../url-shortener-ui/src/lib/store/import.ts) | `status` (`IMPORT_TRACKING_STATUS`), `progress`, `job` | `trackSubmission`, `ensureDiscovery`, `stopTracking`, `reset` | links page, `PageToolbar`, `useLinkImport` |
 
-Helper: [`src/lib/store/fetch-tags-common.ts`](../url-shortener-ui/src/lib/store/fetch-tags-common.ts) (`fetchTagsResponse`) is the shared GET for both tag stores.
+Helper: [`src/lib/store/fetch-tags-common.ts`](../url-shortener-ui/src/lib/store/fetch-tags-common.ts) (`fetchTagsResponse`) is the shared GET for both tag stores; it loads every page (`TAGS_PAGE_SIZE` = 100 per request).
 
 Notes per store:
 

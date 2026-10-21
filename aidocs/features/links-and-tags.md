@@ -104,7 +104,7 @@ Enabled when `enableUrlCleaner` and the user's preference `trackerMode` is `SUGG
 
 Route `/tags` ([`src/app/(dashboard)/tags/page.tsx`](../../url-shortener-ui/src/app/(dashboard)/tags/page.tsx)).
 
-- Two separate stores: `useTagStoreWithCount` (`withLinksCount=true`, used by this page) and `useTagStoreWithoutCount` (`withLinksCount=false`, used by forms, cards and the links page). Both fetch `GET /tags?size=20[&search]` and accept either `{content: [...]}` or a plain array (`fetchTagsResponse`).
+- Two separate stores: `useTagStoreWithCount` (`withLinksCount=true`, used by this page) and `useTagStoreWithoutCount` (`withLinksCount=false`, used by forms, cards and the links page). Both fetch `GET /tags?size=100[&search]` (`TAGS_PAGE_SIZE`) and load **every** page: `fetchTagsResponse` follows `totalPages` (`page=1`, `page=2`, ...; at most 100 pages) and stores all tags at once, so link badges and `TagSelect` see every tag; a failed page stores only the error. A plain array response counts as one page.
 - Mutations live in `useTagMutations` ([`src/lib/hooks/useTagMutations.ts`](../../url-shortener-ui/src/lib/hooks/useTagMutations.ts)): `createTag` (`POST /tags`), `updateTag` (`PUT /tags`), `deleteTag` (`DELETE /tags/{id}`). Each writes the result into **both** stores (create prepends, update replaces, delete filters) On failure they reject with a readable message (`parseProblemDetail` of the body, or `Failed to <action> tag: <status>`) and leave both stores untouched.
 - Search: same pattern as links (`SEARCH_DEBOUNCE_MS`, Enter and Clear search at once); the module-level `commitTagSearch` calls `store.setSearchQuery` then `fetchTags()`. The page clears the store's `searchQuery` on unmount, for the same reason as links.
 - UI: `TagCard` (colour badge, name, `N link(s)` badge when `linkCount > 0`, menu with `E` edit and `D` delete shortcuts), `EmptyTagsState` / `NoTagsFoundState`, `TagCardSkeletonList`. Create and edit use `TagFormModal` (name `maxLength` 50, `TagColorPicker` over the 8 `ALLOWED_TAG_COLORS`, Dialog on desktop and Drawer on mobile; `CreateTagModal` passes `resetOnClose`). Delete uses `DeleteTagModal`; the description says the tag is removed from all associated links.
@@ -170,7 +170,6 @@ While an import is ongoing (`discovering`, `active`, `reconnecting`, **or `inter
 ## Known limitations and existing exceptions
 
 - Observation: the server-side inspect fetch is an existing exception to the client-rendered model; see [Architecture](../architecture.md#known-limitations-and-existing-exceptions). Do not extend server-side fetching to other pages.
-- Observation: tag stores fetch with a fixed `size=20` and the UI has no tag pagination, so only the first 20 tags appear in `TagSelect`, link badges and the tags page.
 - Observation: `fetchLinks` and `fetchTags` drop calls made while a request is in flight, so a rapid second change (for example a page click during a search refetch) can be ignored.
 - Observation: delete failure in `confirmDelete` is only logged; the modal stays open without a user-visible error.
 - Observation: `LinkFormFields.tsx` is about 600 lines with a very wide props surface on `FormScreenContent`; `LinkCard` and `QrCodeModal` are also large. Existing exceptions to the size guidance in [Coding patterns](../coding-patterns.md); do not copy, do not split as a drive-by.

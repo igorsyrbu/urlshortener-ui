@@ -7,7 +7,7 @@ import {createTag} from "@/test/tag-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 
-const DEFAULT_TAGS_PAGE_SIZE = "20";
+const DEFAULT_TAGS_PAGE_SIZE = "100";
 
 const storeCases = [
     {name: "tag store without counts", useStore: useTagStoreWithoutCount, withLinksCount: "false"},
@@ -25,6 +25,19 @@ describe.each(storeCases)("$name", ({useStore, withLinksCount}) => {
 
     afterEach(() => {
         useStore.setState(initialState, true);
+    });
+
+    it("loads tags beyond the first page, so a link's 21st tag still has a badge", async () => {
+        const firstPage = Array.from({length: 20}, (_, index) => createTag({id: `tag-${index}`, name: `Tag ${index}`}));
+        const twentyFirst = createTag({id: "tag-20", name: "Tag 20"});
+        vi.mocked(fetchWithAuth)
+            .mockResolvedValueOnce(Response.json({content: firstPage, totalPages: 2}))
+            .mockResolvedValueOnce(Response.json({content: [twentyFirst], totalPages: 2}));
+
+        await useStore.getState().fetchTags({size: 20});
+
+        expect(useStore.getState().tags).toHaveLength(21);
+        expect(useStore.getState().tags.at(-1)).toEqual(twentyFirst);
     });
 
     it("loads tags with the default page size and the links count flag", async () => {

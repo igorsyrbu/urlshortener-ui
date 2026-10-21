@@ -59,7 +59,7 @@ describe("tags page", () => {
         render(<TagsPage/>);
 
         await screen.findByText("Marketing");
-        expect(requestedUrls()[0]).toBe(`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=20`);
+        expect(requestedUrls()[0]).toBe(`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=100`);
     });
 
     it("shows the empty state when the user has no tags", async () => {
@@ -93,7 +93,7 @@ describe("tags page", () => {
             vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
         });
 
-        await waitFor(() => expect(requestedUrls()).toEqual([`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=20&search=mark`]));
+        await waitFor(() => expect(requestedUrls()).toEqual([`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=100&search=mark`]));
     });
 
     it("searches at once when Enter is pressed", async () => {
@@ -105,7 +105,7 @@ describe("tags page", () => {
 
         await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "mark{Enter}");
 
-        expect(requestedUrls()).toEqual([`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=20&search=mark`]);
+        expect(requestedUrls()).toEqual([`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=100&search=mark`]);
     });
 
     it("starts a new visit unfiltered after leaving the page with a search", async () => {
@@ -123,7 +123,7 @@ describe("tags page", () => {
             vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
         });
 
-        expect(requestedUrls()).toEqual([`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=20`]);
+        expect(requestedUrls()).toEqual([`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=100`]);
         expect(screen.getByPlaceholderText(SEARCH_PLACEHOLDER)).toHaveValue("");
     });
 

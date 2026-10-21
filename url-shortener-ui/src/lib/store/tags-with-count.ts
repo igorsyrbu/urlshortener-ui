@@ -1,7 +1,7 @@
 import {create} from "zustand";
 import {fetchWithAuth} from "@/lib/api";
 import {TagItem} from "@/lib/types";
-import {fetchTagsResponse} from "@/lib/store/fetch-tags-common";
+import {fetchTagsResponse, TAGS_PAGE_SIZE} from "@/lib/store/fetch-tags-common";
 import {createLatestRequestTracker} from "@/lib/latest-request";
 
 interface TagStore {
@@ -33,7 +33,7 @@ export const useTagStoreWithCount = create<TagStore>((set, get) => ({
             const {searchQuery} = get();
             const query = new URLSearchParams();
             query.set("withLinksCount", "true");
-            query.set("size", String(params?.size ?? 20));
+            query.set("size", String(params?.size ?? TAGS_PAGE_SIZE));
             if (searchQuery) {
                 query.set("search", searchQuery);
             }
