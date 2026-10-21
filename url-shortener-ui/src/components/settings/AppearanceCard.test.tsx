@@ -7,6 +7,13 @@ const mocks = vi.hoisted(() => ({setTheme: vi.fn()}));
 vi.mock("next-themes", () => ({useTheme: () => ({theme: "system", setTheme: mocks.setTheme})}));
 
 describe("AppearanceCard", () => {
+    it("marks the stored mode as selected", () => {
+        render(<AppearanceCard/>);
+
+        expect(screen.getByRole("button", {name: "System"})).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("button", {name: "Light"})).toHaveAttribute("aria-pressed", "false");
+    });
+
     it.each([["Light", "light"], ["Dark", "dark"], ["System", "system"]])(
         "switches to the %s theme",
         async (label, theme) => {

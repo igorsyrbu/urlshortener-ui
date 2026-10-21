@@ -40,7 +40,7 @@ describe("CurrentSessionCard", () => {
 
         expect(screen.getByText("MacBook (macOS)")).toBeInTheDocument();
         expect(screen.getByText("Montreal, Quebec, Canada")).toBeInTheDocument();
-        expect(screen.getByText("Current")).toBeInTheDocument();
+        expect(screen.getByText("This device")).toBeInTheDocument();
     });
 
     it("falls back to generic labels for unknown device and location", () => {
@@ -59,26 +59,26 @@ describe("CurrentSessionCard", () => {
         expect(props.onLogout).toHaveBeenCalledOnce();
     });
 
-    it("offers to terminate other sessions only when there are some", async () => {
+    it("offers to log out of other sessions only when there are some", async () => {
         const user = userEvent.setup();
         const props = renderCard({hasOtherSessions: true});
 
-        await user.click(screen.getByRole("button", {name: "Terminate all other sessions"}));
+        await user.click(screen.getByRole("button", {name: "Log out all other sessions"}));
 
         expect(props.onTerminateOther).toHaveBeenCalledOnce();
     });
 
-    it("hides the terminate-others action when there are no other sessions", () => {
+    it("hides the log-out-others action when there are no other sessions", () => {
         renderCard({hasOtherSessions: false});
 
-        expect(screen.queryByRole("button", {name: "Terminate all other sessions"})).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", {name: "Log out all other sessions"})).not.toBeInTheDocument();
     });
 
     it("disables both actions while another action is running", () => {
         renderCard({hasOtherSessions: true, isActionDisabled: true});
 
         expect(screen.getByRole("button", {name: "Log out"})).toBeDisabled();
-        expect(screen.getByRole("button", {name: "Terminate all other sessions"})).toBeDisabled();
+        expect(screen.getByRole("button", {name: "Log out all other sessions"})).toBeDisabled();
     });
 
     it("shows progress while logging out", () => {
@@ -87,9 +87,9 @@ describe("CurrentSessionCard", () => {
         expect(screen.getByRole("button", {name: "Logging out..."})).toBeDisabled();
     });
 
-    it("shows progress while terminating other sessions", () => {
+    it("shows progress while logging out of other sessions", () => {
         renderCard({hasOtherSessions: true, isTerminatingOther: true, isActionDisabled: true});
 
-        expect(screen.getByRole("button", {name: "Terminating..."})).toBeDisabled();
+        expect(screen.getByRole("button", {name: "Logging out..."})).toBeDisabled();
     });
 });

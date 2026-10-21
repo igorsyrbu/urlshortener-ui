@@ -10,9 +10,7 @@ const SESSIONS = [
 ];
 
 function getRow(deviceText: string): HTMLElement {
-    const row = screen.getByText(deviceText).closest<HTMLElement>("div.justify-between");
-    if (!row) throw new Error(`Row for ${deviceText} not found`);
-    return row;
+    return screen.getByRole("group", {name: deviceText});
 }
 
 function renderList(overrides: Partial<Parameters<typeof OtherSessionsList>[0]> = {}): void {
@@ -42,7 +40,7 @@ describe("OtherSessionsList", () => {
     it("lists every session with its device and location", () => {
         renderList();
 
-        expect(screen.getByText("Active Sessions")).toBeInTheDocument();
+        expect(screen.getByText("Active sessions")).toBeInTheDocument();
         expect(screen.getByText("iPhone (iOS)")).toBeInTheDocument();
         expect(screen.getByText("Paris, France")).toBeInTheDocument();
         expect(screen.getByText("ThinkPad (Linux)")).toBeInTheDocument();

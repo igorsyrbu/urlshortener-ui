@@ -3,9 +3,10 @@
 import {useEffect, useRef, useState} from "react";
 import dynamic from "next/dynamic";
 import {useHasMounted} from "@/lib/hooks/useHasMounted";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Card, CardContent} from "@/components/ui/card";
 import {SegmentedControl} from "@/components/ui/segmented-control";
 import {PresetPaletteGrid} from "@/components/settings/PresetPaletteGrid";
+import {ThemeCardHeading} from "@/components/settings/ThemeCardHeading";
 import {ThemeCardSkeleton} from "@/components/settings/ThemeCardSkeleton";
 import {usePalette} from "@/providers/palette-provider";
 
@@ -53,15 +54,12 @@ export function ThemeCard() {
 
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Color theme</CardTitle>
-                <CardDescription>Pick a built-in palette or build your own from four colors.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex flex-col gap-4">
+            <CardContent className="@container flex flex-col gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <ThemeCardHeading/>
                     <SegmentedControl ariaLabel="Color theme options" value={activeTab} onValueChange={handleTabChange} options={THEME_TAB_OPTIONS}/>
-                    {activeTab === BUILT_IN_TAB ? <PresetPaletteGrid/> : <CustomThemeBuilder/>}
                 </div>
+                {activeTab === BUILT_IN_TAB ? <PresetPaletteGrid/> : <CustomThemeBuilder/>}
             </CardContent>
         </Card>
     );

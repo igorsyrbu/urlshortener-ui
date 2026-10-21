@@ -11,8 +11,8 @@
     "/report-abuse": 204,
     "/dashboard": 210,
     "/settings": 212,
-    "/settings/billing": 222,
-    "/settings/general": 222,
+    "/settings/billing": 225,
+    "/settings/general": 225,
     "/analytics": 233,
     "/tags": 248,
     "/links": 263

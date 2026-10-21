@@ -8,12 +8,6 @@ const BUTTON_OPTIONS: readonly SegmentedControlOption[] = [
     {value: "yearly", label: "Yearly", suffix: <span>Save 17%</span>},
 ];
 
-const LINK_OPTIONS: readonly SegmentedControlOption[] = [
-    {value: "/settings/general", label: "General", href: "/settings/general"},
-    {value: "/settings/appearence", label: "Appearance", href: "/settings/appearence"},
-    {value: "/settings/billing", label: "Billing", href: "/settings/billing"},
-];
-
 const LONG_LABEL = "l".repeat(250);
 
 function stubGeometry(element: HTMLElement, x: number, width: number): void {
@@ -123,35 +117,5 @@ describe("SegmentedControl indicator", () => {
         render(<SegmentedControl ariaLabel="Billing cycle" value="monthly" options={BUTTON_OPTIONS}/>);
 
         expect(screen.getByTestId("segmented-control-thumb")).toBeInTheDocument();
-    });
-});
-
-describe("SegmentedControl links", () => {
-    it("links every section to its route and marks only the current one", () => {
-        render(<SegmentedControl ariaLabel="Settings sections" value="/settings/general" options={LINK_OPTIONS}/>);
-
-        expect(screen.getByRole("link", {name: "Appearance"})).toHaveAttribute("href", "/settings/appearence");
-        const currentLinks = screen.getAllByRole("link").filter((link) => link.getAttribute("aria-current") === "page");
-        expect(currentLinks).toHaveLength(1);
-        expect(currentLinks[0]).toHaveTextContent("General");
-    });
-
-    it("reports intent on a link before it is followed", async () => {
-        const onIntent = vi.fn<() => void>();
-        const user = userEvent.setup();
-        const options = LINK_OPTIONS.map((option) => (option.label === "Billing" ? {...option, onIntent} : option));
-        render(<SegmentedControl ariaLabel="Settings sections" value="/settings/general" options={options}/>);
-
-        await user.hover(screen.getByRole("link", {name: "Billing"}));
-
-        expect(onIntent).toHaveBeenCalledOnce();
-    });
-
-    it("follows the current route when it changes", () => {
-        const {rerender} = render(<SegmentedControl ariaLabel="Settings sections" value="/settings/billing" options={LINK_OPTIONS}/>);
-        rerender(<SegmentedControl ariaLabel="Settings sections" value="/settings/general" options={LINK_OPTIONS}/>);
-
-        expect(screen.getByRole("link", {name: "General"})).toHaveAttribute("aria-current", "page");
-        expect(screen.getByRole("link", {name: "Billing"})).not.toHaveAttribute("aria-current");
     });
 });

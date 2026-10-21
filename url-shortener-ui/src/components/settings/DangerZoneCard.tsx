@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
+import {Card, CardContent} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 
@@ -27,25 +27,19 @@ export function DangerZoneCard({
 
     return (
         <>
-            <Card className="border-destructive">
-                <CardHeader>
-                    <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                    <CardDescription>
-                        Permanently delete your account and all associated data.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div
-                        className="bg-destructive/10 text-destructive p-4 rounded-xl text-sm mb-4 border-[0.5px] border-destructive/20">
-                        <strong>Warning:</strong> This action is irreversible. All your short links, analytics
-                        data, and account information will be permanently removed.
+            <Card className="border-destructive/40">
+                <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                        <p className="text-sm font-medium text-destructive">Delete account</p>
+                        <p className="text-xs text-muted-foreground">
+                            Permanently delete your account, short links and analytics data. This action is irreversible.
+                        </p>
                     </div>
-                </CardContent>
-                <CardFooter className="px-6">
-                    <Button variant="destructive" onClick={onOpenDeleteDialog}>
+                    <Button variant="outline" className="w-full shrink-0 text-destructive hover:text-destructive sm:w-auto"
+                            onClick={onOpenDeleteDialog}>
                         Delete Account
                     </Button>
-                </CardFooter>
+                </CardContent>
             </Card>
 
             {hasOpenedDeleteDialog && (

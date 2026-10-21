@@ -4,9 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SettingsCallout } from "@/components/settings/SettingsCallout";
+import { FOCUS_RING_CLASS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import { usePreferencesStore, type TrackerMode } from "@/lib/store/preferences";
 import { TRACKER_MODE, TRACKER_MODE_DESCRIPTIONS, TRACKER_MODE_LABELS } from "@/lib/constants";
-import { ShieldAlert, ShieldCheck, ShieldOff, type LucideIcon } from "lucide-react";
+import { Check, ShieldAlert, ShieldCheck, ShieldOff, type LucideIcon } from "lucide-react";
 import { logger } from "@/lib/logger";
 
 interface TrackerOption {
@@ -36,6 +39,42 @@ const TRACKER_OPTIONS: TrackerOption[] = [
         icon: ShieldCheck,
     },
 ];
+
+interface TrackerOptionRowProps {
+    option: TrackerOption;
+    isActive: boolean;
+    isDisabled: boolean;
+    onSelect: (mode: TrackerMode) => void;
+}
+
+function TrackerOptionRow({option, isActive, isDisabled, onSelect}: TrackerOptionRowProps) {
+    const Icon = option.icon;
+    return (
+        <button
+            type="button"
+            role="radio"
+            aria-checked={isActive}
+            aria-label={`${option.label}: ${option.description}`}
+            disabled={isDisabled}
+            onClick={() => onSelect(option.value)}
+            className={cn(
+                "flex min-h-14 w-full items-center gap-3 px-6 py-3 text-left outline-none transition-colors last:rounded-b-xl hover:bg-muted/50 disabled:cursor-wait disabled:opacity-70",
+                FOCUS_RING_CLASS,
+            )}
+        >
+            <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true"/>
+            <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-sm font-medium text-foreground">{option.label}</span>
+                <span className="text-xs text-muted-foreground">{option.description}</span>
+            </span>
+            <span aria-hidden="true"
+                  className={cn("flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors",
+                      isActive ? "border-primary bg-primary text-primary-foreground" : "border-input")}>
+                {isActive && <Check className="size-3"/>}
+            </span>
+        </button>
+    );
+}
 
 export function PreferencesCard() {
     const trackerMode = usePreferencesStore((state) => state.trackerMode);
@@ -73,61 +112,40 @@ export function PreferencesCard() {
     const hasLoadedMode = trackerMode !== null;
 
     return (
-        <Card>
+        <Card className="pb-0">
             <CardHeader>
-                <CardTitle>Preferences</CardTitle>
-                <CardDescription>Manage how tracking parameters are handled when you create or edit links.</CardDescription>
+                <CardTitle className="text-sm font-medium">Tracker detection</CardTitle>
+                <CardDescription className="text-xs">
+                    Choose what happens when trackers like UTMs or click IDs are detected in a destination URL.
+                </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <h3 className="text-sm font-medium leading-none">Tracker detection</h3>
-                    <p className="text-xs text-muted-foreground">
-                        Choose what happens when trackers like UTMs or click IDs are detected in a destination URL.
-                    </p>
-                </div>
-                {loadFailed && trackerMode === null ? (
-                    <div className="flex flex-col items-start gap-3 rounded-xl border-[0.5px] border-border p-4">
-                        <p className="text-sm text-muted-foreground">
-                            Couldn&apos;t load your preferences. Please check your connection and try again.
-                        </p>
-                        <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
-                            Retry
-                        </Button>
-                    </div>
-                ) : (
-                    <div
-                        role="radiogroup"
-                        aria-label="Tracker detection mode"
-                        aria-busy={isLoading || !hasLoadedMode}
-                        className="flex flex-col gap-3 sm:flex-row sm:gap-4"
-                    >
-                        {TRACKER_OPTIONS.map((option) => {
-                            const isActive = trackerMode === option.value;
-                            const Icon = option.icon;
-                            return (
-                                <button
-                                    key={option.value}
-                                    type="button"
-                                    role="radio"
-                                    aria-checked={isActive}
-                                    aria-label={`${option.label}: ${option.description}`}
-                                    disabled={!hasLoadedMode || isLoading || isSaving}
-                                    onClick={() => void handleSelect(option.value)}
-                                    className={`flex flex-1 flex-col items-start gap-2 rounded-xl border-[0.5px] p-4 text-left transition-colors outline-hidden focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] hover:bg-muted/50 disabled:cursor-wait disabled:opacity-70 ${
-                                        isActive ? "border-primary ring-1 ring-primary bg-muted/30" : "border-border"
-                                    }`}
-                                >
-                                    <span className="flex items-center gap-2">
-                                        <Icon className="size-4 shrink-0" aria-hidden="true" />
-                                        <span className="text-sm font-semibold leading-none">{option.label}</span>
-                                    </span>
-                                    <span className="text-xs leading-snug text-muted-foreground">{option.description}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
-            </CardContent>
+            {loadFailed && trackerMode === null ? (
+                <CardContent className="flex flex-col items-start gap-3 pb-6">
+                    <SettingsCallout tone="destructive" isAlert className="w-full">
+                        Couldn&apos;t load your preferences. Please check your connection and try again.
+                    </SettingsCallout>
+                    <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
+                        Retry
+                    </Button>
+                </CardContent>
+            ) : (
+                <CardContent
+                    role="radiogroup"
+                    aria-label="Tracker detection mode"
+                    aria-busy={isLoading || !hasLoadedMode}
+                    className="divide-y-[0.5px] divide-border border-t-[0.5px] border-border px-0"
+                >
+                    {TRACKER_OPTIONS.map((option) => (
+                        <TrackerOptionRow
+                            key={option.value}
+                            option={option}
+                            isActive={trackerMode === option.value}
+                            isDisabled={!hasLoadedMode || isLoading || isSaving}
+                            onSelect={(mode) => void handleSelect(mode)}
+                        />
+                    ))}
+                </CardContent>
+            )}
         </Card>
     );
 }

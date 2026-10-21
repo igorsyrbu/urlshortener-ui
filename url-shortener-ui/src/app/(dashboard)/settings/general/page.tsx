@@ -9,6 +9,7 @@ import {useAuthStore} from "@/lib/store/auth";
 import {getJwtTTL} from "@/lib/utils";
 import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 import {UserSession} from "@/lib/session-utils";
+import {SETTINGS_SECTION_LIST_CLASS, SettingsSection} from "@/components/settings/SettingsSection";
 import {ProfileCard} from "@/components/settings/ProfileCard";
 import {AppearanceCard} from "@/components/settings/AppearanceCard";
 import {ThemeCard} from "@/components/settings/ThemeCard";
@@ -19,6 +20,7 @@ import {DangerZoneCard} from "@/components/settings/DangerZoneCard";
 import type {LogoutTarget} from "@/components/settings/SessionLogoutDialog";
 import {logger} from "@/lib/logger";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
+import {SETTINGS_SECTION_COPY} from "@/lib/settings-constants";
 
 const SessionLogoutDialog = dynamic(
     () => import("@/components/settings/SessionLogoutDialog").then((dialogModule) => dialogModule.SessionLogoutDialog),
@@ -134,13 +136,21 @@ export default function GeneralSettingsPage() {
     };
 
     return (
-        <div className="flex min-w-0 flex-col gap-4">
-            <ProfileCard/>
-            <AppearanceCard/>
-            <ThemeCard/>
-            <PreferencesCard/>
+        <div className={SETTINGS_SECTION_LIST_CLASS}>
+            <SettingsSection {...SETTINGS_SECTION_COPY.PROFILE}>
+                <ProfileCard/>
+            </SettingsSection>
 
-            <div className="flex flex-col gap-6">
+            <SettingsSection {...SETTINGS_SECTION_COPY.APPEARANCE}>
+                <AppearanceCard/>
+                <ThemeCard/>
+            </SettingsSection>
+
+            <SettingsSection {...SETTINGS_SECTION_COPY.PREFERENCES}>
+                <PreferencesCard/>
+            </SettingsSection>
+
+            <SettingsSection {...SETTINGS_SECTION_COPY.SESSIONS}>
                 <CurrentSessionCard
                     session={currentSession}
                     isLoading={isLoadingSessions}
@@ -157,14 +167,16 @@ export default function GeneralSettingsPage() {
                     sessionActionLoading={sessionActionLoading}
                     onLogoutSession={(id) => setLogoutTarget({type: "single", id, isCurrent: false})}
                 />
-            </div>
+            </SettingsSection>
 
-            <DangerZoneCard
-                isDeleteDialogOpen={isDeleteDialogOpen}
-                onOpenDeleteDialog={() => setIsDeleteDialogOpen(true)}
-                onCloseDeleteDialog={() => setIsDeleteDialogOpen(false)}
-                onConfirmDelete={() => setIsDeleteDialogOpen(false)}
-            />
+            <SettingsSection {...SETTINGS_SECTION_COPY.DANGER_ZONE} isDestructive>
+                <DangerZoneCard
+                    isDeleteDialogOpen={isDeleteDialogOpen}
+                    onOpenDeleteDialog={() => setIsDeleteDialogOpen(true)}
+                    onCloseDeleteDialog={() => setIsDeleteDialogOpen(false)}
+                    onConfirmDelete={() => setIsDeleteDialogOpen(false)}
+                />
+            </SettingsSection>
 
             {hasOpenedLogoutDialog && (
                 <SessionLogoutDialog

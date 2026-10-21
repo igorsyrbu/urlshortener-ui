@@ -69,7 +69,7 @@ Check this catalogue and the feature folders before writing a new component. All
 | 6-digit code | `InputOTP*` (`input-otp.tsx`) |
 | Dropdown of choices | `Select*` (`select.tsx`); action menu: `DropdownMenu*` (`dropdown-menu.tsx`) |
 | On/off toggle | `Switch` (`switch.tsx`, hand-written, not Radix; `checked`, `onCheckedChange`, `size`, `readOnly`) |
-| Tab-like switcher | `SegmentedControl` (`segmented-control.tsx`; button mode or link mode when every option has `href`). An option's optional `onIntent` runs on pointer-enter and focus, before the click: use it to preload what the option shows (`ThemeCard`). There is no Radix `Tabs` primitive |
+| Tab-like switcher | `SegmentedControl` (`segmented-control.tsx`; buttons with `aria-pressed`, full width on phones; for route tabs use links instead, as `SettingsTabs` does). An option's optional `onIntent` runs on pointer-enter and focus, before the click: use it to preload what the option shows (`ThemeCard`). There is no Radix `Tabs` primitive |
 | Card surface | `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`, `CardAction` (`card.tsx`) |
 | Tag / status chip | `Badge` (`badge.tsx`; colour variants are the tag colours) and `TagBadge` (`components/tags/TagBadge.tsx`) |
 | Desktop modal | `Dialog*` (`dialog.tsx`) |

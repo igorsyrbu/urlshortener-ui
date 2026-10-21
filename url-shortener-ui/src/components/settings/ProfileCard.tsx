@@ -1,7 +1,9 @@
 "use client";
 
 import {useState} from "react";
-import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
+import {User} from "lucide-react";
+import {Card, CardContent} from "@/components/ui/card";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {toast} from "sonner";
@@ -9,7 +11,8 @@ import {fetchWithAuth} from "@/lib/api";
 import {useAuthStore, UserProfile} from "@/lib/store/auth";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
-import {PROFILE_LABEL_CLASS, ProfileCardSkeleton} from "@/components/settings/ProfileCardSkeleton";
+import {PROFILE_FIELD_CLASS, PROFILE_LABEL_CLASS, ProfileCardSkeleton} from "@/components/settings/ProfileCardSkeleton";
+import {SETTINGS_CARD_WITH_FOOTER_CLASS, SettingsCardFooter} from "@/components/settings/SettingsCardFooter";
 import {PROFILE_FIELD_LABELS} from "@/lib/settings-constants";
 import {withPending} from "@/lib/async-utils";
 import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
@@ -72,30 +75,38 @@ export function ProfileCard() {
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Profile</CardTitle>
-                <CardDescription>Update your personal information.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-2 max-w-sm">
+        <Card className={SETTINGS_CARD_WITH_FOOTER_CLASS}>
+            <CardContent className="flex flex-col gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                    <Avatar className="size-8 shrink-0 border-[0.5px] border-border bg-muted">
+                        <AvatarImage src={user.pictureUrl || undefined} alt="" referrerPolicy="no-referrer" className="object-cover"/>
+                        <AvatarFallback className="bg-transparent text-muted-foreground">
+                            <User className="size-4" aria-hidden="true"/>
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground" title={name || email}>{name || email}</p>
+                        <p className="truncate text-xs text-muted-foreground" title={email}>{email}</p>
+                    </div>
+                </div>
+                <div className={PROFILE_FIELD_CLASS}>
                     <label htmlFor="email" className={PROFILE_LABEL_CLASS}>
                         {PROFILE_FIELD_LABELS.EMAIL}
                     </label>
                     <Input id="email" value={email} disabled className="bg-muted cursor-not-allowed"/>
                 </div>
-                <div className="space-y-2 max-w-sm">
+                <div className={PROFILE_FIELD_CLASS}>
                     <label htmlFor="name" className={PROFILE_LABEL_CLASS}>
                         {PROFILE_FIELD_LABELS.NAME}
                     </label>
                     <Input id="name" value={name} onChange={(e) => setName(e.target.value)}/>
                 </div>
             </CardContent>
-            <CardFooter className="px-6">
+            <SettingsCardFooter>
                 <Button onClick={handleSaveName} disabled={isSaving || !name?.trim()}>
                     {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
-            </CardFooter>
+            </SettingsCardFooter>
         </Card>
     );
 }

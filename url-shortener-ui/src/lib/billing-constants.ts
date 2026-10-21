@@ -45,6 +45,12 @@ interface BillingPrice {
 
 export const BILLING_COPY = {
     TITLE: "Billing",
+    PLANS_TITLE: "Billing plans",
+    FREE_PLAN_NOTE: "Upgrade to Pro for higher limits and longer analytics history.",
+    STATUS_FREE: "Free",
+    STATUS_ACTIVE: "Active",
+    STATUS_CANCELING: "Canceling",
+    STATUS_PENDING_CHANGE: "Pending change",
     DESCRIPTION: "Choose a plan and manage your subscription.",
     CYCLE_LABEL: "Billing cycle",
     MONTHLY: "Monthly",

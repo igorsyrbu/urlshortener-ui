@@ -101,7 +101,7 @@ Two implementations end the current session; both call `DELETE /users/sessions/c
 | Place | Behaviour |
 |---|---|
 | Sidebar user menu, [`src/components/layout/sidebar-user-menu.tsx`](../../url-shortener-ui/src/components/layout/sidebar-user-menu.tsx) | Confirm dialog or drawer (`LogoutConfirmDialog`, loaded on first open; the phone account drawer is `AccountMenuDrawer`, also on demand), request, then `logout()` and `router.replace("/login")` in `finally`, so the UI signs out even if the request fails |
-| Settings "This Device" row | Request first; only on `res.ok` does it call `logout()` and navigate; otherwise a toast "Failed to terminate session" |
+| Settings current-session row | Request first; only on `res.ok` does it call `logout()` and navigate; otherwise a toast "Failed to terminate session" |
 
 Neither resets other stores (links, tags, preferences, import). Navigation is client-side, so their in-memory data stays until overwritten by the next login's fetches.
 
@@ -110,7 +110,7 @@ Neither resets other stores (links, tags, preferences, import). Navigation is cl
 `GeneralSettingsPage` owns the state; the cards are presentational. The tab shell is covered in [Billing and settings](billing-and-settings.md).
 
 - Load: one `GET /users/sessions` on mount (a `useRef` guard prevents the strict-mode double call). The array is sorted so the entry with `current: true` is first, then split into `currentSession` and `otherSessions`. Failures are logged and the list stays empty.
-- Display: `CurrentSessionCard` ("This Device", "Current" badge, skeleton while loading, "Current session information unavailable." when absent). `OtherSessionsList` ("Active Sessions", scrollable at `max-h-[385px]`, hidden when empty and while loading, because the number of other sessions is unknown). Labels come from [`src/lib/session-utils.ts`](../../url-shortener-ui/src/lib/session-utils.ts): `formatDeviceText` (`"Device (OS)"`, hides `unknown`), `formatLocation` (city, region, country, or "Unknown Location"), `getIconForDevice` (monitor, phone, laptop, help icon).
+- Display: both cards render [`SessionRow`](../../url-shortener-ui/src/components/settings/SessionRow.tsx) (`role="group"` named by the device text; icon tile, device and location truncated with `title`, a ghost "Log out" button). `CurrentSessionCard` ("This device" badge, skeleton row while loading, "Current session information unavailable." when absent, and a footer bar with "Log out all other sessions" when there are others). `OtherSessionsList` ("Active sessions" heading, one card of rows, scrollable at `max-h-96`, hidden when empty and while loading, because the number of other sessions is unknown). Labels come from [`src/lib/session-utils.ts`](../../url-shortener-ui/src/lib/session-utils.ts): `formatDeviceText` (`"Device (OS)"`, hides `unknown`), `formatLocation` (city, region, country, or "Unknown Location"), `getIconForDevice` (monitor, phone, laptop, help icon).
 - Actions are routed through `SessionLogoutDialog`, driven by a `LogoutTarget` union: `{type: "single", id, isCurrent}` or `{type: "other"}`. It is a `Dialog` on desktop and a `Drawer` on mobile (`useIsDesktop`). Confirming closes the dialog immediately and runs the request.
 - Request map: current session `DELETE /users/sessions/current` (then sign-out as above); other session `DELETE /users/sessions/{id}`; all others `DELETE /users/sessions/other`. Success removes the rows locally and shows a success toast; failure shows an error toast.
 - `sessionActionLoading` (`id`, `"other"` or `null`) disables every action button while one request runs.
@@ -123,4 +123,4 @@ Neither resets other stores (links, tags, preferences, import). Navigation is cl
 - Observation: `/auth/exchange` has no retry or back-to-login action on failure, and its `setTimeout` redirect is not cleaned up on unmount.
 - Observation: the sidebar logout and the settings logout differ on failure (sidebar always signs out locally; settings does not).
 - Observation: `app/auth/ott/page.tsx` and `app/auth/exchange/page.tsx` use raw `useEffect` + `fetch` for the exchange; they are pre-token flows and are not a pattern for authenticated data loading.
-- Observation: the settings page uses a non-null assertion (`currentSession!`) in the "This Device" logout handler; the button only renders when `currentSession` exists.
+- Observation: the settings page uses a non-null assertion (`currentSession!`) in the current-session logout handler; the button only renders when `currentSession` exists.

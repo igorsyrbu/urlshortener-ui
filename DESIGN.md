@@ -67,6 +67,7 @@ To ensure consistent alignment across all pages:
 * **Layout Top Padding:** Set to `pt-2 md:pt-6 lg:pt-6` in layout shells. Negative margin hacks (such as `-mt-6`) are forbidden.
 * **Header Height Alignment:** The `PageToolbar` and `PeriodSelector` containers must use `min-h-10 items-center` (40px) to guarantee that the first content card on every page aligns to the exact same vertical position.
 * **Card List Gaps:** Link lists, tag lists, and their loading skeleton rows must use `gap-3` (12px) grid gap spacing for a consistent rhythm.
+* **Settings Pages:** a centred column capped at `max-w-4xl` (`gap-6`): a one-line page description, underline tabs on a hairline (active tab: foreground text and a 2px foreground bar), then section rows separated by hairlines (`py-8`). A row puts its title (`text-sm font-semibold`) and description (`text-sm text-muted-foreground`) in a `16rem` left column and its cards on the right once the column is 48rem wide (container query), stacked below that. Cards inside carry no title of their own; inner headings are `text-sm font-medium` with an `text-xs` description. Card actions sit right-aligned in a footer bar under a hairline, in the card colour (no lighter fill); option lists are rows divided by hairlines; destructive actions are outline buttons with destructive text inside a card with a `border-destructive/40` border.
 * **Analytics Page Spacing:** 
   * Mobile view uses a uniform `gap-y-4` (16px) spacing.
   * Desktop layout grid uses `gap-x-5` (20px) and `md:gap-y-6` (24px) for cards, with a `md:mt-2` to offset.

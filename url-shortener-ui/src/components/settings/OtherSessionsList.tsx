@@ -1,9 +1,9 @@
 "use client";
 
 import {Card, CardContent} from "@/components/ui/card";
-import {Button} from "@/components/ui/button";
-import {formatDeviceText, formatLocation, UserSession} from "@/lib/session-utils";
-import {DeviceIcon} from "@/components/settings/DeviceIcon";
+import type {UserSession} from "@/lib/session-utils";
+import {SESSION_CARD_CLASS} from "@/components/settings/SessionCardSkeleton";
+import {SessionRow} from "@/components/settings/SessionRow";
 
 interface OtherSessionsListProps {
     sessions: UserSession[];
@@ -18,46 +18,19 @@ export function OtherSessionsList({sessions, isLoading, sessionActionLoading, on
     if (isLoading || sessions.length === 0) return null;
 
     return (
-        <div className="mt-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
-                Active Sessions
-            </h3>
-            <Card className="overflow-hidden border-border">
-                <CardContent className="p-0 -mt-6 -mb-6 divide-y-[0.5px] divide-border max-h-[385px] overflow-y-auto">
-                    {sessions.map((session) => {
-                        const isActionLoading = sessionActionLoading === session.id;
-
-                        return (
-                            <div
-                                key={session.id}
-                                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 transition-colors"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div
-                                        className="h-10 w-10 flex items-center justify-center rounded-lg bg-muted text-foreground shrink-0 transition-colors">
-                                        <DeviceIcon session={session} className="h-5 w-5"/>
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-sm font-medium">{formatDeviceText(session)}</p>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {formatLocation(session)}
-                                        </p>
-                                    </div>
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-fit"
-                                    onClick={() => onLogoutSession(session.id)}
-                                    disabled={isActionLoading || sessionActionLoading !== null}
-                                >
-                                    {isActionLoading ? "Logging out..." : "Log out"}
-                                </Button>
-                            </div>
-                        );
-                    })}
+        <div className="flex min-w-0 flex-col gap-2">
+            <h3 className="px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Active sessions</h3>
+            <Card className={SESSION_CARD_CLASS}>
+                <CardContent className="max-h-96 divide-y-[0.5px] divide-border overflow-y-auto p-0">
+                    {sessions.map((session) => (
+                        <SessionRow
+                            key={session.id}
+                            session={session}
+                            isActionDisabled={sessionActionLoading !== null}
+                            isLoggingOut={sessionActionLoading === session.id}
+                            onLogout={() => onLogoutSession(session.id)}
+                        />
+                    ))}
                 </CardContent>
             </Card>
         </div>

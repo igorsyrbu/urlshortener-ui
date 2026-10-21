@@ -56,9 +56,7 @@ async function renderPageWith(sessions: UserSession[]): Promise<ReturnType<typeo
 }
 
 function rowOf(deviceText: string): HTMLElement {
-    const row = screen.getByText(deviceText).closest<HTMLElement>("div.justify-between");
-    if (!row) throw new Error(`Row for ${deviceText} not found`);
-    return row;
+    return screen.getByRole("group", {name: deviceText});
 }
 
 async function confirmInDialog(user: ReturnType<typeof userEvent.setup>): Promise<void> {
@@ -76,23 +74,23 @@ describe("GeneralSettingsPage sessions", () => {
         render(<GeneralSettingsPage/>);
 
         expect(screen.getByRole("status", {name: "Loading sessions"})).toBeInTheDocument();
-        expect(screen.queryByText("Active Sessions")).not.toBeInTheDocument();
+        expect(screen.queryByText("Active sessions")).not.toBeInTheDocument();
     });
 
     it("loads sessions and shows the current device apart from the other ones", async () => {
         await renderPageWith([PHONE, CURRENT]);
 
         expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_SESSIONS);
-        expect(within(rowOf("MacBook (macOS)")).getByText("Current")).toBeInTheDocument();
-        expect(screen.getByText("Active Sessions")).toBeInTheDocument();
+        expect(within(rowOf("MacBook (macOS)")).getByText("This device")).toBeInTheDocument();
+        expect(screen.getByText("Active sessions")).toBeInTheDocument();
         expect(screen.getByText("iPhone (iOS)")).toBeInTheDocument();
     });
 
     it("hides the other sessions section when this is the only session", async () => {
         await renderPageWith([CURRENT]);
 
-        expect(screen.queryByText("Active Sessions")).not.toBeInTheDocument();
-        expect(screen.queryByRole("button", {name: "Terminate all other sessions"})).not.toBeInTheDocument();
+        expect(screen.queryByText("Active sessions")).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", {name: "Log out all other sessions"})).not.toBeInTheDocument();
     });
 
     it("explains that the current session is unavailable when the request is rejected", async () => {
@@ -196,11 +194,11 @@ describe("GeneralSettingsPage sessions", () => {
         const user = await renderPageWith([CURRENT, PHONE, LAPTOP]);
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 204}));
 
-        await user.click(screen.getByRole("button", {name: "Terminate all other sessions"}));
+        await user.click(screen.getByRole("button", {name: "Log out all other sessions"}));
         expect(await screen.findByText(/across all systems/)).toBeInTheDocument();
         await confirmInDialog(user);
 
-        await waitFor(() => expect(screen.queryByText("Active Sessions")).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByText("Active sessions")).not.toBeInTheDocument());
         expect(deleteCalls()).toEqual([API_ENDPOINTS.USERS_SESSIONS_OTHER]);
         expect(toast.success).toHaveBeenCalledExactlyOnceWith("Successfully logged out of all other devices");
         expect(screen.getByText("MacBook (macOS)")).toBeInTheDocument();
@@ -210,7 +208,7 @@ describe("GeneralSettingsPage sessions", () => {
         const user = await renderPageWith([CURRENT, PHONE]);
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 500}));
 
-        await user.click(screen.getByRole("button", {name: "Terminate all other sessions"}));
+        await user.click(screen.getByRole("button", {name: "Log out all other sessions"}));
         await confirmInDialog(user);
 
         await waitFor(() => expect(toast.error).toHaveBeenCalledExactlyOnceWith("Failed to terminate other sessions"));
@@ -221,7 +219,7 @@ describe("GeneralSettingsPage sessions", () => {
         const user = await renderPageWith([CURRENT, PHONE]);
         vi.mocked(fetchWithAuth).mockRejectedValueOnce(new Error("offline"));
 
-        await user.click(screen.getByRole("button", {name: "Terminate all other sessions"}));
+        await user.click(screen.getByRole("button", {name: "Log out all other sessions"}));
         await confirmInDialog(user);
 
         await waitFor(() => expect(toast.error).toHaveBeenCalledExactlyOnceWith("An unexpected error occurred while terminating other sessions"));

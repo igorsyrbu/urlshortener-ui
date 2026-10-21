@@ -6,6 +6,9 @@ import {PALETTES, PaletteSwatch} from "@/lib/themes/palettes";
 import {usePalette} from "@/providers/palette-provider";
 import {cn} from "@/lib/utils";
 
+/** Columns follow the card's width (a container set by `ThemeCard`), which is narrower than the viewport next to the section title. */
+export const PALETTE_GRID_CLASS = "grid grid-cols-2 gap-3 @md:grid-cols-3 @2xl:grid-cols-4";
+
 function SwatchDots({swatch}: { swatch: PaletteSwatch }) {
     const colors = [swatch.background, swatch.primary, swatch.accent, swatch.foreground];
     return (
@@ -29,7 +32,7 @@ export function PresetPaletteGrid() {
     const mode = mounted && resolvedTheme === "dark" ? "dark" : "light";
 
     return (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className={PALETTE_GRID_CLASS}>
             {PALETTES.map((palette) => {
                 const isSelected = mounted && activePaletteId === palette.id;
                 return (

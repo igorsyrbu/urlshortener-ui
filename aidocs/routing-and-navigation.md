@@ -27,7 +27,7 @@ The UI uses the App Router exclusively (`src/app/`); there is no Pages Router an
 | `/manifest.webmanifest` | `manifest.ts` | metadata route | PWA manifest with `start_url: "/links"`. |
 | any unknown URL | `not-found.tsx` | client | 404 page. |
 
-Layouts: `layout.tsx` (root: fonts, providers, `Toaster`), `(dashboard)/layout.tsx` (client: session bootstrap, sidebar, header, global modals), `(dashboard)/settings/layout.tsx` (server: `PageContainer` + `SettingsTabs`). Metadata-only server layouts (re-exporting `MetadataOnlyLayout`) give client pages their title: `links`, `tags`, `analytics`, `settings/general`, `login` and `auth/`. `(legal)` has no layout.
+Layouts: `layout.tsx` (root: fonts, providers, `Toaster`), `(dashboard)/layout.tsx` (client: session bootstrap, sidebar, header, global modals), `(dashboard)/settings/layout.tsx` (server: `PageContainer` capped at `max-w-4xl`, page description, `SettingsTabs`). Metadata-only server layouts (re-exporting `MetadataOnlyLayout`) give client pages their title: `links`, `tags`, `analytics`, `settings/general`, `login` and `auth/`. `(legal)` has no layout.
 
 Why server vs client per file is in [architecture](architecture.md#rendering-model).
 
@@ -67,7 +67,7 @@ There are no `loading.tsx` files and none may be added. Loading states are compo
 
 ## Links and `<Link>`
 
-- Internal navigation uses `next/link` (`Link`): sidebar items (`sidebar-nav.tsx`), settings tabs (via `SegmentedControl` link mode, which renders `Link`s inside a `<nav>` with `aria-current="page"`), and the inspect page header/report links.
+- Internal navigation uses `next/link` (`Link`): sidebar items (`sidebar-nav.tsx`), settings tabs (`SettingsTabs`: `Link`s inside a `<nav>` with `aria-current="page"`), and the inspect page header/report links.
 - Programmatic navigation uses `useRouter` from `next/navigation`.
 - The only raw `<a>` is the skip link in the dashboard layout (`href="#main-content"`, an in-page fragment, not a route). Internal routes always use `Link`. External provider URLs are opened with `window.location.assign` / `window.open` ([`src/lib/billing-redirect.ts`](../url-shortener-ui/src/lib/billing-redirect.ts)).
 - Active state: `sidebar-nav.tsx` marks an item active when `pathname` equals its `matchPrefix` (defaults to `href`) or starts with `matchPrefix + "/"`. Settings links to `/settings/general` with `matchPrefix: ROUTES.SETTINGS`, so it stays active on every settings tab.
@@ -75,10 +75,10 @@ There are no `loading.tsx` files and none may be added. Loading states are compo
 ## Sidebar and settings tabs
 
 - Sidebar items (defined in `sidebar-nav.tsx`): Dashboard `/dashboard`, Links `/links`, Analytics `/analytics`, Tags `/tags`, Settings `/settings/general` (`SETTINGS_ROUTES.DEFAULT`). Desktop (`lg` and up): fixed `Sidebar`. Below `lg`: `MobileSidebarDrawer` opened from the header menu button; it closes on navigation (`onNavigate`) and when the viewport grows past `LARGE_SCREEN_MIN_WIDTH_PX`.
-- Pending cue: every sidebar item and every settings tab (`SegmentedControl` link mode) renders `LinkPendingIndicator` ([`components/ui/link-pending-indicator.tsx`](../url-shortener-ui/src/components/ui/link-pending-indicator.tsx)), a dot driven by `useLinkStatus()` from `next/link`. It is always rendered (opacity only, so it never moves the layout) and fades in after a 150 ms transition delay, so navigations that finish sooner show nothing (a local dev switch to Settings was pending about 106 ms). Tests that mock `next/link` must also provide `useLinkStatus`.
+- Pending cue: every sidebar item and every settings tab (`SettingsTabs`) renders `LinkPendingIndicator` ([`components/ui/link-pending-indicator.tsx`](../url-shortener-ui/src/components/ui/link-pending-indicator.tsx)), a dot driven by `useLinkStatus()` from `next/link`. It is always rendered (opacity only, so it never moves the layout) and fades in after a 150 ms transition delay, so navigations that finish sooner show nothing (a local dev switch to Settings was pending about 106 ms). Tests that mock `next/link` must also provide `useLinkStatus`.
 - `SidebarUserMenu` offers Settings (`router.push(SETTINGS_ROUTES.DEFAULT)`) and Logout.
 - Header title is derived from `pathname` in `Header.tsx` (a fixed map; any `/settings/*` path shows "Settings"). A new top-level page must be added to that map and to the sidebar list.
-- Settings tabs: [`src/components/settings/SettingsTabs.tsx`](../url-shortener-ui/src/components/settings/SettingsTabs.tsx) renders `SETTINGS_SECTIONS` (General, Billing) from `settings-constants.ts`, with the current `pathname` as the selected value. Add a settings section by adding a route folder under `settings/` and an entry in `SETTINGS_SECTIONS`.
+- Settings tabs: [`src/components/settings/SettingsTabs.tsx`](../url-shortener-ui/src/components/settings/SettingsTabs.tsx) renders `SETTINGS_SECTIONS` (General, Billing) from `settings-constants.ts` as underline tabs; the tab whose `href` equals the current `pathname` is the active one. Add a settings section by adding a route folder under `settings/` and an entry in `SETTINGS_SECTIONS`.
 
 ## Search params and URL state
 

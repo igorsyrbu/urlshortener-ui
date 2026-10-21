@@ -1,50 +1,37 @@
 "use client";
 
 import {useTheme} from "next-themes";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Monitor, Moon, Sun, LucideIcon} from "lucide-react";
-import {AppearanceCardSkeleton} from "@/components/settings/AppearanceCardSkeleton";
+import {Card, CardContent} from "@/components/ui/card";
+import {SegmentedControl} from "@/components/ui/segmented-control";
 import {useHasMounted} from "@/lib/hooks/useHasMounted";
 
-interface ThemeOption {
-    value: string;
-    label: string;
-    icon: LucideIcon;
-}
+const MODE_OPTIONS = [
+    {value: "light", label: "Light"},
+    {value: "dark", label: "Dark"},
+    {value: "system", label: "System"},
+] as const;
 
-const THEME_OPTIONS: ThemeOption[] = [
-    {value: "light", label: "Light", icon: Sun},
-    {value: "dark", label: "Dark", icon: Moon},
-    {value: "system", label: "System", icon: Monitor},
-];
+const NO_MODE_SELECTED = "";
 
 export function AppearanceCard() {
     const {theme, setTheme} = useTheme();
+    // The stored mode is only known after hydration; until then the same control renders with nothing selected.
     const hasMounted = useHasMounted();
-
-    if (!hasMounted) {
-        return <AppearanceCardSkeleton/>;
-    }
 
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Appearance</CardTitle>
-                <CardDescription>Customize how the application looks on your device.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex gap-4">
-                    {THEME_OPTIONS.map((option) => (
-                        <button
-                            key={option.value}
-                            onClick={() => setTheme(option.value)}
-                            className={`flex flex-col items-center justify-center p-3 border-[0.5px] rounded-xl hover:bg-muted transition-colors w-24 sm:w-28 outline-hidden focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] ${hasMounted && theme === option.value ? "border-primary ring-1 ring-primary" : "border-border"}`}
-                        >
-                            <option.icon className="size-6 mb-1.5 stroke-[1.5]"/>
-                            <span className="text-xs sm:text-sm font-medium">{option.label}</span>
-                        </button>
-                    ))}
+            <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Mode</p>
+                    <p className="text-xs text-muted-foreground">Light, dark, or follow your system.</p>
                 </div>
+                <SegmentedControl
+                    ariaLabel="Color mode"
+                    value={hasMounted ? theme ?? "system" : NO_MODE_SELECTED}
+                    isDisabled={!hasMounted}
+                    onValueChange={setTheme}
+                    options={MODE_OPTIONS}
+                />
             </CardContent>
         </Card>
     );

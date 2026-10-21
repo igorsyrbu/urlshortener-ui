@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import {useCallback, useRef, type ReactNode} from "react";
 import {cn} from "@/lib/utils";
-import {LinkPendingIndicator} from "@/components/ui/link-pending-indicator";
 import {useSegmentedIndicator, type SegmentedIndicator} from "@/lib/hooks/useSegmentedIndicator";
 import {
     SEGMENTED_CONTROL_HOVER_CLASS_NAME,
@@ -13,7 +11,6 @@ import {
 export interface SegmentedControlOption {
     value: string;
     label: string;
-    href?: string;
     suffix?: ReactNode;
     /** Called when the pointer enters or focus reaches the option, before a click; use it to preload what the option shows. */
     onIntent?: () => void;
@@ -31,10 +28,6 @@ const CONTAINER_CLASS_NAME = "relative flex w-full max-w-full items-center gap-1
 const OPTION_CLASS_NAME =
     "relative inline-flex min-h-10 min-w-0 max-w-full flex-1 items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 sm:flex-none";
 const THUMB_TEST_ID = "segmented-control-thumb";
-
-function isLinkMode(options: readonly SegmentedControlOption[]): boolean {
-    return options.length > 0 && options.every((option) => option.href !== undefined);
-}
 
 function renderLabel(option: SegmentedControlOption): ReactNode {
     return (
@@ -74,31 +67,6 @@ export function SegmentedControl({options, value, onValueChange, ariaLabel, isDi
     const assignSelectedRef = useCallback((element: HTMLElement | null): void => {
         selectedRef.current = element;
     }, []);
-
-    if (isLinkMode(options)) {
-        return (
-            <nav aria-label={ariaLabel} className={cn(CONTAINER_CLASS_NAME, "min-h-10")}>
-                {renderThumb(indicator)}
-                {options.map((option) => {
-                    const isSelected = option.value === value;
-                    return (
-                        <Link
-                            key={option.value}
-                            ref={isSelected ? assignSelectedRef : undefined}
-                            href={option.href ?? option.value}
-                            aria-current={isSelected ? "page" : undefined}
-                            onPointerEnter={option.onIntent}
-                            onFocus={option.onIntent}
-                            className={cn(OPTION_CLASS_NAME, SEGMENTED_CONTROL_LABEL_CLASS_NAME, !isSelected && SEGMENTED_CONTROL_HOVER_CLASS_NAME)}
-                        >
-                            {renderLabel(option)}
-                            <LinkPendingIndicator className="absolute right-1.5 top-1.5"/>
-                        </Link>
-                    );
-                })}
-            </nav>
-        );
-    }
 
     return (
         <div role="group" aria-label={ariaLabel} className={CONTAINER_CLASS_NAME}>
