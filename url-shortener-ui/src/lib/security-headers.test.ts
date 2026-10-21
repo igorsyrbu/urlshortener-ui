@@ -5,6 +5,7 @@ import {
     buildSecurityHeaders,
     CSP_HEADER,
     CSP_REPORT_ONLY_HEADER,
+    isCspEnforcedByEnv,
     type SecurityHeadersOptions,
     TURNSTILE_ORIGIN,
 } from "@/lib/security-headers";
@@ -56,18 +57,18 @@ describe("content security policy", () => {
 });
 
 describe("security headers", () => {
-    it("reports policy violations without blocking by default", () => {
-        const headers = buildSecurityHeaders(PRODUCTION);
-
-        expect(headerValue(headers, CSP_REPORT_ONLY_HEADER)).toBeDefined();
-        expect(headerValue(headers, CSP_HEADER)).toBeUndefined();
-    });
-
-    it("enforces the policy when asked to", () => {
+    it("enforces the policy", () => {
         const headers = buildSecurityHeaders({...PRODUCTION, isCspEnforced: true});
 
         expect(headerValue(headers, CSP_HEADER)).toBeDefined();
         expect(headerValue(headers, CSP_REPORT_ONLY_HEADER)).toBeUndefined();
+    });
+
+    it("only reports policy violations when enforcement is switched off", () => {
+        const headers = buildSecurityHeaders({...PRODUCTION, isCspEnforced: false});
+
+        expect(headerValue(headers, CSP_REPORT_ONLY_HEADER)).toBeDefined();
+        expect(headerValue(headers, CSP_HEADER)).toBeUndefined();
     });
 
     it("sends the standard protective headers", () => {
@@ -86,5 +87,15 @@ describe("security headers", () => {
 
     it("never sends a referrer from the sign-in routes", () => {
         expect(headerValue(AUTH_ROUTE_HEADERS, "Referrer-Policy")).toBe("no-referrer");
+    });
+});
+
+describe("CSP_ENFORCE", () => {
+    it.each([undefined, "", "true", "1", "yes"])("enforces the policy for %j", (value) => {
+        expect(isCspEnforcedByEnv(value)).toBe(true);
+    });
+
+    it.each(["false", "FALSE", " false "])("switches to Report-Only for %j", (value) => {
+        expect(isCspEnforcedByEnv(value)).toBe(false);
     });
 });

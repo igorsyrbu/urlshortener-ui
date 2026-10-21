@@ -1,11 +1,11 @@
 import type { NextConfig } from "next";
 import { getBackendApiBaseUrl } from "./src/lib/backend-url";
-import { AUTH_ROUTE_HEADERS, buildSecurityHeaders } from "./src/lib/security-headers";
+import { AUTH_ROUTE_HEADERS, buildSecurityHeaders, isCspEnforcedByEnv } from "./src/lib/security-headers";
 import { SETTINGS_ROUTES } from "./src/lib/settings-constants";
 
 const securityHeaders = buildSecurityHeaders({
   isProduction: process.env.NODE_ENV === "production",
-  isCspEnforced: process.env.CSP_ENFORCE === "true",
+  isCspEnforced: isCspEnforcedByEnv(process.env.CSP_ENFORCE),
 });
 
 const nextConfig: NextConfig = {

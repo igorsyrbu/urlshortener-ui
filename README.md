@@ -129,7 +129,7 @@ Copy `.env.example` to `.env` in the `url-shortener-ui` directory to customize:
 | `BACKEND_API_BASE_URL`           | `http://localhost:8080`    | Base URL of the backend API (server-only; `NEXT_PUBLIC_API_BASE_URL` is a deprecated fallback) |
 | `NEXT_PUBLIC_ENABLE_TURNSTILE`   | `true`                     | Enables or disables Cloudflare Turnstile CAPTCHA verification |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `1x00000000000000000000AA` | Site key used for Cloudflare Turnstile CAPTCHA                |
-| `CSP_ENFORCE`                    | `false`                    | Enforce the Content-Security-Policy instead of Report-Only    |
+| `CSP_ENFORCE`                    | enforced                   | `false` sends the Content-Security-Policy as Report-Only      |
 | `NEXT_PUBLIC_BILLING_ORIGINS`    | `https://buy.polar.sh,https://billing.polar.sh` | Allowed origins of the hosted checkout/portal pages (localhost is allowed outside production) |
 
 #### API Reference

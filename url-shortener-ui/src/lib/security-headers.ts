@@ -5,13 +5,20 @@ const SECONDS_PER_YEAR = 31_536_000;
 
 export interface SecurityHeadersOptions {
     isProduction: boolean;
-    /** Enforce the policy instead of only reporting violations (`CSP_ENFORCE=true`). */
+    /** Enforce the policy; `false` only reports violations (see `isCspEnforcedByEnv`). */
     isCspEnforced: boolean;
 }
 
 export interface Header {
     key: string;
     value: string;
+}
+
+const CSP_REPORT_ONLY_VALUE = "false";
+
+/** Enforced unless `CSP_ENFORCE=false`, the switch back to Report-Only while a new third party is being added. */
+export function isCspEnforcedByEnv(value: string | undefined): boolean {
+    return value?.trim().toLowerCase() !== CSP_REPORT_ONLY_VALUE;
 }
 
 export function buildContentSecurityPolicy({isProduction}: SecurityHeadersOptions): string {
