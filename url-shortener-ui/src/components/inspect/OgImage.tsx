@@ -9,16 +9,34 @@ interface OgImageProps {
     alt: string;
 }
 
-const IMAGE_LOAD_TIMEOUT_MS = 2000;
+type ImageStatus = "loading" | "success" | "error";
+
+const IMAGE_GIVE_UP_TIMEOUT_MS = 8000;
 const PROXY_BASE = "https://wsrv.nl";
+// Twice the widest card (max-w-2xl, 672 px), enough for 2x screens.
+const PREVIEW_MAX_WIDTH_PX = 1344;
+const PREVIEW_QUALITY = 80;
+const PREVIEW_WIDTH_ATTRIBUTE = 1200;
+const PREVIEW_HEIGHT_ATTRIBUTE = 630;
 
 function getProxyUrl(url: string): string {
-    return `${PROXY_BASE}/?url=${encodeURIComponent(url)}`;
+    const params = new URLSearchParams({
+        url,
+        w: String(PREVIEW_MAX_WIDTH_PX),
+        output: "webp",
+        q: String(PREVIEW_QUALITY),
+        we: "1",
+    });
+    return `${PROXY_BASE}/?${params.toString()}`;
+}
+
+function hasImageArrived(img: HTMLImageElement | null): boolean {
+    return img !== null && img.complete && img.naturalWidth > 0;
 }
 
 export function OgImage({src, alt}: OgImageProps) {
     const [imageSrc, setImageSrc] = useState<string | null>(() => (src ? getProxyUrl(src) : null));
-    const [status, setStatus] = useState<"loading" | "success" | "error">(() => (src ? "loading" : "error"));
+    const [status, setStatus] = useState<ImageStatus>(() => (src ? "loading" : "error"));
     const imgRef = useRef<HTMLImageElement>(null);
 
     useOnValueChange(src, (nextSrc) => {
@@ -27,33 +45,17 @@ export function OgImage({src, alt}: OgImageProps) {
     });
 
     useEffect(() => {
-        const img = imgRef.current;
-        if (img && img.complete && img.naturalWidth > 0) {
-            setStatus("success");
-        }
+        // The prerendered image can finish before hydration, when React has not attached onLoad yet.
+        if (hasImageArrived(imgRef.current)) setStatus("success");
     }, [imageSrc]);
 
     useEffect(() => {
-        if (status !== "loading" || !imageSrc) return;
-
+        if (status !== "loading") return;
         const timer = setTimeout(() => {
-            const img = imgRef.current;
-            const seemsBroken = !img || !img.complete || img.naturalWidth === 0;
-
-            if (!seemsBroken) {
-                setStatus("success");
-                return;
-            }
-
-            if (src && imageSrc !== src) {
-                setImageSrc(src);
-            } else {
-                setStatus("error");
-            }
-        }, IMAGE_LOAD_TIMEOUT_MS);
-
+            setStatus(hasImageArrived(imgRef.current) ? "success" : "error");
+        }, IMAGE_GIVE_UP_TIMEOUT_MS);
         return () => clearTimeout(timer);
-    }, [imageSrc, src, status]);
+    }, [imageSrc, status]);
 
     const handleLoad = () => {
         setStatus("success");
@@ -82,18 +84,19 @@ export function OgImage({src, alt}: OgImageProps) {
 
     return (
         <div className="relative aspect-video w-full overflow-hidden bg-muted">
-            {status === "loading" && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-card">
-                    <ImageIcon className="size-10 text-muted-foreground/40"/>
-                    <span className="text-xs text-muted-foreground/50">Loading preview...</span>
-                </div>
-            )}
+            <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                <ImageIcon className="size-10 text-muted-foreground/40"/>
+            </div>
             <img
                 ref={imgRef}
                 src={imageSrc}
                 alt={alt}
+                width={PREVIEW_WIDTH_ATTRIBUTE}
+                height={PREVIEW_HEIGHT_ATTRIBUTE}
+                fetchPriority="high"
+                decoding="async"
                 referrerPolicy="no-referrer"
-                className="size-full object-cover"
+                className="relative size-full object-cover"
                 onLoad={handleLoad}
                 onError={handleError}
             />

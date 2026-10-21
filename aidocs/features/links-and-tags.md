@@ -159,7 +159,7 @@ While an import is ongoing (`discovering`, `active`, `reconnecting`, **or `inter
 
 - It is an **async server component** and performs a server-side fetch: `GET {getBackendApiBaseUrl()}/public/preview/{key}` with `cache: "no-store"` (the only page that does; this is an explicit exception to the client-rendered model described in [Architecture](../architecture.md)). `404` redirects to `/`; any other non-OK response is logged and rethrown, which lands on the root `error.tsx` boundary.
 - It renders `InspectLinkPreviewCard` (OG image, favicon and hostname, title, description clamped to 2 lines), the full destination URL (scrollable, `break-all`) and a "Report this link" button linking to `/report-abuse?shortUrl=<encoded short URL>`.
-- `OgImage` loads the image through the third-party proxy `https://wsrv.nl`, falls back to the original URL on error or after 2 s without load, and finally to a "Preview unavailable" placeholder. It uses a raw `<img>` (remote, user-controlled URLs).
+- `OgImage` loads a resized copy through the third-party proxy `https://wsrv.nl` (`w=1344`, twice the widest card, `output=webp`, `q=80`, `we=1` so small images are not enlarged) with `fetchPriority="high"`, because it is the page's largest element. The image sits on top of a muted placeholder icon and shows the moment it paints; there is no loading overlay, which used to hide an already downloaded image until hydration. Only `onError` falls back to the original URL (a slow proxy download is never abandoned); the 8 s timer only switches to the "Preview unavailable" placeholder when nothing arrived. It uses a raw `<img>` (remote, user-controlled URLs).
 
 ## Report abuse page
 

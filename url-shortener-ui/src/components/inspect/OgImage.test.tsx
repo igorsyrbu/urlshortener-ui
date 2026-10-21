@@ -2,19 +2,24 @@ import {act, fireEvent, render, screen} from "@testing-library/react";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {OgImage} from "@/components/inspect/OgImage";
 
-const IMAGE_LOAD_TIMEOUT_MS = 2000;
+const IMAGE_GIVE_UP_TIMEOUT_MS = 8000;
+const SLOW_IMAGE_MS = 3000;
 const PROXY_BASE = "https://wsrv.nl";
 const IMAGE_URL = "https://cdn.example.com/cover image.png?size=large&v=2";
-const PROXIED_IMAGE_URL = `${PROXY_BASE}/?url=${encodeURIComponent(IMAGE_URL)}`;
 const ALT_TEXT = "Page cover";
+
+function proxiedUrl(url: string): string {
+    const params = new URLSearchParams({url, w: "1344", output: "webp", q: "80", we: "1"});
+    return `${PROXY_BASE}/?${params.toString()}`;
+}
 
 function getPreviewImage(): HTMLElement {
     return screen.getByRole("img", {name: ALT_TEXT});
 }
 
-function advanceLoadTimeout(): void {
+function advanceTime(ms: number): void {
     act(() => {
-        vi.advanceTimersByTime(IMAGE_LOAD_TIMEOUT_MS);
+        vi.advanceTimersByTime(ms);
     });
 }
 
@@ -40,11 +45,18 @@ describe("OgImage", () => {
         expect(screen.getByText("Preview unavailable")).toBeInTheDocument();
     });
 
-    it("loads the image through the proxy and shows a loading state", () => {
+    it("loads a resized webp copy through the proxy with high priority", () => {
         render(<OgImage src={IMAGE_URL} alt={ALT_TEXT}/>);
 
-        expect(getPreviewImage()).toHaveAttribute("src", PROXIED_IMAGE_URL);
-        expect(screen.getByText("Loading preview...")).toBeInTheDocument();
+        expect(getPreviewImage()).toHaveAttribute("src", proxiedUrl(IMAGE_URL));
+        expect(getPreviewImage()).toHaveAttribute("fetchpriority", "high");
+        expect(getPreviewImage()).not.toHaveAttribute("loading", "lazy");
+    });
+
+    it("does not cover the image with a loading overlay that waits for the page to become interactive", () => {
+        render(<OgImage src={IMAGE_URL} alt={ALT_TEXT}/>);
+
+        expect(screen.queryByText("Loading preview...")).not.toBeInTheDocument();
     });
 
     it("does not leak the referrer to the image host", () => {
@@ -53,13 +65,13 @@ describe("OgImage", () => {
         expect(getPreviewImage()).toHaveAttribute("referrerpolicy", "no-referrer");
     });
 
-    it("hides the loading state once the image has loaded", () => {
+    it("keeps waiting for a proxied image that is slow but still downloading", () => {
         render(<OgImage src={IMAGE_URL} alt={ALT_TEXT}/>);
 
+        advanceTime(SLOW_IMAGE_MS);
         fireEvent.load(getPreviewImage());
 
-        expect(screen.queryByText("Loading preview...")).not.toBeInTheDocument();
-        expect(getPreviewImage()).toBeInTheDocument();
+        expect(getPreviewImage()).toHaveAttribute("src", proxiedUrl(IMAGE_URL));
     });
 
     it("falls back to the original address when the proxy fails", () => {
@@ -80,30 +92,21 @@ describe("OgImage", () => {
         expect(screen.getByText("Preview unavailable")).toBeInTheDocument();
     });
 
-    it("falls back to the original address when the proxy never answers", () => {
+    it("gives up when the image never arrives", () => {
         render(<OgImage src={IMAGE_URL} alt={ALT_TEXT}/>);
 
-        advanceLoadTimeout();
-
-        expect(getPreviewImage()).toHaveAttribute("src", IMAGE_URL);
-    });
-
-    it("gives up after the original address also times out", () => {
-        render(<OgImage src={IMAGE_URL} alt={ALT_TEXT}/>);
-
-        advanceLoadTimeout();
-        advanceLoadTimeout();
+        advanceTime(IMAGE_GIVE_UP_TIMEOUT_MS);
 
         expect(screen.getByText("Preview unavailable")).toBeInTheDocument();
     });
 
-    it("does not time out an image that already loaded", () => {
+    it("does not give up on an image that already loaded", () => {
         render(<OgImage src={IMAGE_URL} alt={ALT_TEXT}/>);
         fireEvent.load(getPreviewImage());
 
-        advanceLoadTimeout();
+        advanceTime(IMAGE_GIVE_UP_TIMEOUT_MS);
 
-        expect(getPreviewImage()).toHaveAttribute("src", PROXIED_IMAGE_URL);
+        expect(getPreviewImage()).toHaveAttribute("src", proxiedUrl(IMAGE_URL));
     });
 
     it("starts loading the new image when the address changes after a failure", () => {
@@ -113,6 +116,6 @@ describe("OgImage", () => {
 
         rerender(<OgImage src="https://cdn.example.com/other.png" alt={ALT_TEXT}/>);
 
-        expect(getPreviewImage()).toHaveAttribute("src", `${PROXY_BASE}/?url=${encodeURIComponent("https://cdn.example.com/other.png")}`);
+        expect(getPreviewImage()).toHaveAttribute("src", proxiedUrl("https://cdn.example.com/other.png"));
     });
 });
