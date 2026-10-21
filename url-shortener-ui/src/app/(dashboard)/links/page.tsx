@@ -140,6 +140,10 @@ function LinksPageContent() {
         fetchLinks(urlPage);
     }, [urlPage, fetchLinks]);
 
+    // The search box starts empty on every visit. A query left in the store would filter the next visit's first load,
+    // and clearing it then would also drop the `?page=` of a back navigation.
+    useEffect(() => () => useLinkStore.getState().setSearchQuery(""), []);
+
     useEffect(() => {
         fetchTags();
     }, [fetchTags]);

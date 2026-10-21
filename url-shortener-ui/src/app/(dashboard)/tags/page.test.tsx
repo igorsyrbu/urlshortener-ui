@@ -108,6 +108,25 @@ describe("tags page", () => {
         expect(requestedUrls()).toEqual([`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=20&search=mark`]);
     });
 
+    it("starts a new visit unfiltered after leaving the page with a search", async () => {
+        const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        mockTagsResponse();
+        const {unmount} = render(<TagsPage/>);
+        await screen.findByText("Marketing");
+        await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "mark{Enter}");
+        unmount();
+        vi.mocked(fetchWithAuth).mockClear();
+
+        render(<TagsPage/>);
+        await screen.findByText("Marketing");
+        act(() => {
+            vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
+        });
+
+        expect(requestedUrls()).toEqual([`${API_ENDPOINTS.TAGS}?withLinksCount=true&size=20`]);
+        expect(screen.getByPlaceholderText(SEARCH_PLACEHOLDER)).toHaveValue("");
+    });
+
     it("shows the no results state when a search matches no tags", async () => {
         const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
         mockTagsResponse();

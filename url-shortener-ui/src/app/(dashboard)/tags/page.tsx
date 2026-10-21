@@ -58,6 +58,9 @@ export default function TagsPage() {
         fetchTags();
     }, [fetchTags]);
 
+    // The search box starts empty on every visit; a query left in the store would filter the next visit's first load.
+    useEffect(() => () => useTagStoreWithCount.getState().setSearchQuery(""), []);
+
     useEffect(() => {
         preloadOnIdle([loadEditTagModal, loadDeleteTagModal]);
     }, []);

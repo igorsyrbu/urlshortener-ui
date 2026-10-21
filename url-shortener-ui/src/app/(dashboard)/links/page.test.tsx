@@ -9,7 +9,7 @@ import {
     IMPORT_FROM_CSV_LABEL,
     IMPORT_PROCESSED_TITLE,
 } from "@/components/links/import-export-constants";
-import {API_ENDPOINTS, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINKS_LOAD_COPY, ROUTES, SHOW_ARCHIVED_STORAGE_KEY, TRY_AGAIN_LABEL} from "@/lib/constants";
+import {API_ENDPOINTS, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINKS_LOAD_COPY, ROUTES, SEARCH_DEBOUNCE_MS, SHOW_ARCHIVED_STORAGE_KEY, TRY_AGAIN_LABEL} from "@/lib/constants";
 import {toast} from "sonner";
 import {useLinkStore} from "@/lib/store/links";
 import {IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
@@ -249,6 +249,27 @@ describe("links page", () => {
             await user.click(screen.getByRole("button", {name: "Clear search"}));
 
             expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).at(-1)?.has("search")).toBe(false);
+        });
+
+        it("loads only the requested page, unfiltered, on a visit after leaving with a search", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(2), totalElements: 60});
+            const {unmount} = render(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Link 0"});
+            await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "promo{Enter}");
+            unmount();
+            vi.mocked(fetchWithAuth).mockClear();
+            mocks.routerPush.mockClear();
+            mocks.searchParams = new URLSearchParams({page: "3"});
+
+            render(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Link 0"});
+            await new Promise((resolve) => setTimeout(resolve, SEARCH_DEBOUNCE_MS + 50));
+
+            const queries = getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS);
+            expect(queries.map((query) => query.get("page"))).toEqual(["2"]);
+            expect(queries[0].has("search")).toBe(false);
+            expect(mocks.routerPush).not.toHaveBeenCalled();
         });
 
         it("says nothing matched when a search returns no links", async () => {
