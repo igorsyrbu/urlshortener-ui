@@ -228,6 +228,33 @@ describe.each([
         expect(redirectedUrls()).toHaveLength(0);
     });
 
+    it("keeps the upgrade button disabled while the checkout rate limit lasts", async () => {
+        routeFetchWithAuth({
+            [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => Response.json(FREE_SUBSCRIPTION),
+            [API_ENDPOINTS.BILLING_CHECKOUT]: () => new Response(null, {status: 429, headers: {[RATE_LIMIT_RETRY_AFTER_HEADER]: "30"}}),
+        });
+        const user = renderBilling();
+        await screen.findByRole("region", {name: "Free plan"});
+
+        await clickUpgrade(user);
+        await screen.findByRole("alert");
+
+        expect(within(screen.getByRole("region", {name: "Pro plan"})).getByRole("button", {name: /Upgrade/})).toBeDisabled();
+    });
+
+    it("says the subscription load was rate limited and holds Retry for the delay", async () => {
+        routeFetchWithAuth({
+            [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => new Response(null, {status: 429, headers: {"Retry-After": "20"}}),
+        });
+        renderBilling();
+
+        const alert = await screen.findByRole("alert");
+
+        expect(alert).toHaveTextContent(BILLING_COPY.SUBSCRIPTION_RATE_LIMITED);
+        expect(alert).toHaveTextContent("20s");
+        expect(screen.getByRole("button", {name: BILLING_COPY.RETRY})).toBeDisabled();
+    });
+
     it("shows an invalid-period error on a 400 checkout response", async () => {
         routeFetchWithAuth({
             [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => Response.json(FREE_SUBSCRIPTION),

@@ -8,17 +8,21 @@ import {
     HTTP_TOO_MANY_REQUESTS,
     HTTP_UNPROCESSABLE_ENTITY,
     isUnauthorizedBillingError,
+    readRateLimitDelay,
     scheduleBillingPeriodUpgrade,
 } from "@/lib/billing-api";
 import {BILLING_COPY, buildRateLimitedMessage, type ScheduledPeriodSwitch} from "@/lib/billing-constants";
 import {attempt} from "@/lib/async-utils";
 import {logger} from "@/lib/logger";
 import {useAbortOnUnmount} from "@/lib/hooks/useAbortOnUnmount";
+import {useCooldown} from "@/lib/hooks/useCooldown";
 
 export interface BillingPeriodUpgradeState {
     isScheduling: boolean;
     errorMessage: string | null;
     scheduledSwitch: ScheduledPeriodSwitch | null;
+    /** True while a rate limit's delay runs; the switch button waits for it. */
+    isCoolingDown: boolean;
     clearScheduledSwitch: () => void;
     handleSwitch: () => Promise<void>;
 }
@@ -38,12 +42,13 @@ export function useBillingPeriodUpgrade(onConflict: () => void, onScheduled?: ()
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [scheduledSwitch, setScheduledSwitch] = useState<ScheduledPeriodSwitch | null>(null);
     const startRequest = useAbortOnUnmount();
+    const {isCoolingDown, startCooldown} = useCooldown();
     const clearScheduledSwitch = useCallback((): void => {
         setScheduledSwitch(null);
     }, []);
 
     async function handleSwitch(): Promise<void> {
-        if (isScheduling || scheduledSwitch !== null) return;
+        if (isScheduling || isCoolingDown || scheduledSwitch !== null) return;
         setIsScheduling(true);
         setErrorMessage(null);
         const signal = startRequest();
@@ -66,8 +71,9 @@ export function useBillingPeriodUpgrade(onConflict: () => void, onScheduled?: ()
             return;
         }
         setErrorMessage(resolvePeriodUpgradeErrorMessage(result.error));
+        startCooldown(readRateLimitDelay(result.error));
         setIsScheduling(false);
     }
 
-    return {isScheduling, errorMessage, scheduledSwitch, clearScheduledSwitch, handleSwitch};
+    return {isScheduling, errorMessage, scheduledSwitch, isCoolingDown, clearScheduledSwitch, handleSwitch};
 }

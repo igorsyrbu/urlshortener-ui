@@ -93,7 +93,7 @@ Error bodies are RFC 9457 problem details: `{ type, title, status, detail }` (th
 All retry headers are read by `parseRetryAfterSeconds(headers, headerName = "Retry-After")` in [`src/lib/retry-after.ts`](../url-shortener-ui/src/lib/retry-after.ts): a positive whole number of seconds, otherwise `null` (missing, zero, negative or HTTP-date values), so the UI never shows a non-positive delay.
 
 
-- Billing endpoints: header `X-Rate-Limit-Retry-After-Seconds` (`RATE_LIMIT_RETRY_AFTER_HEADER`), parsed by `parseRetryAfterSeconds(headers, RATE_LIMIT_RETRY_AFTER_HEADER)` into `BillingApiError.retryAfterSeconds`; `buildRateLimitedMessage` appends `Try again in <n>s.`
+- Billing endpoints: header `X-Rate-Limit-Retry-After-Seconds` (`RATE_LIMIT_RETRY_AFTER_HEADER`), parsed by `parseRetryAfterSeconds(headers, RATE_LIMIT_RETRY_AFTER_HEADER)`, falling back to the standard `Retry-After`, into `BillingApiError.retryAfterSeconds`; `buildRateLimitedMessage` appends `Try again in <n>s.` `readRateLimitDelay(error)` returns the delay of a 429 (null otherwise); the billing hooks start a [`useCooldown`](../url-shortener-ui/src/lib/hooks/useCooldown.ts) with it, so the button (or the subscription Retry) stays disabled for the delay.
 - Magic link login and abuse reports: standard `Retry-After`, parsed with `parseRetryAfterSeconds`; login feeds it to `useMagicLinkCooldown` (see [features/auth.md](features/auth.md)).
 - CSV export: one automatic retry after `EXPORT_RATE_LIMIT_RETRY_DELAY_MS` when the first response is 429 (`fetchExportWithRetry`). Import uploads are not retried.
 - SSE reconnect treats 429 and 5xx as retryable (see below).

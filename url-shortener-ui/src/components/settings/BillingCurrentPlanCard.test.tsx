@@ -10,7 +10,7 @@ const FREE: BillingSubscription = {planId: "free", cancelAtPeriodEnd: false, pen
 const PRO: BillingSubscription = {planId: "pro", currentPeriodEnd: PERIOD_END, cancelAtPeriodEnd: false, pendingSwitch: null};
 
 function createPortal(overrides: Partial<BillingPortalState> = {}): BillingPortalState {
-    return {isManaging: false, errorMessage: null, handleManage: vi.fn().mockResolvedValue(undefined), ...overrides};
+    return {isManaging: false, errorMessage: null, isCoolingDown: false, handleManage: vi.fn().mockResolvedValue(undefined), ...overrides};
 }
 
 function renderCard(subscription: BillingSubscription, portal = createPortal(), isLoading = false): BillingPortalState {

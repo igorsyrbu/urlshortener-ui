@@ -7,6 +7,7 @@ import {
     createBillingCheckoutUrl,
     createBillingPortalUrl,
     getBillingSubscription,
+    readRateLimitDelay,
     scheduleBillingPeriodUpgrade,
 } from "@/lib/billing-api";
 import {UnsafeBillingUrlError} from "@/lib/billing-redirect";
@@ -155,6 +156,33 @@ describe("createBillingPortalUrl", () => {
         const failure = await createBillingPortalUrl().catch((error: unknown) => error);
 
         expect((failure as BillingApiError).status).toBe(500);
+    });
+});
+
+describe("rate limit delay", () => {
+    it("falls back to the standard Retry-After header", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 429, headers: {"Retry-After": "12"}}));
+
+        const failure = await getBillingSubscription().catch((error: unknown) => error);
+
+        expect((failure as BillingApiError).retryAfterSeconds).toBe(12);
+        expect(readRateLimitDelay(failure)).toBe(12);
+    });
+
+    it("prefers the dedicated header when both are sent", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {
+            status: 429, headers: {[RATE_LIMIT_RETRY_AFTER_HEADER]: "30", "Retry-After": "12"},
+        }));
+
+        const failure = await getBillingSubscription().catch((error: unknown) => error);
+
+        expect((failure as BillingApiError).retryAfterSeconds).toBe(30);
+    });
+
+    it("has no delay for a failure that is not a rate limit", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 500, headers: {"Retry-After": "12"}}));
+
+        expect(readRateLimitDelay(await getBillingSubscription().catch((error: unknown) => error))).toBeNull();
     });
 });
 

@@ -8,6 +8,7 @@ import {
     HTTP_TOO_MANY_REQUESTS,
     createBillingCheckoutUrl,
     isUnauthorizedBillingError,
+    readRateLimitDelay,
 } from "@/lib/billing-api";
 import {
     BILLING_COPY,
@@ -17,10 +18,13 @@ import {
 import {logger} from "@/lib/logger";
 import {redirectToBillingUrl} from "@/lib/billing-redirect";
 import {useAbortOnUnmount} from "@/lib/hooks/useAbortOnUnmount";
+import {useCooldown} from "@/lib/hooks/useCooldown";
 
 export interface BillingCheckoutState {
     isRedirecting: boolean;
     errorMessage: string | null;
+    /** True while a rate limit's delay runs; the upgrade button waits for it. */
+    isCoolingDown: boolean;
     handleUpgrade: () => Promise<void>;
 }
 
@@ -38,6 +42,7 @@ export function useBillingCheckout(cycle: BillingCycle, onAlreadyPro: () => void
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const startRequest = useAbortOnUnmount();
+    const {isCoolingDown, startCooldown} = useCooldown();
 
     useEffect(() => {
         // Back from the hosted checkout can restore this page from the back/forward cache with the button frozen
@@ -51,7 +56,7 @@ export function useBillingCheckout(cycle: BillingCycle, onAlreadyPro: () => void
     }, []);
 
     async function handleUpgrade(): Promise<void> {
-        if (isRedirecting) return;
+        if (isRedirecting || isCoolingDown) return;
         setIsRedirecting(true);
         setErrorMessage(null);
         const signal = startRequest();
@@ -63,9 +68,10 @@ export function useBillingCheckout(cycle: BillingCycle, onAlreadyPro: () => void
             logger.error(BILLING_COPY.UPGRADE_LOG_ERROR, error);
             if (error instanceof BillingApiError && error.status === HTTP_CONFLICT) onAlreadyPro();
             setErrorMessage(resolveCheckoutErrorMessage(error));
+            startCooldown(readRateLimitDelay(error));
             setIsRedirecting(false);
         }
     }
 
-    return {isRedirecting, errorMessage, handleUpgrade};
+    return {isRedirecting, errorMessage, isCoolingDown, handleUpgrade};
 }

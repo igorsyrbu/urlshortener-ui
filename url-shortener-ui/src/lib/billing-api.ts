@@ -41,7 +41,13 @@ interface BillingUrlPayload {
 }
 
 function throwBillingError(response: Response, fallbackMessage: string): never {
-    throw new BillingApiError(response.status, fallbackMessage, parseRetryAfterSeconds(response.headers, RATE_LIMIT_RETRY_AFTER_HEADER));
+    const retryAfterSeconds = parseRetryAfterSeconds(response.headers, RATE_LIMIT_RETRY_AFTER_HEADER) ?? parseRetryAfterSeconds(response.headers);
+    throw new BillingApiError(response.status, fallbackMessage, retryAfterSeconds);
+}
+
+/** The delay of a 429, or null for any other failure (or a 429 without a usable delay). */
+export function readRateLimitDelay(error: unknown): number | null {
+    return error instanceof BillingApiError && error.status === HTTP_TOO_MANY_REQUESTS ? error.retryAfterSeconds : null;
 }
 
 function parseBillingUrlPayload(payload: unknown): string {

@@ -1,14 +1,17 @@
 "use client";
 
 import {useCallback, useEffect, useRef, useState} from "react";
-import {getBillingSubscription, isUnauthorizedBillingError} from "@/lib/billing-api";
-import {BILLING_COPY, FREE_BILLING_SUBSCRIPTION, type BillingSubscription} from "@/lib/billing-constants";
+import {BillingApiError, getBillingSubscription, HTTP_TOO_MANY_REQUESTS, isUnauthorizedBillingError, readRateLimitDelay} from "@/lib/billing-api";
+import {BILLING_COPY, buildRateLimitedMessage, FREE_BILLING_SUBSCRIPTION, type BillingSubscription} from "@/lib/billing-constants";
+import {useCooldown} from "@/lib/hooks/useCooldown";
 import {logger} from "@/lib/logger";
 
 export interface BillingSubscriptionState {
     subscription: BillingSubscription;
     isLoading: boolean;
     errorMessage: string | null;
+    /** True while a rate limit's delay runs; Retry waits for it. */
+    isRetryCoolingDown: boolean;
     handleRetry: () => void;
     refreshSilently: () => Promise<boolean>;
 }
@@ -16,6 +19,11 @@ export interface BillingSubscriptionState {
 type SubscriptionResult =
     | {isSuccess: true; subscription: BillingSubscription}
     | {isSuccess: false; error: unknown};
+
+function resolveLoadErrorMessage(error: unknown): string {
+    const isRateLimited = error instanceof BillingApiError && error.status === HTTP_TOO_MANY_REQUESTS;
+    return isRateLimited ? buildRateLimitedMessage(BILLING_COPY.SUBSCRIPTION_RATE_LIMITED, error.retryAfterSeconds) : BILLING_COPY.SUBSCRIPTION_LOAD_ERROR;
+}
 
 async function fetchSubscriptionResult(): Promise<SubscriptionResult> {
     try {
@@ -30,6 +38,7 @@ export function useBillingSubscription(): BillingSubscriptionState {
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
+    const {isCoolingDown: isRetryCoolingDown, startCooldown} = useCooldown();
     // Every load and refresh takes the next id; only the newest may write state, so an older response that
     // arrives late cannot overwrite a newer one. Unmount bumps the id to discard everything still in flight.
     const latestRequestIdRef = useRef(0);
@@ -48,8 +57,10 @@ export function useBillingSubscription(): BillingSubscriptionState {
         if (!isVisibleLoadPendingRef.current) return;
         isVisibleLoadPendingRef.current = false;
         setIsLoading(false);
-        if (!result.isSuccess) setErrorMessage(BILLING_COPY.SUBSCRIPTION_LOAD_ERROR);
-    }, []);
+        if (result.isSuccess) return;
+        setErrorMessage(resolveLoadErrorMessage(result.error));
+        startCooldown(readRateLimitDelay(result.error));
+    }, [startCooldown]);
 
     const requestLatest = useCallback(async (): Promise<SubscriptionResult | null> => {
         latestRequestIdRef.current += 1;
@@ -80,5 +91,5 @@ export function useBillingSubscription(): BillingSubscriptionState {
         void loadSubscription();
     }, [retryCount, requestLatest]);
 
-    return {subscription, isLoading, errorMessage, handleRetry, refreshSilently};
+    return {subscription, isLoading, errorMessage, isRetryCoolingDown, handleRetry, refreshSilently};
 }

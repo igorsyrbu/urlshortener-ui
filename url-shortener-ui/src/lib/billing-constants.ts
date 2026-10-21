@@ -66,6 +66,7 @@ export const BILLING_COPY = {
     RETRY: "Retry",
     SUBSCRIPTION_LOADING: "Loading subscription…",
     SUBSCRIPTION_LOAD_ERROR: "Unable to load your subscription. Please try again.",
+    SUBSCRIPTION_RATE_LIMITED: "Too many requests to load your subscription.",
     ALREADY_PRO: "You're already on Pro.",
     CHECKOUT_INVALID_PERIOD: "Invalid billing period. Please try again.",
     CHECKOUT_RATE_LIMITED: "Too many checkout attempts. Please try again shortly.",
