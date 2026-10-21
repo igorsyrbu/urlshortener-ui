@@ -133,7 +133,7 @@ The mock server has its own suite; run it with `pnpm --filter=@url-shortener/url
   - `requestJson(server, method, path, { authorization, body, headers })` returns `{ status, body }` (parsed JSON or text, `redirect: "manual"`).
   - `createTestUser()` registers a fresh sandbox UUID in `memoryStore` and returns `{ uuid, state, authorization }` with a valid Bearer token; `createTestUserWithoutLinks()` empties its links and tag associations; `createUnregisteredAuthorization()` returns a well-formed token for a UUID that was never registered (expects 401).
 - Route tests start one server in `before`, close it in `after`, and create a new test user per test so sandboxes never collide.
-- Middleware that depends on time, settings or output has factory forms for testing: `createBillingRateLimit(now)`, `createBillingTrace(isEnabled, writeTrace)`, `createDelay(delayMs)`; `BillingService` takes a `now` function and its scenario defaults in its constructor. `readMockConfig(env, warn)` takes the environment and the warning sink as arguments.
+- Middleware that depends on time, settings or output has factory forms for testing: `new BillingRateLimiter(now)` (pass it to `createApp({ billingRateLimiter })` to cross window boundaries over HTTP), `createBillingTrace(isEnabled, writeTrace)`, `createDelay(delayMs)`; `BillingService` takes a `now` function and its scenario defaults in its constructor. `readMockConfig(env, warn)` takes the environment and the warning sink as arguments.
 
 ## Known limitations and existing exceptions
 

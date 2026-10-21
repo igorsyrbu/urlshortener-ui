@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { BillingService, BillingError } from "./BillingService";
 import {
-  BILLING_SESSION_TTL_MS, HTTP_CONFLICT, HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY,
+  BILLING_SESSION_TTL_MS, MAX_LIVE_SESSIONS_PER_USER, HTTP_CONFLICT, HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY,
   MONTHLY_PERIOD_MS, type BillingScenario,
 } from "./billing-constants";
 
@@ -203,6 +203,18 @@ describe("BillingService sessions", () => {
 
     assert.equal(service.getSession("unknown-token", "portal"), null);
     assert.equal(service.getSession(session.token, "checkout"), null);
+  });
+
+  it("keeps at most the newest sessions per user and drops the oldest", () => {
+    const { service } = createBillingContext("pro-monthly");
+    service.setScenario(OTHER_USER_ID, "pro-monthly");
+    const otherUserSession = service.createPortal(OTHER_USER_ID);
+    const sessions = Array.from({ length: MAX_LIVE_SESSIONS_PER_USER + 1 }, () => service.createPortal(USER_ID));
+
+    assert.equal(service.getSession(sessions[0].token, "portal"), null);
+    assert.notEqual(service.getSession(sessions[1].token, "portal"), null);
+    assert.notEqual(service.getSession(sessions[MAX_LIVE_SESSIONS_PER_USER].token, "portal"), null);
+    assert.notEqual(service.getSession(otherUserSession.token, "portal"), null);
   });
 
   it("invalidates old links when a scenario is reset", () => {

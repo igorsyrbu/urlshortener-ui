@@ -5,10 +5,10 @@ import { billingRateLimit } from "../middleware/billingRateLimit";
 
 const router: Router = Router();
 
-router.get("/billing/subscription", authentication, billingRateLimit, BillingController.getSubscription);
-router.post("/billing/checkout", authentication, billingRateLimit, BillingController.createCheckout);
-router.post("/billing/portal", authentication, billingRateLimit, BillingController.createPortal);
-router.post("/billing/subscription/upgrade", authentication, billingRateLimit, BillingController.scheduleUpgrade);
+router.get("/billing/subscription", authentication, billingRateLimit("subscription", "read"), BillingController.getSubscription);
+router.post("/billing/checkout", authentication, billingRateLimit("checkout", "write"), BillingController.createCheckout);
+router.post("/billing/portal", authentication, billingRateLimit("portal", "write"), BillingController.createPortal);
+router.post("/billing/subscription/upgrade", authentication, billingRateLimit("upgrade", "write"), BillingController.scheduleUpgrade);
 router.post("/mock/billing/scenario", authentication, BillingController.setScenario);
 router.get("/mock/billing/checkout/:token", BillingController.showCheckout);
 router.post("/mock/billing/checkout/:token", BillingController.completeCheckout);

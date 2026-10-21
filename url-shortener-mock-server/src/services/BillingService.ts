@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { BillingDefaults } from "../config";
 import {
-  BILLING_SESSION_TTL_MS, HTTP_CONFLICT, HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY,
+  BILLING_SESSION_TTL_MS, MAX_LIVE_SESSIONS_PER_USER, HTTP_CONFLICT, HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY,
   MONTHLY_PERIOD_MS, YEARLY_PERIOD_MS,
   type BillingPeriod, type BillingScenario, type BillingSession, type BillingState,
   type PortalAction, type PortalExpiryMode, type SubscriptionDto,
@@ -140,6 +140,7 @@ export class BillingService {
 
   private createSession(uuid: string, kind: BillingSession["kind"], billingPeriod?: BillingPeriod): BillingSession {
     this.removeExpiredSessions();
+    this.dropOldestSessionsOverCap(uuid);
     const hasExpiredPortal = kind === "portal" && this.getState(uuid).portalExpiryMode === "expired";
     const session: BillingSession = {
       token: randomUUID(), uuid, kind, billingPeriod,
@@ -158,6 +159,13 @@ export class BillingService {
     for (const [token, session] of this.sessions) {
       if (session.uuid === uuid) this.sessions.delete(token);
     }
+  }
+
+  /** Sessions are kept in creation order, so the first ones found for the user are the oldest. */
+  private dropOldestSessionsOverCap(uuid: string): void {
+    const userTokens = [...this.sessions.values()].filter((session) => session.uuid === uuid).map((session) => session.token);
+    const excess = userTokens.length - MAX_LIVE_SESSIONS_PER_USER + 1;
+    for (const token of userTokens.slice(0, Math.max(0, excess))) this.sessions.delete(token);
   }
 
   private removeExpiredSessions(): void {

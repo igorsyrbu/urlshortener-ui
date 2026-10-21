@@ -44,6 +44,8 @@ export const BILLING_READ_RATE_LIMIT = 60;
 export const BILLING_SESSION_TTL_MS = 60 * RATE_LIMIT_WINDOW_MS;
 export const MONTHLY_PERIOD_MS = 30 * 24 * BILLING_SESSION_TTL_MS;
 export const YEARLY_PERIOD_MS = 365 * 24 * BILLING_SESSION_TTL_MS;
+/** Ten checkout and ten portal creations per minute with a one-hour TTL would keep ~1,200 sessions per user alive. */
+export const MAX_LIVE_SESSIONS_PER_USER = 20;
 export const BILLING_RETRY_AFTER_HEADER = "X-Rate-Limit-Retry-After-Seconds";
 export const BILLING_SCENARIOS: readonly BillingScenario[] = ["free", "pro-monthly", "pro-yearly", "pro-pending", "pro-canceling", "trialing", "past-due", "canceled", "expired"];
 export const PORTAL_EXPIRY_MODES: readonly PortalExpiryMode[] = ["reported", "omitted", "invalid", "expired"];

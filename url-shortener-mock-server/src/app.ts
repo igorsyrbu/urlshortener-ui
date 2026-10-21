@@ -6,6 +6,7 @@ import { createDelay } from "./middleware/delay";
 import { errorSimulation } from "./middleware/errorSimulation";
 import { jsonErrors } from "./middleware/jsonErrors";
 import { createBillingTrace } from "./middleware/billingTrace";
+import { BillingRateLimiter } from "./middleware/billingRateLimit";
 import abuseRoutes from "./routes/abuse";
 import analyticsRoutes from "./routes/analytics";
 import authRoutes from "./routes/auth";
@@ -21,12 +22,18 @@ export interface AppOptions {
   config: MockConfig;
   /** Tests pass a service they hold, to seed scenarios or drive its clock. */
   billing?: BillingService;
+  /** Tests pass a limiter with a fake clock to cross window boundaries. */
+  billingRateLimiter?: BillingRateLimiter;
 }
 
 /** The one place that wires middleware and routes; `index.ts` and the tests both build the app here. */
-export function createApp({ config, billing = new BillingService(Date.now, config.billing) }: AppOptions): express.Express {
+export function createApp({
+  config,
+  billing = new BillingService(Date.now, config.billing),
+  billingRateLimiter = new BillingRateLimiter(),
+}: AppOptions): express.Express {
   const app = express();
-  const context: AppContext = { config, billing, magicLinkCooldowns: new Map() };
+  const context: AppContext = { config, billing, billingRateLimiter, magicLinkCooldowns: new Map() };
   app.locals.context = context;
 
   app.use(cors);
