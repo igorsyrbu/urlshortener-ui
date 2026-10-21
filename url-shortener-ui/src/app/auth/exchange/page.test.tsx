@@ -20,6 +20,7 @@ vi.mock("next/navigation", () => ({
 
 async function openWithQuery(query: string): Promise<void> {
     navigation.searchParams = new URLSearchParams(query);
+    window.history.pushState(null, "", `/auth/exchange?${query}`);
     await act(async () => {
         render(<ExchangePage/>);
     });
@@ -28,6 +29,7 @@ async function openWithQuery(query: string): Promise<void> {
 describe("auth code exchange page", () => {
     afterEach(() => {
         useAuthStore.setState({accessToken: null, user: null});
+        window.history.replaceState(null, "", "/");
     });
 
     it("shows an error and calls nothing when the code is missing", async () => {
@@ -105,6 +107,34 @@ describe("auth code exchange page", () => {
         expect(navigation.replace).not.toHaveBeenCalled();
         expect(useAuthStore.getState().accessToken).toBeNull();
         expect(hasSessionHint()).toBe(false);
+    });
+
+    it("removes the single-use code from the address bar before exchanging it", async () => {
+        let searchWhenRequested: string | null = null;
+        vi.stubGlobal("fetch", vi.fn(async () => {
+            searchWhenRequested = window.location.search;
+            return Response.json({accessToken: "jwt"});
+        }));
+
+        await openWithQuery("code=abc");
+
+        expect(searchWhenRequested).toBe("");
+        expect(window.location.pathname).toBe("/auth/exchange");
+    });
+
+    it("keeps the code it was opened with after the search params lose it", async () => {
+        const fetchMock = vi.fn(() => new Promise<Response>(() => {}));
+        vi.stubGlobal("fetch", fetchMock);
+        navigation.searchParams = new URLSearchParams("code=abc");
+        const {rerender} = render(<ExchangePage/>);
+
+        navigation.searchParams = new URLSearchParams();
+        await act(async () => {
+            rerender(<ExchangePage/>);
+        });
+
+        expect(screen.queryByText("No authorization code provided")).not.toBeInTheDocument();
+        expect(fetchMock).toHaveBeenCalledOnce();
     });
 
     it("shows the network error when the request cannot be made", async () => {

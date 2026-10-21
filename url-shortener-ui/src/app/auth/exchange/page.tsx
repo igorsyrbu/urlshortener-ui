@@ -8,6 +8,7 @@ import {API_BASE_URL} from "@/lib/api";
 import {useAuthStore} from "@/lib/store/auth";
 import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 import {setSessionHint} from "@/lib/session-hint";
+import {clearQueryString} from "@/lib/url-utils";
 
 interface AccessTokenContainer {
     accessToken: string
@@ -34,7 +35,8 @@ async function exchangeAuthorizationCode(code: string): Promise<ExchangeResult> 
 function ExchangeProcessor() {
     const searchParams = useSearchParams()
     const router = useRouter()
-    const code = searchParams.get("code")
+    // Read once: clearing the address bar updates the search params, and the page must keep the code it was opened with.
+    const [code] = useState(() => searchParams.get("code"))
     const [error, setError] = useState<string | null>(null)
     const exchangedCodeRef = useRef<string | null>(null)
 
@@ -45,6 +47,7 @@ function ExchangeProcessor() {
             return
         }
         exchangedCodeRef.current = code
+        clearQueryString()
 
         void exchangeAuthorizationCode(code).then((result) => {
             if ("errorMessage" in result) {

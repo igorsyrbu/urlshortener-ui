@@ -1,5 +1,5 @@
-import {describe, expect, it} from "vitest";
-import {extractKeyFromShortUrl, getDomain, getShortKeyValidationError, isValidUrl, normalizeUrl, withShortKey} from "@/lib/url-utils";
+import {afterEach, describe, expect, it, vi} from "vitest";
+import {clearQueryString, extractKeyFromShortUrl, getDomain, getShortKeyValidationError, isValidUrl, normalizeUrl, withShortKey} from "@/lib/url-utils";
 
 const SHORT_KEY_MAX_LENGTH = 30;
 
@@ -123,5 +123,39 @@ describe("withShortKey", () => {
 
     it("leaves a value that is not a URL unchanged", () => {
         expect(withShortKey("abc123", "xyz")).toBe("abc123");
+    });
+});
+
+describe("clearQueryString", () => {
+    afterEach(() => {
+        window.history.replaceState(null, "", "/");
+        vi.restoreAllMocks();
+    });
+
+    it("drops the query string from the address bar and keeps the path", () => {
+        window.history.pushState(null, "", "/auth/exchange?code=secret");
+
+        clearQueryString();
+
+        expect(window.location.pathname).toBe("/auth/exchange");
+        expect(window.location.search).toBe("");
+    });
+
+    it("replaces the current history entry instead of adding one", () => {
+        window.history.pushState(null, "", "/auth/ott?token=t");
+        const historyLength = window.history.length;
+
+        clearQueryString();
+
+        expect(window.history.length).toBe(historyLength);
+    });
+
+    it("leaves history alone when there is no query string", () => {
+        window.history.pushState(null, "", "/auth/exchange");
+        const replaceState = vi.spyOn(window.history, "replaceState");
+
+        clearQueryString();
+
+        expect(replaceState).not.toHaveBeenCalled();
     });
 });

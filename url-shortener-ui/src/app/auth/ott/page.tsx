@@ -1,14 +1,19 @@
 "use client";
 
-import {Suspense} from "react"
+import {Suspense, useEffect, useState} from "react"
 import {useSearchParams} from "next/navigation"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
 import {OttLoginForm} from "@/components/auth/OttLoginForm"
+import {clearQueryString} from "@/lib/url-utils"
 
 function OttProcessor() {
     const searchParams = useSearchParams()
-    const token = searchParams.get("token")
-    const email = searchParams.get("email")
+    // Read once: clearing the address bar updates the search params, and the form must keep the values it was opened with.
+    const [{token, email}] = useState(() => ({token: searchParams.get("token"), email: searchParams.get("email")}))
+
+    useEffect(() => {
+        clearQueryString()
+    }, [])
 
     if (!token || !email) {
         return (

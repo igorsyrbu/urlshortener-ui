@@ -85,8 +85,8 @@ There are no `loading.tsx` files and none may be added. Loading states are compo
 | State | Where it lives | Notes |
 |---|---|---|
 | Links page number | `?page=` on `/links` (1-based, absent on page 1) | Parsed by `parseLinksPageParam`, built by `buildLinksPageUrl` in [`src/lib/pagination.ts`](../url-shortener-ui/src/lib/pagination.ts). Page changes use `router.push(url, {scroll: false})`. Invalid or `< 1` values fall back to the first page. |
-| OAuth code | `?code=` on `/auth/exchange` | Missing code shows an error card. |
-| Magic-link token and email | `?token=&email=` on `/auth/ott` | Missing either shows "Invalid or incomplete magic link". |
+| OAuth code | `?code=` on `/auth/exchange` | Missing code shows an error card. Read once, then removed from the URL and history (`clearQueryString`). |
+| Magic-link token and email | `?token=&email=` on `/auth/ott` | Missing either shows "Invalid or incomplete magic link". Read once, then removed from the URL and history (`clearQueryString`). |
 | Abuse report prefill | `?shortUrl=` on `/report-abuse` | Built by the inspect page with `encodeURIComponent`. |
 | Search text, archived toggle, analytics period/range, tag search | Not in the URL | Component/store state; "show archived" is persisted in `localStorage` ([state-management](state-management.md)). |
 

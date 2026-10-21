@@ -81,3 +81,12 @@ export function withShortKey(shortUrl: string, key: string): string {
         return shortUrl;
     }
 }
+
+/**
+ * Removes the query string from the address bar and the current history entry, without a navigation, so one-time
+ * secrets in it do not stay in history or reach a later `Referer`.
+ */
+export function clearQueryString(): void {
+    if (window.location.search === "") return;
+    window.history.replaceState(null, "", window.location.pathname);
+}

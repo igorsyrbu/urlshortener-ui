@@ -66,18 +66,20 @@ Controlled by `NEXT_PUBLIC_ENABLE_TURNSTILE` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
 ## Code exchange (`/auth/exchange`)
 
-`ExchangeProcessor` (inside `Suspense`, because it uses `useSearchParams`) reads `code`:
+`ExchangeProcessor` (inside `Suspense`, because it uses `useSearchParams`) reads `code` once, into state, on its first render:
 
 1. No `code`: renders an "Error / No authorization code provided" card.
-2. Otherwise one effect calls, at most once per code (a ref guard survives StrictMode's double effect run and router identity changes, because the code is single-use), `GET /api/auth/code/exchange?code=<encoded>` with `credentials: "include"` so the response can set the refresh cookie. Plain `fetch`, no `Authorization` header.
+2. Otherwise one effect calls, at most once per code (a ref guard survives StrictMode's double effect run and router identity changes, because the code is single-use), first removes the query string from the address bar and the current history entry (`clearQueryString` from `lib/url-utils.ts`, a `history.replaceState` without a navigation), then calls `GET /api/auth/code/exchange?code=<encoded>` with `credentials: "include"` so the response can set the refresh cookie. Plain `fetch`, no `Authorization` header.
 3. On success it stores `data.accessToken` via `useAuthStore().setAccessToken`, sets the session hint (so the first dashboard render is the shell, see [Session bootstrap](#session-bootstrap)) and immediately calls `router.replace(ROUTES.LINKS)`: no wait, and the exchange URL with its single-use code leaves the history, so Back cannot resend it.
-4. On failure it renders "Exchange Failed" with the error message and offers no retry or link back to `/login`.
+4. On failure it renders "Exchange Failed" with the error message and offers no retry or link back to `/login`. The code is already gone from the URL, so a reload shows "No authorization code provided".
+
+Why the code is read into state: Next.js syncs `useSearchParams` with `history.replaceState`, so after the address bar is cleared the search params are empty; the page keeps the value it was opened with. `Referrer-Policy: no-referrer` on `/auth/*` (see [configuration](../configuration.md)) covers the moment before the URL is cleared.
 
 There is no `returnTo` support: the destination after any successful login is always `/links`. The login page does not redirect already authenticated users.
 
 ## One-time token landing (`/auth/ott`)
 
-Reached from the email link. If `token` or `email` is missing it renders "Invalid or incomplete magic link". Otherwise it shows a "Verifying..." spinner and mounts `OttLoginForm` with `loginType="token"`, which posts and follows the same redirect chain to `/auth/exchange`.
+Reached from the email link. It reads `token` and `email` into state once and clears the query string on mount (`clearQueryString`), so the token and the email address do not stay in history; the form posts the values from state. If `token` or `email` is missing it renders "Invalid or incomplete magic link". Otherwise it shows a "Verifying..." spinner and mounts `OttLoginForm` with `loginType="token"`, which posts and follows the same redirect chain to `/auth/exchange`.
 
 ## Session bootstrap
 
