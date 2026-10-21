@@ -3,20 +3,37 @@ import { requireUserUuid } from "../middleware/authentication";
 import { BillingError, type BillingService } from "../services/BillingService";
 import { getAppContext } from "../app-context";
 import {
-  HTTP_BAD_REQUEST, HTTP_GONE, HTTP_SEE_OTHER, SECOND_MS,
+  HTTP_BAD_REQUEST, HTTP_GONE, HTTP_SEE_OTHER,
   isBillingPeriod, isBillingScenario, isPortalAction, isPortalExpiryMode,
   type BillingSession,
 } from "../services/billing-constants";
-import { renderBillingPage } from "../views/billingPage";
+import { renderBillingErrorPage, renderBillingPage } from "../views/billingPage";
 import { sendProblem } from "../problem";
 
-function handleBillingResponse(res: Response, handleResponse: () => void): void {
+function setNoStore(res: Response): void {
   res.set("Cache-Control", "no-store");
+}
+
+/** `/billing/*` API routes: a `BillingError` becomes a problem-details answer. */
+function handleApiResponse(res: Response, handleResponse: () => void): void {
+  setNoStore(res);
   try {
     handleResponse();
   } catch (error) {
     if (!(error instanceof BillingError)) throw error;
     sendProblem(res, error.status, error.message);
+  }
+}
+
+/** `/mock/billing/*` hosted pages open in a browser tab: a `BillingError` becomes an HTML page with a way back. */
+function handleHostedPageResponse(req: Request, res: Response, handleResponse: () => void): void {
+  setNoStore(res);
+  try {
+    handleResponse();
+  } catch (error) {
+    if (!(error instanceof BillingError)) throw error;
+    res.status(error.status).set("Referrer-Policy", "no-referrer").type("html")
+      .send(renderBillingErrorPage({ status: error.status, message: error.message, frontendUrl: getFrontendUrl(req) }));
   }
 }
 
@@ -47,11 +64,11 @@ function sendSessionPage(req: Request, res: Response, session: BillingSession, m
 
 export class BillingController {
   static getSubscription(req: Request, res: Response): void {
-    handleBillingResponse(res, () => res.json(getBilling(req).getSubscription(requireUserUuid(req))));
+    handleApiResponse(res, () => res.json(getBilling(req).getSubscription(requireUserUuid(req))));
   }
 
   static createCheckout(req: Request, res: Response): void {
-    handleBillingResponse(res, () => {
+    handleApiResponse(res, () => {
       const period: unknown = req.body?.billingPeriod;
       if (!isBillingPeriod(period)) throw new BillingError(HTTP_BAD_REQUEST, "billingPeriod must be MONTHLY or YEARLY.");
       const session = getBilling(req).createCheckout(requireUserUuid(req), period);
@@ -60,23 +77,18 @@ export class BillingController {
   }
 
   static createPortal(req: Request, res: Response): void {
-    handleBillingResponse(res, () => {
-      const uuid = requireUserUuid(req);
-      const session = getBilling(req).createPortal(uuid);
-      const expiryMode = getBilling(req).getState(uuid).portalExpiryMode;
-      const expiresInSeconds = expiryMode === "invalid"
-        ? "not-a-number"
-        : Math.max(0, Math.floor((session.expiresAtMs - Date.now()) / SECOND_MS));
-      res.json({ url: getSessionUrl(req, session), ...(expiryMode === "omitted" ? {} : { expiresInSeconds }) });
+    handleApiResponse(res, () => {
+      const { session, expiry } = getBilling(req).createPortalLink(requireUserUuid(req));
+      res.json({ url: getSessionUrl(req, session), ...expiry });
     });
   }
 
   static scheduleUpgrade(req: Request, res: Response): void {
-    handleBillingResponse(res, () => res.json(getBilling(req).scheduleYearlyUpgrade(requireUserUuid(req))));
+    handleApiResponse(res, () => res.json(getBilling(req).scheduleYearlyUpgrade(requireUserUuid(req))));
   }
 
   static setScenario(req: Request, res: Response): void {
-    handleBillingResponse(res, () => {
+    handleApiResponse(res, () => {
       const scenario: unknown = req.body?.scenario;
       const expiryMode: unknown = req.body?.portalExpiryMode;
       if (!isBillingScenario(scenario)) throw new BillingError(HTTP_BAD_REQUEST, "Unknown billing scenario.");
@@ -87,22 +99,22 @@ export class BillingController {
   }
 
   static showCheckout(req: Request, res: Response): void {
-    handleBillingResponse(res, () => sendSessionPage(req, res, getSession(req, "checkout")));
+    handleHostedPageResponse(req, res, () => sendSessionPage(req, res, getSession(req, "checkout")));
   }
 
   static completeCheckout(req: Request, res: Response): void {
-    handleBillingResponse(res, () => {
+    handleHostedPageResponse(req, res, () => {
       getBilling(req).completeCheckout(getSession(req, "checkout"));
       res.redirect(HTTP_SEE_OTHER, `${getFrontendUrl(req)}/settings/billing`);
     });
   }
 
   static showPortal(req: Request, res: Response): void {
-    handleBillingResponse(res, () => sendSessionPage(req, res, getSession(req, "portal")));
+    handleHostedPageResponse(req, res, () => sendSessionPage(req, res, getSession(req, "portal")));
   }
 
   static updatePortal(req: Request, res: Response): void {
-    handleBillingResponse(res, () => {
+    handleHostedPageResponse(req, res, () => {
       const session = getSession(req, "portal");
       const action: unknown = req.body?.action;
       if (!isPortalAction(action)) throw new BillingError(HTTP_BAD_REQUEST, "Unknown portal action.");
@@ -112,7 +124,7 @@ export class BillingController {
   }
 
   static setPortalScenario(req: Request, res: Response): void {
-    handleBillingResponse(res, () => {
+    handleHostedPageResponse(req, res, () => {
       const session = getSession(req, "portal");
       const scenario: unknown = req.body?.scenario;
       if (!isBillingScenario(scenario)) throw new BillingError(HTTP_BAD_REQUEST, "Unknown billing scenario.");

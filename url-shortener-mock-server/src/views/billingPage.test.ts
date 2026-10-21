@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { BillingSession, SubscriptionDto } from "../services/billing-constants";
-import { renderBillingPage } from "./billingPage";
+import { renderBillingErrorPage, renderBillingPage } from "./billingPage";
 
 const FRONTEND_URL = "http://localhost:3000";
 const PERIOD_END = "2026-11-15T12:00:00.000Z";
@@ -54,7 +54,24 @@ describe("renderBillingPage portal", () => {
 
     assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
     assert.match(html, /&lt;soon&gt;/);
-    assert.doesNotMatch(html, /<script>/);
+    assert.doesNotMatch(html, /<script>alert/);
+  });
+
+  it("escapes a hostile frontend URL and session token", () => {
+    const hostile = `"><script>alert(1)</script>`;
+    const session: BillingSession = { ...portalSession(), token: hostile };
+
+    const html = renderBillingPage({ session, subscription: proSubscription(), frontendUrl: hostile });
+
+    assert.doesNotMatch(html, /<script>alert/);
+    assert.match(html, /href="&quot;&gt;&lt;script&gt;alert\(1\)&lt;\/script&gt;\/settings\/billing"/);
+  });
+
+  it("closes the portal through a listener, not an inline handler", () => {
+    const html = renderPortal(proSubscription());
+
+    assert.match(html, /<button type="button" id="close-portal">/);
+    assert.doesNotMatch(html, /onclick=/);
   });
 });
 
@@ -67,5 +84,16 @@ describe("renderBillingPage checkout", () => {
     assert.match(html, /Billed yearly/);
     assert.match(html, /Complete checkout/);
     assert.doesNotMatch(html, /Close portal/);
+  });
+});
+
+describe("renderBillingErrorPage", () => {
+  it("shows the status, the escaped message and a way back to billing", () => {
+    const html = renderBillingErrorPage({ status: 410, message: "<expired>", frontendUrl: FRONTEND_URL });
+
+    assert.match(html, /Error 410/);
+    assert.match(html, /role="alert">&lt;expired&gt;</);
+    assert.match(html, /href="http:\/\/localhost:3000\/settings\/billing"/);
+    assert.doesNotMatch(html, /close-portal/);
   });
 });

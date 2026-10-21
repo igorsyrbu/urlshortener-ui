@@ -20,6 +20,13 @@ export interface BillingState {
   portalExpiryMode: PortalExpiryMode;
 }
 
+/** Fault injection for the UI's TTL parsing; deliberately not a number, so it stays out of the typed contract. */
+export const INVALID_EXPIRES_IN_SECONDS = "not-a-number";
+
+export interface PortalExpiryPayload {
+  expiresInSeconds?: number | typeof INVALID_EXPIRES_IN_SECONDS;
+}
+
 export interface BillingSession {
   token: string;
   uuid: string;

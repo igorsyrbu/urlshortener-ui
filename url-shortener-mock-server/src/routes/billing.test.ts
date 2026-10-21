@@ -10,6 +10,8 @@ import {
   type BillingScenario, type PortalExpiryMode,
 } from "../services/billing-constants";
 import { createProblem } from "../problem";
+import { createApp } from "../app";
+import { BillingService } from "../services/BillingService";
 
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 const HTTP_UNAUTHORIZED = 401;
@@ -107,7 +109,7 @@ describe("billing checkout endpoint", () => {
       assert.equal(completed.status, HTTP_SEE_OTHER);
       assert.equal(completed.headers.get("location"), `${FRONTEND_URL}/settings/billing`);
       assert.equal(testBillingService.getSubscription(user.uuid).plan, "PRO");
-      assert.equal(testBillingService.getState(user.uuid).billingPeriod, billingPeriod);
+      assert.equal(testBillingService.getOrCreateState(user.uuid).billingPeriod, billingPeriod);
       assert.equal((await fetch(url, { method: "POST", redirect: "manual" })).status, HTTP_GONE);
     });
   }
@@ -274,7 +276,7 @@ describe("mock billing scenario endpoint", () => {
 
     assert.equal(response.status, HTTP_OK);
     assert.equal(readObject(response.body).pendingBillingPeriod, "YEARLY");
-    assert.equal(testBillingService.getState(user.uuid).portalExpiryMode, "omitted");
+    assert.equal(testBillingService.getOrCreateState(user.uuid).portalExpiryMode, "omitted");
   });
 
   const invalidBodies: unknown[] = [undefined, {}, { scenario: INVALID_LONG_VALUE }, { scenario: "pro-monthly", portalExpiryMode: "unknown" }];
@@ -291,6 +293,78 @@ describe("mock billing scenario endpoint", () => {
     const response = await requestJson(server, "POST", "/mock/billing/scenario", { body: { scenario: "pro-monthly" } });
 
     assert.equal(response.status, HTTP_UNAUTHORIZED);
+  });
+});
+
+const HTML_CONTENT_TYPE = /^text\/html/;
+
+describe("hosted billing page failures", () => {
+  it("answers an unknown or expired session with an HTML page that leads back to billing", async () => {
+    const response = await fetch(`${server.baseUrl}/mock/billing/portal/unknown-token`);
+    const page = await response.text();
+    assert.equal(response.status, HTTP_GONE);
+    assert.match(response.headers.get("content-type") ?? "", HTML_CONTENT_TYPE);
+    assert.match(page, /This billing session is missing or expired/);
+    assert.match(page, new RegExp(`href="${FRONTEND_URL}/settings/billing"`));
+  });
+
+  it("answers a checkout for a user who already has Pro with an HTML 409", async () => {
+    const url = await createCheckoutUrl();
+    // Becoming Pro through setScenario would also invalidate the checkout link, so the state changes in place.
+    const subscription = testBillingService.getOrCreateState(user.uuid).subscription;
+    subscription.status = "ACTIVE";
+    subscription.currentPeriodEnd = new Date(Date.now() + BILLING_SESSION_TTL_MS).toISOString();
+    const response = await fetch(url, { method: "POST", redirect: "manual" });
+    assert.equal(response.status, HTTP_CONFLICT);
+    assert.match(response.headers.get("content-type") ?? "", HTML_CONTENT_TYPE);
+    assert.match(await response.text(), /already has an active Pro subscription/);
+  });
+
+  it("answers an unknown scenario from the portal form with an HTML 400", async () => {
+    testBillingService.setScenario(user.uuid, "pro-monthly");
+    const url = await createPortalUrl();
+    const response = await fetch(`${url}/scenario`, {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ scenario: "pro-montly" }), redirect: "manual",
+    });
+    assert.equal(response.status, HTTP_BAD_REQUEST);
+    assert.match(response.headers.get("content-type") ?? "", HTML_CONTENT_TYPE);
+    assert.match(await response.text(), /Unknown billing scenario/);
+  });
+
+  it("answers a portal action sent with the wrong content type with an HTML 400 and no change", async () => {
+    testBillingService.setScenario(user.uuid, "pro-monthly");
+    const url = await createPortalUrl();
+    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "text/plain" }, body: "action=cancel-subscription" });
+    assert.equal(response.status, HTTP_BAD_REQUEST);
+    assert.match(response.headers.get("content-type") ?? "", HTML_CONTENT_TYPE);
+    assert.equal(testBillingService.getSubscription(user.uuid).cancelAtPeriodEnd, false);
+  });
+
+  it("keeps a seeded portal expiry mode after the portal form changes the scenario", async () => {
+    testBillingService.setScenario(user.uuid, "pro-monthly", "omitted");
+    const url = await createPortalUrl();
+    await fetch(`${url}/scenario`, {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ scenario: "pro-yearly" }), redirect: "manual",
+    });
+    const response = await requestJson(server, "POST", "/billing/portal", { authorization: user.authorization });
+    assert.equal(readObject(response.body).expiresInSeconds, undefined);
+  });
+});
+
+describe("billing portal with a fixed clock", () => {
+  it("reports exactly the one-hour session lifetime", async () => {
+    const fixedNowMs = Date.parse("2026-10-21T12:00:00Z");
+    const billing = new BillingService(() => fixedNowMs);
+    const clockedServer = await startTestServer(createApp({ config: TEST_CONFIG, billing }));
+    try {
+      billing.setScenario(user.uuid, "pro-monthly");
+      const response = await requestJson(clockedServer, "POST", "/billing/portal", { authorization: user.authorization });
+      assert.equal(readObject(response.body).expiresInSeconds, BILLING_SESSION_TTL_MS / SECOND_MS);
+    } finally {
+      await clockedServer.close();
+    }
   });
 });
 

@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { BillingService, BillingError } from "./BillingService";
 import {
-  BILLING_SESSION_TTL_MS, MAX_LIVE_SESSIONS_PER_USER, HTTP_CONFLICT, HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY,
-  MONTHLY_PERIOD_MS, type BillingScenario,
+  BILLING_SESSION_TTL_MS, INVALID_EXPIRES_IN_SECONDS, MAX_LIVE_SESSIONS_PER_USER, SECOND_MS, HTTP_CONFLICT, HTTP_NOT_FOUND, HTTP_UNPROCESSABLE_ENTITY,
+  MONTHLY_PERIOD_MS, type BillingScenario, type PortalExpiryMode,
 } from "./billing-constants";
 
 const USER_ID = "billing-user";
@@ -81,7 +81,7 @@ describe("BillingService checkout", () => {
       service.completeCheckout(session);
 
       assert.equal(service.getSubscription(USER_ID).plan, "PRO");
-      assert.equal(service.getState(USER_ID).billingPeriod, period);
+      assert.equal(service.getOrCreateState(USER_ID).billingPeriod, period);
       assert.equal(service.getSession(session.token, "checkout"), null);
     });
   }
@@ -104,7 +104,7 @@ describe("BillingService yearly upgrade", () => {
     assert.deepEqual(service.getSubscription(USER_ID), {
       ...initial, pendingBillingPeriod: "YEARLY", pendingAppliesAt: initial.currentPeriodEnd,
     });
-    assert.equal(service.getState(USER_ID).billingPeriod, "MONTHLY");
+    assert.equal(service.getOrCreateState(USER_ID).billingPeriod, "MONTHLY");
   });
 
   it("reports a missing subscription", () => {
@@ -174,6 +174,42 @@ describe("BillingService portal changes", () => {
     const { service } = createBillingContext("canceled");
 
     assert.throws(() => service.applyPortalAction(USER_ID, "cancel-subscription"), isBillingError(HTTP_CONFLICT));
+  });
+});
+
+describe("BillingService portal links", () => {
+  const cases: Array<[PortalExpiryMode, unknown]> = [
+    ["reported", BILLING_SESSION_TTL_MS / SECOND_MS],
+    ["omitted", undefined],
+    ["invalid", INVALID_EXPIRES_IN_SECONDS],
+    ["expired", 0],
+  ];
+  for (const [mode, expected] of cases) {
+    it(`shapes expiresInSeconds for the ${mode} mode`, () => {
+      const { service } = createBillingContext("pro-monthly");
+      service.setScenario(USER_ID, "pro-monthly", mode);
+
+      const { expiry } = service.createPortalLink(USER_ID);
+
+      assert.equal(expiry.expiresInSeconds, expected);
+      assert.equal("expiresInSeconds" in expiry, mode !== "omitted");
+    });
+  }
+
+  it("keeps the expiry mode when the scenario changes without one", () => {
+    const { service } = createBillingContext("pro-monthly");
+    service.setScenario(USER_ID, "pro-monthly", "invalid");
+
+    service.setScenario(USER_ID, "pro-yearly");
+
+    assert.equal(service.getOrCreateState(USER_ID).portalExpiryMode, "invalid");
+  });
+
+  it("starts a new user with the configured default expiry mode", () => {
+    const service = new BillingService(() => CURRENT_TIME_MS, { scenario: "pro-monthly", portalExpiry: "omitted" });
+
+    assert.equal(service.getOrCreateState(USER_ID).portalExpiryMode, "omitted");
+    assert.equal(service.getSubscription(USER_ID).plan, "PRO");
   });
 });
 
