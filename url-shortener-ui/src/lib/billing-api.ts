@@ -13,6 +13,7 @@ import {parseBillingUrl} from "@/lib/billing-redirect";
 import {parseRetryAfterSeconds} from "@/lib/retry-after";
 
 export const HTTP_BAD_REQUEST = 400;
+export const HTTP_UNAUTHORIZED = 401;
 export const HTTP_NOT_FOUND = 404;
 export const HTTP_CONFLICT = 409;
 export const HTTP_UNPROCESSABLE_ENTITY = 422;
@@ -28,6 +29,11 @@ export class BillingApiError extends Error {
         this.status = status;
         this.retryAfterSeconds = retryAfterSeconds;
     }
+}
+
+/** A 401 means `fetchWithAuth` is already sending the user to sign in: callers show and log nothing for it. */
+export function isUnauthorizedBillingError(error: unknown): boolean {
+    return error instanceof BillingApiError && error.status === HTTP_UNAUTHORIZED;
 }
 
 interface BillingUrlPayload {

@@ -946,3 +946,67 @@ describe("BillingSettings period note", () => {
         expect(screen.getByText(`${BILLING_COPY.CANCELS_ON} ${expectedPeriodEnd()}`)).toBeInTheDocument();
     });
 });
+
+describe("BillingSettings when the session ended (401)", () => {
+    const HTTP_UNAUTHORIZED = 401;
+
+    beforeEach(() => {
+        stubDesktopViewport();
+        mockBillingRedirect();
+    });
+
+    it("shows no error while the expired session is sent to sign in during the first load", async () => {
+        routeFetchWithAuth({[API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => new Response(null, {status: HTTP_UNAUTHORIZED})});
+        renderBilling();
+
+        await waitFor(() => expect(fetchWithAuth).toHaveBeenCalled());
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it("shows no error when checkout answers 401", async () => {
+        routeFetchWithAuth({
+            [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => Response.json(FREE_SUBSCRIPTION),
+            [API_ENDPOINTS.BILLING_CHECKOUT]: () => new Response(null, {status: HTTP_UNAUTHORIZED}),
+        });
+        const user = renderBilling();
+
+        await user.click(await screen.findByRole("button", {name: BILLING_COPY.UPGRADE}));
+        await waitFor(() => expect(vi.mocked(fetchWithAuth).mock.calls.some(([url]) => url === API_ENDPOINTS.BILLING_CHECKOUT)).toBe(true));
+
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it("shows no error when the portal answers 401", async () => {
+        routeFetchWithAuth({
+            [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => Response.json(PRO_SUBSCRIPTION),
+            [API_ENDPOINTS.BILLING_PORTAL]: () => new Response(null, {status: HTTP_UNAUTHORIZED}),
+        });
+        const user = renderBilling();
+
+        await user.click(await screen.findByRole("button", {name: BILLING_COPY.MANAGE_SUBSCRIPTION}));
+        await waitFor(() => expect(screen.getByRole("button", {name: BILLING_COPY.MANAGE_SUBSCRIPTION})).toBeEnabled());
+
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it("shows no error when the switch to yearly billing answers 401", async () => {
+        routeFetchWithAuth({
+            [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => Response.json(PRO_SUBSCRIPTION),
+            [API_ENDPOINTS.BILLING_SUBSCRIPTION_UPGRADE]: () => new Response(null, {status: HTTP_UNAUTHORIZED}),
+        });
+        const user = await renderProWithYearlySelected();
+
+        await user.click(switchToYearlyButton());
+        await confirmPeriodSwitch(user);
+        await waitFor(() => expect(vi.mocked(fetchWithAuth).mock.calls.some(([url]) => url === API_ENDPOINTS.BILLING_SUBSCRIPTION_UPGRADE)).toBe(true));
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(logger.error).not.toHaveBeenCalled();
+    });
+});

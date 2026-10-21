@@ -7,6 +7,7 @@ import {
     HTTP_NOT_FOUND,
     HTTP_TOO_MANY_REQUESTS,
     HTTP_UNPROCESSABLE_ENTITY,
+    isUnauthorizedBillingError,
     scheduleBillingPeriodUpgrade,
 } from "@/lib/billing-api";
 import {BILLING_COPY, buildRateLimitedMessage, type ScheduledPeriodSwitch} from "@/lib/billing-constants";
@@ -52,6 +53,10 @@ export function useBillingPeriodUpgrade(onConflict: () => void, onScheduled?: ()
             setScheduledSwitch({effectiveDate: result.value.effectiveDate ?? null});
             setIsScheduling(false);
             onScheduled?.();
+            return;
+        }
+        if (isUnauthorizedBillingError(result.error)) {
+            setIsScheduling(false);
             return;
         }
         logger.error(BILLING_COPY.PERIOD_UPGRADE_LOG_ERROR, result.error);

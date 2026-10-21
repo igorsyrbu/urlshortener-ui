@@ -6,6 +6,7 @@ import {
     HTTP_NOT_FOUND,
     HTTP_TOO_MANY_REQUESTS,
     createBillingPortalUrl,
+    isUnauthorizedBillingError,
 } from "@/lib/billing-api";
 import {BILLING_COPY, buildRateLimitedMessage} from "@/lib/billing-constants";
 import {markPortalOpened} from "@/lib/billing-portal-return";
@@ -28,6 +29,7 @@ function resolvePortalErrorMessage(error: unknown): string {
     return BILLING_COPY.PORTAL_FAILED;
 }
 
+/** `aborted` also covers a 401: the user is on the way to sign in, so there is nothing to report. */
 type PortalOpenOutcome = {kind: "opened"} | {kind: "aborted"} | {kind: "failed"; error: unknown};
 
 async function openPortalInTab(portalTab: Window | null, signal: AbortSignal): Promise<PortalOpenOutcome> {
@@ -38,7 +40,7 @@ async function openPortalInTab(portalTab: Window | null, signal: AbortSignal): P
         markPortalOpened();
         return {kind: "opened"};
     } catch (error) {
-        return signal.aborted ? {kind: "aborted"} : {kind: "failed", error};
+        return signal.aborted || isUnauthorizedBillingError(error) ? {kind: "aborted"} : {kind: "failed", error};
     }
 }
 

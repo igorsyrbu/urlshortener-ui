@@ -7,6 +7,7 @@ import {
     HTTP_CONFLICT,
     HTTP_TOO_MANY_REQUESTS,
     createBillingCheckoutUrl,
+    isUnauthorizedBillingError,
 } from "@/lib/billing-api";
 import {
     BILLING_COPY,
@@ -58,7 +59,7 @@ export function useBillingCheckout(cycle: BillingCycle, onAlreadyPro: () => void
             const checkoutUrl = await createBillingCheckoutUrl(cycle, signal);
             if (!signal.aborted) redirectToBillingUrl(checkoutUrl);
         } catch (error) {
-            if (signal.aborted) return;
+            if (signal.aborted || isUnauthorizedBillingError(error)) return;
             logger.error(BILLING_COPY.UPGRADE_LOG_ERROR, error);
             if (error instanceof BillingApiError && error.status === HTTP_CONFLICT) onAlreadyPro();
             setErrorMessage(resolveCheckoutErrorMessage(error));

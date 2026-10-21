@@ -1,7 +1,7 @@
 "use client";
 
 import {useCallback, useEffect, useRef, useState} from "react";
-import {getBillingSubscription} from "@/lib/billing-api";
+import {getBillingSubscription, isUnauthorizedBillingError} from "@/lib/billing-api";
 import {BILLING_COPY, FREE_BILLING_SUBSCRIPTION, type BillingSubscription} from "@/lib/billing-constants";
 import {logger} from "@/lib/logger";
 
@@ -41,6 +41,8 @@ export function useBillingSubscription(): BillingSubscriptionState {
     }, []);
 
     const applyLatestResult = useCallback((result: SubscriptionResult): void => {
+        // On a 401 the page is about to go to sign in: keep the loading state instead of flashing an error.
+        if (!result.isSuccess && isUnauthorizedBillingError(result.error)) return;
         if (result.isSuccess) setSubscription(result.subscription);
         else logger.error(BILLING_COPY.SUBSCRIPTION_LOG_ERROR, result.error);
         if (!isVisibleLoadPendingRef.current) return;
