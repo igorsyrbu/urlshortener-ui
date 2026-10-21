@@ -1,15 +1,14 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {
-    consumePortalReturn,
+    clearPortalReturn,
     markPortalOpened,
-    PORTAL_RETURN_FALLBACK_TTL_MS,
+    peekPortalReturn,
+    PORTAL_RETURN_MAX_AGE_MS,
     PORTAL_RETURN_STORAGE_KEY,
 } from "@/lib/billing-portal-return";
 
-const PORTAL_TTL_SECONDS = 60 * 60;
-const MILLISECONDS_PER_SECOND = 1000;
-const PORTAL_TTL_MS = PORTAL_TTL_SECONDS * MILLISECONDS_PER_SECOND;
 const INITIAL_TIME_MS = Date.parse("2026-10-13T12:00:00Z");
+const ONE_HOUR_MS = 60 * 60 * 1000;
 
 function throwStorageUnavailable(): never {
     throw new Error("Storage unavailable");
@@ -20,98 +19,71 @@ describe("portal return flag", () => {
         vi.useFakeTimers();
         vi.setSystemTime(INITIAL_TIME_MS);
     });
-    afterEach(() => vi.useRealTimers());
 
-    it("consumes a live portal visit once", () => {
-        markPortalOpened(PORTAL_TTL_SECONDS);
-
-        expect(consumePortalReturn()).toBe(true);
-        expect(consumePortalReturn()).toBe(false);
+    afterEach(() => {
+        vi.useRealTimers();
+        sessionStorage.clear();
+        localStorage.clear();
     });
 
-    it("records the countdown relative to the browser's current time", () => {
-        markPortalOpened(PORTAL_TTL_SECONDS);
+    it("stays set until it is cleared, so a failed refresh can try again", () => {
+        markPortalOpened();
 
-        expect(localStorage.getItem(PORTAL_RETURN_STORAGE_KEY)).toBe(
-            JSON.stringify({expiresAtMs: INITIAL_TIME_MS + PORTAL_TTL_MS}),
-        );
+        expect(peekPortalReturn()).toBe(true);
+        expect(peekPortalReturn()).toBe(true);
+        clearPortalReturn();
+        expect(peekPortalReturn()).toBe(false);
     });
 
-    it("refreshes just before the reported countdown expires", () => {
-        markPortalOpened(PORTAL_TTL_SECONDS);
+    it("is kept per tab, not shared through localStorage", () => {
+        markPortalOpened();
 
-        vi.setSystemTime(INITIAL_TIME_MS + PORTAL_TTL_MS - 1);
-
-        expect(consumePortalReturn()).toBe(true);
-    });
-
-    it("removes a flag at the exact expiry boundary without refreshing", () => {
-        markPortalOpened(PORTAL_TTL_SECONDS);
-
-        vi.setSystemTime(INITIAL_TIME_MS + PORTAL_TTL_MS);
-
-        expect(consumePortalReturn()).toBe(false);
+        expect(sessionStorage.getItem(PORTAL_RETURN_STORAGE_KEY)).toBe(JSON.stringify({openedAtMs: INITIAL_TIME_MS}));
         expect(localStorage.getItem(PORTAL_RETURN_STORAGE_KEY)).toBeNull();
     });
 
-    it("does not replace an expired zero countdown with a fallback", () => {
-        markPortalOpened(0);
+    it("still refreshes after the portal session itself has expired", () => {
+        markPortalOpened();
 
-        expect(consumePortalReturn()).toBe(false);
+        vi.setSystemTime(INITIAL_TIME_MS + ONE_HOUR_MS * 2);
+
+        expect(peekPortalReturn()).toBe(true);
     });
 
-    it.each([null, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_VALUE])(
-        "falls back to a short TTL for missing or invalid lifetime %s",
-        (expiresInSeconds) => {
-            markPortalOpened(expiresInSeconds);
+    it("lapses after a day", () => {
+        markPortalOpened();
 
-            vi.setSystemTime(INITIAL_TIME_MS + PORTAL_RETURN_FALLBACK_TTL_MS - 1);
+        vi.setSystemTime(INITIAL_TIME_MS + PORTAL_RETURN_MAX_AGE_MS);
 
-            expect(consumePortalReturn()).toBe(true);
-        },
-    );
-
-    it("expires the fallback at its exact boundary", () => {
-        markPortalOpened(null);
-
-        vi.setSystemTime(INITIAL_TIME_MS + PORTAL_RETURN_FALLBACK_TTL_MS);
-
-        expect(consumePortalReturn()).toBe(false);
+        expect(peekPortalReturn()).toBe(false);
     });
 
-    it.each(["invalid-json", "null", "{}", '{"expiresAtMs":"tomorrow"}', '{"expiresAtMs":1e400}'])(
-        "removes corrupt storage without refreshing: %s",
-        (entry) => {
-            localStorage.setItem(PORTAL_RETURN_STORAGE_KEY, entry);
+    it.each(["invalid-json", "null", "{}", '{"openedAtMs":"today"}', '{"openedAtMs":1e400}'])("ignores corrupt storage: %s", (entry) => {
+        sessionStorage.setItem(PORTAL_RETURN_STORAGE_KEY, entry);
 
-            expect(consumePortalReturn()).toBe(false);
-            expect(localStorage.getItem(PORTAL_RETURN_STORAGE_KEY)).toBeNull();
-        },
-    );
+        expect(peekPortalReturn()).toBe(false);
+    });
 
     it("ignores a missing flag", () => {
-        expect(consumePortalReturn()).toBe(false);
+        expect(peekPortalReturn()).toBe(false);
     });
 
     it("does not interrupt portal opening when storage writes fail", () => {
-        const setItem = vi.spyOn(localStorage, "setItem").mockImplementation(throwStorageUnavailable);
+        const setItem = vi.spyOn(sessionStorage, "setItem").mockImplementation(throwStorageUnavailable);
 
-        expect(() => markPortalOpened(PORTAL_TTL_SECONDS)).not.toThrow();
+        expect(() => markPortalOpened()).not.toThrow();
         expect(setItem).toHaveBeenCalled();
     });
 
-    it("skips refresh when storage reads fail", () => {
-        const getItem = vi.spyOn(localStorage, "getItem").mockImplementation(throwStorageUnavailable);
+    it("skips the refresh when storage reads fail", () => {
+        vi.spyOn(sessionStorage, "getItem").mockImplementation(throwStorageUnavailable);
 
-        expect(consumePortalReturn()).toBe(false);
-        expect(getItem).toHaveBeenCalled();
+        expect(peekPortalReturn()).toBe(false);
     });
 
-    it("skips refresh when storage removal fails", () => {
-        markPortalOpened(PORTAL_TTL_SECONDS);
-        const removeItem = vi.spyOn(localStorage, "removeItem").mockImplementation(throwStorageUnavailable);
+    it("does not throw when clearing fails", () => {
+        vi.spyOn(sessionStorage, "removeItem").mockImplementation(throwStorageUnavailable);
 
-        expect(consumePortalReturn()).toBe(false);
-        expect(removeItem).toHaveBeenCalled();
+        expect(() => clearPortalReturn()).not.toThrow();
     });
 });

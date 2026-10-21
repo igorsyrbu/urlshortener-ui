@@ -127,55 +127,18 @@ describe("createBillingCheckoutUrl", () => {
 });
 
 describe("createBillingPortalUrl", () => {
-    it("posts without a body and returns the portal URL with its expiry", async () => {
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({url: PORTAL_URL, expiresInSeconds: PORTAL_TTL_SECONDS}));
+    it("posts without a body and returns the portal URL, ignoring the session lifetime", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({url: PORTAL_URL, expiresInSeconds: "not-a-number"}));
 
         const result = await createBillingPortalUrl();
 
-        expect(result).toEqual({url: PORTAL_URL, expiresInSeconds: PORTAL_TTL_SECONDS});
+        expect(result).toBe(PORTAL_URL);
         expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(
             API_ENDPOINTS.BILLING_PORTAL,
             expect.objectContaining({method: "POST"}),
         );
         const [, request] = vi.mocked(fetchWithAuth).mock.calls[0];
         expect(request?.body).toBeUndefined();
-    });
-
-    it("returns a null expiry when the provider omits it", async () => {
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({url: PORTAL_URL}));
-
-        const result = await createBillingPortalUrl();
-
-        expect(result).toEqual({url: PORTAL_URL, expiresInSeconds: null});
-    });
-
-    it.each([
-        {expiresInSeconds: -5},
-        {expiresInSeconds: 1.5},
-        {expiresInSeconds: "3600"},
-        {expiresInSeconds: Number.MAX_VALUE},
-    ])("returns a null expiry for an invalid countdown $expiresInSeconds", async ({expiresInSeconds}) => {
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({url: PORTAL_URL, expiresInSeconds}));
-
-        const result = await createBillingPortalUrl();
-
-        expect(result).toEqual({url: PORTAL_URL, expiresInSeconds: null});
-    });
-
-    it("preserves a zero remaining lifetime as expired", async () => {
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({url: PORTAL_URL, expiresInSeconds: 0}));
-
-        const result = await createBillingPortalUrl();
-
-        expect(result).toEqual({url: PORTAL_URL, expiresInSeconds: 0});
-    });
-
-    it("returns a null expiry when the provider explicitly reports null", async () => {
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({url: PORTAL_URL, expiresInSeconds: null}));
-
-        const result = await createBillingPortalUrl();
-
-        expect(result).toEqual({url: PORTAL_URL, expiresInSeconds: null});
     });
 
     it("throws a 404 BillingApiError when never a Polar customer", async () => {

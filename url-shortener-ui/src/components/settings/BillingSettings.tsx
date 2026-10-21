@@ -10,7 +10,7 @@ import {SETTINGS_SECTION_COPY} from "@/lib/settings-constants";
 import {BillingCycleSelector} from "@/components/settings/BillingCycleSelector";
 import {BillingPlanCard} from "@/components/settings/BillingPlanCard";
 import {BILLING_COPY, BILLING_PLANS, isProSubscription} from "@/lib/billing-constants";
-import {consumePortalReturn} from "@/lib/billing-portal-return";
+import {clearPortalReturn, peekPortalReturn} from "@/lib/billing-portal-return";
 import {useBillingSettings} from "@/components/settings/BillingSettingsProvider";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 
@@ -29,22 +29,27 @@ export function BillingSettings() {
     const plansHeadingId = useId();
 
     useEffect(() => {
-        function refreshOnReturn(): void {
-            if (!isProSubscription(subscription.subscription)) return;
-            if (consumePortalReturn()) void handlePortalReturn();
+        // The flag is cleared only after a successful refresh, so a failed one is tried again on the next return.
+        async function refreshOnReturn(): Promise<void> {
+            if (!peekPortalReturn()) return;
+            if (await handlePortalReturn()) clearPortalReturn();
         }
 
         function handleVisibilityChange(): void {
-            if (document.visibilityState === "visible") refreshOnReturn();
+            if (document.visibilityState === "visible") void refreshOnReturn();
         }
 
-        window.addEventListener("focus", refreshOnReturn);
+        function handleFocus(): void {
+            void refreshOnReturn();
+        }
+
+        window.addEventListener("focus", handleFocus);
         document.addEventListener("visibilitychange", handleVisibilityChange);
         return () => {
-            window.removeEventListener("focus", refreshOnReturn);
+            window.removeEventListener("focus", handleFocus);
             document.removeEventListener("visibilitychange", handleVisibilityChange);
         };
-    }, [subscription.subscription, handlePortalReturn]);
+    }, [handlePortalReturn]);
 
     function handleUpgrade(): void {
         if (isPro && cycle === "yearly") {

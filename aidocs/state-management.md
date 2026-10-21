@@ -70,7 +70,7 @@ All persistence is `localStorage`. `sessionStorage` is not used by application c
 | `theme` | `next-themes` (read in `palette-init-script.ts` as `NEXT_THEMES_STORAGE_KEY`) | `light` / `dark` / `system` | Managed by the library |
 | `magicLinkCooldownByEmail` (`MAGIC_LINK_COOLDOWN_STORAGE_KEY`) | [`src/lib/hooks/useMagicLinkCooldown.ts`](../url-shortener-ui/src/lib/hooks/useMagicLinkCooldown.ts) | JSON map `email -> expiry timestamp (ms)`; expired entries are pruned on read | Until expiry |
 | `urlshortener:session-hint` (`SESSION_HINT_STORAGE_KEY`) | [`src/lib/session-hint.ts`](../url-shortener-ui/src/lib/session-hint.ts) | `"1"` when this browser had a signed-in session; a rendering hint, not a credential | Set after `/users/me` loads; cleared by `logout()` and a rejected token refresh |
-| `urlshortener:billing:portal-return` (`PORTAL_RETURN_STORAGE_KEY`) | [`src/lib/billing-portal-return.ts`](../url-shortener-ui/src/lib/billing-portal-return.ts) | JSON `{expiresAtMs}`, written when the billing portal is opened in a new tab and consumed once by `consumePortalReturn` | Portal link TTL, fallback 10 minutes |
+| `urlshortener:billing:portal-return` (`PORTAL_RETURN_STORAGE_KEY`) | [`src/lib/billing-portal-return.ts`](../url-shortener-ui/src/lib/billing-portal-return.ts) | `sessionStorage`, JSON `{openedAtMs}`, written when the billing portal is opened; read by `peekPortalReturn`, removed by `clearPortalReturn` after a successful return refresh | The tab's lifetime, at most `PORTAL_RETURN_MAX_AGE_MS` (24 h) |
 
 The access token and user profile are deliberately **not** persisted (the session hint stores neither) ([features/auth.md](features/auth.md)). Palette mechanics: [styling-and-theming.md](styling-and-theming.md).
 

@@ -34,11 +34,6 @@ interface BillingUrlPayload {
     url: string;
 }
 
-export interface BillingPortalResult {
-    url: string;
-    expiresInSeconds: number | null;
-}
-
 function throwBillingError(response: Response, fallbackMessage: string): never {
     throw new BillingApiError(response.status, fallbackMessage, parseRetryAfterSeconds(response.headers, RATE_LIMIT_RETRY_AFTER_HEADER));
 }
@@ -48,20 +43,6 @@ function parseBillingUrlPayload(payload: unknown): string {
     const url = (payload as Partial<BillingUrlPayload>).url;
     if (typeof url !== "string" || url.length === 0) throw new Error("Invalid billing URL payload");
     return parseBillingUrl(url).href;
-}
-
-function parseBillingPortalPayload(payload: unknown): BillingPortalResult {
-    const url = parseBillingUrlPayload(payload);
-    const expiresInSeconds = (payload as Partial<BillingPortalResult>).expiresInSeconds;
-    if (
-        expiresInSeconds === undefined ||
-        expiresInSeconds === null ||
-        !Number.isSafeInteger(expiresInSeconds) ||
-        expiresInSeconds < 0
-    ) {
-        return {url, expiresInSeconds: null};
-    }
-    return {url, expiresInSeconds};
 }
 
 function parsePeriodUpgradePayload(payload: unknown): BillingPeriodUpgradeResponse {
@@ -89,10 +70,11 @@ export async function createBillingCheckoutUrl(cycle: BillingCycle): Promise<str
     return parseBillingUrlPayload(await response.json());
 }
 
-export async function createBillingPortalUrl(): Promise<BillingPortalResult> {
+/** The portal's session lifetime (`expiresInSeconds`) is not read: the return refresh does not depend on it. */
+export async function createBillingPortalUrl(): Promise<string> {
     const response = await fetchWithAuth(API_ENDPOINTS.BILLING_PORTAL, {method: "POST"});
     if (!response.ok) throwBillingError(response, `Failed to open portal: ${response.status}`);
-    return parseBillingPortalPayload(await response.json());
+    return parseBillingUrlPayload(await response.json());
 }
 
 export async function scheduleBillingPeriodUpgrade(): Promise<BillingPeriodUpgradeResponse> {

@@ -1,51 +1,47 @@
 export const PORTAL_RETURN_STORAGE_KEY = "urlshortener:billing:portal-return";
-export const PORTAL_RETURN_FALLBACK_TTL_MS = 10 * 60 * 1000;
-const MILLISECONDS_PER_SECOND = 1000;
+/** Changes made in the portal stay worth a refresh well past the portal session's own lifetime. */
+export const PORTAL_RETURN_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 interface PortalReturnEntry {
-    expiresAtMs: number;
+    openedAtMs: number;
 }
 
+/**
+ * The flag lives in `sessionStorage`: per tab, so another tab with the billing page cannot take the refresh, it
+ * survives a reload of this tab, it is not shared with the portal tab opened by `window.open`, and it ends with the tab.
+ */
 function readPortalReturnEntry(): PortalReturnEntry | null {
     try {
-        const raw = localStorage.getItem(PORTAL_RETURN_STORAGE_KEY);
+        const raw = sessionStorage.getItem(PORTAL_RETURN_STORAGE_KEY);
         if (raw === null) return null;
         const parsed: unknown = JSON.parse(raw);
-        if (typeof parsed !== "object" || parsed === null) return null;
-        if (!("expiresAtMs" in parsed)) return null;
-        const {expiresAtMs} = parsed;
-        if (typeof expiresAtMs !== "number" || !Number.isFinite(expiresAtMs)) return null;
-        return {expiresAtMs};
+        if (typeof parsed !== "object" || parsed === null || !("openedAtMs" in parsed)) return null;
+        const {openedAtMs} = parsed;
+        return typeof openedAtMs === "number" && Number.isFinite(openedAtMs) ? {openedAtMs} : null;
     } catch {
         return null;
     }
 }
 
-function resolvePortalReturnTtlMs(expiresInSeconds: number | null): number {
-    if (expiresInSeconds === null || !Number.isSafeInteger(expiresInSeconds) || expiresInSeconds < 0) {
-        return PORTAL_RETURN_FALLBACK_TTL_MS;
-    }
-    return expiresInSeconds * MILLISECONDS_PER_SECOND;
-}
-
-export function markPortalOpened(expiresInSeconds: number | null): void {
+export function markPortalOpened(): void {
     try {
-        const entry: PortalReturnEntry = {
-            expiresAtMs: Date.now() + resolvePortalReturnTtlMs(expiresInSeconds),
-        };
-        localStorage.setItem(PORTAL_RETURN_STORAGE_KEY, JSON.stringify(entry));
+        const entry: PortalReturnEntry = {openedAtMs: Date.now()};
+        sessionStorage.setItem(PORTAL_RETURN_STORAGE_KEY, JSON.stringify(entry));
     } catch {
-        // Storage unavailable (SSR, private mode) — return refresh just stays disabled.
+        // Storage unavailable (private mode): the return refresh stays off.
     }
 }
 
-export function consumePortalReturn(): boolean {
+/** True while this tab opened the portal recently; it stays true until `clearPortalReturn`, so a failed refresh can retry. */
+export function peekPortalReturn(): boolean {
+    const entry = readPortalReturnEntry();
+    return entry !== null && Date.now() - entry.openedAtMs < PORTAL_RETURN_MAX_AGE_MS;
+}
+
+export function clearPortalReturn(): void {
     try {
-        const entry = readPortalReturnEntry();
-        localStorage.removeItem(PORTAL_RETURN_STORAGE_KEY);
-        if (entry === null) return false;
-        return entry.expiresAtMs > Date.now();
+        sessionStorage.removeItem(PORTAL_RETURN_STORAGE_KEY);
     } catch {
-        return false;
+        // Nothing to clear when storage is unavailable.
     }
 }

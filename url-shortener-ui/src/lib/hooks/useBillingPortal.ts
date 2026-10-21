@@ -39,9 +39,9 @@ export function useBillingPortal(): BillingPortalState {
         setIsManaging(true);
         setErrorMessage(null);
         try {
-            const portal = await createBillingPortalUrl();
-            showBillingUrlInTab(portalTab, portal.url);
-            markPortalOpened(portal.expiresInSeconds);
+            const portalUrl = await createBillingPortalUrl();
+            showBillingUrlInTab(portalTab, portalUrl);
+            markPortalOpened();
         } catch (error) {
             portalTab?.close();
             logger.error(BILLING_COPY.PORTAL_LOG_ERROR, error);

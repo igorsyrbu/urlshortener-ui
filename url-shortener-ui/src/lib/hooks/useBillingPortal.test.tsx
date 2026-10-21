@@ -46,7 +46,7 @@ describe("useBillingPortal", () => {
         await act(() => result.current.handleManage());
 
         expect(replaceLocation).toHaveBeenCalledExactlyOnceWith(PORTAL_URL);
-        expect(localStorage.getItem(PORTAL_RETURN_STORAGE_KEY)).not.toBeNull();
+        expect(sessionStorage.getItem(PORTAL_RETURN_STORAGE_KEY)).not.toBeNull();
         expect(result.current.isManaging).toBe(false);
     });
 

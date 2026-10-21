@@ -287,7 +287,7 @@ reproducing a stale return refresh.
 Hosted checkout and portal sessions normally expire after one hour. Checkout completion consumes its session.
 `expiresInSeconds` reports the remaining whole seconds, rounded down and clamped to zero, matching the backend's
 current countdown contract. `MOCK_BILLING_PORTAL_EXPIRY=omitted` removes the field; `invalid` returns a nonnumeric
-value; both exercise the UI's 10-minute return-flag fallback while the hosted portal remains valid for one hour.
+value; the UI ignores the field (its return refresh is kept per tab for up to 24 hours), so these modes only matter for a backend contract check.
 `expired` creates an expired portal session, returns zero seconds, and makes the hosted page respond with 410.
 All these modes can also be set
 with `portalExpiryMode` on the scenario endpoint. `MOCK_PUBLIC_URL` overrides the origin of generated hosted links

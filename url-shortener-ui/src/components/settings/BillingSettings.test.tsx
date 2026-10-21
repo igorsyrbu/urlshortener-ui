@@ -723,8 +723,51 @@ describe("BillingSettings server pending switch", () => {
         expect(subscriptionCalls).toBe(1);
     });
 
-    it("skips the refresh on focus after the portal session expired", async () => {
-        markPortalOpened(0);
+    it("refreshes again on the next return when the first refresh failed", async () => {
+        let subscriptionCalls = 0;
+        let failNext = false;
+        routeFetchWithAuth({
+            [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => {
+                subscriptionCalls += 1;
+                return failNext ? new Response(null, {status: HTTP_INTERNAL_SERVER_ERROR}) : Response.json(PRO_SUBSCRIPTION);
+            },
+            [API_ENDPOINTS.BILLING_PORTAL]: () => Response.json({url: PORTAL_URL}),
+        });
+        const user = renderBilling();
+        await user.click(await screen.findByRole("button", {name: BILLING_COPY.MANAGE_SUBSCRIPTION}));
+        await waitFor(() => expect(portalOpenedUrls()).toEqual([PORTAL_URL]));
+        failNext = true;
+        window.dispatchEvent(new FocusEvent("focus"));
+        await waitFor(() => expect(subscriptionCalls).toBe(2));
+
+        failNext = false;
+        window.dispatchEvent(new FocusEvent("focus"));
+        await waitFor(() => expect(subscriptionCalls).toBe(3));
+
+        window.dispatchEvent(new FocusEvent("focus"));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(subscriptionCalls).toBe(3);
+    });
+
+    it("refreshes when the tab becomes visible again, without a focus event", async () => {
+        markPortalOpened();
+        let subscriptionCalls = 0;
+        routeFetchWithAuth({
+            [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => {
+                subscriptionCalls += 1;
+                return Response.json(PRO_SUBSCRIPTION);
+            },
+        });
+        renderBilling();
+        await screen.findByRole("region", {name: "Pro plan"});
+
+        document.dispatchEvent(new Event("visibilitychange"));
+
+        await waitFor(() => expect(subscriptionCalls).toBe(2));
+    });
+
+    it("leaves the refresh to the tab that opened the portal", async () => {
+        localStorage.setItem("urlshortener:billing:portal-return", JSON.stringify({openedAtMs: Date.now()}));
         let subscriptionCalls = 0;
         routeFetchWithAuth({
             [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => {
@@ -736,9 +779,10 @@ describe("BillingSettings server pending switch", () => {
         await screen.findByRole("region", {name: "Pro plan"});
 
         window.dispatchEvent(new FocusEvent("focus"));
-        await screen.findByRole("region", {name: "Pro plan"});
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
         expect(subscriptionCalls).toBe(1);
+        localStorage.clear();
     });
 });
 

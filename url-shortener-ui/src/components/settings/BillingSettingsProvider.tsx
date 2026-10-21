@@ -10,7 +10,8 @@ import {useBillingSubscription, type BillingSubscriptionState} from "@/lib/hooks
 interface BillingSettingsContextValue {
     cycle: BillingCycle;
     handleCycleChange: (cycle: BillingCycle) => void;
-    handlePortalReturn: () => Promise<void>;
+    /** Refreshes after a portal visit; true when the refresh succeeded. */
+    handlePortalReturn: () => Promise<boolean>;
     subscription: BillingSubscriptionState;
     checkout: BillingCheckoutState;
     periodUpgrade: BillingPeriodUpgradeState;
@@ -31,10 +32,11 @@ export function BillingSettingsProvider({children}: BillingSettingsProviderProps
     const periodUpgrade = useBillingPeriodUpgrade(subscription.handleRetry, subscription.refreshSilently);
     const {refreshSilently} = subscription;
     const {clearScheduledSwitch} = periodUpgrade;
-    const handlePortalReturn = useCallback(async (): Promise<void> => {
+    const handlePortalReturn = useCallback(async (): Promise<boolean> => {
         const hasRefreshed = await refreshSilently();
         // The first refresh after scheduling can lag; returning from the portal replaces that optimistic state.
         if (hasRefreshed) clearScheduledSwitch();
+        return hasRefreshed;
     }, [refreshSilently, clearScheduledSwitch]);
 
     return (
