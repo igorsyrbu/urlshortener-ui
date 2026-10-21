@@ -33,6 +33,8 @@ export function PageOptionsDrawer({
                 <DrawerDescription className="sr-only">Page options</DrawerDescription>
                 <div className="flex flex-col mt-3">
                     <button
+                        role="switch"
+                        aria-checked={showArchived}
                         onClick={() => onShowArchivedChange?.(!showArchived)}
                         className="flex w-full items-center gap-3.5 px-6 py-3.5 text-sm font-medium transition-colors outline-hidden select-none hover:bg-muted/10 active:bg-muted/20 text-foreground"
                     >

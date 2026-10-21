@@ -37,8 +37,10 @@ describe("toolbar options on mobile", () => {
         const {onShowArchivedChange} = renderLinksToolbar();
 
         await openOptionsDrawer(user);
-        await user.click(screen.getByRole("button", {name: /Show archived links/}));
+        const toggle = screen.getByRole("switch", {name: /Show archived links/});
+        await user.click(toggle);
 
+        expect(toggle).toHaveAttribute("aria-checked", "false");
         expect(onShowArchivedChange).toHaveBeenCalledExactlyOnceWith(true);
     });
 

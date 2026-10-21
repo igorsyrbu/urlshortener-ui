@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useId, useState} from "react";
 import {FOCUS_RING_CLASS} from "@/lib/constants";
 import {Download, Info} from "lucide-react";
 import {toast} from "sonner";
@@ -15,6 +15,7 @@ import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useLinkStore} from "@/lib/store/links";
 import {downloadLinksExport, isRateLimitedError, TransferError,} from "@/lib/link-transfer";
 import {logger} from "@/lib/logger";
+import {cn} from "@/lib/utils";
 import {attempt, withPending} from "@/lib/async-utils";
 import {
     APPLY_FILTERS_TOOLTIP,
@@ -48,6 +49,10 @@ export function ExportCsvModal({open, onOpenChange}: ExportCsvModalProps) {
     const [includeFilters, setIncludeFilters] = useState(true);
     const [isExporting, setIsExporting] = useState(false);
     const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+    const filtersSwitchId = useId();
+    const filtersTitleId = useId();
+    const filtersHintId = useId();
+    const filtersLabelClass = isExporting ? "cursor-not-allowed" : "cursor-pointer";
 
     const handleExport = async (): Promise<void> => {
         if (isExporting) {
@@ -75,26 +80,18 @@ export function ExportCsvModal({open, onOpenChange}: ExportCsvModalProps) {
                 </span>
                 <h2 className="text-lg font-semibold leading-none text-foreground">{EXPORT_MODAL_TITLE}</h2>
             </div>
-            <div
-                onClick={() => {
-                    if (!isExporting) {
-                        setIncludeFilters((v) => !v);
-                    }
-                }}
-                className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 text-left transition-colors select-none hover:bg-muted/50"
-            >
+            <div className="flex w-full items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 text-left select-none">
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                        {INCLUDE_FILTERS_LABEL}
+                        {/* Two labels for one switch: the title names it, the hint is a larger click target and its description.
+                            The info button stays outside both, because a label may not contain another control. */}
+                        <label id={filtersTitleId} htmlFor={filtersSwitchId} className={filtersLabelClass}>{INCLUDE_FILTERS_LABEL}</label>
                         <Tooltip open={isTooltipOpen} onOpenChange={setIsTooltipOpen}>
                             <TooltipTrigger asChild>
                                 <button
                                     type="button"
                                     aria-label="About applying current filters"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsTooltipOpen((v) => !v);
-                                    }}
+                                    onClick={() => setIsTooltipOpen((v) => !v)}
                                     onBlur={() => setIsTooltipOpen(false)}
                                     className={`inline-flex size-4 translate-y-px items-center justify-center rounded-full text-muted-foreground hover:text-foreground outline-none ${FOCUS_RING_CLASS}`}
                                 >
@@ -112,14 +109,13 @@ export function ExportCsvModal({open, onOpenChange}: ExportCsvModalProps) {
                             </TooltipContent>
                         </Tooltip>
                     </p>
-                    <p className="text-xs text-muted-foreground">{EXPORT_FILTERED_HINT}</p>
+                    <label id={filtersHintId} htmlFor={filtersSwitchId} className={cn("text-xs text-muted-foreground", filtersLabelClass)}>
+                        {EXPORT_FILTERED_HINT}
+                    </label>
                 </div>
-                <div className={isExporting ? "pointer-events-none shrink-0 opacity-50" : "shrink-0"}>
-                    <span onClick={(e) => e.stopPropagation()} className="flex">
-                        <Switch checked={includeFilters} onCheckedChange={setIncludeFilters}
-                                size={isDesktop ? "sm" : "default"}/>
-                    </span>
-                </div>
+                <Switch id={filtersSwitchId} aria-labelledby={filtersTitleId} aria-describedby={filtersHintId}
+                        checked={includeFilters} onCheckedChange={setIncludeFilters} disabled={isExporting}
+                        size={isDesktop ? "sm" : "default"}/>
             </div>
         </div>
     );

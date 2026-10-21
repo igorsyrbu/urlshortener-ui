@@ -10,6 +10,7 @@ import {
     EXPORT_RATE_LIMITED_MESSAGE,
     EXPORT_SUCCESS_MESSAGE,
     EXPORTING_LABEL,
+    EXPORT_FILTERED_HINT,
     INCLUDE_FILTERS_LABEL,
 } from "@/components/links/import-export-constants";
 import {fetchWithAuth} from "@/lib/api";
@@ -83,6 +84,26 @@ describe.each([
         expect(downloadedFileNames).toHaveLength(1);
         expect(downloadedFileNames[0]).toMatch(new RegExp(`^${EXPORT_FILENAME_PREFIX}-\\d{4}-\\d{2}-\\d{2}\\.csv$`));
         expect(toast.success).toHaveBeenCalledWith(EXPORT_SUCCESS_MESSAGE);
+    });
+
+    it("names the filters switch by its title and toggles it from the hint too", async () => {
+        const user = userEvent.setup();
+        renderModal();
+
+        const toggle = screen.getByRole("switch", {name: INCLUDE_FILTERS_LABEL});
+        await user.click(screen.getByText(EXPORT_FILTERED_HINT));
+
+        expect(toggle).toHaveAttribute("aria-checked", "false");
+        expect(toggle).toHaveAccessibleDescription(EXPORT_FILTERED_HINT);
+    });
+
+    it("keeps the filters switch working by keyboard and leaves the info button separate", async () => {
+        const user = userEvent.setup();
+        renderModal();
+
+        await user.click(screen.getByRole("button", {name: "About applying current filters"}));
+
+        expect(screen.getByRole("switch", {name: INCLUDE_FILTERS_LABEL})).toHaveAttribute("aria-checked", "true");
     });
 
     it("exports every non-archived link when filters are turned off", async () => {

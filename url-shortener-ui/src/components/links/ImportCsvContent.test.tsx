@@ -4,6 +4,7 @@ import {describe, expect, it, vi} from "vitest";
 import {ImportCsvContent} from "@/components/links/ImportCsvContent";
 import {
     DONE_LABEL,
+    GENERATE_TAKEN_KEYS_HINT,
     GENERATE_TAKEN_KEYS_LABEL,
     IMPORT_LABEL,
     IMPORT_MORE_LABEL,
@@ -101,12 +102,25 @@ describe("ImportCsvContent generate-new-keys option", () => {
         expect(onGenerateTakenKeysChange).toHaveBeenCalledExactlyOnceWith(false);
     });
 
+    it("toggles from the keyboard, named by its title and described by its hint", async () => {
+        const user = userEvent.setup();
+        const {onGenerateTakenKeysChange} = renderContent({generateTakenKeys: false});
+
+        const toggle = screen.getByRole("switch", {name: GENERATE_TAKEN_KEYS_LABEL});
+        toggle.focus();
+        await user.keyboard(" ");
+
+        expect(toggle).toHaveAccessibleDescription(GENERATE_TAKEN_KEYS_HINT);
+        expect(onGenerateTakenKeysChange).toHaveBeenCalledExactlyOnceWith(true);
+    });
+
     it("cannot be changed while uploading", async () => {
         const user = userEvent.setup();
         const {onGenerateTakenKeysChange} = renderContent({isUploading: true});
 
         await user.click(screen.getByText(GENERATE_TAKEN_KEYS_LABEL));
 
+        expect(screen.getByRole("switch")).toBeDisabled();
         expect(onGenerateTakenKeysChange).not.toHaveBeenCalled();
     });
 });

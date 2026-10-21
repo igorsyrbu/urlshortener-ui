@@ -6,6 +6,8 @@ import {cn} from "@/lib/utils";
 interface SwitchProps {
     id?: string;
     "aria-describedby"?: string;
+    "aria-labelledby"?: string;
+    disabled?: boolean;
     checked: boolean;
     onCheckedChange?: (checked: boolean) => void;
     className?: string;
@@ -16,6 +18,8 @@ interface SwitchProps {
 export function Switch({
                            id,
                            "aria-describedby": ariaDescribedBy,
+                           "aria-labelledby": ariaLabelledBy,
+                           disabled = false,
                            checked,
                            onCheckedChange,
                            className,
@@ -25,7 +29,7 @@ export function Switch({
     const trackClass = cn(
         "relative inline-flex shrink-0 items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
         size === "sm" ? "h-4 w-8" : "h-6 w-11",
-        !readOnly && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        !readOnly && "cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         checked ? "bg-primary" : "bg-muted",
         className
     );
@@ -55,6 +59,8 @@ export function Switch({
             role="switch"
             aria-checked={checked}
             aria-describedby={ariaDescribedBy}
+            aria-labelledby={ariaLabelledBy}
+            disabled={disabled}
             onClick={() => onCheckedChange?.(!checked)}
             className={trackClass}
         >
