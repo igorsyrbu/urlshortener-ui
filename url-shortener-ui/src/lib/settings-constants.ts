@@ -1,4 +1,5 @@
-import {isPathWithin} from "@/lib/route-match";
+// Relative on purpose: next.config.ts loads this file, and its loader does not resolve the "@/" alias.
+import {isPathWithin} from "./route-match";
 
 const SETTINGS_GENERAL_ROUTE = "/settings/general";
 
