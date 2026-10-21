@@ -5,8 +5,17 @@ import { cleanUrl } from "../services/UrlCleanerService";
 import { AuthenticatedRequest } from "../middleware/authentication";
 import { importJobsService } from "../services/ImportJobsService";
 
+/** CSV import accepts any URL with a host, and older data may hold anything, so a stored URL can fail to parse. */
+function readHostname(url: string): string | null {
+  try {
+    return new URL(url).hostname || null;
+  } catch {
+    return null;
+  }
+}
+
 export class ShortLinksController {
-  static async getShortLinks(req: Request, res: Response): Promise<void> {
+  static getShortLinks(req: Request, res: Response): void {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const page = Math.max(0, parseInt(req.query.page as string, 10) || 0);
     const size = Math.max(1, parseInt(req.query.size as string, 10) || 20);
@@ -15,7 +24,7 @@ export class ShortLinksController {
     res.json(shortLinksService.getPaginatedLinks(uuid, page, size, showArchived, search));
   }
 
-  static async getShortLinksByIds(req: Request, res: Response): Promise<void> {
+  static getShortLinksByIds(req: Request, res: Response): void {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const ids = ((req.query.ids as string) || "")
       .split(",")
@@ -24,7 +33,7 @@ export class ShortLinksController {
     res.json(shortLinksService.getLinksByIds(uuid, ids));
   }
 
-  static async createShortLink(req: Request, res: Response): Promise<void> {
+  static createShortLink(req: Request, res: Response): void {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const result = shortLinksService.createLink(uuid, req.body);
 
@@ -36,7 +45,7 @@ export class ShortLinksController {
     res.status(201).json(result.link);
   }
 
-  static async updateShortLink(req: Request, res: Response): Promise<void> {
+  static updateShortLink(req: Request, res: Response): void {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { id, ...dto } = req.body ?? {};
     if (typeof id !== "string" || !id.trim()) {
@@ -106,7 +115,7 @@ export class ShortLinksController {
     res.status(404).json({ exists: false });
   }
 
-  static async deleteShortLink(req: Request, res: Response): Promise<void> {
+  static deleteShortLink(req: Request, res: Response): void {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { id } = req.params;
 
@@ -127,8 +136,8 @@ export class ShortLinksController {
       return;
     }
 
-    const og = await fetchOpenGraph(link.longUrl);
-    const domain = new URL(link.longUrl).hostname;
+    const domain = readHostname(link.longUrl);
+    const og = domain ? await fetchOpenGraph(link.longUrl) : {};
 
     res.json({
       key,

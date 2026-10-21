@@ -77,6 +77,48 @@ describe("POST /shortlinks", () => {
   });
 });
 
+const INVALID_LONG_URLS: Array<[string, unknown]> = [
+  ["a blank longUrl", ""],
+  ["a longUrl that is not a URL", "not a url"],
+  ["a non-http longUrl", "ftp://example.com/file"],
+  ["a numeric longUrl", 5],
+  ["a missing longUrl", undefined],
+];
+
+describe("long URL validation", () => {
+  for (const [description, longUrl] of INVALID_LONG_URLS) {
+    it(`answers the same 400 for ${description} on POST and PUT`, async () => {
+      const link = await createLink("valid");
+      const created = await request("POST", "/shortlinks", { key: "new-key", longUrl });
+      const updated = await request("PUT", "/shortlinks", { id: link.id, key: "valid", longUrl });
+      assert.equal(created.status, HTTP_BAD_REQUEST);
+      assert.deepEqual(created, updated);
+    });
+  }
+});
+
+describe("malformed link bodies", () => {
+  const malformedBodies: Array<[string, unknown]> = [
+    ["an empty object", {}],
+    ["an array", []],
+    ["a numeric key", { key: 5, longUrl: LONG_URL }],
+    ["a numeric title", { key: "numeric-title", longUrl: LONG_URL, title: 7 }],
+  ];
+  for (const [description, body] of malformedBodies) {
+    it(`answers ${description} without taking the server down`, async () => {
+      const response = await request("POST", "/shortlinks", body);
+      const nextResponse = await request("GET", "/shortlinks");
+      assert.ok(response.status < 500, `status ${response.status}`);
+      assert.equal(nextResponse.status, HTTP_OK);
+    });
+  }
+
+  it("ignores tag ids that are not a list of strings", async () => {
+    const response = await request("POST", "/shortlinks", { key: "tagged", longUrl: LONG_URL, tagIds: "tag-1" });
+    assert.equal(response.status, HTTP_CREATED);
+  });
+});
+
 describe("PUT /shortlinks", () => {
   it("updates the link identified by the body id", async () => {
     const link = await createLink("before");
@@ -261,6 +303,18 @@ describe("GET /public/preview/:key", () => {
     stubExternalPage("<html></html>");
     const response = await requestJson(server, "GET", "/public/preview/fallback");
     assert.equal((response.body as { title: string }).title, "Local title");
+  });
+
+  it("answers for a stored long URL that cannot be parsed, without fetching it", async () => {
+    const link = await createLink("unparsable", { title: "Stored title" });
+    user.state.links[0] = { ...user.state.links[0], longUrl: "::" };
+    const fetchSpy = mock.method(globalThis, "fetch");
+    const response = await requestJson(server, "GET", "/public/preview/unparsable");
+    const externalCalls = fetchSpy.mock.calls.filter((call) => !String(call.arguments[0]).startsWith(server.baseUrl));
+    assert.equal(response.status, HTTP_OK);
+    assert.equal((response.body as { faviconDomain: unknown }).faviconDomain, null);
+    assert.equal((response.body as { title: string }).title, link.title);
+    assert.equal(externalCalls.length, 0);
   });
 
   it("answers a problem-detail 404 for an unknown or archived key", async () => {

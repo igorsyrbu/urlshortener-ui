@@ -12,7 +12,7 @@ const ALLOWED_REASONS = [
 ] as const;
 
 export class AbuseReportsController {
-    static async submitReport(req: Request, res: Response): Promise<void> {
+    static submitReport(req: Request, res: Response): void {
         const { shortUrl, reason, reporterEmail, description } = req.body;
 
         if (!shortUrl) {

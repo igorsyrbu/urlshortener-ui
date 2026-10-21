@@ -157,6 +157,7 @@ describe("POST /token/refresh", () => {
     ["without a cookie", {}],
     ["with an unrelated cookie", { Cookie: "other=value" }],
     ["with a malformed refresh token", { Cookie: `${REFRESH_COOKIE_NAME}=mock-refresh-token-abc` }],
+    ["with a cookie value that is not valid percent-encoding", { Cookie: `${REFRESH_COOKIE_NAME}=%E0%A4%A` }],
   ];
   for (const [description, headers] of invalidCookies) {
     it(`rejects a refresh ${description}`, async () => {

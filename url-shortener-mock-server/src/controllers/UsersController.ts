@@ -3,12 +3,12 @@ import { usersService } from "../services/UsersService";
 import { AuthenticatedRequest } from "../middleware/authentication";
 
 export class UsersController {
-  static async getCurrentUser(req: Request, res: Response) {
+  static getCurrentUser(req: Request, res: Response) {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     res.json(usersService.getUser(uuid));
   }
 
-  static async updateCurrentUserName(req: Request, res: Response) {
+  static updateCurrentUserName(req: Request, res: Response) {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { name } = req.body;
     if (name && typeof name === "string") {
@@ -19,24 +19,24 @@ export class UsersController {
     }
   }
 
-  static async getSessions(req: Request, res: Response) {
+  static getSessions(req: Request, res: Response) {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     res.json(usersService.getSessions(uuid));
   }
 
-  static async deleteCurrentSession(req: Request, res: Response) {
+  static deleteCurrentSession(req: Request, res: Response) {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     usersService.deleteCurrentSession(uuid);
     res.status(200).json({ message: "Current session terminated" });
   }
 
-  static async deleteOtherSessions(req: Request, res: Response) {
+  static deleteOtherSessions(req: Request, res: Response) {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     usersService.deleteOtherSessions(uuid);
     res.status(200).json({ message: "Other sessions terminated" });
   }
 
-  static async getPreferences(req: Request, res: Response) {
+  static getPreferences(req: Request, res: Response) {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     try {
       res.json(usersService.getPreferences(uuid));
@@ -45,7 +45,7 @@ export class UsersController {
     }
   }
 
-  static async updatePreferences(req: Request, res: Response) {
+  static updatePreferences(req: Request, res: Response) {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { urlCleanerMode } = req.body ?? {};
     try {
@@ -60,7 +60,7 @@ export class UsersController {
     }
   }
 
-  static async deleteSession(req: Request, res: Response) {
+  static deleteSession(req: Request, res: Response) {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { id } = req.params;
     const success = usersService.deleteSession(uuid, id);

@@ -20,13 +20,22 @@ function parseCookies(cookieHeader?: string): Record<string, string> {
   cookieHeader.split(";").forEach((cookie) => {
     const parts = cookie.split("=");
     const key = parts.shift()?.trim() || "";
-    list[key] = decodeURI(parts.join("="));
+    list[key] = decodeCookieValue(parts.join("="));
   });
   return list;
 }
 
+/** A malformed escape (`%E0%A4%A`) makes `decodeURI` throw; any client can send one. */
+function decodeCookieValue(value: string): string {
+  try {
+    return decodeURI(value);
+  } catch {
+    return value;
+  }
+}
+
 export class AuthController {
-  static async ottGenerate(req: Request, res: Response) {
+  static ottGenerate(req: Request, res: Response) {
     const email = req.body.username as string | undefined;
     if (!email) {
       res.status(400).json({ error: "Bad Request", message: "Missing username" });
@@ -49,7 +58,7 @@ export class AuthController {
     res.status(200).json({ message: "Magic link sent" });
   }
 
-  static async ottLogin(req: Request, res: Response) {
+  static ottLogin(req: Request, res: Response) {
     const { loginType, token, email, code } = req.body as {
       loginType?: string;
       token?: string;
@@ -76,7 +85,7 @@ export class AuthController {
     res.redirect(`${FRONTEND_URL}/auth/exchange?code=mock-auth-code-${uuid}`);
   }
 
-  static async codeExchange(req: Request, res: Response) {
+  static codeExchange(req: Request, res: Response) {
     const code = (req.query.code as string) || "";
     let uuid = "";
     if (code.startsWith("mock-google-code-")) {
@@ -105,7 +114,7 @@ export class AuthController {
     res.json({ accessToken: authService.getMockAccessToken(uuid) });
   }
 
-  static async tokenRefresh(req: Request, res: Response) {
+  static tokenRefresh(req: Request, res: Response) {
     const cookies = parseCookies(req.headers.cookie);
     const refreshToken = cookies["refresh_token"] || "";
 
@@ -126,7 +135,7 @@ export class AuthController {
     res.json({ accessToken: authService.getMockAccessToken(uuid) });
   }
 
-  static async oauth2Google(req: Request, res: Response) {
+  static oauth2Google(req: Request, res: Response) {
     res.setHeader("Content-Type", "text/html");
     res.send(getLoginPageHtml(FRONTEND_URL));
   }

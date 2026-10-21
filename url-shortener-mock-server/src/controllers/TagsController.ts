@@ -3,7 +3,7 @@ import { tagsService } from "../services/TagsService";
 import { AuthenticatedRequest } from "../middleware/authentication";
 
 export class TagsController {
-  static async getTags(req: Request, res: Response): Promise<void> {
+  static getTags(req: Request, res: Response): void {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const page = Math.max(0, parseInt(req.query.page as string, 10) || 0);
     const size = Math.max(1, parseInt(req.query.size as string, 10) || 20);
@@ -17,7 +17,7 @@ export class TagsController {
     }
   }
 
-  static async createTag(req: Request, res: Response): Promise<void> {
+  static createTag(req: Request, res: Response): void {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { name, color } = req.body;
 
@@ -41,7 +41,7 @@ export class TagsController {
     res.status(201).json(created);
   }
 
-  static async updateTag(req: Request, res: Response): Promise<void> {
+  static updateTag(req: Request, res: Response): void {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { id, name, color } = req.body;
 
@@ -70,7 +70,7 @@ export class TagsController {
     res.json(updated);
   }
 
-  static async deleteTag(req: Request, res: Response): Promise<void> {
+  static deleteTag(req: Request, res: Response): void {
     const uuid = (req as AuthenticatedRequest).user?.uuid || "default";
     const { id } = req.params;
 

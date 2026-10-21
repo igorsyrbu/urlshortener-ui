@@ -240,10 +240,12 @@ export class ShortLinksService {
    * @param dto - The configuration for the new ShortLink
    */
   public createLink(uuid: string, dto: CreateShortLinkDto): ShortLinkMutationResult {
-    const key = dto.key?.trim() ?? "";
+    const key = readTrimmedString(dto.key);
 
     const keyError = this.validateKey(key);
     if (keyError) return { ok: false, status: 400, error: keyError };
+    const longUrl = validateLongUrl(dto.longUrl);
+    if (!longUrl.ok) return { ok: false, status: 400, error: longUrl.error };
     if (this.isReservedKey(key)) {
       return { ok: false, status: 409, error: `Key '${key}' is already taken.` };
     }
@@ -253,16 +255,16 @@ export class ShortLinksService {
 
     const newLink: ShortLink = {
       id: randomUUID(),
-      title: dto.title?.trim() || ShortLinksService.CONSTANTS.DEFAULT_TITLE,
+      title: readTrimmedString(dto.title) || ShortLinksService.CONSTANTS.DEFAULT_TITLE,
       key,
       shortUrl: `${ShortLinksService.CONSTANTS.BASE_DOMAIN}/${key}`,
-      longUrl: dto.longUrl.trim(),
-      isActive: dto.isActive ?? true,
+      longUrl: longUrl.value,
+      isActive: typeof dto.isActive === "boolean" ? dto.isActive : true,
     };
 
-    // Handle tag associations if provided
-    if (dto.tagIds && dto.tagIds.length > 0) {
-      const validTagIds = tagsService.validateAndFilterTagIds(uuid, dto.tagIds);
+    const tagIds = readTagIds(dto.tagIds);
+    if (tagIds && tagIds.length > 0) {
+      const validTagIds = tagsService.validateAndFilterTagIds(uuid, tagIds);
       if (validTagIds.length > 0) {
         tagsService.associateTagsWithLink(uuid, newLink.id, validTagIds);
       }
@@ -286,22 +288,13 @@ export class ShortLinksService {
    * @param dto - Full new field set (key + longUrl required)
    */
   public updateLink(uuid: string, id: string, dto: UpdateShortLinkDto): ShortLinkMutationResult {
-    const key = typeof dto.key === "string" ? dto.key.trim() : "";
-    if (!key) {
-      return { ok: false, status: 400, error: "key must not be blank" };
-    }
+    const key = readTrimmedString(dto.key);
     const keyError = this.validateKey(key);
     if (keyError) return { ok: false, status: 400, error: keyError };
+    const longUrl = validateLongUrl(dto.longUrl);
+    if (!longUrl.ok) return { ok: false, status: 400, error: longUrl.error };
     if (this.isReservedKey(key)) {
       return { ok: false, status: 409, error: `Key '${key}' is already taken.` };
-    }
-
-    const longUrl = typeof dto.longUrl === "string" ? dto.longUrl.trim() : "";
-    if (!longUrl) {
-      return { ok: false, status: 400, error: "longUrl must not be blank" };
-    }
-    if (!isSafeHttpUrl(longUrl)) {
-      return { ok: false, status: 400, error: "longUrl must be a valid URL" };
     }
 
     const userState = memoryStore.getUserState(uuid);
@@ -322,14 +315,14 @@ export class ShortLinksService {
       ...existingLink,
       key,
       shortUrl: `${ShortLinksService.CONSTANTS.BASE_DOMAIN}/${key}`,
-      longUrl,
-      title: dto.title ?? existingLink.title,
-      isActive: dto.isActive ?? existingLink.isActive,
+      longUrl: longUrl.value,
+      title: typeof dto.title === "string" ? dto.title : existingLink.title,
+      isActive: typeof dto.isActive === "boolean" ? dto.isActive : existingLink.isActive,
     };
 
-    // Handle tag associations if provided
-    if (dto.tagIds !== undefined) {
-      const validTagIds = tagsService.validateAndFilterTagIds(uuid, dto.tagIds);
+    const tagIds = readTagIds(dto.tagIds);
+    if (tagIds !== undefined) {
+      const validTagIds = tagsService.validateAndFilterTagIds(uuid, tagIds);
       tagsService.associateTagsWithLink(uuid, id, validTagIds);
     }
 
@@ -639,6 +632,26 @@ function hasUrlHost(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+type LongUrlValidation = { ok: true; value: string } | { ok: false; error: string };
+
+/** One rule for POST and PUT: a non-blank http(s) URL. CSV import is looser on purpose, see `hasUrlHost`. */
+function validateLongUrl(value: unknown): LongUrlValidation {
+  const longUrl = readTrimmedString(value);
+  if (!longUrl) return { ok: false, error: "longUrl must not be blank" };
+  if (!isSafeHttpUrl(longUrl)) return { ok: false, error: "longUrl must be a valid URL" };
+  return { ok: true, value: longUrl };
+}
+
+/** Request bodies are untyped JSON: a field declared as a string can arrive as a number, an array or null. */
+function readTrimmedString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function readTagIds(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.filter((id): id is string => typeof id === "string");
 }
 
 function isSafeHttpUrl(value: string): boolean {
