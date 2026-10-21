@@ -61,24 +61,25 @@ export async function getBillingSubscription(): Promise<BillingSubscription> {
     return toBillingSubscription(dto);
 }
 
-export async function createBillingCheckoutUrl(cycle: BillingCycle): Promise<string> {
+export async function createBillingCheckoutUrl(cycle: BillingCycle, signal?: AbortSignal): Promise<string> {
     const response = await fetchWithAuth(API_ENDPOINTS.BILLING_CHECKOUT, {
         method: "POST",
         body: JSON.stringify({billingPeriod: BILLING_PERIOD_BY_CYCLE[cycle]}),
+        signal,
     });
     if (!response.ok) throwBillingError(response, `Failed to start checkout: ${response.status}`);
     return parseBillingUrlPayload(await response.json());
 }
 
 /** The portal's session lifetime (`expiresInSeconds`) is not read: the return refresh does not depend on it. */
-export async function createBillingPortalUrl(): Promise<string> {
-    const response = await fetchWithAuth(API_ENDPOINTS.BILLING_PORTAL, {method: "POST"});
+export async function createBillingPortalUrl(signal?: AbortSignal): Promise<string> {
+    const response = await fetchWithAuth(API_ENDPOINTS.BILLING_PORTAL, {method: "POST", signal});
     if (!response.ok) throwBillingError(response, `Failed to open portal: ${response.status}`);
     return parseBillingUrlPayload(await response.json());
 }
 
-export async function scheduleBillingPeriodUpgrade(): Promise<BillingPeriodUpgradeResponse> {
-    const response = await fetchWithAuth(API_ENDPOINTS.BILLING_SUBSCRIPTION_UPGRADE, {method: "POST"});
+export async function scheduleBillingPeriodUpgrade(signal?: AbortSignal): Promise<BillingPeriodUpgradeResponse> {
+    const response = await fetchWithAuth(API_ENDPOINTS.BILLING_SUBSCRIPTION_UPGRADE, {method: "POST", signal});
     if (!response.ok) throwBillingError(response, `Failed to switch billing period: ${response.status}`);
     return parsePeriodUpgradePayload(await response.json());
 }

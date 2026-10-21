@@ -12,6 +12,7 @@ import {
 import {BILLING_COPY, buildRateLimitedMessage, type ScheduledPeriodSwitch} from "@/lib/billing-constants";
 import {attempt} from "@/lib/async-utils";
 import {logger} from "@/lib/logger";
+import {useAbortOnUnmount} from "@/lib/hooks/useAbortOnUnmount";
 
 export interface BillingPeriodUpgradeState {
     isScheduling: boolean;
@@ -35,6 +36,7 @@ export function useBillingPeriodUpgrade(onConflict: () => void, onScheduled?: ()
     const [isScheduling, setIsScheduling] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [scheduledSwitch, setScheduledSwitch] = useState<ScheduledPeriodSwitch | null>(null);
+    const startRequest = useAbortOnUnmount();
     const clearScheduledSwitch = useCallback((): void => {
         setScheduledSwitch(null);
     }, []);
@@ -43,7 +45,9 @@ export function useBillingPeriodUpgrade(onConflict: () => void, onScheduled?: ()
         if (isScheduling || scheduledSwitch !== null) return;
         setIsScheduling(true);
         setErrorMessage(null);
-        const result = await attempt(scheduleBillingPeriodUpgrade);
+        const signal = startRequest();
+        const result = await attempt(() => scheduleBillingPeriodUpgrade(signal));
+        if (signal.aborted) return;
         if (result.isSuccess) {
             setScheduledSwitch({effectiveDate: result.value.effectiveDate ?? null});
             setIsScheduling(false);

@@ -74,4 +74,24 @@ describe("useBillingPortal", () => {
         expect(assign).toHaveBeenCalledExactlyOnceWith(PORTAL_URL);
         expect(result.current.errorMessage).toBeNull();
     });
+
+    it("closes the empty tab and remembers nothing when the portal URL arrives after the page unmounted", async () => {
+        const {close, replaceLocation} = openFakeTab();
+        let respond = (_response: Response): void => undefined;
+        vi.mocked(fetchWithAuth).mockReturnValue(new Promise<Response>((resolve) => { respond = resolve; }));
+        const {result, unmount} = renderHook(() => useBillingPortal());
+
+        let pending: Promise<void> = Promise.resolve();
+        act(() => { pending = result.current.handleManage(); });
+        unmount();
+        await act(async () => {
+            respond(Response.json({url: PORTAL_URL}));
+            await pending;
+        });
+
+        expect(replaceLocation).not.toHaveBeenCalled();
+        expect(close).toHaveBeenCalledOnce();
+        expect(sessionStorage.getItem(PORTAL_RETURN_STORAGE_KEY)).toBeNull();
+        expect(logger.error).not.toHaveBeenCalled();
+    });
 });

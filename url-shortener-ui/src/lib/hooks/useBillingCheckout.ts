@@ -15,6 +15,7 @@ import {
 } from "@/lib/billing-constants";
 import {logger} from "@/lib/logger";
 import {redirectToBillingUrl} from "@/lib/billing-redirect";
+import {useAbortOnUnmount} from "@/lib/hooks/useAbortOnUnmount";
 
 export interface BillingCheckoutState {
     isRedirecting: boolean;
@@ -35,6 +36,7 @@ function resolveCheckoutErrorMessage(error: unknown): string {
 export function useBillingCheckout(cycle: BillingCycle, onAlreadyPro: () => void): BillingCheckoutState {
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const startRequest = useAbortOnUnmount();
 
     useEffect(() => {
         // Back from the hosted checkout can restore this page from the back/forward cache with the button frozen
@@ -51,9 +53,12 @@ export function useBillingCheckout(cycle: BillingCycle, onAlreadyPro: () => void
         if (isRedirecting) return;
         setIsRedirecting(true);
         setErrorMessage(null);
+        const signal = startRequest();
         try {
-            redirectToBillingUrl(await createBillingCheckoutUrl(cycle));
+            const checkoutUrl = await createBillingCheckoutUrl(cycle, signal);
+            if (!signal.aborted) redirectToBillingUrl(checkoutUrl);
         } catch (error) {
+            if (signal.aborted) return;
             logger.error(BILLING_COPY.UPGRADE_LOG_ERROR, error);
             if (error instanceof BillingApiError && error.status === HTTP_CONFLICT) onAlreadyPro();
             setErrorMessage(resolveCheckoutErrorMessage(error));

@@ -11,6 +11,7 @@ import {BILLING_COPY, buildRateLimitedMessage} from "@/lib/billing-constants";
 import {markPortalOpened} from "@/lib/billing-portal-return";
 import {logger} from "@/lib/logger";
 import {openBlankBillingTab, showBillingUrlInTab} from "@/lib/billing-redirect";
+import {useAbortOnUnmount} from "@/lib/hooks/useAbortOnUnmount";
 
 export interface BillingPortalState {
     isManaging: boolean;
@@ -27,9 +28,24 @@ function resolvePortalErrorMessage(error: unknown): string {
     return BILLING_COPY.PORTAL_FAILED;
 }
 
+type PortalOpenOutcome = {kind: "opened"} | {kind: "aborted"} | {kind: "failed"; error: unknown};
+
+async function openPortalInTab(portalTab: Window | null, signal: AbortSignal): Promise<PortalOpenOutcome> {
+    try {
+        const portalUrl = await createBillingPortalUrl(signal);
+        if (signal.aborted) return {kind: "aborted"};
+        showBillingUrlInTab(portalTab, portalUrl);
+        markPortalOpened();
+        return {kind: "opened"};
+    } catch (error) {
+        return signal.aborted ? {kind: "aborted"} : {kind: "failed", error};
+    }
+}
+
 export function useBillingPortal(): BillingPortalState {
     const [isManaging, setIsManaging] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const startRequest = useAbortOnUnmount();
 
     async function handleManage(): Promise<void> {
         if (isManaging) return;
@@ -38,14 +54,11 @@ export function useBillingPortal(): BillingPortalState {
         const portalTab = openBlankBillingTab(BILLING_COPY.MANAGING_SUBSCRIPTION);
         setIsManaging(true);
         setErrorMessage(null);
-        try {
-            const portalUrl = await createBillingPortalUrl();
-            showBillingUrlInTab(portalTab, portalUrl);
-            markPortalOpened();
-        } catch (error) {
-            portalTab?.close();
-            logger.error(BILLING_COPY.PORTAL_LOG_ERROR, error);
-            setErrorMessage(resolvePortalErrorMessage(error));
+        const outcome = await openPortalInTab(portalTab, startRequest());
+        if (outcome.kind !== "opened") portalTab?.close();
+        if (outcome.kind === "failed") {
+            logger.error(BILLING_COPY.PORTAL_LOG_ERROR, outcome.error);
+            setErrorMessage(resolvePortalErrorMessage(outcome.error));
         }
         setIsManaging(false);
     }

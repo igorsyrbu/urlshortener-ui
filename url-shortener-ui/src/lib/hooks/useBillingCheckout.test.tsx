@@ -50,3 +50,27 @@ describe("useBillingCheckout after the checkout redirect", () => {
         expect(result.current.isRedirecting).toBe(true);
     });
 });
+
+describe("useBillingCheckout after leaving the billing page", () => {
+    beforeEach(() => {
+        allowTestBillingOrigins();
+        vi.stubGlobal("location", {assign: vi.fn()});
+    });
+
+    it("does not redirect when the checkout URL arrives after the page unmounted", async () => {
+        let respond = (_response: Response): void => undefined;
+        vi.mocked(fetchWithAuth).mockReturnValue(new Promise<Response>((resolve) => { respond = resolve; }));
+        const {result, unmount} = renderHook(() => useBillingCheckout("monthly", vi.fn()));
+
+        let pending: Promise<void> = Promise.resolve();
+        act(() => { pending = result.current.handleUpgrade(); });
+        unmount();
+        await act(async () => {
+            respond(Response.json({url: CHECKOUT_URL}));
+            await pending;
+        });
+
+        expect(window.location.assign).not.toHaveBeenCalled();
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.signal?.aborted).toBe(true);
+    });
+});
