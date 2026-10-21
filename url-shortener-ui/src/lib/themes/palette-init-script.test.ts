@@ -111,6 +111,22 @@ describe("palette init script", () => {
         expect(readCssVar(TOKEN_CSS_VAR_NAMES.foreground)).toBe("");
     });
 
+    it.each([
+        ["a url()", "url(https://attacker.example/pixel)"],
+        ["a var() reference", "var(--anything)"],
+        ["a named colour", "red"],
+        ["a hex with extra text", "#123456;background:red"],
+        ["a hex with four digits", "#1234"],
+    ])("skips a token that is %s instead of a hex colour", (_name, value) => {
+        storeSelection({kind: "custom", derived: {light: {background: value, card: "#abc"}, dark: {}}});
+        localStorage.setItem(COLOR_MODE_STORAGE_KEY, "light");
+
+        runInitScript();
+
+        expect(readCssVar(TOKEN_CSS_VAR_NAMES.background)).toBe("");
+        expect(readCssVar(TOKEN_CSS_VAR_NAMES.card)).toBe("#abc");
+    });
+
     it("applies nothing when the tokens for the active mode are missing", () => {
         storeSelection({kind: "custom", derived: {dark: {background: "#000000"}}});
         localStorage.setItem(COLOR_MODE_STORAGE_KEY, "light");

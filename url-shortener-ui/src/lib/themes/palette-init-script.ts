@@ -3,6 +3,8 @@ import {DEFAULT_PALETTE_ID} from "@/lib/themes/palettes";
 import {TOKEN_CSS_VAR_NAMES} from "@/lib/themes/theme-tokens";
 
 const NEXT_THEMES_STORAGE_KEY = "theme";
+// Same shape as `isValidHex`: the stored tokens become inline CSS custom properties, so nothing but a hex colour may pass.
+const HEX_COLOR_SOURCE = "/^#([0-9a-f]{3}){1,2}$/i";
 
 export function buildPaletteInitScript(): string {
     const storageKey = JSON.stringify(THEME_PALETTE_STORAGE_KEY);
@@ -26,7 +28,8 @@ export function buildPaletteInitScript(): string {
         "var tokens=dark?sel.derived.dark:sel.derived.light;" +
         "if(!tokens)return;" +
         `var vars=${tokenVars};` +
-        "for(var key in vars){if(typeof tokens[key]===\"string\")root.style.setProperty(vars[key],tokens[key]);}" +
+        `var hex=${HEX_COLOR_SOURCE};` +
+        "for(var key in vars){if(typeof tokens[key]===\"string\"&&hex.test(tokens[key]))root.style.setProperty(vars[key],tokens[key]);}" +
         "}" +
         "}catch(e){}})();";
 }

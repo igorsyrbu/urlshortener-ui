@@ -33,15 +33,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;
 }
 
+function isHexColor(value: unknown): value is string {
+    return typeof value === "string" && isValidHex(value);
+}
+
+/** Only hex colours: the tokens become inline CSS custom properties, so any other string would inject CSS. */
 function isTokenMap(value: unknown): value is ThemeTokenMap {
     if (!isRecord(value)) {
         return false;
     }
-    return Object.keys(TOKEN_CSS_VAR_NAMES).every((key) => typeof value[key] === "string");
-}
-
-function isHexColor(value: unknown): value is string {
-    return typeof value === "string" && isValidHex(value);
+    return Object.keys(TOKEN_CSS_VAR_NAMES).every((key) => isHexColor(value[key]));
 }
 
 function parseCustomColors(value: unknown): CustomColors | null {

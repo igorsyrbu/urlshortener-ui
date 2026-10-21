@@ -39,6 +39,11 @@ function createIncompleteTokenMap(): Record<string, string> {
     return Object.fromEntries(Object.entries(createCustomDerived().light).filter(([token]) => token !== firstToken));
 }
 
+function createSelectionWithDerivedLightToken(value: string): unknown {
+    const derived = createCustomDerived();
+    return {...createCustomSelection(), derived: {light: {...derived.light, background: value}, dark: derived.dark}};
+}
+
 describe("theme selection storage", () => {
     it("defaults to the default preset", () => {
         expect(DEFAULT_THEME_SELECTION).toEqual({v: SELECTION_VERSION, kind: "preset", paletteId: "default"});
@@ -85,6 +90,9 @@ describe("theme selection storage", () => {
         ["an unknown authored mode", {...createCustomSelection(), authoredMode: "sepia"}],
         ["missing derived tokens", {...createCustomSelection(), derived: undefined}],
         ["an incomplete derived token map", {...createCustomSelection(), derived: {light: createIncompleteTokenMap(), dark: createCustomDerived().dark}}],
+        ["a derived token that is a url()", createSelectionWithDerivedLightToken("url(https://attacker.example/pixel)")],
+        ["a derived token that is a named colour", createSelectionWithDerivedLightToken("red")],
+        ["a derived token with CSS after the hex", createSelectionWithDerivedLightToken("#123456;background:red")],
     ])("ignores %s", (_name, stored) => {
         storeJson(stored);
 
