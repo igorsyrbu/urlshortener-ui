@@ -75,6 +75,21 @@ describe("fetchOpenGraph parsing", () => {
     assert.equal(result.title, "Early");
     assert.equal(result.description, undefined);
   });
+
+  it("keeps no bytes past the body size limit", async () => {
+    const encoder = new TextEncoder();
+    const bytesBeforeLimit = 10;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode("x".repeat(MAX_BODY_BYTES - bytesBeforeLimit)));
+        controller.enqueue(encoder.encode(`<meta name="description" content="Past the limit">`));
+        controller.close();
+      },
+    });
+    stubFetch(async () => new Response(body, { status: 200, headers: { "content-type": HTML_CONTENT_TYPE } }));
+    const result = await fetchOpenGraph(PAGE_URL);
+    assert.equal(result.description, undefined);
+  });
 });
 
 describe("fetchOpenGraph failures", () => {
@@ -104,6 +119,17 @@ describe("fetchOpenGraph failures", () => {
       init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
     }));
     const pending = fetchOpenGraph(PAGE_URL);
+    mock.timers.tick(FETCH_TIMEOUT_MS);
+    assert.deepEqual(await pending, {});
+  });
+
+  it("gives up on a body that stalls after the headers arrived", async () => {
+    const stalledBody = new ReadableStream<Uint8Array>({
+      start(controller) { controller.enqueue(new TextEncoder().encode("<html><head><title>Partial")); },
+    });
+    stubFetch(async () => new Response(stalledBody, { status: 200, headers: { "content-type": HTML_CONTENT_TYPE } }));
+    const pending = fetchOpenGraph(PAGE_URL);
+    await new Promise((resolve) => setImmediate(resolve));
     mock.timers.tick(FETCH_TIMEOUT_MS);
     assert.deepEqual(await pending, {});
   });
