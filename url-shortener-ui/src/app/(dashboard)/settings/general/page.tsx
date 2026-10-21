@@ -14,6 +14,7 @@ import {ProfileCard} from "@/components/settings/ProfileCard";
 import {AppearanceCard} from "@/components/settings/AppearanceCard";
 import {ThemeCard} from "@/components/settings/ThemeCard";
 import {PreferencesCard} from "@/components/settings/PreferencesCard";
+import {ShortcutsCard} from "@/components/settings/ShortcutsCard";
 import {CurrentSessionCard} from "@/components/settings/CurrentSessionCard";
 import {OtherSessionsList} from "@/components/settings/OtherSessionsList";
 import {DangerZoneCard} from "@/components/settings/DangerZoneCard";
@@ -148,6 +149,7 @@ export default function GeneralSettingsPage() {
 
             <SettingsSection {...SETTINGS_SECTION_COPY.PREFERENCES}>
                 <PreferencesCard/>
+                <ShortcutsCard/>
             </SettingsSection>
 
             <SettingsSection {...SETTINGS_SECTION_COPY.SESSIONS}>

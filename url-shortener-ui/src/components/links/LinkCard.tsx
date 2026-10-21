@@ -26,7 +26,7 @@ import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
 import {TagBadge} from "@/components/tags/TagBadge";
 import {LinkItem, TagItem} from "@/lib/types";
-import {cn, isModalOpen} from "@/lib/utils";
+import {cn} from "@/lib/utils";
 import {getDomain} from "@/lib/url-utils";
 import {
     FOCUS_RING_CLASS,
@@ -39,6 +39,7 @@ import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
 import {LazyActionDrawer, preloadActionDrawer} from "@/components/ui/lazy-action-drawer";
 import {preloadQrCodeModal} from "@/components/links/lazy-qr-code-modal";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
+import {canRunShortcut, isCardShortcutTarget, isShortcutKey, SHORTCUTS} from "@/lib/keyboard-shortcuts";
 
 interface LinkCardProps {
     link: LinkItem;
@@ -46,6 +47,16 @@ interface LinkCardProps {
     onDelete: (link: LinkItem) => void;
     onQrCode: (link: LinkItem) => void;
     onArchiveRequest?: (link: LinkItem) => void;
+}
+
+type LinkShortcutHandlers = Pick<LinkCardProps, "onEdit" | "onQrCode" | "onDelete" | "onArchiveRequest">;
+
+function getLinkShortcutAction(event: KeyboardEvent, handlers: LinkShortcutHandlers): ((link: LinkItem) => void) | null {
+    if (isShortcutKey(event, SHORTCUTS.EDIT)) return handlers.onEdit;
+    if (isShortcutKey(event, SHORTCUTS.QR_CODE)) return handlers.onQrCode;
+    if (isShortcutKey(event, SHORTCUTS.DELETE)) return handlers.onDelete;
+    if (isShortcutKey(event, SHORTCUTS.ARCHIVE)) return handlers.onArchiveRequest ?? null;
+    return null;
 }
 
 function getSafeDomain(longUrl: string): string {
@@ -132,30 +143,12 @@ export function LinkCard({
     // An effect event always sees the latest menu state and link, so the document listener is added once per card
     // instead of being re-registered whenever the card re-renders.
     const handleShortcut = useEffectEvent((event: KeyboardEvent) => {
-        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
-
-        const isCardActive = isMenuOpen || cardRef.current?.matches(":hover");
-        if (!isCardActive) return;
-
-        if (isModalOpen()) return;
-
-        if (event.key.toLowerCase() === "e") {
-            event.preventDefault();
-            setIsMenuOpen(false);
-            onEdit(link);
-        } else if (event.key.toLowerCase() === "d") {
-            event.preventDefault();
-            setIsMenuOpen(false);
-            onDelete(link);
-        } else if (event.key.toLowerCase() === "q") {
-            event.preventDefault();
-            setIsMenuOpen(false);
-            onQrCode(link);
-        } else if (event.key.toLowerCase() === "a" && onArchiveRequest) {
-            event.preventDefault();
-            setIsMenuOpen(false);
-            onArchiveRequest(link);
-        }
+        if (!canRunShortcut(event) || !isCardShortcutTarget(cardRef.current, isMenuOpen)) return;
+        const action = getLinkShortcutAction(event, {onEdit, onQrCode, onDelete, onArchiveRequest});
+        if (action === null) return;
+        event.preventDefault();
+        setIsMenuOpen(false);
+        action(link);
     });
 
     useEffect(() => {
@@ -238,18 +231,18 @@ export function LinkCard({
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="sm:min-w-40">
-                            <DropdownMenuItem onClick={() => onEdit(link)}>
+                            <DropdownMenuItem onClick={() => onEdit(link)} aria-keyshortcuts="E">
                                 <PencilLine className="size-4 mr-2"/>
                                 Edit
                                 <Kbd className={SHORTCUT_KEY_CLASS}>E</Kbd>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onQrCode(link)}>
+                            <DropdownMenuItem onClick={() => onQrCode(link)} aria-keyshortcuts="Q">
                                 <QrCode className="size-4 mr-2"/>
                                 QR Code
                                 <Kbd className={SHORTCUT_KEY_CLASS}>Q</Kbd>
                             </DropdownMenuItem>
                             {onArchiveRequest && (
-                                <DropdownMenuItem onClick={() => onArchiveRequest(link)}>
+                                <DropdownMenuItem onClick={() => onArchiveRequest(link)} aria-keyshortcuts="A">
                                     {link.isActive ? (
                                         <Archive className="size-4 mr-2"/>
                                     ) : (
@@ -263,6 +256,7 @@ export function LinkCard({
                             <DropdownMenuItem
                                 onClick={() => onDelete(link)}
                                 variant="destructive"
+                                aria-keyshortcuts="D"
                             >
                                 <Trash2 className="size-4 mr-2"/>
                                 Delete

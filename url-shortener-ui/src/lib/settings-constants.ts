@@ -32,7 +32,7 @@ export const SETTINGS_PAGE_COPY = {
 export const SETTINGS_SECTION_COPY = {
     PROFILE: {title: "Profile", description: "Update your personal information."},
     APPEARANCE: {title: "Appearance", description: "Customize how the application looks on your device."},
-    PREFERENCES: {title: "Preferences", description: "Manage how tracking parameters are handled when you create or edit links."},
+    PREFERENCES: {title: "Preferences", description: "Manage how tracking parameters are handled and which keyboard shortcuts are on."},
     SESSIONS: {title: "Sessions", description: "Devices where you are signed in to your account."},
     DANGER_ZONE: {title: "Danger zone", description: "Irreversible actions for your account."},
     CURRENT_PLAN: {title: "Current plan", description: "Your subscription status and renewal details."},

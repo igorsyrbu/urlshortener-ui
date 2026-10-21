@@ -10,6 +10,9 @@ import {CreateLinkModal} from "@/components/links/CreateLinkModal";
 import {CreateTagModal} from "@/components/tags/CreateTagModal";
 import {useAuthStore, UserProfile} from "@/lib/store/auth";
 import {useUIStore} from "@/lib/store/ui";
+import {SHORTCUTS} from "@/lib/keyboard-shortcuts";
+import {useShortcutsStore} from "@/lib/store/shortcuts";
+import {SHORTCUTS_ENABLED_STORAGE_KEY} from "@/lib/constants";
 
 const mocks = vi.hoisted(() => {
     const replace = vi.fn();
@@ -277,5 +280,38 @@ describe("DashboardLayout skip link", () => {
 
         expect(main).toHaveAttribute("id", MAIN_CONTENT_ID);
         expect(main).toHaveAttribute("tabindex", "-1");
+    });
+});
+
+describe("DashboardLayout keyboard shortcuts help", () => {
+    beforeEach(() => {
+        mocks.pathname.current = "/links";
+        signIn();
+        useUIStore.setState({isShortcutsDialogOpen: false});
+        localStorage.clear();
+    });
+
+    it("opens the list of every shortcut with the ? key", async () => {
+        const user = userEvent.setup();
+        renderLayout();
+        await screen.findByText("page content");
+
+        await user.keyboard("?");
+
+        const dialog = await screen.findByRole("dialog", {name: "Keyboard shortcuts"});
+        for (const shortcut of Object.values(SHORTCUTS)) expect(dialog).toHaveTextContent(shortcut.action);
+    });
+
+    it("keeps shortcuts off after a reload when the user turned them off", async () => {
+        localStorage.setItem(SHORTCUTS_ENABLED_STORAGE_KEY, "false");
+        const user = userEvent.setup();
+        renderLayout();
+        await screen.findByText("page content");
+
+        await user.keyboard("?");
+
+        expect(useShortcutsStore.getState().isEnabled).toBe(false);
+        expect(screen.queryByRole("dialog", {name: "Keyboard shortcuts"})).not.toBeInTheDocument();
+        useShortcutsStore.setState({isEnabled: true});
     });
 });

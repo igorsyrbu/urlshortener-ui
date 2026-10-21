@@ -34,7 +34,9 @@ Adding a settings tab: add a route folder under `settings/`, then extend the thr
   - `CustomThemeBuilder`: four colour rows (`CustomColorRow`), applied with `applyCustomColors`; Share copies the serialized colours to the clipboard, a "Surprise me" action randomises them, and Import (`ImportThemeDialog`) parses pasted input with `parseCustomColorsInput`, toasting "Theme imported" on success and showing an inline error on invalid input.
   - All palette mechanics (storage, init script, token mapping) are in [styling-and-theming](../styling-and-theming.md).
 
-### Preferences (tracker detection)
+### Preferences (tracker detection, keyboard shortcuts)
+
+[`ShortcutsCard`](../../url-shortener-ui/src/components/settings/ShortcutsCard.tsx) sits under the tracker card: a labelled `Switch` (`id` and `aria-describedby` from `useId`) for `useShortcutsStore.isEnabled` and a "View shortcuts" footer button that opens the shortcuts dialog. Shortcut rules: [links-and-tags](links-and-tags.md).
 
 `PreferencesCard` + `usePreferencesStore` ([`src/lib/store/preferences.ts`](../../url-shortener-ui/src/lib/store/preferences.ts)):
 

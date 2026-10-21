@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import {describe, expect, it, vi} from "vitest";
 import {Header} from "@/components/layout/Header";
 import {SETTINGS_ROUTES} from "@/lib/settings-constants";
+import {useShortcutsStore} from "@/lib/store/shortcuts";
 
 const navigation = vi.hoisted(() => ({pathname: "/links"}));
 
@@ -115,5 +116,16 @@ describe("Header", () => {
         fireEvent.keyDown(window, {key: "c"});
 
         expect(onCreateClick).not.toHaveBeenCalled();
+    });
+
+    it("ignores the shortcut when keyboard shortcuts are turned off", () => {
+        useShortcutsStore.setState({isEnabled: false});
+        const onCreateClick = vi.fn();
+        render(<Header onCreateClick={onCreateClick}/>);
+
+        fireEvent.keyDown(window, {key: "c"});
+
+        expect(onCreateClick).not.toHaveBeenCalled();
+        useShortcutsStore.setState({isEnabled: true});
     });
 });

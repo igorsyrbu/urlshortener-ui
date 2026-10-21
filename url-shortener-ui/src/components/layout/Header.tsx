@@ -7,8 +7,8 @@ import {ModeToggle} from "@/components/layout/ThemeToggle";
 import {Button} from "@/components/ui/button";
 import {PageHeading} from "@/components/layout/PageHeading";
 import {usePathname} from "next/navigation";
-import {isModalOpen} from "@/lib/utils";
 import {ROUTES, PAGE_TITLES} from "@/lib/constants";
+import {canRunShortcut, isShortcutKey, SHORTCUTS} from "@/lib/keyboard-shortcuts";
 
 interface HeaderProps {
     onCreateClick?: () => void;
@@ -32,18 +32,9 @@ export function Header({onCreateClick, onCreateIntent, onMenuClick, createLabel 
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            const isCreateShortcut =
-                e.key.toLowerCase() === "c" &&
-                !e.metaKey &&
-                !e.ctrlKey &&
-                !e.altKey &&
-                !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName);
-
-            if (isCreateShortcut) {
-                if (isModalOpen()) return;
-                e.preventDefault();
-                onCreateClick?.();
-            }
+            if (e.defaultPrevented || !isShortcutKey(e, SHORTCUTS.CREATE) || !canRunShortcut(e)) return;
+            e.preventDefault();
+            onCreateClick?.();
         };
 
         window.addEventListener("keydown", handleKeyDown);

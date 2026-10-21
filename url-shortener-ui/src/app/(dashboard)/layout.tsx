@@ -21,6 +21,8 @@ import {
     SKIP_TO_CONTENT_LABEL,
 } from "@/lib/constants";
 import {cn} from "@/lib/utils";
+import {canRunShortcut, isShortcutKey, SHORTCUTS} from "@/lib/keyboard-shortcuts";
+import {useShortcutsStore} from "@/lib/store/shortcuts";
 
 function loadCreateLinkModal() {
     return import("@/components/links/CreateLinkModal").then((modalModule) => modalModule.CreateLinkModal);
@@ -37,6 +39,10 @@ function loadMobileSidebarDrawer() {
 const CreateLinkModal = dynamic(loadCreateLinkModal, {ssr: false});
 const CreateTagModal = dynamic(loadCreateTagModal, {ssr: false});
 const MobileSidebarDrawer = dynamic(loadMobileSidebarDrawer, {ssr: false});
+const KeyboardShortcutsDialog = dynamic(
+    () => import("@/components/layout/KeyboardShortcutsDialog").then((dialogModule) => dialogModule.KeyboardShortcutsDialog),
+    {ssr: false},
+);
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -45,7 +51,10 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const {phase, handleRetry} = useSessionBootstrap();
     const pathname = usePathname();
-    const { isCreateModalOpen, setCreateModalOpen, isCreateTagModalOpen, setCreateTagModalOpen } = useUIStore();
+    const {
+        isCreateModalOpen, setCreateModalOpen, isCreateTagModalOpen, setCreateTagModalOpen,
+        isShortcutsDialogOpen, setShortcutsDialogOpen,
+    } = useUIStore();
     const [isHeaderHidden, setIsHeaderHidden] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -55,6 +64,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const hasOpenedCreateLink = useHasBeenOpened(isCreateModalOpen);
     const hasOpenedCreateTag = useHasBeenOpened(isCreateTagModalOpen);
     const hasOpenedMobileSidebar = useHasBeenOpened(isMobileSidebarOpen);
+    const hasOpenedShortcutsDialog = useHasBeenOpened(isShortcutsDialogOpen);
+
+    useEffect(() => {
+        useShortcutsStore.getState().hydrate();
+    }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.defaultPrevented || !isShortcutKey(event, SHORTCUTS.HELP) || !canRunShortcut(event)) return;
+            event.preventDefault();
+            useUIStore.getState().setShortcutsDialogOpen(true);
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
 
     useEffect(() => {
         if (!isReady) return;
@@ -140,6 +164,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {hasOpenedCreateLink && <CreateLinkModal open={isCreateModalOpen} onOpenChange={setCreateModalOpen} />}
             {hasOpenedCreateTag && <CreateTagModal open={isCreateTagModalOpen} onOpenChange={setCreateTagModalOpen} />}
             {hasOpenedMobileSidebar && <MobileSidebarDrawer open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen} />}
+            {hasOpenedShortcutsDialog && <KeyboardShortcutsDialog open={isShortcutsDialogOpen} onOpenChange={setShortcutsDialogOpen} />}
         </div>
     );
 }

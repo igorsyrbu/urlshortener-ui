@@ -1,6 +1,7 @@
 import {act, fireEvent, render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {useShortcutsStore} from "@/lib/store/shortcuts";
 import {LinkCard} from "@/components/links/LinkCard";
 import {toast} from "sonner";
 import {COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
@@ -229,6 +230,38 @@ describe("LinkCard", () => {
             await user.keyboard(key);
 
             expect(handlers[handlerName]).toHaveBeenCalledExactlyOnceWith(link);
+        });
+
+        it("runs the action of the card that has keyboard focus", async () => {
+            const user = userEvent.setup();
+            const link = createLinkItem();
+            const handlers = renderCard(link);
+
+            await user.tab();
+            await user.keyboard("e");
+
+            expect(handlers.onEdit).toHaveBeenCalledExactlyOnceWith(link);
+        });
+
+        it("runs nothing when keyboard shortcuts are turned off", async () => {
+            useShortcutsStore.setState({isEnabled: false});
+            const user = userEvent.setup();
+            const handlers = renderCard(createLinkItem());
+
+            await user.tab();
+            await user.keyboard("d");
+
+            expect(handlers.onDelete).not.toHaveBeenCalled();
+            useShortcutsStore.setState({isEnabled: true});
+        });
+
+        it("labels each menu action with its shortcut for assistive technology", async () => {
+            const user = userEvent.setup();
+            renderCard(createLinkItem());
+            await openActions(user);
+
+            expect(await screen.findByRole("menuitem", {name: /Edit/})).toHaveAttribute("aria-keyshortcuts", "E");
+            expect(screen.getByRole("menuitem", {name: /Delete/})).toHaveAttribute("aria-keyshortcuts", "D");
         });
 
         it("ignores shortcuts when the card is neither hovered nor has its menu open", async () => {

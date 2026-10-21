@@ -4,6 +4,8 @@ import React from "react";
 import {cn} from "@/lib/utils";
 
 interface SwitchProps {
+    id?: string;
+    "aria-describedby"?: string;
     checked: boolean;
     onCheckedChange?: (checked: boolean) => void;
     className?: string;
@@ -12,6 +14,8 @@ interface SwitchProps {
 }
 
 export function Switch({
+                           id,
+                           "aria-describedby": ariaDescribedBy,
                            checked,
                            onCheckedChange,
                            className,
@@ -46,9 +50,11 @@ export function Switch({
 
     return (
         <button
+            id={id}
             type="button"
             role="switch"
             aria-checked={checked}
+            aria-describedby={ariaDescribedBy}
             onClick={() => onCheckedChange?.(!checked)}
             className={trackClass}
         >

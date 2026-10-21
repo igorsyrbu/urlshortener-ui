@@ -20,11 +20,11 @@ import {CARD_LIST_CLASS, DEFAULT_PAGE_SIZE, SEARCH_DEBOUNCE_MS, LINK_ACTION_COPY
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
 import {toast} from "sonner";
 import {buildLinksPageUrl, parseLinksPageParam} from "@/lib/pagination";
-import {isModalOpen} from "@/lib/utils";
 import {useDebounce} from "@/lib/hooks/useDebounce";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 import {LazyQrCodeModal} from "@/components/links/lazy-qr-code-modal";
 import {preloadOnIdle} from "@/lib/preload-on-idle";
+import {canRunShortcut, isShortcutKey, SHORTCUTS} from "@/lib/keyboard-shortcuts";
 
 const LINKS_LIST_TOP_ID = "links-list-top";
 
@@ -152,10 +152,9 @@ function LinksPageContent() {
     // first (its listener is on document and calls preventDefault); this one is on window, so it always runs after.
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.defaultPrevented || e.key.toLowerCase() !== "a" || e.metaKey || e.ctrlKey || e.altKey) return;
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-            if (e.target instanceof Element && e.target.closest('[role="dialog"], [role="menu"]')) return;
-            if (archiveModalLink || isModalOpen()) return;
+            if (e.defaultPrevented || !isShortcutKey(e, SHORTCUTS.TOGGLE_ARCHIVED) || !canRunShortcut(e)) return;
+            if (e.target instanceof Element && e.target.closest('[role="menu"]')) return;
+            if (archiveModalLink) return;
 
             e.preventDefault();
             setShowArchived(!showArchived);

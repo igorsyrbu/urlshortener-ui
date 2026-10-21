@@ -108,6 +108,17 @@ describe("TagCard on desktop", () => {
         expect(onDelete).toHaveBeenCalledExactlyOnceWith(tag);
     });
 
+    it("edits the tag with the E shortcut while the card has keyboard focus", async () => {
+        const user = userEvent.setup();
+        const tag = createTag();
+        const {onEdit} = renderCard(tag);
+
+        await user.tab();
+        await user.keyboard("e");
+
+        expect(onEdit).toHaveBeenCalledExactlyOnceWith(tag);
+    });
+
     it("ignores shortcuts when the card is not active", async () => {
         const user = userEvent.setup();
         const {onEdit, onDelete} = renderCard();

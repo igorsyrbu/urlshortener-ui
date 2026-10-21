@@ -5,6 +5,8 @@ interface UIStore {
     setCreateModalOpen: (isOpen: boolean) => void;
     isCreateTagModalOpen: boolean;
     setCreateTagModalOpen: (isOpen: boolean) => void;
+    isShortcutsDialogOpen: boolean;
+    setShortcutsDialogOpen: (isOpen: boolean) => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -12,4 +14,6 @@ export const useUIStore = create<UIStore>((set) => ({
     setCreateModalOpen: (isOpen) => set({isCreateModalOpen: isOpen}),
     isCreateTagModalOpen: false,
     setCreateTagModalOpen: (isOpen) => set({isCreateTagModalOpen: isOpen}),
+    isShortcutsDialogOpen: false,
+    setShortcutsDialogOpen: (isOpen) => set({isShortcutsDialogOpen: isOpen}),
 }));

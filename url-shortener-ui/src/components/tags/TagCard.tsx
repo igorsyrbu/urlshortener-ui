@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useEffect, useEffectEvent, useRef, useState} from "react";
 import {Link, MoreVertical, PencilLine, Tag, Trash2} from "lucide-react";
 import {
     DropdownMenu,
@@ -17,7 +17,7 @@ import {FOCUS_RING_CLASS, MORE_ACTIONS_BUTTON_CLASS, SHORTCUT_KEY_CLASS} from "@
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {LazyActionDrawer, preloadActionDrawer} from "@/components/ui/lazy-action-drawer";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
-import {isModalOpen} from "@/lib/utils";
+import {canRunShortcut, isCardShortcutTarget, isShortcutKey, SHORTCUTS} from "@/lib/keyboard-shortcuts";
 
 interface TagCardProps {
     tag: TagItem;
@@ -33,38 +33,21 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
 
     const linkCount = tag.linkCount ?? 0;
 
-    const handleShortcut = useCallback(
-        (event: KeyboardEvent) => {
-            if (
-                event.target instanceof HTMLInputElement ||
-                event.target instanceof HTMLTextAreaElement
-            ) {
-                return;
-            }
-
-            const isCardActive =
-                isMenuOpen || cardRef.current?.matches(":hover");
-            if (!isCardActive) return;
-
-            if (isModalOpen()) return;
-
-            if (event.key.toLowerCase() === "e") {
-                event.preventDefault();
-                setIsMenuOpen(false);
-                onEdit(tag);
-            } else if (event.key.toLowerCase() === "d") {
-                event.preventDefault();
-                setIsMenuOpen(false);
-                onDelete(tag);
-            }
-        },
-        [isMenuOpen, tag, onEdit, onDelete]
-    );
+    // An effect event always sees the latest menu state and tag, so the listener is added once per card.
+    const handleShortcut = useEffectEvent((event: KeyboardEvent) => {
+        if (!canRunShortcut(event) || !isCardShortcutTarget(cardRef.current, isMenuOpen)) return;
+        const action = isShortcutKey(event, SHORTCUTS.EDIT) ? onEdit : isShortcutKey(event, SHORTCUTS.DELETE) ? onDelete : null;
+        if (action === null) return;
+        event.preventDefault();
+        setIsMenuOpen(false);
+        action(tag);
+    });
 
     useEffect(() => {
-        document.addEventListener("keydown", handleShortcut);
-        return () => document.removeEventListener("keydown", handleShortcut);
-    }, [handleShortcut]);
+        const listener = (event: KeyboardEvent) => handleShortcut(event);
+        document.addEventListener("keydown", listener);
+        return () => document.removeEventListener("keydown", listener);
+    }, []);
 
     return (
         <div
@@ -105,7 +88,7 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="sm:min-w-40">
-                            <DropdownMenuItem onClick={() => onEdit(tag)}>
+                            <DropdownMenuItem onClick={() => onEdit(tag)} aria-keyshortcuts="E">
                                 <PencilLine className="size-4 mr-2"/>
                                 Edit
                                 <Kbd className={SHORTCUT_KEY_CLASS}>E</Kbd>
@@ -114,6 +97,7 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
                             <DropdownMenuItem
                                 onClick={() => onDelete(tag)}
                                 variant="destructive"
+                                aria-keyshortcuts="D"
                             >
                                 <Trash2 className="size-4 mr-2"/>
                                 Delete

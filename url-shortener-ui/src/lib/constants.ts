@@ -153,6 +153,7 @@ export const MAGIC_LINK_COOLDOWN_STORAGE_KEY = "magicLinkCooldownByEmail";
 /** Submit-button label while a Turnstile captcha has not produced a token yet. */
 export const CAPTCHA_VERIFYING_LABEL = "Verifying...";
 export const SHOW_ARCHIVED_STORAGE_KEY = "showArchived";
+export const SHORTCUTS_ENABLED_STORAGE_KEY = "keyboardShortcutsEnabled";
 export const THEME_PALETTE_STORAGE_KEY = "themePalette";
 
 // ---------------------------------------------------------------------------
