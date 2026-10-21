@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   reactCompiler: { panicThreshold: "all_errors" },
   poweredByHeader: false,
   experimental: {
-    optimizePackageImports: ['radix-ui', 'lucide-react']
+    optimizePackageImports: ['radix-ui']
   },
   output: 'standalone',
   async rewrites() {

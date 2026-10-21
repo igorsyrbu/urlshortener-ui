@@ -60,7 +60,7 @@ The request header `x-mock-error: true` simulates a 500 on any request (not an e
 | Option | Value | Notes |
 |---|---|---|
 | `reactCompiler` | `{panicThreshold: "all_errors"}` | React Compiler is on (`babel-plugin-react-compiler` is a devDependency) and every component must compile: a function the compiler would skip fails `next build` and shows the error overlay in `next dev` (`ReactCompilerError`). Patterns: [coding-patterns](coding-patterns.md). |
-| `experimental.optimizePackageImports` | `radix-ui`, `lucide-react` | Barrel-import optimisation. |
+| `experimental.optimizePackageImports` | `radix-ui` | Barrel-import optimisation for packages Next does not already handle. Production bytes are the same without it (Turbopack tree-shakes the named imports); it keeps the module count down in `next dev`. `lucide-react`, `date-fns` and `recharts` are in Next's built-in list, so listing them changes nothing. |
 | `output` | `standalone` | Production build emits a self-contained server. |
 | `rewrites()` | `/api/:path*` -> `${getBackendApiBaseUrl()}/:path*` | The browser's only path to the backend. The route handler `app/api/shortlinks/import/updates/route.ts` is a filesystem route, so it is served instead of the rewrite for that one path ([architecture](architecture.md#sse-pass-through-route-handler)). |
 | `redirects()` | `/settings` -> `SETTINGS_ROUTES.DEFAULT` (307) | Answers before any HTML; links target the destination directly ([routing-and-navigation](routing-and-navigation.md#redirects)). |
@@ -71,7 +71,7 @@ Modules that `next.config.ts` imports (`backend-url.ts`, `security-headers.ts`, 
 - `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` (with `frame-ancestors 'none'`), `Referrer-Policy: strict-origin-when-cross-origin`, a `Permissions-Policy` denying camera, microphone, geolocation, payment and USB, and HSTS in production builds only.
 - A new third-party origin (script, frame, API, font) must be added to the policy in `security-headers.ts` and its test; check the browser console for `[Report Only]` violations after adding one.
 
-There is no `middleware.ts`/`proxy.ts` and no `env` block.
+There is no `middleware.ts`/`proxy.ts` and no `env` block. Deliberately absent: `turbopack.root` (the single `pnpm-lock.yaml` at the repository root lets Next infer the workspace root without a warning), a custom `browserslist` (Next's defaults are already the modern baseline and the legacy polyfill chunk is in no route's first load) and `productionBrowserSourceMaps` (maps go to a monitoring service, never to the browser).
 
 - Observation: other remote images (OG images through `wsrv.nl` in `OgImage`) are plain `<img>` elements. Country flags are no longer remote: they come from a local sprite (see [features/analytics](features/analytics.md#components)). There is no `images.remotePatterns`: the favicon `next/image` is `unoptimized`, so the old Google entry was dead config and was removed. Existing exception - not a template; new images use `next/image` ([coding-patterns](coding-patterns.md)).
 
