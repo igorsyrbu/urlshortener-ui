@@ -211,6 +211,8 @@ export const DEFAULT_PAGE_SIZE = 20;
 /** Pause after the last keystroke before a search is sent; Enter and Clear search at once. */
 export const SEARCH_DEBOUNCE_MS = 300;
 
+export const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
 /** Shorter link searches count as no search: one character matches nearly every URL and costs a request for nothing. */
 export const MIN_LINK_SEARCH_LENGTH = 2;
 

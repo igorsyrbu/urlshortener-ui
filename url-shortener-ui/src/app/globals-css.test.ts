@@ -32,3 +32,17 @@ describe("globals.css font tokens", () => {
         expect(fontTokenValues().get("--font-mono")).toMatch(/monospace\s*$/);
     });
 });
+
+describe("globals.css reduced motion", () => {
+    const reducedMotionBlock = /@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/.exec(globalsCss)?.[1] ?? "";
+
+    it("ends every CSS animation and transition at once when the user asks for reduced motion", () => {
+        expect(reducedMotionBlock).toMatch(/animation-duration:\s*0\.01ms !important/);
+        expect(reducedMotionBlock).toMatch(/animation-iteration-count:\s*1 !important/);
+        expect(reducedMotionBlock).toMatch(/transition-duration:\s*0\.01ms !important/);
+    });
+
+    it("keeps spinners turning, because they are the only sign of work in progress", () => {
+        expect(reducedMotionBlock).toContain("*:not(.animate-spin)");
+    });
+});

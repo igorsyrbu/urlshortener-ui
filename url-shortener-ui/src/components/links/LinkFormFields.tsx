@@ -2,7 +2,7 @@
 
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {useShallow} from "zustand/react/shallow";
-import {AnimatePresence, motion} from "framer-motion";
+import {AnimatePresence, MotionConfig, motion} from "framer-motion";
 import {fetchWithAuth} from "@/lib/api";
 import {generateTitleFromHostname, focusElementById} from "@/lib/utils";
 import {getDomain, getShortKeyValidationError, isValidUrl, normalizeUrl} from "@/lib/url-utils";
@@ -480,6 +480,7 @@ export function LinkFormFields({
     const canSuggestTitle = Boolean(longUrl) && !urlError;
 
     return (
+        <MotionConfig reducedMotion="user">
         <div className="overflow-hidden w-full relative">
             <AnimatePresence mode="wait" initial={false} custom={slideDirection}>
                 {activeScreen === "form" ? (
@@ -591,5 +592,6 @@ export function LinkFormFields({
                 )}
             </AnimatePresence>
         </div>
+        </MotionConfig>
     );
 }

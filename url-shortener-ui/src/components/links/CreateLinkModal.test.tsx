@@ -125,6 +125,16 @@ describe("CreateLinkModal", () => {
         expect(mocks.routerPush).toHaveBeenCalledWith(ROUTES.LINKS, {scroll: false});
     });
 
+    it("leaves the confetti out for people who ask for reduced motion", async () => {
+        const user = userEvent.setup();
+        mockCreateEndpoint(() => Response.json(createShortLink()));
+        renderModal();
+
+        await submitLink(user, LONG_URL);
+
+        await waitFor(() => expect(mocks.confetti).toHaveBeenCalledWith(expect.objectContaining({disableForReducedMotion: true})));
+    });
+
     it("sends the selected tags with the new link", async () => {
         const user = userEvent.setup();
         const tag = createTag({id: "tag-7", name: "Launch"});

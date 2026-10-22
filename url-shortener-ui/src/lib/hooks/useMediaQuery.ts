@@ -1,7 +1,7 @@
 "use client";
 
 import {useSyncExternalStore} from "react";
-import {MOBILE_BREAKPOINT_PX} from "@/lib/constants";
+import {MOBILE_BREAKPOINT_PX, REDUCED_MOTION_QUERY} from "@/lib/constants";
 
 interface MediaQueryStore {
     subscribe: (onChange: () => void) => () => void;
@@ -62,5 +62,5 @@ export function useIsMobile(): boolean {
 }
 
 export function usePrefersReducedMotion(): boolean {
-    return useMediaQuery("(prefers-reduced-motion: reduce)");
+    return useMediaQuery(REDUCED_MOTION_QUERY);
 }

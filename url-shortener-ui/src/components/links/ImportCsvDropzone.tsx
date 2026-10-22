@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useRef, useState} from "react";
-import {motion, useMotionValue, useSpring} from "framer-motion";
+import {MotionConfig, motion, useMotionValue, useSpring} from "framer-motion";
 import {CloudUpload, FileText, X} from "lucide-react";
 import {cn} from "@/lib/utils";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
@@ -149,6 +149,7 @@ export function ImportCsvDropzone({file, onFileChange, disabled = false}: Import
     };
 
     return (
+        <MotionConfig reducedMotion="user">
         <motion.label
             ref={labelRef}
             aria-label={DROPZONE_ARIA_LABEL}
@@ -214,5 +215,6 @@ export function ImportCsvDropzone({file, onFileChange, disabled = false}: Import
                 </>
             )}
         </motion.label>
+        </MotionConfig>
     );
 }

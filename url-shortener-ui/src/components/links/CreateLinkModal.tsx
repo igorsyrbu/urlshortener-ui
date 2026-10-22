@@ -7,7 +7,7 @@ import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/component
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useLinkStore} from "@/lib/store/links";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
-import {AnimatePresence, motion} from "framer-motion";
+import {AnimatePresence, MotionConfig, motion} from "framer-motion";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
 import {CreateLinkSuccess} from "@/components/links/CreateLinkSuccess";
 import {fetchWithAuth} from "@/lib/api";
@@ -40,6 +40,7 @@ async function celebrateCreatedLink(): Promise<void> {
         particleCount: CONFETTI_PARTICLE_COUNT,
         spread: CONFETTI_SPREAD,
         origin: {y: CONFETTI_ORIGIN_Y},
+        disableForReducedMotion: true,
     });
 }
 
@@ -81,6 +82,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
     };
 
     return (
+        <MotionConfig reducedMotion="user">
         <motion.div animate={{height: "auto"}} transition={{duration: 0.3, ease: "easeInOut"}}>
             <AnimatePresence mode="wait">
                 {viewState === "form" ? (
@@ -113,6 +115,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
                 ) : null}
             </AnimatePresence>
         </motion.div>
+        </MotionConfig>
     );
 }
 

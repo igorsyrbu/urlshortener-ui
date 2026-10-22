@@ -3,6 +3,7 @@
 import React, {memo, useCallback, useEffect, useRef} from "react";
 import {cn} from "@/lib/utils";
 import {animate} from "framer-motion";
+import {REDUCED_MOTION_QUERY} from "@/lib/constants";
 
 interface GlowingEffectProps {
     blur?: number;
@@ -88,7 +89,7 @@ const GlowingEffect = memo(
                     const newAngle = currentAngle + angleDiff;
 
                     animate(currentAngle, newAngle, {
-                        duration: movementDuration,
+                        duration: window.matchMedia(REDUCED_MOTION_QUERY).matches ? 0 : movementDuration,
                         ease: [0.16, 1, 0.3, 1],
                         onUpdate: (value) => {
                             element.style.setProperty("--start", String(value));

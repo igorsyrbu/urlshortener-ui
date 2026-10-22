@@ -854,3 +854,19 @@
             transparent 100%
     );
 }
+
+/*
+ * Reduced motion: every CSS animation and transition ends at once. They still fire animationend/transitionend, which
+ * Radix exit animations and BillingPrice wait for, so nothing gets stuck. Spinners keep turning: they are the only sign
+ * that work is still in progress. framer-motion is not CSS; its users wrap themselves in MotionConfig reducedMotion="user".
+ */
+@media (prefers-reduced-motion: reduce) {
+    *:not(.animate-spin),
+    *:not(.animate-spin)::before,
+    *:not(.animate-spin)::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
