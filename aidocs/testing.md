@@ -41,7 +41,7 @@ The unit suite runs **without** the React Compiler (`@vitejs/plugin-react` v6 ha
 Defined in [`vitest.config.ts`](../url-shortener-ui/vitest.config.ts):
 
 - Environment `jsdom`, `globals: true` (every existing test file nevertheless imports what it uses from `vitest` explicitly), plugin `@vitejs/plugin-react`, alias `@` to `src`.
-- `include`: `src/**/*.{test,spec}.{ts,tsx}`, `exclude`: `src/**/*.perf.test.tsx`. Setup file: [`src/test/setup.ts`](../url-shortener-ui/src/test/setup.ts).
+- `include`: `src/**/*.{test,spec}.{ts,tsx}`, `exclude`: `src/**/*.perf.test.tsx`. Setup file: [`src/test/setup.ts`](../url-shortener-ui/src/test/setup.ts). After each test it runs `cleanup()`, then (unless fake timers are on) waits one 0 ms tick so unmount timers such as Radix `FocusScope`'s fire while jsdom is still alive; without it a full run occasionally reported an unhandled "parameter 1 is not of type 'Event'" error after `CreateLinkModal.test.tsx`.
 - Auto-reset flags: `clearMocks`, `restoreMocks`, `unstubGlobals`, `unstubEnvs` are all `true`. Do not repeat that cleanup by hand.
 - Coverage: provider `v8`, reporters `text`, `json`, `html`. Thresholds: statements 90, branches 85, functions 88, lines 90. Excluded: `src/test/**`, test files, `src/components/ui/**`, `**/*.d.ts`.
 

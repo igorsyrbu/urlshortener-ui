@@ -2,8 +2,11 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  // Radix FocusScope dispatches its unmount event on a 0 ms timer. Under load the file's jsdom can close before that
+  // timer runs, and the event then fails as coming from another window ("parameter 1 is not of type 'Event'").
+  if (!vi.isFakeTimers()) await new Promise((resolve) => setTimeout(resolve, 0));
   globalThis.localStorage.clear();
   globalThis.sessionStorage.clear();
 });
