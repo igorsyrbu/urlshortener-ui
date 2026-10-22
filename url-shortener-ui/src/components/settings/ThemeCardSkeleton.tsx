@@ -14,7 +14,7 @@ export function ThemeCardSkeleton() {
             <CardContent className="@container flex flex-col gap-4" aria-hidden="true">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <ThemeCardHeading/>
-                    <div className="h-12 w-full rounded-xl bg-muted animate-pulse sm:w-44"/>
+                    <div className="h-12 w-full rounded-xl bg-muted animate-pulse sm:w-40"/>
                 </div>
                 <div className={PALETTE_GRID_CLASS}>
                     {PALETTES.map((palette) => (
