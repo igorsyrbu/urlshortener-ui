@@ -17,12 +17,13 @@ const PRESET_ID = "ayu";
 const root = document.documentElement;
 
 function PaletteConsumer(): React.ReactElement {
-    const {activePaletteId, selectPreset, applyCustomColors, resetToDefault} = usePalette();
+    const {activePaletteId, selectPreset, applyCustomColors, previewCustomColors, resetToDefault} = usePalette();
     return (
         <div>
             <output>{activePaletteId}</output>
             <button onClick={() => selectPreset(PRESET_ID)}>select preset</button>
             <button onClick={() => applyCustomColors(DEFAULT_CUSTOM_COLORS.light, "light", buildCustomTheme(DEFAULT_CUSTOM_COLORS.light, "light"))}>apply custom</button>
+            <button onClick={() => previewCustomColors(DEFAULT_CUSTOM_COLORS.dark, "dark", buildCustomTheme(DEFAULT_CUSTOM_COLORS.dark, "dark"))}>preview custom</button>
             <button onClick={resetToDefault}>reset</button>
         </div>
     );
@@ -110,6 +111,17 @@ describe("PaletteProvider", () => {
         await user.click(screen.getByRole("button", {name: "apply custom"}));
 
         expect(readBackground()).toBe(buildCustomTheme(DEFAULT_CUSTOM_COLORS.light, "light")[derivedMode].background);
+    });
+
+    it("previews custom colors on the page without saving them", async () => {
+        const user = userEvent.setup();
+        renderProvider();
+
+        await user.click(screen.getByRole("button", {name: "preview custom"}));
+
+        expect(screen.getByRole("status")).toHaveTextContent(CUSTOM_PALETTE_ID);
+        expect(readBackground()).toBe(buildCustomTheme(DEFAULT_CUSTOM_COLORS.dark, "dark").light.background);
+        expect(localStorage.getItem(THEME_PALETTE_STORAGE_KEY)).toBeNull();
     });
 
     it("clears inline tokens when switching from custom colors back to a preset", async () => {

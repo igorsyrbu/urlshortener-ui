@@ -1,10 +1,12 @@
-import {render, screen} from "@testing-library/react";
+import {fireEvent, render, screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {useState} from "react";
 import {describe, expect, it, vi} from "vitest";
 import {CustomColorRow} from "@/components/settings/CustomColorRow";
 
 const INITIAL_COLOR = "#336699";
+// react-colorful reads the legacy keyCode, not event.key.
+const ARROW_RIGHT_KEY_CODE = 39;
 
 interface HarnessProps {
     onChange: (value: string) => void;
@@ -45,6 +47,21 @@ describe("CustomColorRow", () => {
         const {field} = await openHexField();
 
         expect(field).toHaveValue(INITIAL_COLOR);
+    });
+
+    it("passes a burst of picker moves on once per frame, with the latest colour", async () => {
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}/>);
+        await openHexField();
+        const hue = screen.getByRole("slider", {name: "Hue"});
+
+        fireEvent.keyDown(hue, {key: "ArrowRight", keyCode: ARROW_RIGHT_KEY_CODE});
+        fireEvent.keyDown(hue, {key: "ArrowRight", keyCode: ARROW_RIGHT_KEY_CODE});
+        fireEvent.keyDown(hue, {key: "ArrowRight", keyCode: ARROW_RIGHT_KEY_CODE});
+        expect(onChange).not.toHaveBeenCalled();
+
+        await waitFor(() => expect(onChange).toHaveBeenCalledOnce());
+        expect(onChange.mock.calls[0][0]).toBe(screen.getByRole<HTMLInputElement>("textbox", {name: "Accent hex value"}).value);
     });
 
     it("applies a complete hex value as soon as it is typed, lowercased", async () => {

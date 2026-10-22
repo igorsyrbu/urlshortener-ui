@@ -20,6 +20,15 @@ import {PaletteMode} from "@/lib/themes/theme-tokens";
 import {usePalette} from "@/providers/palette-provider";
 import {THEME_COPY_FAILED_MESSAGE} from "@/lib/settings-constants";
 import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
+import {useCoalescedCallback} from "@/lib/hooks/useCoalescedCallback";
+
+/** Colour edits show at once but are saved only after this pause, so a picker drag writes storage once. */
+const SAVE_COLOR_EDITS_DELAY_MS = 250;
+
+interface ColorEdit {
+    colors: CustomColors;
+    derived: ReturnType<typeof buildCustomTheme>;
+}
 
 interface ColorSlot {
     key: keyof CustomColors;
@@ -35,7 +44,7 @@ const COLOR_SLOTS: ColorSlot[] = [
 ];
 
 export function CustomThemeBuilder() {
-    const {selection, applyCustomColors} = usePalette();
+    const {selection, applyCustomColors, previewCustomColors} = usePalette();
     const {resolvedTheme} = useTheme();
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [importValue, setImportValue] = useState("");
@@ -57,12 +66,21 @@ export function CustomThemeBuilder() {
         return DEFAULT_CUSTOM_COLORS[mode];
     })();
 
+    const saveColorEdit = useCoalescedCallback(
+        (edit: ColorEdit) => applyCustomColors(edit.colors, mode, edit.derived),
+        SAVE_COLOR_EDITS_DELAY_MS,
+    );
+
     const applyColors = (next: CustomColors) => {
+        saveColorEdit.flush();
         applyCustomColors(next, mode, buildCustomTheme(next, mode));
     };
 
     const handleColorChange = (slot: keyof CustomColors, value: string) => {
-        applyColors({...colors, [slot]: value});
+        const next = {...colors, [slot]: value};
+        const derived = buildCustomTheme(next, mode);
+        previewCustomColors(next, mode, derived);
+        saveColorEdit.schedule({colors: next, derived});
     };
 
     const handleSurpriseMe = () => {

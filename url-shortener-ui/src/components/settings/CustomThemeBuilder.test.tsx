@@ -91,7 +91,34 @@ describe("CustomThemeBuilder", () => {
         await user.clear(field);
         await user.type(field, "#123456");
 
-        expect(storedColors()).toEqual({...LIGHT_DEFAULTS, accent: "#123456"});
+        await waitFor(() => expect(storedColors()).toEqual({...LIGHT_DEFAULTS, accent: "#123456"}));
+    });
+
+    it("shows a colour edit at once but saves it only after a pause", async () => {
+        const user = userEvent.setup();
+        renderWithPalette(<CustomThemeBuilder/>);
+        await user.click(screen.getByRole("button", {name: "Pick Accent color"}));
+        const field = await screen.findByRole("textbox", {name: "Accent hex value"});
+
+        await user.clear(field);
+        await user.type(field, "#123456");
+
+        expect(screen.getByRole("button", {name: "Pick Accent color"})).toHaveStyle({backgroundColor: "#123456"});
+        expect(storedColors()).toBeNull();
+        await waitFor(() => expect(storedColors()?.accent).toBe("#123456"));
+    });
+
+    it("saves a pending colour edit when the builder closes before the pause ends", async () => {
+        const user = userEvent.setup();
+        const {unmount} = renderWithPalette(<CustomThemeBuilder/>);
+        await user.click(screen.getByRole("button", {name: "Pick Accent color"}));
+        const field = await screen.findByRole("textbox", {name: "Accent hex value"});
+        await user.clear(field);
+        await user.type(field, "#654321");
+
+        unmount();
+
+        expect(storedColors()?.accent).toBe("#654321");
     });
 
     it("generates a random valid theme with Surprise me", async () => {

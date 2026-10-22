@@ -20,6 +20,8 @@ interface PaletteContextValue {
     selectPreset: (paletteId: string) => void;
     /** `derived` comes from `buildCustomTheme`; the caller builds it so the colour library stays out of the root layout. */
     applyCustomColors: (colors: CustomColors, authoredMode: PaletteMode, derived: CustomThemeDerived) => void;
+    /** Shows the colours like `applyCustomColors` but does not save them, for changes that arrive every frame. */
+    previewCustomColors: (colors: CustomColors, authoredMode: PaletteMode, derived: CustomThemeDerived) => void;
     resetToDefault: () => void;
 }
 
@@ -70,8 +72,8 @@ export function PaletteProvider({children}: { children: React.ReactNode }) {
     // the old colours.
     React.useLayoutEffect(() => {
         const root = document.documentElement;
-        clearInlineTokens(root);
         if (selection.kind === "preset") {
+            clearInlineTokens(root);
             if (selection.paletteId === DEFAULT_PALETTE_ID) {
                 root.removeAttribute("data-palette");
             } else {
@@ -96,6 +98,10 @@ export function PaletteProvider({children}: { children: React.ReactNode }) {
         setSelection(next);
     }, []);
 
+    const previewCustomColors = React.useCallback((colors: CustomColors, authoredMode: PaletteMode, derived: CustomThemeDerived) => {
+        setSelection({v: DEFAULT_THEME_SELECTION.v, kind: "custom", colors, authoredMode, derived});
+    }, []);
+
     const resetToDefault = React.useCallback(() => {
         clearThemeSelection();
         setSelection(DEFAULT_THEME_SELECTION);
@@ -106,8 +112,9 @@ export function PaletteProvider({children}: { children: React.ReactNode }) {
         activePaletteId: selection.kind === "custom" ? CUSTOM_PALETTE_ID : selection.paletteId,
         selectPreset,
         applyCustomColors,
+        previewCustomColors,
         resetToDefault,
-    }), [selection, selectPreset, applyCustomColors, resetToDefault]);
+    }), [selection, selectPreset, applyCustomColors, previewCustomColors, resetToDefault]);
 
     return <PaletteContext.Provider value={value}>{children}</PaletteContext.Provider>;
 }

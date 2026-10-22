@@ -5,6 +5,7 @@ import {HexColorPicker} from "react-colorful";
 import {Input} from "@/components/ui/input";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {isValidHex, normalizeHex} from "@/lib/themes/hex";
+import {useCoalescedCallback} from "@/lib/hooks/useCoalescedCallback";
 
 interface CustomColorRowProps {
     label: string;
@@ -21,6 +22,9 @@ interface Draft {
 export function CustomColorRow({label, description, value, onChange}: CustomColorRowProps) {
     const [draft, setDraft] = useState<Draft | null>(null);
     const [open, setOpen] = useState(false);
+    // The picker fires on every pointer move; it shows its own colour at once while the theme follows once per frame.
+    const [pickerColor, setPickerColor] = useState<string | null>(null);
+    const emitPickedColor = useCoalescedCallback(onChange);
 
     const text = draft !== null && draft.base === value ? draft.text : value;
 
@@ -56,12 +60,21 @@ export function CustomColorRow({label, description, value, onChange}: CustomColo
 
     const handlePickerChange = (nextValue: string) => {
         setDraft(null);
-        onChange(nextValue);
+        setPickerColor(nextValue);
+        emitPickedColor.schedule(nextValue);
+    };
+
+    const handleOpenChange = (isOpen: boolean) => {
+        if (!isOpen) {
+            emitPickedColor.flush();
+            setPickerColor(null);
+        }
+        setOpen(isOpen);
     };
 
     return (
         <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2.5 rounded-xl border-[0.5px] border-border p-2.5 sm:gap-3 sm:p-3">
-            <Popover open={open} onOpenChange={setOpen}>
+            <Popover open={open} onOpenChange={handleOpenChange}>
                 <PopoverTrigger asChild>
                     <button
                         type="button"
@@ -73,7 +86,7 @@ export function CustomColorRow({label, description, value, onChange}: CustomColo
                 <PopoverContent className="w-[260px] rounded-2xl p-3" align="start" sideOffset={8}>
                     <div className="flex flex-col gap-2">
                         <HexColorPicker
-                            color={value}
+                            color={pickerColor ?? value}
                             onChange={handlePickerChange}
                             style={{width: "100%", height: "240px"}}
                         />
