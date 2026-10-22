@@ -149,7 +149,7 @@ export function TagFormModal({
                     <DialogHeader className="p-6 pb-4">
                         <h2 className="text-lg font-semibold leading-none">{title}</h2>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="px-6 grid gap-5">
+                    <form onSubmit={handleSubmit} className="px-6 pb-6 grid gap-5">
                         {formFields}
 
                         <DialogFooter className="pt-2 gap-2 sm:gap-2">
