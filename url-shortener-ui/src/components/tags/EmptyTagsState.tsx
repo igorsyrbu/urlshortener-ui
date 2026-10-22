@@ -8,7 +8,7 @@ import {EMPTY_STATE_SCROLL_ROW_COUNT} from "@/lib/constants";
 const LOOP_COUNT = 2;
 
 export function EmptyTagsState() {
-    const {setCreateTagModalOpen} = useUIStore();
+    const setCreateTagModalOpen = useUIStore((s) => s.setCreateTagModalOpen);
 
     return (
         <div

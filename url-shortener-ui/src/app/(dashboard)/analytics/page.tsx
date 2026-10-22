@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect} from "react";
+import {useShallow} from "zustand/react/shallow";
 import {useAnalyticsStore} from "@/lib/store/analytics";
 import {DateRange} from "react-day-picker";
 import {PeriodSelector} from "@/components/analytics/PeriodSelector";
@@ -35,7 +36,12 @@ export default function AnalyticsPage() {
         timeSeries,
         status,
         overviewLoadedAt,
-    } = useAnalyticsStore();
+    } = useAnalyticsStore(useShallow((s) => ({
+        period: s.period, setPeriod: s.setPeriod, loadAnalytics: s.loadAnalytics, retrySection: s.retrySection,
+        customDateRange: s.customDateRange, setCustomDateRange: s.setCustomDateRange, totalClicks: s.totalClicks,
+        previousTotalClicks: s.previousTotalClicks, timeSeries: s.timeSeries, status: s.status,
+        overviewLoadedAt: s.overviewLoadedAt,
+    })));
 
     useEffect(() => {
         void loadAnalyticsCharts();

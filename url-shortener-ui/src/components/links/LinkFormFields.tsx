@@ -1,6 +1,7 @@
 "use client";
 
 import React, {useCallback, useEffect, useRef, useState} from "react";
+import {useShallow} from "zustand/react/shallow";
 import {AnimatePresence, motion} from "framer-motion";
 import {fetchWithAuth} from "@/lib/api";
 import {generateTitleFromHostname, focusElementById} from "@/lib/utils";
@@ -115,7 +116,9 @@ export function LinkFormFields({
     const hasUserEditedKeyRef = useRef(false);
     const pendingKeyRequestRef = useRef<Promise<string | null> | null>(null);
 
-    const {tags, loading: tagsLoading} = useTagStoreWithoutCount();
+    const {tags, loading: tagsLoading} = useTagStoreWithoutCount(useShallow((s) => ({
+        tags: s.tags, loading: s.loading,
+    })));
     const {createTag} = useTagMutations();
     const [tagSearch, setTagSearch] = useState("");
     const [createTagLoading, setCreateTagLoading] = useState(false);

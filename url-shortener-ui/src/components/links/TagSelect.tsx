@@ -1,6 +1,7 @@
 "use client";
 
 import React, {useEffect, useId, useRef, useState} from "react";
+import {useShallow} from "zustand/react/shallow";
 import {Check, ChevronDown, Loader2, Plus, Tag} from "lucide-react";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {BadgeVariant} from "@/components/ui/badge";
@@ -49,7 +50,7 @@ function iconColorForTag(color: BadgeVariant): string {
 }
 
 export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) {
-    const {tags, loading} = useTagStoreWithoutCount();
+    const {tags, loading} = useTagStoreWithoutCount(useShallow((s) => ({tags: s.tags, loading: s.loading})));
     const {createTag} = useTagMutations();
     const [open, setOpen] = useState(false);
     const [createLoading, setCreateLoading] = useState(false);

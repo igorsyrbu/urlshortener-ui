@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import {useShallow} from "zustand/react/shallow";
 import {TooltipProvider} from "@/components/ui/tooltip";
 import {AnalyticsCard} from "@/components/analytics/AnalyticsCard";
 import {ANALYTICS_CARD_BODY_HEIGHT_CLASS, ANALYTICS_GRID_CLASS} from "@/components/analytics/analytics-layout";
@@ -40,7 +41,12 @@ export function AnalyticsBreakdownGrid({className}: AnalyticsBreakdownGridProps)
     const {
         totalClicks, topLinks, referrers, countries, continents, devices, os,
         status, locationTab, deviceTab, setLocationTab, setDeviceTab, retrySection,
-    } = useAnalyticsStore();
+    } = useAnalyticsStore(useShallow((s) => ({
+        totalClicks: s.totalClicks, topLinks: s.topLinks, referrers: s.referrers, countries: s.countries,
+        continents: s.continents, devices: s.devices, os: s.os, status: s.status, locationTab: s.locationTab,
+        deviceTab: s.deviceTab, setLocationTab: s.setLocationTab, setDeviceTab: s.setDeviceTab,
+        retrySection: s.retrySection,
+    })));
 
     function renderSection(section: AnalyticsSection, content: React.ReactNode): React.ReactNode {
         if (status[section] !== "error") return content;

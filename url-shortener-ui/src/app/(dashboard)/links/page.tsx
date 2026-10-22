@@ -1,6 +1,7 @@
 "use client";
 
 import {Suspense, useCallback, useEffect, useEffectEvent, useState} from "react";
+import {useShallow} from "zustand/react/shallow";
 import {useRouter, useSearchParams} from "next/navigation";
 import dynamic from "next/dynamic";
 import {LinkCard} from "@/components/links/LinkCard";
@@ -74,8 +75,14 @@ function LinksPageContent() {
         applySavedLink,
         hydrateShowArchived,
         searchQuery
-    } = useLinkStore();
-    const {fetchTags} = useTagStoreWithoutCount();
+    } = useLinkStore(useShallow((s) => ({
+        links: s.links, loading: s.loading, error: s.error, currentPage: s.currentPage,
+        totalElements: s.totalElements, fetchLinks: s.fetchLinks, clearError: s.clearError,
+        showArchived: s.showArchived, setShowArchived: s.setShowArchived, setLinkArchived: s.setLinkArchived,
+        deleteLink: s.deleteLink, applySavedLink: s.applySavedLink, hydrateShowArchived: s.hydrateShowArchived,
+        searchQuery: s.searchQuery,
+    })));
+    const fetchTags = useTagStoreWithoutCount((s) => s.fetchTags);
     const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);

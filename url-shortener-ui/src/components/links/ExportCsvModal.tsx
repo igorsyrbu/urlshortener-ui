@@ -1,6 +1,7 @@
 "use client";
 
 import {useId, useState} from "react";
+import {useShallow} from "zustand/react/shallow";
 import {FOCUS_RING_CLASS} from "@/lib/constants";
 import {Download, Info} from "lucide-react";
 import {toast} from "sonner";
@@ -45,7 +46,9 @@ function getExportFailureMessage(error: unknown): string {
 
 export function ExportCsvModal({open, onOpenChange}: ExportCsvModalProps) {
     const isDesktop = useIsDesktop();
-    const {showArchived, searchQuery} = useLinkStore();
+    const {showArchived, searchQuery} = useLinkStore(useShallow((s) => ({
+        showArchived: s.showArchived, searchQuery: s.searchQuery,
+    })));
     const [includeFilters, setIncludeFilters] = useState(true);
     const [isExporting, setIsExporting] = useState(false);
     const [isTooltipOpen, setIsTooltipOpen] = useState(false);

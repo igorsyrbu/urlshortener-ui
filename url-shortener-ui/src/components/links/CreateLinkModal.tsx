@@ -68,7 +68,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
     const router = useRouter();
     const [viewState, setViewState] = useState<ViewState>("form");
     const [shortLink, setShortLink] = useState<ShortLinkData | null>(null);
-    const {fetchLinks} = useLinkStore();
+    const fetchLinks = useLinkStore((s) => s.fetchLinks);
 
     const handleFormSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {
         const createdLink = await createShortLink(longUrl, title, key, tagIds);

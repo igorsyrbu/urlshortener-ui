@@ -8,7 +8,7 @@ import {EMPTY_STATE_SCROLL_ROW_COUNT} from "@/lib/constants";
 const LOOP_COUNT = 2;
 
 export function EmptyLinksState() {
-    const {setCreateModalOpen} = useUIStore();
+    const setCreateModalOpen = useUIStore((s) => s.setCreateModalOpen);
 
     return (
         <div

@@ -108,6 +108,15 @@ describe("links page render counts", () => {
         expect(renders.card).toBe(0);
     });
 
+    it("does not re-render the page when a tag store field it does not read changes", async () => {
+        await renderLinksPage();
+        renders.page = 0;
+
+        act(() => useTagStoreWithoutCount.getState().setSearchQuery("zzz"));
+
+        expect(renders.page).toBe(0);
+    });
+
     it("does not re-render cards when an unrelated store changes", async () => {
         await renderLinksPage();
         renders.card = 0;

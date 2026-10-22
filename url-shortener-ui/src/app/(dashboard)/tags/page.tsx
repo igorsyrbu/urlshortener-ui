@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useState} from "react";
+import {useShallow} from "zustand/react/shallow";
 import dynamic from "next/dynamic";
 import {TagCard} from "@/components/tags/TagCard";
 import {EmptyTagsState} from "@/components/tags/EmptyTagsState";
@@ -42,7 +43,10 @@ function commitTagSearch(text: string): void {
 }
 
 export default function TagsPage() {
-    const {tags, loading, error, fetchTags, clearError, searchQuery} = useTagStoreWithCount();
+    const {tags, loading, error, fetchTags, clearError, searchQuery} = useTagStoreWithCount(useShallow((s) => ({
+        tags: s.tags, loading: s.loading, error: s.error, fetchTags: s.fetchTags, clearError: s.clearError,
+        searchQuery: s.searchQuery,
+    })));
     const {deleteTag} = useTagMutations();
     const [editingTag, setEditingTag] = useState<TagItem | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
