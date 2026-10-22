@@ -3,31 +3,10 @@
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {cn} from "@/lib/utils";
-import {ChartBar, LayoutDashboard, Link as LinkIcon, Link as LogoIcon, Settings, Tag, type LucideIcon} from "lucide-react";
-import {FOCUS_RING_CLASS, ROUTES} from "@/lib/constants";
-import {SETTINGS_ROUTES} from "@/lib/settings-constants";
+import {Link as LogoIcon} from "lucide-react";
+import {FOCUS_RING_CLASS} from "@/lib/constants";
 import {LinkPendingIndicator} from "@/components/ui/link-pending-indicator";
-import {isPathWithin} from "@/lib/route-match";
-
-interface NavigationItem {
-    name: string;
-    href: string;
-    /** Route prefix that keeps the item highlighted; defaults to `href`. */
-    matchPrefix?: string;
-    icon: LucideIcon;
-}
-
-const navigation: NavigationItem[] = [
-    {name: "Dashboard", href: "/dashboard", icon: LayoutDashboard},
-    {name: "Links", href: "/links", icon: LinkIcon},
-    {name: "Analytics", href: "/analytics", icon: ChartBar},
-    {name: "Tags", href: "/tags", icon: Tag},
-    {name: "Settings", href: SETTINGS_ROUTES.DEFAULT, matchPrefix: ROUTES.SETTINGS, icon: Settings},
-];
-
-function isNavigationItemActive(item: NavigationItem, pathname: string): boolean {
-    return isPathWithin(pathname, item.matchPrefix ?? item.href);
-}
+import {findActiveNavItem, NAV_ITEMS} from "@/components/layout/navigation-items";
 
 interface SidebarNavProps {
     onNavigate?: () => void;
@@ -35,6 +14,7 @@ interface SidebarNavProps {
 
 export function SidebarNav({onNavigate}: SidebarNavProps) {
     const pathname = usePathname();
+    const activeItem = findActiveNavItem(pathname);
 
     return (
         <div className="flex flex-col gap-8">
@@ -46,12 +26,12 @@ export function SidebarNav({onNavigate}: SidebarNavProps) {
                 <h1 className="text-lg font-extrabold tracking-tight text-sidebar-foreground">Short Links</h1>
             </div>
             <nav className="flex flex-col gap-2.5">
-                {navigation.map((item) => {
-                    const isActive = isNavigationItemActive(item, pathname);
+                {NAV_ITEMS.map((item) => {
+                    const isActive = item === activeItem;
                     const Icon = item.icon;
                     return (
                         <Link
-                            key={item.name}
+                            key={item.href}
                             href={item.href}
                             aria-current={isActive ? "page" : undefined}
                             onClick={() => onNavigate?.()}
@@ -64,7 +44,7 @@ export function SidebarNav({onNavigate}: SidebarNavProps) {
                             )}
                         >
                             <Icon className="size-5"/>
-                            <span className={cn("text-sm", isActive ? "font-bold" : "font-medium")}>{item.name}</span>
+                            <span className={cn("text-sm", isActive ? "font-bold" : "font-medium")}>{item.title}</span>
                             <LinkPendingIndicator className="ml-auto"/>
                         </Link>
                     );

@@ -19,7 +19,10 @@ export const PAGE_TITLES = {
 
 export const ROUTES = {
     LOGIN: "/login",
+    DASHBOARD: "/dashboard",
     LINKS: "/links",
+    ANALYTICS: "/analytics",
+    TAGS: "/tags",
     SETTINGS: "/settings",
 } as const;
 

@@ -23,6 +23,8 @@ import {
 import {cn} from "@/lib/utils";
 import {canRunShortcut, isShortcutKey, SHORTCUTS} from "@/lib/keyboard-shortcuts";
 import {useShortcutsStore} from "@/lib/store/shortcuts";
+import {ROUTES} from "@/lib/constants";
+import {isPathWithin} from "@/lib/route-match";
 
 function loadCreateLinkModal() {
     return import("@/components/links/CreateLinkModal").then((modalModule) => modalModule.CreateLinkModal);
@@ -87,7 +89,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             : [loadCreateLinkModal, loadCreateTagModal]);
     }, [isReady, isMobile]);
 
-    const isTagsPage = pathname === "/tags" || pathname.startsWith("/tags/");
+    const isTagsPage = isPathWithin(pathname, ROUTES.TAGS);
     const createLabel = isTagsPage ? "Create tag" : "Create link";
     const handleCreateClick = () => {
         if (isTagsPage) {

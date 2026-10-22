@@ -7,7 +7,7 @@ import {ModeToggle} from "@/components/layout/ThemeToggle";
 import {Button} from "@/components/ui/button";
 import {PageHeading} from "@/components/layout/PageHeading";
 import {usePathname} from "next/navigation";
-import {ROUTES, PAGE_TITLES} from "@/lib/constants";
+import {findActiveNavItem} from "@/components/layout/navigation-items";
 import {canRunShortcut, isShortcutKey, SHORTCUTS} from "@/lib/keyboard-shortcuts";
 
 interface HeaderProps {
@@ -21,14 +21,7 @@ interface HeaderProps {
 export function Header({onCreateClick, onCreateIntent, onMenuClick, createLabel = "Create link"}: HeaderProps) {
     const pathname = usePathname();
 
-    const titles: Record<string, string> = {
-        [ROUTES.LINKS]: PAGE_TITLES.LINKS,
-        "/tags": PAGE_TITLES.TAGS,
-        "/dashboard": PAGE_TITLES.DASHBOARD,
-        "/analytics": PAGE_TITLES.ANALYTICS,
-        [ROUTES.SETTINGS]: PAGE_TITLES.SETTINGS,
-    };
-    const title = pathname.startsWith(`${ROUTES.SETTINGS}/`) ? titles[ROUTES.SETTINGS] : titles[pathname] ?? "";
+    const title = findActiveNavItem(pathname)?.title ?? "";
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

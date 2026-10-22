@@ -3,6 +3,7 @@
 import {Button} from "@/components/ui/button";
 import {NotFoundView} from "@/components/layout/NotFoundView";
 import {useRouter} from "next/navigation";
+import {ROUTES} from "@/lib/constants";
 
 export default function NotFoundPage() {
     const router = useRouter();
@@ -15,7 +16,7 @@ export default function NotFoundPage() {
             <Button variant="outline" onClick={() => router.back()}>
                 Go back
             </Button>
-            <Button onClick={() => router.push("/dashboard")}>
+            <Button onClick={() => router.push(ROUTES.DASHBOARD)}>
                 Go to Dashboard
             </Button>
         </NotFoundView>
