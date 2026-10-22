@@ -96,7 +96,6 @@ How to write the tests: [testing.md](testing.md).
 
 ## Known limitations and existing exceptions
 
-- Observation: the dashboard layout still subscribes to the whole `useUIStore`. Existing exception - not a template.
 - Observation: components and hooks call `useX.setState` directly (`useTagMutations`) and the import store calls other stores; there is no central cache invalidation. After mutations, pages refetch explicitly (`fetchLinks(currentPage)`).
 - Observation: several loads are `useEffect` + store/fetch calls: links page (`fetchLinks`, `fetchTags`, `hydrateShowArchived`, `ensureDiscovery`), tags page, analytics page, `LinkFormFields` (`fetchPreferences`), the dashboard layout (`GET /users/me` auth gate), `ProfileCard` and the settings general page (sessions list with local `useState`), billing hooks, `useUrlCleaner`. This is the current client-rendered convention; the store action is the fetch home, the effect only triggers it. Local-state loads in `settings/general/page.tsx` and `ProfileCard` bypass stores (user data is written to `useAuthStore` by `ProfileCard`). Existing exceptions, not templates.
 - Observation: `src/app/(dashboard)/links/page.tsx` stops import tracking on unmount (`stopTracking`), so leaving the page abandons any visible progress; re-entering re-runs `ensureDiscovery`.

@@ -6,6 +6,7 @@ import { SessionCheckScreen } from "@/components/layout/SessionCheckScreen";
 import dynamic from "next/dynamic";
 import React, { useEffect, useState, useRef } from "react";
 import { useUIStore } from "@/lib/store/ui";
+import {useShallow} from "zustand/react/shallow";
 import { usePathname } from "next/navigation";
 import { useSessionBootstrap } from "@/lib/hooks/useSessionBootstrap";
 import { useHasBeenOpened } from "@/lib/hooks/useHasBeenOpened";
@@ -56,7 +57,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const {
         isCreateModalOpen, setCreateModalOpen, isCreateTagModalOpen, setCreateTagModalOpen,
         isShortcutsDialogOpen, setShortcutsDialogOpen,
-    } = useUIStore();
+    } = useUIStore(useShallow((s) => ({
+        isCreateModalOpen: s.isCreateModalOpen, setCreateModalOpen: s.setCreateModalOpen,
+        isCreateTagModalOpen: s.isCreateTagModalOpen, setCreateTagModalOpen: s.setCreateTagModalOpen,
+        isShortcutsDialogOpen: s.isShortcutsDialogOpen, setShortcutsDialogOpen: s.setShortcutsDialogOpen,
+    })));
     const [isHeaderHidden, setIsHeaderHidden] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
