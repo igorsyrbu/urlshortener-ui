@@ -12,8 +12,8 @@
     "/dashboard": 215,
     "/settings": 216,
     "/settings/billing": 229,
-    "/settings/general": 228,
-    "/analytics": 236,
+    "/settings/general": 230,
+    "/analytics": 238,
     "/tags": 253,
     "/links": 268
   }
