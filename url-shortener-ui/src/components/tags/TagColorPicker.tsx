@@ -1,9 +1,10 @@
 import {useId} from "react";
+import {Tag} from "lucide-react";
 import {RadioGroup} from "radix-ui";
 import {FOCUS_RING_CLASS} from "@/lib/constants";
 import {cn} from "@/lib/utils";
 import {ALLOWED_TAG_COLORS} from "@/lib/tag-constants";
-import {BadgeVariant} from "@/components/ui/badge";
+import {badgeVariants, BadgeVariant} from "@/components/ui/badge";
 
 interface TagColorPickerProps {
     selectedColor: BadgeVariant;
@@ -13,18 +14,6 @@ interface TagColorPickerProps {
 function capitalize(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
-
-/** The text colour of each tag badge variant, so a swatch shows the colour the tag will have. */
-const SWATCH_COLOR: Record<string, string> = {
-    red: "bg-red-700 dark:bg-red-300",
-    yellow: "bg-yellow-700 dark:bg-yellow-300",
-    lime: "bg-lime-700 dark:bg-lime-300",
-    green: "bg-green-700 dark:bg-green-300",
-    blue: "bg-blue-700 dark:bg-blue-300",
-    cyan: "bg-cyan-700 dark:bg-cyan-300",
-    purple: "bg-purple-700 dark:bg-purple-300",
-    gray: "bg-zinc-700 dark:bg-zinc-300",
-};
 
 /** A radio group of colour swatches: one tab stop, arrow keys move and select, the checked colour is announced. */
 export function TagColorPicker({selectedColor, onChange}: TagColorPickerProps) {
@@ -51,11 +40,13 @@ export function TagColorPicker({selectedColor, onChange}: TagColorPickerProps) {
                         <span
                             aria-hidden="true"
                             className={cn(
-                                "block size-7 rounded-full ring-offset-2 ring-offset-background transition-shadow",
+                                badgeVariants({variant: color}),
+                                "pointer-events-none inline-flex size-7 items-center justify-center rounded-full p-0 ring-offset-2 ring-offset-background transition-shadow",
                                 "group-data-[state=checked]:ring-2 group-data-[state=checked]:ring-muted-foreground",
-                                SWATCH_COLOR[color],
                             )}
-                        />
+                        >
+                            <Tag className="size-3.5 shrink-0"/>
+                        </span>
                     </RadioGroup.Item>
                 ))}
             </RadioGroup.Root>

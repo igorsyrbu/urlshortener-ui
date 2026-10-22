@@ -131,6 +131,6 @@ Hardcoded values (outside the documented exceptions):
 - Observation: `CHART_COLORS` in `lib/constants.ts` duplicates the categorical hex values from `globals.css` (comment says they "mirror" the CSS variables); the two must be changed together.
 - Observation: `react-colorful` styles hardcode `#fff`/`#000`.
 - Observation: `viewport.themeColor` in `layout.tsx` and `theme_color` / `background_color` in `app/manifest.ts` are hex literals (the former is rewritten at runtime by `PaletteProvider`).
-- Observation: `PresetPaletteGrid` and `CustomColorRow` apply user/palette data colours through inline `style={{backgroundColor}}`; `GoogleIcon` has brand fills; `QrCodeModal` uses `bg-white`; `TagColorPicker` (swatch fills matching the badge variants) and `TagSelect` use Tailwind palette classes (`red-700`, `zinc-300`, ...). Data-driven or brand colours, kept as is.
+- Observation: `PresetPaletteGrid` and `CustomColorRow` apply user/palette data colours through inline `style={{backgroundColor}}`; `GoogleIcon` has brand fills; `QrCodeModal` uses `bg-white`; `TagSelect` uses Tailwind palette classes (`red-500`, `zinc-500`, ...). Data-driven or brand colours, kept as is.
 - Observation: repeated class strings that are not extracted: the three identical action buttons in `CustomThemeBuilder`, the theme option buttons in `AppearanceCard`, and the repeated dialog width `sm:max-w-106.25` across modals.
 - Observation: some components build `className` with template literals rather than `cn()` (`AppearanceCard`, `NoResultsState`, dashboard `layout.tsx`).
