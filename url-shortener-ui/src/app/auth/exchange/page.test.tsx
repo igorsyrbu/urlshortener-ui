@@ -1,9 +1,10 @@
 import {StrictMode} from "react";
 import {act, render, screen, waitFor} from "@testing-library/react";
 import {afterEach, describe, expect, it, vi} from "vitest";
-import ExchangePage from "./page";
+import ExchangePage, {REJECTED_CODE_MESSAGE} from "./page";
 import {API_BASE_URL} from "@/lib/api";
 import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
+import {ERROR_COPY} from "@/lib/errors";
 import {hasSessionHint} from "@/lib/session-hint";
 import {useAuthStore} from "@/lib/store/auth";
 
@@ -99,11 +100,12 @@ describe("auth code exchange page", () => {
         expect(hasSessionHint()).toBe(true);
     });
 
-    it("shows the failing status and does not redirect when the exchange is rejected", async () => {
+    it("says the sign-in link is spent, without the status code, and does not redirect when the exchange is rejected", async () => {
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, {status: 401, statusText: "Unauthorized"})));
         await openWithQuery("code=abc");
 
-        expect(await screen.findByText("Exchange failed: 401 Unauthorized")).toBeInTheDocument();
+        expect(await screen.findByText(REJECTED_CODE_MESSAGE)).toBeInTheDocument();
+        expect(screen.queryByText(/401|Unauthorized/)).not.toBeInTheDocument();
         expect(navigation.replace).not.toHaveBeenCalled();
         expect(useAuthStore.getState().accessToken).toBeNull();
         expect(hasSessionHint()).toBe(false);
@@ -142,6 +144,6 @@ describe("auth code exchange page", () => {
 
         await openWithQuery("code=abc");
 
-        expect(await screen.findByText("Failed to fetch")).toBeInTheDocument();
+        expect(await screen.findByText(ERROR_COPY.NETWORK)).toBeInTheDocument();
     });
 });

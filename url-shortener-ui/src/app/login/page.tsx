@@ -18,6 +18,7 @@ import {useMagicLinkCooldown} from "@/lib/hooks/useMagicLinkCooldown";
 import {logger} from "@/lib/logger";
 import {parseRetryAfterSeconds} from "@/lib/retry-after";
 import {withPending} from "@/lib/async-utils";
+import {describeHttpFailure, describeRequestError} from "@/lib/errors";
 
 const OTP_CODE_LENGTH = 6;
 
@@ -45,10 +46,10 @@ async function requestMagicLink(email: string, turnstileToken: string | null): P
         if (response.status === HTTP_TOO_MANY_REQUESTS) {
             return {kind: "rate-limited", retryAfterSeconds: parseRetryAfterSeconds(response.headers)};
         }
-        if (!response.ok) return {kind: "failed", message: `Failed to generate magic link: ${response.status}`};
+        if (!response.ok) return {kind: "failed", message: describeHttpFailure(response.status)};
         return {kind: "sent"};
     } catch (error) {
-        return {kind: "failed", message: error instanceof Error ? error.message : "Failed to send magic link"};
+        return {kind: "failed", message: describeRequestError(error)};
     }
 }
 

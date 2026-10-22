@@ -4,6 +4,7 @@ import {afterEach, beforeEach, describe, expect, it, vi, type Mock} from "vitest
 import LoginPage from "./page";
 import {API_BASE_URL} from "@/lib/api";
 import {API_ENDPOINTS, MAGIC_LINK_COOLDOWN_STORAGE_KEY} from "@/lib/constants";
+import {ERROR_COPY} from "@/lib/errors";
 import {getTurnstileProps, resetTurnstileMock} from "@/test/turnstile-utils";
 
 vi.mock("@marsidev/react-turnstile", async () => (await import("@/test/turnstile-utils")).turnstileModuleMock);
@@ -75,14 +76,15 @@ describe("login page magic link request", () => {
         expect(screen.queryByRole("button", {name: SEND_MAGIC_LINK})).not.toBeInTheDocument();
     });
 
-    it("shows the failing status when the request is rejected", async () => {
+    it("explains a rejected request in plain words without the status code", async () => {
         const user = userEvent.setup();
         mockFetch(new Response(null, {status: 500}));
         render(<LoginPage/>);
 
         await requestMagicLink(user);
 
-        expect(await screen.findByText(/Failed to generate magic link: 500/)).toBeInTheDocument();
+        expect(await screen.findByText((content) => content.includes(ERROR_COPY.SERVER))).toBeInTheDocument();
+        expect(screen.queryByText(/500/)).not.toBeInTheDocument();
     });
 
     it("shows the network error message when the request cannot be made", async () => {
@@ -92,7 +94,7 @@ describe("login page magic link request", () => {
 
         await requestMagicLink(user);
 
-        expect(await screen.findByText(/Failed to fetch/)).toBeInTheDocument();
+        expect(await screen.findByText((content) => content.includes(ERROR_COPY.NETWORK))).toBeInTheDocument();
     });
 
     it("asks the user to try later when rate limited without a retry delay", async () => {

@@ -6,6 +6,7 @@ import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
 import {createTag} from "@/test/tag-utils";
+import {ERROR_COPY} from "@/lib/errors";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 
@@ -86,11 +87,11 @@ describe("useTagMutations", () => {
             stores.forEach((store) => expect(store.getState().error).toBeNull());
         });
 
-        it("falls back to the HTTP status when the error body is empty", async () => {
+        it("describes the failure in plain words when the error body is empty", async () => {
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 500}));
             const {result} = renderHook(() => useTagMutations());
 
-            await expect(result.current.createTag("Marketing", "blue")).rejects.toThrow("Failed to create tag: 500");
+            await expect(result.current.createTag("Marketing", "blue")).rejects.toThrow(ERROR_COPY.SERVER);
         });
 
         it("rethrows a network failure without touching the stores", async () => {
@@ -144,7 +145,7 @@ describe("useTagMutations", () => {
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 404}));
             const {result} = renderHook(() => useTagMutations());
 
-            await expect(result.current.updateTag("tag-1", "Sales", "green")).rejects.toThrow("Failed to update tag: 404");
+            await expect(result.current.updateTag("tag-1", "Sales", "green")).rejects.toThrow(ERROR_COPY.NOT_FOUND);
         });
     });
 
@@ -169,12 +170,12 @@ describe("useTagMutations", () => {
             stores.forEach((store) => expect(store.getState().tags).toEqual([kept]));
         });
 
-        it("keeps the tag and exposes the status when deletion fails", async () => {
+        it("keeps the tag and explains the failure when deletion fails", async () => {
             seedTags(createTag({id: "tag-1"}));
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 403}));
             const {result} = renderHook(() => useTagMutations());
 
-            await expect(result.current.deleteTag("tag-1")).rejects.toThrow("Failed to delete tag: 403");
+            await expect(result.current.deleteTag("tag-1")).rejects.toThrow(ERROR_COPY.FORBIDDEN);
 
             stores.forEach((store) => {
                 expect(store.getState().error).toBeNull();

@@ -9,6 +9,11 @@ import {useAuthStore} from "@/lib/store/auth";
 import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 import {setSessionHint} from "@/lib/session-hint";
 import {clearQueryString} from "@/lib/url-utils";
+import {describeHttpFailure, describeRequestError} from "@/lib/errors";
+import {HTTP_BAD_REQUEST, HTTP_GONE, HTTP_NOT_FOUND, HTTP_UNAUTHORIZED} from "@/lib/http-status";
+
+const REJECTED_CODE_STATUSES: ReadonlySet<number> = new Set([HTTP_BAD_REQUEST, HTTP_UNAUTHORIZED, HTTP_NOT_FOUND, HTTP_GONE]);
+export const REJECTED_CODE_MESSAGE = "This sign-in link has expired or was already used. Request a new one from the sign-in page.";
 
 interface AccessTokenContainer {
     accessToken: string
@@ -23,12 +28,12 @@ async function exchangeAuthorizationCode(code: string): Promise<ExchangeResult> 
             {credentials: "include"},
         );
         if (!response.ok) {
-            return {errorMessage: `Exchange failed: ${response.status} ${response.statusText}`};
+            return {errorMessage: REJECTED_CODE_STATUSES.has(response.status) ? REJECTED_CODE_MESSAGE : describeHttpFailure(response.status)};
         }
         const data: AccessTokenContainer = await response.json();
         return {accessToken: data.accessToken};
     } catch (err) {
-        return {errorMessage: err instanceof Error ? err.message : "Failed to exchange code"};
+        return {errorMessage: describeRequestError(err)};
     }
 }
 

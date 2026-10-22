@@ -57,7 +57,8 @@ Guarding is client-side only; there is no server-side check.
 ## Error and not-found boundaries
 
 - [`src/app/(dashboard)/error.tsx`](../url-shortener-ui/src/app/(dashboard)/error.tsx) catches render errors of dashboard pages (not of the dashboard layout itself, per Next.js semantics). It logs through `logger.error` and offers "Try again" (`reset`).
-- [`src/app/error.tsx`](../url-shortener-ui/src/app/error.tsx) is the boundary for every other route segment (login, auth, inspect, report-abuse). It logs through `logger.error`. There is no `global-error.tsx`.
+- Segment boundaries with their own wording: `auth/error.tsx` (code exchange and one-time token), `inspect/[key]/error.tsx` (preview fetch failed), `(legal)/error.tsx` (report-abuse). [`src/app/error.tsx`](../url-shortener-ui/src/app/error.tsx) (`RootError`) catches the rest, such as `/login`. All of them render `components/layout/ErrorView` (`variant` `page` or `section`), which logs through `logger.error` with the digest, never shows the error message, and offers "Try again" (`reset`).
+- [`src/app/global-error.tsx`](../url-shortener-ui/src/app/global-error.tsx) replaces the root layout when the layout itself throws, so it renders its own `<html>`/`<body>` and imports `globals.css`. Next ships it with every route, so it uses a plain `<button>` and no shared UI components (`ErrorView` with `Button` and an icon cost about 2.4 KB gzip on every route).
 - [`src/app/not-found.tsx`](../url-shortener-ui/src/app/not-found.tsx) renders the 404 with "Go back" (`router.back()`) and "Go to Dashboard" (`router.push("/dashboard")`).
 - Add an `error.tsx` at a segment when that segment needs its own recovery UI; do not wrap pages in ad-hoc error boundaries.
 
@@ -112,5 +113,4 @@ Details of the links and tags behaviours: [features/links-and-tags](features/lin
 - Observation: `not-found.tsx` and `sidebar-user-menu.tsx` use string literals (`"/dashboard"`, `"/login"`) instead of `ROUTES`; `ROUTES` has no entries for `/dashboard`, `/tags`, `/analytics`, `/inspect` or `/report-abuse`. Existing exception - not a template.
 - Observation: `inspect/[key]/page.tsx` (server fetch, `notFound()` on a missing key) and `report-abuse/page.tsx` (async server page) are exceptions to the client-rendered model; see [architecture](architecture.md#known-limitations-and-existing-exceptions).
 - Observation: the auth gate is client-side, so a protected page's JS bundle is delivered before the check completes; nothing user-specific is rendered until it passes.
-- Observation: `app/error.tsx` exports a component named `GlobalError`, but the file is a regular segment boundary, not `global-error.tsx`.
 - Observation (dev server only): Back to a dashboard page that was opened with a full page load (for example from the mock checkout) reloads it from the HTTP cache (`Cache-Control: no-cache`), and React never hydrates, so the page stays on "Securing session..." until a reload. Seen with `next dev` in the in-app browser; the same Back on a production build (`next start`) hydrates normally. Reload the page; this is not an app bug to fix.

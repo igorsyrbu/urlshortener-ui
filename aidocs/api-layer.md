@@ -86,7 +86,9 @@ Rules for new code:
 
 ### Error body shape
 
-Error bodies are RFC 9457 problem details: `{ type, title, status, detail }` (the mock answers every error this way, see [mock-server.md](mock-server.md#request-pipeline)). [`src/lib/problem-details.ts`](../url-shortener-ui/src/lib/problem-details.ts) reads them: `readProblemDetail(body)` returns the first non-empty string among `detail`, `message`, `error`, `title` of a parsed body, or `null` (the generic `title`, such as "Bad Request", comes last; `message` and `error` cover older bodies); `parseProblemDetail(bodyText, status)` does the same for a body read as text, uses a non-JSON body verbatim when it is 200 characters or fewer, and otherwise, or when empty, returns `Request failed: <status>`. Show a server reason only through these two functions.
+Error bodies are RFC 9457 problem details: `{ type, title, status, detail }` (the mock answers every error this way, see [mock-server.md](mock-server.md#request-pipeline)). [`src/lib/problem-details.ts`](../url-shortener-ui/src/lib/problem-details.ts) reads them: `readProblemDetail(body)` returns the first non-empty string among `detail`, `message`, `error`, `title` of a parsed body, or `null` (the generic `title`, such as "Bad Request", comes last; `message` and `error` cover older bodies); `parseProblemDetail(bodyText, status)` does the same for a body read as text, uses a non-JSON body verbatim when it is 200 characters or fewer, and otherwise, or when empty, returns `describeHttpFailure(status)`. Show a server reason only through these two functions.
+
+User-facing text never contains a status code or `statusText`. [`src/lib/errors.ts`](../url-shortener-ui/src/lib/errors.ts) holds the wording: `describeHttpFailure(status)` maps 400, 401, 403, 404, 408/504, 409, 413, 429 and 5xx to `ERROR_COPY` sentences (anything else gets a generic one), and `describeRequestError(error)` turns a rejected `fetch` (a `TypeError`) into the connection message. Codes stay in logs and in `Error` messages that only reach `logger`. The status constants live in `src/lib/http-status.ts`.
 
 ### Rate limits and `Retry-After`
 

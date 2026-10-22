@@ -20,6 +20,7 @@ import {
     uploadLinksImport,
 } from "@/lib/link-transfer";
 import {logger} from "@/lib/logger";
+import {ERROR_COPY} from "@/lib/errors";
 import {createImportJob} from "@/test/import-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
@@ -241,7 +242,7 @@ describe("downloadLinksExport", () => {
         vi.spyOn(failedResponse, "text").mockRejectedValue(new Error("stream failed"));
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(failedResponse);
 
-        await expect(downloadLinksExport(false, NO_FILTERS)).rejects.toMatchObject({message: "Request failed: 500"});
+        await expect(downloadLinksExport(false, NO_FILTERS)).rejects.toMatchObject({message: ERROR_COPY.SERVER});
     });
 
     it("logs and rethrows network failures", async () => {

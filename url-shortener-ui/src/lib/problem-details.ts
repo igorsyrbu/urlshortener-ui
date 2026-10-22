@@ -1,3 +1,5 @@
+import {describeHttpFailure} from "@/lib/errors";
+
 const PROBLEM_DETAIL_MAX_INLINE_LENGTH = 200;
 /** RFC 9457 `detail` first; `message` and `error` for older error bodies; the generic `title` ("Bad Request") last. */
 const DETAIL_FIELDS = ["detail", "message", "error", "title"] as const;
@@ -18,9 +20,9 @@ export function readProblemDetail(body: unknown): string | null {
     return null;
 }
 
-/** The reason in an error body read as text (JSON or a short plain-text message), else `Request failed: <status>`. */
+/** The reason in an error body read as text (JSON or a short plain-text message), else plain wording for the status. */
 export function parseProblemDetail(bodyText: string, status: number): string {
-    const fallback = `Request failed: ${status}`;
+    const fallback = describeHttpFailure(status);
     const trimmed = bodyText.trim();
     if (!trimmed) {
         return fallback;

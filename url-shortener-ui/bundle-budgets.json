@@ -4,17 +4,17 @@
   "routes": {
     "/": 166,
     "/_not-found": 166,
-    "/auth/exchange": 168,
-    "/auth/ott": 169,
-    "/inspect/[key]": 176,
+    "/auth/exchange": 174,
+    "/auth/ott": 173,
+    "/inspect/[key]": 184,
     "/login": 178,
-    "/report-abuse": 204,
-    "/dashboard": 213,
-    "/settings": 214,
+    "/report-abuse": 209,
+    "/dashboard": 215,
+    "/settings": 216,
     "/settings/billing": 229,
     "/settings/general": 228,
     "/analytics": 236,
-    "/tags": 250,
-    "/links": 265
+    "/tags": 253,
+    "/links": 268
   }
 }

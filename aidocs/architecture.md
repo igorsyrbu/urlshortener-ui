@@ -77,7 +77,7 @@ Server-side code in `src/app` is deliberately small. Sanctioned: `redirect()`-on
 | `app/(legal)/report-abuse/page.tsx` | async server component, no fetch | Awaits `searchParams` and reads the Turnstile env vars; existing exception. |
 | `app/api/shortlinks/import/updates/route.ts` | route handler | SSE pass-through (see below). This is the only route handler. |
 
-Everything else in `src/app` starts with `"use client"`: the dashboard layout, `links`, `tags`, `analytics`, `settings/general`, `login`, `auth/exchange`, `auth/ott`, `error.tsx` and `not-found.tsx`.
+Everything else in `src/app` starts with `"use client"`: the dashboard layout, `links`, `tags`, `analytics`, `settings/general`, `login`, `auth/exchange`, `auth/ott`, every `error.tsx`, `global-error.tsx` and `not-found.tsx`.
 
 Rules that follow from this:
 
@@ -103,5 +103,4 @@ Rules that follow from this:
 - Observation: `src/app/(legal)/report-abuse/page.tsx` is an async server component that awaits `searchParams` and reads the Turnstile env vars; it makes no data fetch (the form posts from the browser). Existing exception - not a template.
 - Observation: the inspect page (server side) calls the backend directly through `getBackendApiBaseUrl()`, not the `/api` proxy. See [configuration](configuration.md#ui) and [features/links-and-tags](features/links-and-tags.md).
 - Observation: `src/lib/types.ts`, `src/lib/tag-constants.ts` and `src/lib/hooks/useTagMutations.ts` import `BadgeVariant` from `@/components/ui/badge`, and `src/lib/hooks/useLinkImport.ts` imports from `@/components/links/import-export-constants`. This is `lib` depending on `components`, against the intended direction. Existing exception - not a template.
-- Observation: the `error.tsx` at `src/app/error.tsx` is a segment boundary, not `global-error.tsx`; there is no boundary for errors thrown in the root layout itself.
 - Observation: `src/lib/store/auth.ts` keeps the access token in memory only; any code that needs a token must go through `fetchWithAuth` so refresh and 401 handling apply (see [api-layer](api-layer.md)).

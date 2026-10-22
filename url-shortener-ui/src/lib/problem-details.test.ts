@@ -1,5 +1,6 @@
 import {describe, expect, it} from "vitest";
 import {parseProblemDetail, readProblemDetail} from "@/lib/problem-details";
+import {ERROR_COPY} from "@/lib/errors";
 
 const FALLBACK_LENGTH_LIMIT = 200;
 
@@ -24,8 +25,8 @@ describe("parseProblemDetail", () => {
         ["an object without known fields", '{"other":"x"}'],
         ["an object with non-string fields", '{"detail":5}'],
         ["a plain-text body over the inline limit", "x".repeat(FALLBACK_LENGTH_LIMIT + 1)],
-    ])("falls back to the status for %s", (_name, body) => {
-        expect(parseProblemDetail(body, 418)).toBe("Request failed: 418");
+    ])("falls back to plain wording for the status for %s", (_name, body) => {
+        expect(parseProblemDetail(body, 500)).toBe(ERROR_COPY.SERVER);
     });
 
     it("surfaces a short plain-text body", () => {

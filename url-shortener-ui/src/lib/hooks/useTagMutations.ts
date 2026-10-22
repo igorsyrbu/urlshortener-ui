@@ -6,11 +6,9 @@ import {parseProblemDetail} from "@/lib/problem-details";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
 
-type TagMutationAction = "create" | "update" | "delete";
-
-async function readTagMutationError(response: Response, action: TagMutationAction): Promise<string> {
+async function readTagMutationError(response: Response): Promise<string> {
     const body = await response.text().catch(() => "");
-    return body.trim() ? parseProblemDetail(body, response.status) : `Failed to ${action} tag: ${response.status}`;
+    return parseProblemDetail(body, response.status);
 }
 
 /**
@@ -25,7 +23,7 @@ export function useTagMutations() {
         });
 
         if (!res.ok) {
-            throw new Error(await readTagMutationError(res, "create"));
+            throw new Error(await readTagMutationError(res));
         }
 
         const newTag: TagItem = await res.json();
@@ -42,7 +40,7 @@ export function useTagMutations() {
         });
 
         if (!res.ok) {
-            throw new Error(await readTagMutationError(res, "update"));
+            throw new Error(await readTagMutationError(res));
         }
 
         const updated: TagItem = await res.json();
@@ -59,7 +57,7 @@ export function useTagMutations() {
         });
 
         if (!res.ok) {
-            throw new Error(await readTagMutationError(res, "delete"));
+            throw new Error(await readTagMutationError(res));
         }
 
         const removeFromState = (state: {tags: TagItem[]}) => ({
