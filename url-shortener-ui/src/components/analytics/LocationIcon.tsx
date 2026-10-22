@@ -2,6 +2,7 @@ import type {StaticImageData} from "next/image";
 import {MapPin} from "lucide-react";
 import flagSprite from "@/components/analytics/flags/circle-flags.svg";
 import {FLAG_CODES} from "@/components/analytics/flags/flag-codes";
+import {formatRegionName} from "@/lib/format";
 
 interface LocationIconProps {
     label: string;
@@ -35,10 +36,5 @@ export function LocationIcon({label, isCountry}: LocationIconProps) {
 }
 
 export function getCountryName(countryCode: string): string {
-    try {
-        const regionNames = new Intl.DisplayNames(["en"], {type: "region"});
-        return regionNames.of(countryCode) || countryCode;
-    } catch {
-        return countryCode;
-    }
+    return formatRegionName(countryCode);
 }

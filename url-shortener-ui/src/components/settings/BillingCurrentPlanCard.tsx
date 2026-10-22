@@ -14,6 +14,7 @@ import {
 } from "@/lib/billing-constants";
 import type {BillingPortalState} from "@/lib/hooks/useBillingPortal";
 import {cn} from "@/lib/utils";
+import {formatFullDate} from "@/lib/format";
 
 interface BillingCurrentPlanCardProps {
     subscription: BillingSubscription;
@@ -35,7 +36,7 @@ function formatPeriodEnd(currentPeriodEnd: string | undefined): string | null {
     if (!currentPeriodEnd) return null;
     const parsed = new Date(currentPeriodEnd);
     if (Number.isNaN(parsed.getTime())) return null;
-    return parsed.toLocaleDateString(undefined, {year: "numeric", month: "short", day: "numeric"});
+    return formatFullDate(parsed);
 }
 
 function getPlanStatus(subscription: BillingSubscription, hasScheduledSwitch: boolean): PlanStatus {

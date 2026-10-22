@@ -16,6 +16,7 @@ import {ANALYTICS_PERIOD_ROW_CLASS, ANALYTICS_SUMMARY_CARD_CLASS} from "@/compon
 import {Spinner} from "@/components/ui/spinner";
 import {ANALYTICS_COPY, LIST_LOAD_ERROR_CLASS} from "@/lib/constants";
 import {cn} from "@/lib/utils";
+import {formatNumber} from "@/lib/format";
 
 // A fast refresh would flash the dimming and the spinner on and off; both wait 300 ms (delay-300 delays the opacity
 // transition and the spinner's fade-in), so only a slow refresh shows them.
@@ -99,7 +100,7 @@ export default function AnalyticsPage() {
                         <div>
                             <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Total Clicks</p>
                             <div className="mt-2 flex flex-wrap items-center gap-4">
-                                <h3 className="text-4xl font-extrabold text-foreground">{totalClicks.toLocaleString()}</h3>
+                                <h3 className="text-4xl font-extrabold text-foreground">{formatNumber(totalClicks)}</h3>
                                 <ComparisonBadge
                                     period={period}
                                     totalClicks={totalClicks}

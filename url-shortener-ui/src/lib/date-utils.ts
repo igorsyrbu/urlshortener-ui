@@ -1,4 +1,5 @@
 import {FIRST_ANALYTICS_YEAR} from "@/lib/constants";
+import {formatShortDate} from "@/lib/format";
 
 export function getSelectableAnalyticsYears(currentYear: number): number[] {
     const lastYear = Math.max(currentYear, FIRST_ANALYTICS_YEAR);
@@ -29,5 +30,5 @@ export function parseLocalIsoDate(value: string): Date {
 }
 
 export function formatShortDayLabel(isoDate: string): string {
-    return parseLocalIsoDate(isoDate).toLocaleDateString(undefined, {month: "short", day: "numeric"});
+    return formatShortDate(parseLocalIsoDate(isoDate));
 }

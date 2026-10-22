@@ -5,6 +5,7 @@ import {Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis} from "recha
 import {ChartContainer, ChartTooltip} from "@/components/ui/chart";
 import {useFirstDrawAnimation} from "@/lib/hooks/useFirstDrawAnimation";
 import {CHART_ANIMATION_MS} from "@/lib/constants";
+import {formatNumber} from "@/lib/format";
 
 interface BarChartDataItem {
     name: string;
@@ -112,7 +113,7 @@ export function HorizontalBarChart({
                                         textAnchor="end"
                                         dominantBaseline="central"
                                     >
-                                        {item ? item.clicks.toLocaleString() : ""}
+                                        {item ? formatNumber(item.clicks) : ""}
                                     </text>
                                 );
                             }}
@@ -142,7 +143,7 @@ export function HorizontalBarChart({
                                                 <span className="text-[12px] text-muted-foreground mr-4">Clicks</span>
                                                 <div className="flex items-center gap-2">
                                                     <span
-                                                        className="text-[13px] font-bold tabular-nums">{payloadData.clicks.toLocaleString()}</span>
+                                                        className="text-[13px] font-bold tabular-nums">{formatNumber(payloadData.clicks)}</span>
                                                     <span
                                                         className="text-[11px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md tabular-nums mt-0.5">{percentage}%</span>
                                                 </div>
