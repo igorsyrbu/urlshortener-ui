@@ -16,7 +16,7 @@ import {IMPORT_TRACKING_STATUS, useImportTracker} from "@/lib/store/import";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {PageToolbar} from "@/components/layout/PageToolbar";
-import {CARD_LIST_CLASS, DEFAULT_PAGE_SIZE, SEARCH_DEBOUNCE_MS, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, ROUTES} from "@/lib/constants";
+import {CARD_LIST_CLASS, DEFAULT_PAGE_SIZE, MIN_LINK_SEARCH_LENGTH, SEARCH_DEBOUNCE_MS, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, ROUTES} from "@/lib/constants";
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
 import {toast} from "sonner";
 import {buildLinksPageUrl, parseLinksPageParam} from "@/lib/pagination";
@@ -124,9 +124,10 @@ function LinksPageContent() {
 
     const commitSearch = (text: string): void => {
         const trimmed = text.trim();
+        const query = trimmed.length >= MIN_LINK_SEARCH_LENGTH ? trimmed : "";
         const store = useLinkStore.getState();
-        if (store.searchQuery === trimmed) return;
-        store.setSearchQuery(trimmed);
+        if (store.searchQuery === query) return;
+        store.setSearchQuery(query);
         resetUrlToFirstPage();
         store.fetchLinks(0);
     };

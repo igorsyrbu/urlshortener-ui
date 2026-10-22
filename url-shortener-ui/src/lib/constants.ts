@@ -208,6 +208,9 @@ export const DEFAULT_PAGE_SIZE = 20;
 /** Pause after the last keystroke before a search is sent; Enter and Clear search at once. */
 export const SEARCH_DEBOUNCE_MS = 300;
 
+/** Shorter link searches count as no search: one character matches nearly every URL and costs a request for nothing. */
+export const MIN_LINK_SEARCH_LENGTH = 2;
+
 /**
  * Rows per loop of the decorative scrolling list in the empty states. About three are visible; the loop duration in
  * `globals.css` (`animate-vertical-scroll`, 32 s) is proportional to this count, so change both together.

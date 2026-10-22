@@ -237,6 +237,33 @@ describe("links page", () => {
             expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).at(-1)?.get("search")).toBe("promo");
         });
 
+        it("sends no request for a single character, even on Enter", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(2)});
+            render(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Link 0"});
+            const requestsBefore = getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).length;
+
+            await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "p{Enter}");
+            await new Promise((resolve) => setTimeout(resolve, SEARCH_DEBOUNCE_MS + 100));
+
+            expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS)).toHaveLength(requestsBefore);
+        });
+
+        it("goes back to the unfiltered list when a search is shortened to one character", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(2)});
+            render(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Link 0"});
+            const searchField = screen.getByPlaceholderText(SEARCH_PLACEHOLDER);
+            await user.type(searchField, "pr{Enter}");
+            expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).at(-1)?.get("search")).toBe("pr");
+
+            await user.type(searchField, "{Backspace}{Enter}");
+
+            expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).at(-1)?.has("search")).toBe(false);
+        });
+
         it("drops the search at once when the field is cleared", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(2)});
