@@ -149,7 +149,9 @@ export default function GeneralSettingsPage() {
 
             <SettingsSection {...SETTINGS_SECTION_COPY.PREFERENCES}>
                 <PreferencesCard/>
-                <ShortcutsCard/>
+                <div className="hidden sm:block">
+                    <ShortcutsCard/>
+                </div>
             </SettingsSection>
 
             <SettingsSection {...SETTINGS_SECTION_COPY.SESSIONS}>

@@ -36,7 +36,7 @@ Adding a settings tab: add a route folder under `settings/`, then extend the thr
 
 ### Preferences (tracker detection, keyboard shortcuts)
 
-[`ShortcutsCard`](../../url-shortener-ui/src/components/settings/ShortcutsCard.tsx) sits under the tracker card: a labelled `Switch` (`id` and `aria-describedby` from `useId`) for `useShortcutsStore.isEnabled` and a "View shortcuts" footer button that opens the shortcuts dialog. Shortcut rules: [links-and-tags](links-and-tags.md).
+[`ShortcutsCard`](../../url-shortener-ui/src/components/settings/ShortcutsCard.tsx) sits under the tracker card and is hidden below `sm` (the card asks for "View shortcuts", which needs a keyboard; the page wraps it in `hidden sm:block`): a labelled `Switch` (`id` and `aria-describedby` from `useId`) for `useShortcutsStore.isEnabled` and a "View shortcuts" footer button that opens the shortcuts dialog. Shortcut rules: [links-and-tags](links-and-tags.md).
 
 `PreferencesCard` + `usePreferencesStore` ([`src/lib/store/preferences.ts`](../../url-shortener-ui/src/lib/store/preferences.ts)):
 
