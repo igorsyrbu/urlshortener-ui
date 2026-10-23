@@ -3,6 +3,8 @@ import {scan} from "react-scan";
 
 vi.mock("react-scan", () => ({scan: vi.fn()}));
 
+const DEVELOPMENT_SCAN_OPTIONS = {enabled: true, useOffscreenCanvasWorker: false};
+
 describe("development render scanning", () => {
     beforeEach(() => {
         vi.resetModules();
@@ -13,13 +15,14 @@ describe("development render scanning", () => {
 
         await import("./instrumentation-client");
 
-        expect(vi.mocked(scan)).toHaveBeenCalledExactlyOnceWith({enabled: true, useOffscreenCanvasWorker: false});
+        await vi.waitFor(() => expect(vi.mocked(scan)).toHaveBeenCalledExactlyOnceWith(DEVELOPMENT_SCAN_OPTIONS));
     });
 
     it.each(["production", "test"])("does not start scanning in %s", async (environment) => {
         vi.stubEnv("NODE_ENV", environment);
 
         await import("./instrumentation-client");
+        await import("react-scan");
 
         expect(vi.mocked(scan)).not.toHaveBeenCalled();
     });
