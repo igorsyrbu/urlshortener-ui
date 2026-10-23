@@ -7,7 +7,7 @@ Related: [state-management](../state-management.md) · [api-layer](../api-layer.
 ## Overview
 
 - Route: `/analytics` ([`src/app/(dashboard)/analytics/page.tsx`](../../url-shortener-ui/src/app/(dashboard)/analytics/page.tsx)), a `"use client"` page inside the authenticated dashboard group (auth gate: [architecture](../architecture.md)).
-- All data lives in one Zustand store, `useAnalyticsStore` ([`src/lib/store/analytics.ts`](../../url-shortener-ui/src/lib/store/analytics.ts)). The page and `AnalyticsBreakdownGrid` destructure the whole store (no selectors) and pass slices to presentational components. The store is the only consumer of the analytics endpoint; the page is its only consumer.
+- All data lives in one Zustand store, `useAnalyticsStore` ([`src/lib/store/analytics.ts`](../../url-shortener-ui/src/lib/store/analytics.ts)). The page and `AnalyticsBreakdownGrid` select their fields with `useShallow` and pass slices to presentational components. The store is the only consumer of the analytics endpoint; the page is the only route that uses the store.
 - Endpoint: `API_ENDPOINTS.ANALYTICS` (`/analytics`) via `fetchWithAuth` ([api-layer](../api-layer.md)). Top-link enrichment uses `API_ENDPOINTS.SHORTLINKS_BY_IDS` (`/shortlinks/byIds?ids=a,b,c`).
 - Page layout: `PeriodSelector` row, a card with "Total Clicks" + `ComparisonBadge` + `ClicksTimeSeriesChart`, then a 2-column grid of four `AnalyticsCard`s: Top Links, Referrers, Countries/Continents (tabs), Devices/OS (tabs).
 
@@ -78,6 +78,5 @@ Bar colours come from `CHART_COLORS` in `lib/constants.ts`; chart/theme details 
 
 All are observations; they are not templates and not permission for drive-by changes.
 
-- Observation: `useAnalyticsStore` is subscribed to as a whole in the page, so any slice update re-renders the page.
 - Observation: the mock server returns fixed prior totals for `start`/`end` requests without `groupBy` (see [mock-server](../mock-server.md)), so the comparison badge values in dev are canned.
 - Tests: see [testing](../testing.md); `src/test/analytics-utils.tsx` holds shared analytics fixtures.

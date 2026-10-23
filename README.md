@@ -94,9 +94,10 @@ To enable comprehensive sandbox testing, the mock server strictly isolates all i
 2. **Zero Cross-Contamination** — If User A deletes or creates a short link or tag, these changes are immediately
    reflected in their dashboard and top links analytics, but User B's environment remains completely untouched and
    unaffected.
-3. **Strict Session Policies** — The sandbox UUID is encoded in both the `access_token` and `refresh_token` cookies. If
-   the UUID is missing or invalid in any API request, the server automatically wipes the `refresh_token` cookies and
-   triggers a `401 Unauthorized` response to redirect the browser to the login screen.
+3. **Strict Session Policies** — The sandbox UUID is encoded in the `refresh_token` HttpOnly cookie; the access token
+   is returned in the response body and kept in memory by the UI. A missing or invalid UUID in `/auth/code/exchange`
+   or `/token/refresh` clears the cookie and returns `401 Unauthorized`; other authenticated endpoints return `401`
+   without clearing it.
 
 ### Cleaning Build Cache
 
@@ -139,8 +140,8 @@ Copy `.env.example` to `.env` in the `url-shortener-ui` directory to customize:
 | Method | Path                           | Query / Body Params                                                                                       | Description                                                |
 |--------|--------------------------------|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------|
 | POST   | `/ott/generate`                | Body: `{ email }`                                                                                         | Generate magic link                                        |
-| POST   | `/ott/login`                   | Body (token): `loginType=token&token=<uuid>`<br/>Body (OTP): `loginType=otp&email=<email>&code=<6-digit>` | Verify OTT token or OTP code (returns tokens/redirect URL) |
-| GET    | `/auth/code/exchange`          | Query: `code` (required)                                                                                  | Exchange authorization code for access/refresh token       |
+| POST   | `/ott/login`                   | Body (token): `loginType=token&token=<uuid>`<br/>Body (OTP): `loginType=otp&email=<email>&code=<6-digit>` | Verify OTT token or OTP code and redirect to `/auth/exchange?code=...` |
+| GET    | `/auth/code/exchange`          | Query: `code` (required)                                                                                  | Exchange the code for an access token and set the `refresh_token` cookie |
 | POST   | `/token/refresh`               | (Uses `refresh_token` cookie)                                                                             | Refresh access token                                       |
 | GET    | `/oauth2/authorization/google` | -                                                                                                         | Start Google OAuth2 flow                                   |
 
@@ -150,6 +151,8 @@ Copy `.env.example` to `.env` in the `url-shortener-ui` directory to customize:
 |--------|---------------------------|---------------------|-------------------------------------|
 | GET    | `/users/me`               | -                   | Get current user profile            |
 | PUT    | `/users/me/name`          | Body: `{ name }`    | Update user display name            |
+| GET    | `/users/me/preferences`   | -                   | Get the URL cleaner preference      |
+| PUT    | `/users/me/preferences`   | Body: `{ urlCleanerMode }` (`DISABLE`, `SUGGEST`, `AUTO_CLEAN`) | Update the URL cleaner preference |
 | GET    | `/users/sessions`         | -                   | List active login sessions          |
 | DELETE | `/users/sessions/current` | -                   | Terminate the current session       |
 | DELETE | `/users/sessions/other`   | -                   | Terminate all other active sessions |
@@ -188,7 +191,20 @@ per sandbox user and endpoint; the real backend uses IP-based buckets with conti
 | POST   | `/shortlinks`       | Body: `{ longUrl, title, tagIds, isActive }`              | Create a new short link                    |
 | PUT    | `/shortlinks`       | Body: `{ id, longUrl, title, tagIds, isActive }`          | Update an existing short link              |
 | DELETE | `/shortlinks/:id`   | Path variable: `id`                                       | Delete a short link                        |
+| GET    | `/shortlinks/random` | -                                                        | Generate an available short key            |
+| GET    | `/shortlinks/export` | Query: `showArchived`, `search`                          | Export links as CSV                        |
+| POST   | `/shortlinks/import` | Query: `generateTakenKeys`, `fileName`; Body: `text/csv` | Start a CSV import job                     |
+| GET    | `/shortlinks/import/updates` | -                                                 | SSE progress stream for the active import  |
+| GET    | `/shortlinks/:key/exists` | Path variable: `key`                                 | Check whether a short key is taken (200/404) |
+| POST   | `/urlcleaner`       | Body: `{ url }`                                           | Detect and remove tracking parameters      |
 | GET    | `/longurl/title`    | Query: `url` (required)                                   | Extract page title from target URL         |
+| GET    | `/public/preview/:key` | Path variable: `key`                                   | Public Open Graph preview (no auth)        |
+
+**Public**
+
+| Method | Path | Query / Body Params | Description |
+|---|---|---|---|
+| POST | `/public/abuse/report` | Form: `shortUrl`, `reason`, `reporterEmail`, optional `description`, optional `cf-turnstile-response` | Submit an abuse report |
 
 **Tags**
 
@@ -236,13 +252,16 @@ Copy `.env.example` to `.env` in the `url-shortener-mock-server` directory to cu
 |------------------------|-------------------------|----------------------------------------------|
 | `PORT`                 | `8080`                  | Port the mock server listens on              |
 | `FRONTEND_URL`         | `http://localhost:3000` | URL the UI is served from                    |
-| `MOCK_DELAY`           | `0`                     | Artificial response delay (ms)               |
+| `MOCK_DELAY`           | `200`                   | Artificial response delay (ms); `0` disables it |
 | `MOCK_COOKIE_SAMESITE` | `lax`                   | `SameSite` for the `refresh_token` cookie    |
 | `MOCK_COOKIE_SECURE`   | `false`                 | Marks the `refresh_token` cookie as `Secure` |
+| `RANDOM_ANALYTICS_DATA` | `false`                | Randomize analytics click data on every request |
+| `MOCK_COOLDOWN_ENABLED` | `true`                  | Enable the magic-link cooldown               |
+| `MOCK_COOLDOWN_SECONDS` | `60`                    | Cooldown duration in seconds                 |
 | `MOCK_BILLING_SCENARIO` | `free`                 | Initial billing scenario for each sandbox user |
 | `MOCK_BILLING_PORTAL_EXPIRY` | `reported`         | Portal expiry payload: `reported`, `omitted`, `invalid`, or `expired` |
 | `MOCK_BILLING_TRACE`   | `false`                 | Log billing API method, path, and status for return-refresh debugging |
-| `MOCK_PUBLIC_URL`      | `http://localhost:8080` | Optional public mock-server origin for hosted billing URLs |
+| `MOCK_PUBLIC_URL`      | `https://mock.example.com` | Optional; defaults to the request origin for hosted billing URLs |
 
 #### Mock Billing and Portal-Return Reproduction
 
@@ -310,8 +329,9 @@ Use these regression checks to verify portal return refreshes and scheduled-swit
    with `pnpm --filter=url-shortener-ui start`; sign in and repeat the same steps.
 
 Use a single app tab for these reproductions. The return flag
-`localStorage["urlshortener:billing:portal-return"]` is shared by same-origin tabs and consumed by the first eligible
-focus/visibility event. Reading `null` after returning is expected and does not prove the flag was never written.
+`sessionStorage["urlshortener:billing:portal-return"]` is scoped to the tab that opened the portal and consumed by the
+first eligible focus/visibility event. Reading `null` after returning is expected and does not prove the flag was never
+written.
 The decisive evidence is the portal POST followed by the subscription GET and its response versus the visible text.
 Set `MOCK_BILLING_TRACE=true` before starting the mock server to also see these API requests in its terminal output;
 the trace excludes query strings, credentials, and hosted session URLs.

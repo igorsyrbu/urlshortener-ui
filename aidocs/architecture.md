@@ -45,11 +45,13 @@ Known limitations and existing exceptions are at the end of this guide.
 
 ## App bootstrapping
 
+Development builds also install the local React Scan observer before React loads, then start its toolbar through client instrumentation. The setup is development-only; details are in [configuration](configuration.md#tooling-config).
+
 1. **Root layout** ([`src/app/layout.tsx`](../url-shortener-ui/src/app/layout.tsx), server component). Loads Manrope through `next/font/google`, exports `metadata` and `viewport`, renders `<html suppressHydrationWarning>` and `<body>`. Inside the body, in this order:
    1. an inline `<script>` built by `buildPaletteInitScript()` ([`src/lib/themes/palette-init-script.ts`](../url-shortener-ui/src/lib/themes/palette-init-script.ts)) that reads `localStorage` and sets `data-palette` / inline token variables before first paint (prevents a palette flash);
    2. `ThemeProvider` (`next-themes`, `attribute="class"`, `defaultTheme="system"`, `enableSystem`, `disableTransitionOnChange`);
    3. `PaletteProvider`, which re-applies the stored selection, reacts to dark/light changes and updates the `theme-color` meta;
-   4. `{children}` and the sonner `Toaster`.
+   4. `{children}`, the sonner `Toaster`, then `LiveAnnouncer`.
 2. **Session bootstrap for the dashboard** ([`src/app/(dashboard)/layout.tsx`](../url-shortener-ui/src/app/(dashboard)/layout.tsx), client component, logic in [`src/lib/hooks/useSessionBootstrap.ts`](../url-shortener-ui/src/lib/hooks/useSessionBootstrap.ts)). Every page of the `(dashboard)` route group renders inside it. The hook returns a phase:
    - `ready` when the store already has a `user`, or when this browser has the **session hint** (`localStorage` `urlshortener:session-hint`, [`src/lib/session-hint.ts`](../url-shortener-ui/src/lib/session-hint.ts)). The layout then renders `Sidebar`, `Header`, `<main>` with the page and the global modals at once, while `fetchWithAuth(API_ENDPOINTS.USERS_ME)` runs **alongside** the page's own requests. They all wait for the one shared token refresh ([api-layer](api-layer.md#token-refresh)), so a reload costs 2 serial round trips (refresh, then profile + page data) instead of 3.
    - `checking` when there is no user and no hint (first visit, signed out), or while a rejected session redirects: a full-screen "Securing session..." spinner ([`SessionCheckScreen`](../url-shortener-ui/src/components/layout/SessionCheckScreen.tsx)), so signed-out visitors never see the dashboard.

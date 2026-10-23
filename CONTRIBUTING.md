@@ -39,8 +39,8 @@ standards:
   systems. If using AI agents, it is highly encouraged to use the `AGENTS.md` file. This file can also be helpful to
   become more familiar with the coding guidelines.
 - [ ] **Minimalistic Approach:** Keep the implementation clean and straightforward, avoiding unnecessary complexity.
-- [ ] **Manual Testing:** At a minimum, your feature must be tested manually to ensure it works properly across its
-  intended use cases (unit tests are great but not strictly required).
+- [ ] **Testing:** Add or update automated tests for every logic or user-facing behaviour change (see `AGENTS.md` and
+  `aidocs/testing.md`), and test the feature manually across its intended use cases.
 - [ ] **Relevance Check:** Make sure the implemented feature actually matches the original scope and remains relevant to
   the project.
 

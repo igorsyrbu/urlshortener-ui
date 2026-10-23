@@ -46,13 +46,6 @@ Env files: copy [`.env.example`](../url-shortener-mock-server/.env.example) to `
 
 The request header `x-mock-error: true` simulates a 500 on any request (not an env var; see [mock-server](mock-server.md)).
 
-### README discrepancies (verified against code)
-
-- Observation: the README mock table omits `RANDOM_ANALYTICS_DATA`, `MOCK_COOLDOWN_ENABLED` and `MOCK_COOLDOWN_SECONDS`, which the code reads and `.env.example` lists.
-- Observation: the README table gives `MOCK_PUBLIC_URL` the value `http://localhost:8080` in its "Example" column; the code has no such default and falls back to the request's protocol and host.
-- Observation: the README lists `MOCK_COOKIE_SAMESITE` and `MOCK_COOKIE_SECURE`, but `.env.example` does not contain them.
-- Observation: `MOCK_DELAY` is `0` in the README example column and `200` in `.env.example` (the code default is `0`).
-
 ## `next.config.ts`
 
 [`next.config.ts`](../url-shortener-ui/next.config.ts):
@@ -86,6 +79,7 @@ There is no `middleware.ts`/`proxy.ts` and no `env` block. Deliberately absent: 
 
 ## Tooling config
 
+- **React Scan:** `react-scan` is a UI devDependency. In development, the root layout uses [`getReactScanHook`](../url-shortener-ui/src/lib/react-scan-hook.ts) to read the installed package's small hook script and inject it with `beforeInteractive`. [`src/instrumentation-client.ts`](../url-shortener-ui/src/instrumentation-client.ts) then loads and starts the render-highlighting toolbar. Both are gated on `NODE_ENV === "development"`; production builds omit the hook and scanner import. The hook and overlay are served locally; no CDN script or CSP exception is needed. Its blob-worker renderer is disabled to work with the existing CSP. The package's optional React Grab version request is blocked by the existing `connect-src` policy. Restart the dev server and reload the page after installing it. These development observations illustrate render activity; use the compiled `test:perf` suite for comparable render counts.
 - **shadcn:** [`components.json`](../url-shortener-ui/components.json): style `new-york`, `rsc: true`, base colour `neutral`, CSS variables, CSS entry `src/app/globals.css`, no Tailwind config file, icon library `lucide`, aliases `@/components`, `@/components/ui`, `@/lib`, `@/lib/utils`, extra registry `@aceternity`. Styling conventions: [styling-and-theming](styling-and-theming.md).
 - **Tailwind v4 / PostCSS:** [`postcss.config.mjs`](../url-shortener-ui/postcss.config.mjs) registers `@tailwindcss/postcss`; there is no `tailwind.config.*`.
 - **ESLint:** [`eslint.config.mjs`](../url-shortener-ui/eslint.config.mjs) flat config extending `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`; ignores `.next`, `out`, `build`, `next-env.d.ts`. One project rule pair keeps `culori` out of the shared bundle (see [styling-and-theming](styling-and-theming.md), custom themes); the same `no-restricted-imports` rule rejects `@radix-ui/*` (use `radix-ui`).
@@ -138,4 +132,3 @@ Mock server scripts: `dev` (`tsx watch src/index.ts`), `start` (`node dist/index
 There is no CI workflow; every check runs locally. The root `typecheck` does not cover the UI, so run `pnpm --filter=url-shortener-ui type-check` for it.
 
 - Observation: README says `pnpm --filter=url-shortener-ui start` is the way to try production mode, while `next.config.ts` sets `output: 'standalone'` (Next documents `server.js` in `.next/standalone` as the standalone entry). Not verified here by running a build.
-- Observation: the README API reference does not list several endpoints that the UI calls (`API_ENDPOINTS` in `src/lib/constants.ts` includes shortlinks export/import/random/exists, `/public/preview/{key}`, `/public/abuse/report`, `/urlcleaner`, `/users/me/preferences`).

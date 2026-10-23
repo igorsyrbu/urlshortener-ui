@@ -27,7 +27,7 @@ Every change to logic (stores, hooks, `lib/` utilities, API handling) or to user
 
 UI scripts set `NODE_OPTIONS=--no-deprecation` (see [`package.json`](../url-shortener-ui/package.json)).
 
-Counts, measured on 2026-10-16 on Node 24 and 26: 136 UI test files (1,666 passed, none skipped) and 25 mock-server test files (400 passed). Treat these as a snapshot, not a contract. Do not add `it.skip`; fix the test or the code.
+Counts, measured on 2026-10-23 on Node 24.14.1: 181 UI test files (2,146 passed, none skipped) and 31 mock-server test files (471 passed). Treat these as a snapshot, not a contract. Do not add `it.skip`; fix the test or the code.
 
 ## React Compiler in tests
 

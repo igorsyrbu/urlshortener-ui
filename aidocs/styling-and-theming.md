@@ -117,13 +117,8 @@ Observations, not templates: do not copy them and do not change them as a drive-
 
 DESIGN.md versus code:
 
-- Observation: DESIGN.md states `rounded-xl` is `var(--radius)` (about 8px). In code `--radius-lg` is `var(--radius)` (8px) and `--radius-xl` is `calc(var(--radius) + 4px)` (12px); cards, inputs and toolbars use `rounded-xl`, so they are 12px.
-- Observation: DESIGN.md says nothing honours `prefers-reduced-motion`; five components do (see Motion). `animate-pulse` skeletons do not (the empty-state scrolling lists do since 2026-10-17).
-- Observation: DESIGN.md says `PageToolbar` and `PeriodSelector` use `min-h-10 items-center`; neither file contains `min-h-10` (the 40px height comes from `h-10` on the search bar and option buttons).
 - Observation: DESIGN.md's drawer rule forbids manual bottom padding (`px-6 pb-6`), yet the mobile (Drawer) branch of `TagFormModal` uses `px-6 pb-6` on its form. `LinksPagination` positions itself with `env(safe-area-inset-bottom)` directly.
-- Observation: DESIGN.md links `GlowingEffect`, `constants.ts` and `QrCodeModal` with absolute `file:///Users/igorsyrbu/...` paths from another machine; they do not resolve here.
 - Observation: DESIGN.md says all buttons must use `Button`; many raw `<button>` elements with bespoke classes exist ([coding-patterns.md](coding-patterns.md) lists them).
-- Observation: DESIGN.md describes `Spinner` conventions with `Loader2`/`LoaderIcon`; the code also has a div-based `Spinner` component used by the analytics tabs.
 
 Hardcoded values (outside the documented exceptions):
 

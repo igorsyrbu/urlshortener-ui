@@ -58,7 +58,7 @@ Per-route middleware:
 Notes on behaviour that differs from what a REST API usually does:
 
 - Every error is an RFC 9457 problem: `sendProblem(res, status, detail)` from [`src/problem.ts`](../url-shortener-mock-server/src/problem.ts) answers `{ type: "about:blank", title, status, detail }` (`title` is the standard reason phrase) with `Content-Type: application/problem+json`. Never write an error body by hand. The UI reads it with `readProblemDetail` / `parseProblemDetail` ([api-layer](api-layer.md#error-body-shape)).
-- `DELETE /tags/:id` returns 204; `POST /abuse/report` returns 201 with `status: "RECEIVED"`; `GET /shortlinks/:key/exists` returns 404 `{ exists: false }` when free.
+- `DELETE /tags/:id` returns 204; `POST /public/abuse/report` returns 201 with `status: "RECEIVED"`; `GET /shortlinks/:key/exists` returns 404 `{ exists: false }` when free.
 - `GET /public/preview/:key` fetches the long URL's Open Graph data ([`services/OpenGraphService.ts`](../url-shortener-mock-server/src/services/OpenGraphService.ts): 3 s timeout covering the headers and the body, so a stalled body ends the request; at most 50 KB kept, the rest is dropped) and `GET /longurl/title` does the same for the create-link form; failures degrade to empty data, not errors. This is the only outbound network access of the mock: it fetches any URL a developer saves, so never expose the mock to a network.
 - `POST /shortlinks` and `PUT /shortlinks` validate `longUrl` with the same rule (`validateLongUrl` in `ShortLinksService`: a non-blank `http`/`https` URL, else 400 `longUrl must not be blank` or `longUrl must be a valid URL`). CSV import is looser on purpose: like the backend's `new URI(url).getHost() != null`, any scheme with a host passes (`hasUrlHost`). `GET /public/preview/:key` therefore copes with a stored URL that does not parse: it skips the Open Graph fetch and answers `faviconDomain: null`.
 - `POST /urlcleaner` and the preference `urlCleanerMode` (`DISABLE`, `SUGGEST`, `AUTO_CLEAN`, default `SUGGEST`) back the URL cleaner ([`services/UrlCleanerService.ts`](../url-shortener-mock-server/src/services/UrlCleanerService.ts)); see [features/links-and-tags](features/links-and-tags.md).
@@ -95,7 +95,7 @@ Endpoints and UI behaviour: [features/billing-and-settings](features/billing-and
 
 ## Environment variables
 
-Names, defaults and effects are tabulated in [configuration](configuration.md#mock-server) and, partially, in the root [README](../README.md) and [`.env.example`](../url-shortener-mock-server/.env.example). Variables the code reads: `PORT`, `FRONTEND_URL`, `MOCK_DELAY`, `MOCK_COOKIE_SAMESITE`, `MOCK_COOKIE_SECURE`, `RANDOM_ANALYTICS_DATA`, `MOCK_COOLDOWN_ENABLED`, `MOCK_COOLDOWN_SECONDS`, `MOCK_BILLING_SCENARIO`, `MOCK_BILLING_PORTAL_EXPIRY`, `MOCK_BILLING_TRACE`, `MOCK_PUBLIC_URL`. All are read once at startup by `readMockConfig()` ([`src/config.ts`](../url-shortener-mock-server/src/config.ts)), which warns about invalid values and falls back to the default; restart the server after changing one. No other file reads `process.env`.
+Names, defaults and effects are tabulated in [configuration](configuration.md#mock-server), the root [README](../README.md) and [`.env.example`](../url-shortener-mock-server/.env.example). Variables the code reads: `PORT`, `FRONTEND_URL`, `MOCK_DELAY`, `MOCK_COOKIE_SAMESITE`, `MOCK_COOKIE_SECURE`, `RANDOM_ANALYTICS_DATA`, `MOCK_COOLDOWN_ENABLED`, `MOCK_COOLDOWN_SECONDS`, `MOCK_BILLING_SCENARIO`, `MOCK_BILLING_PORTAL_EXPIRY`, `MOCK_BILLING_TRACE`, `MOCK_PUBLIC_URL`. All are read once at startup by `readMockConfig()` ([`src/config.ts`](../url-shortener-mock-server/src/config.ts)), which warns about invalid values and falls back to the default; restart the server after changing one. No other file reads `process.env`.
 
 ## Keeping UI and mock in sync
 
@@ -111,8 +111,6 @@ When the UI gains or changes an endpoint (this is also required by [CONTRIBUTING
 
 ## Known limitations and existing exceptions
 
-- Observation: README states the UUID is in both `access_token` and `refresh_token` cookies and that any invalid-UUID API request wipes the cookie. In code only `refresh_token` is a cookie (the access token is returned in the response body) and only `/auth/code/exchange` and `/token/refresh` clear it; `authentication` just returns 401. README is not the source of truth here.
-- Observation: README's mock env table is out of date; the verified differences are listed in [configuration](configuration.md#readme-discrepancies-verified-against-code).
 - Observation: all state is lost on restart, and there is no endpoint to reset the non-billing state of a sandbox.
 - Observation: access-token expiry and signature are never checked, and the refresh cookie is not invalidated by logout/session deletion endpoints.
 - Observation: the CORS `methods` list lacks `PATCH`; adding a `PATCH` endpoint needs a change in `middleware/cors.ts`.

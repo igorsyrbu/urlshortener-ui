@@ -60,8 +60,9 @@ Read [aidocs/README.md](aidocs/README.md), then the guides for your task before 
 6. User-provided text never breaks layout: `truncate` + `title` (and `min-w-0` on every flex/grid ancestor), or
    `break-all` where the full value must stay visible.
 7. No `any`. Type assertions only when unavoidable, with a comment saying why.
-8. Naming: event handlers `handle*`, booleans `is*` / `has*` / `can*`, intention-revealing names. Functions stay
-   under ~40 lines, use guard clauses, and contain no magic values; a string used twice becomes a constant.
+8. Naming: event handlers `handle*`, booleans `is*` / `has*` / `can*`, intention-revealing names. Functions aim
+   for under 30 lines; ~40 lines is the signal to split. Use guard clauses and no magic values; a string used twice
+   becomes a constant.
 9. Log only through `logger` from `@/lib/logger`; never `console.*`.
 10. Internal navigation uses `next/link` or the router, never a raw `<a>`. No route-level `loading.tsx`. Images use
     `next/image`, fonts use `next/font`.

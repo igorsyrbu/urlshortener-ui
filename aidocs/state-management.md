@@ -25,7 +25,7 @@ All stores are created with `create` from `zustand` (v5) and exported as hooks. 
 | `useLinkStore` | [`src/lib/store/links.ts`](../url-shortener-ui/src/lib/store/links.ts) | `links`, `loading`, `error`, `showArchived`, `searchQuery`, `currentPage`, `totalElements`, `totalPages` | `fetchLinks(page?)`, `clearError`, `setShowArchived`, `setSearchQuery`, `hydrateShowArchived`, `setLinkArchived`, `deleteLink` | links page, `CreateLinkModal`, `ExportCsvModal`, `useLinkImport` |
 | `useShortcutsStore` | [`src/lib/store/shortcuts.ts`](../url-shortener-ui/src/lib/store/shortcuts.ts) | `isEnabled` | `setEnabled` (persists), `hydrate` | `canRunShortcut` (every shortcut handler), `ShortcutsCard` |
 | `useTagStoreWithoutCount` | [`src/lib/store/tags.ts`](../url-shortener-ui/src/lib/store/tags.ts) | `tags`, `loading`, `error`, `searchQuery`, `hasLoaded` | `fetchTags({size?})`, `ensureLoaded()` (fetch unless loaded or loading), `setSearchQuery` | links page, `TagSelect`, `LinkFormFields`, `LinkCard`, `useTagMutations`, `useLinkImport` |
-| `useTagStoreWithCount` | [`src/lib/store/tags-with-count.ts`](../url-shortener-ui/src/lib/store/tags-with-count.ts) | same plus `clearError` | `fetchTags({size?})`, `setSearchQuery`, `clearError` | tags page, `useTagMutations` |
+| `useTagStoreWithCount` | [`src/lib/store/tags-with-count.ts`](../url-shortener-ui/src/lib/store/tags-with-count.ts) | same fields without `hasLoaded` | `fetchTags({size?})`, `setSearchQuery`, `clearError` | tags page, `useTagMutations` |
 | `usePreferencesStore` | [`src/lib/store/preferences.ts`](../url-shortener-ui/src/lib/store/preferences.ts) | `trackerMode` (`null` until loaded), `hasLoaded`, `isLoading`, `isSaving` | `fetchPreferences` (once per session), `updatePreferences` (optimistic) | `PreferencesCard`, `LinkFormFields` |
 | `useAnalyticsStore` | [`src/lib/store/analytics.ts`](../url-shortener-ui/src/lib/store/analytics.ts) | `period`, `customDateRange`, totals, `timeSeries`, `countries`, `continents`, `devices`, `os`, `referrers`, `topLinks`, `status` per section, `overviewLoadedAt`, `locationTab`, `deviceTab` | `setPeriod`, `setCustomDateRange`, `setLocationTab`, `setDeviceTab`, `loadAnalytics`, `retrySection` | analytics page, `AnalyticsBreakdownGrid` |
 | `useAnnouncerStore` | [`src/lib/store/announcer.ts`](../url-shortener-ui/src/lib/store/announcer.ts) | `message`, `sequence` | `announce` (also exported as a plain `announce()` function) | `LiveAnnouncer` in the root layout, `useCopyToClipboard` |
@@ -60,7 +60,7 @@ Follow these when adding or changing a store.
 
 ## Persisted browser state
 
-All persistence is `localStorage`. `sessionStorage` is not used by application code (only cleared in test setup).
+Persistence is mostly `localStorage`; `sessionStorage` is used only for the billing portal-return flag (see below).
 
 | Key | Owner file | Content | Lifetime |
 |---|---|---|---|

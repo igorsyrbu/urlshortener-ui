@@ -8,6 +8,8 @@ import {Toaster} from "@/components/ui/sonner";
 import {LiveAnnouncer} from "@/components/layout/LiveAnnouncer";
 import React from "react";
 import {APP_NAME} from "@/lib/constants";
+import Script from "next/script";
+import {getReactScanHook} from "@/lib/react-scan-hook";
 
 const manrope = Manrope({
     variable: "--font-manrope",
@@ -37,8 +39,14 @@ export default function RootLayout({
                                    }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const reactScanHook = getReactScanHook();
+
     return (
         <html lang="en" suppressHydrationWarning>
+        {reactScanHook && <head>
+            <Script id="react-scan-hook" strategy="beforeInteractive"
+                    dangerouslySetInnerHTML={{__html: reactScanHook}}/>
+        </head>}
         <body
             className={`${manrope.variable} font-sans antialiased bg-background text-foreground`}
             suppressHydrationWarning

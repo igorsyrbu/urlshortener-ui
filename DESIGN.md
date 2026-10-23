@@ -65,7 +65,7 @@ The application ships with a **default warm, cream/terracotta-based palette** (r
 To ensure consistent alignment across all pages:
 * **PageContainer Spacing:** Standardized to a `gap-4` (16px) vertical flex layout.
 * **Layout Top Padding:** Set to `pt-2 md:pt-6 lg:pt-6` in layout shells. Negative margin hacks (such as `-mt-6`) are forbidden.
-* **Header Height Alignment:** The `PageToolbar` and `PeriodSelector` containers must use `min-h-10 items-center` (40px) to guarantee that the first content card on every page aligns to the exact same vertical position.
+* **Header Height Alignment:** The toolbar row aligns on the 40px (`h-10`) search field and option buttons; the analytics period row uses `ANALYTICS_PERIOD_ROW_CLASS` (`min-h-10 items-center`). Keep any new toolbar or period row at 40px so the first content card on every page starts at the same vertical position.
 * **Card List Gaps:** Link lists, tag lists, and their loading skeleton rows must use `gap-3` (12px) grid gap spacing for a consistent rhythm.
 * **Settings Pages:** a centred column capped at `max-w-4xl` (`gap-6`): a one-line page description, underline tabs on a hairline (active tab: foreground text and a 2px foreground bar), then section rows separated by hairlines (`py-8`). A row puts its title (`text-sm font-semibold`) and description (`text-sm text-muted-foreground`) in a `16rem` left column and its cards on the right once the column is 48rem wide (container query), stacked below that. Cards inside carry no title of their own; inner headings are `text-sm font-medium` with an `text-xs` description. Card actions sit right-aligned in a footer bar under a hairline, in the card colour (no lighter fill); option lists are rows divided by hairlines; destructive actions are outline buttons with destructive text inside a card with a `border-destructive/40` border.
 * **Analytics Page Spacing:** 
@@ -75,7 +75,7 @@ To ensure consistent alignment across all pages:
 ### Border Radius Hierarchy
 * **Small (`rounded-sm`):** `calc(var(--radius) - 4px)` (approx. `4px`) — used for inline tags or very small elements.
 * **Medium (`rounded-md`):** `calc(var(--radius) - 2px)` (approx. `6px`) — standard input fields, badges, buttons.
-* **Large (`rounded-xl`):** `var(--radius)` (approx. `8px`) — main cards (link cards, tag cards, settings panels), sidebar menu buttons, the Mock Dashboard container, and size-16 icon wrappers (e.g. 404 page icon).
+* **Large (`rounded-xl`):** `calc(var(--radius) + 4px)` (approx. `12px`) — main cards (link cards, tag cards, settings panels), sidebar menu buttons, the Mock Dashboard container, and size-16 icon wrappers (e.g. 404 page icon); `rounded-lg` is the 8px step below it.
 * **Extra Large (`rounded-2xl`):** `calc(var(--radius) + 8px)` (approx. `16px`) — modals, `DialogContent`, and `AlertDialogContent` desktop containers.
 
 ### Shadows
@@ -104,19 +104,19 @@ The Tag model defines standard badge mappings inside `src/components/ui/badge.ts
 * **Colors (Red, Yellow, Lime, Green, Blue, Cyan, Purple):** Palette mappings defined using clean semi-transparent fills with solid colored labels.
 
 ### Glowing Effect (Intentional Rainbow Exception)
-The `GlowingEffect` component in [`src/components/ui/glowing-effect.tsx`](file:///Users/igorsyrbu/IdeaProjects/url-shortener/urlshortener-ui/url-shortener-ui/src/components/ui/glowing-effect.tsx) uses a **deliberate rainbow color palette** — not derived from the terracotta brand colors.
+The `GlowingEffect` component in [`url-shortener-ui/src/components/ui/glowing-effect.tsx`](url-shortener-ui/src/components/ui/glowing-effect.tsx) uses a **deliberate rainbow color palette** — not derived from the terracotta brand colors.
 
 The gradient sweep uses: pink (`#dd7bbb`), gold (`#d79f1e`), lime (`#5a922c`), and blue (`#4c7894`) to create a multicolor conic sweep effect that is visually striking on hover/focus of dashboard cards. This is an intentional design choice to add visual delight and should **not** be refactored to match the brand palette.
 
 ### Analytics Chart Colors (Intentional High-Contrast Exception)
-The analytics visualizations (located in `src/app/globals.css` and [`src/lib/constants.ts`](file:///Users/igorsyrbu/IdeaProjects/url-shortener/urlshortener-ui/url-shortener-ui/src/lib/constants.ts)) use a **distinct, high-contrast color palette** instead of the core terracotta brand palette.
+The analytics visualizations (located in `src/app/globals.css` and [`url-shortener-ui/src/lib/constants.ts`](url-shortener-ui/src/lib/constants.ts)) use a **distinct, high-contrast color palette** instead of the core terracotta brand palette.
 
 Colors like emerald green, yellow/gold, bright cyan, pink, and indigo/purple are intentionally selected to provide clear visual categorization and separation for different data dimensions (e.g. locations, devices, OS, referrers) in Recharts rendering. This is a deliberate choice for readability and data parsing reliability and should **not** be refactored to matching brand tones.
 
 **Exception within the exception:** `--chart-clicks` (the Total clicks time series) **does follow the active color palette** — each palette maps it to its primary color, and custom themes derive it from the picked primary. Only the categorical series colors stay fixed across palettes.
 
 ### QR Code Contrast (Scan Reliability Exception)
-The `QrCodeModal` generation settings in [`src/components/links/QrCodeModal.tsx`](file:///Users/igorsyrbu/IdeaProjects/url-shortener/urlshortener-ui/url-shortener-ui/src/components/links/QrCodeModal.tsx) hardcode the dot color to black (`#000000`) and the background options color to white (`"white"`). This is a deliberate design requirement to guarantee maximum scanning contrast for device readers and paper prints under any UI theme (light/dark) and should **not** be refactored to theme-based dynamic variables.
+The `QrCodeModal` generation settings in [`url-shortener-ui/src/components/links/QrCodeModal.tsx`](url-shortener-ui/src/components/links/QrCodeModal.tsx) hardcode the dot color to black (`#000000`) and the background options color to white (`"white"`). This is a deliberate design requirement to guarantee maximum scanning contrast for device readers and paper prints under any UI theme (light/dark) and should **not** be refactored to theme-based dynamic variables.
 
 ---
 
@@ -150,9 +150,9 @@ The `QrCodeModal` generation settings in [`src/components/links/QrCodeModal.tsx`
 * **High-frequency updates** (e.g. cursor tracking during file drag) must use motion values + springs, never `setState` per event.
 
 ### Loader Conventions
-* **Spinners:** `Loader2` / `LoaderIcon` with `animate-spin`; use the shared `ButtonSpinner` inside buttons.
+* **Spinners:** Use the shared `Spinner` for content areas and `ButtonSpinner` (`LoaderIcon` with `animate-spin`) inside buttons. A few inline icon spinners still use `Loader2`; new code should prefer the shared components.
 * **Skeletons:** `animate-pulse` blocks.
 
 ### Gotchas
 * **Always pair `duration-*` with an explicit `transition-*` scope.** A bare `duration-200` activates transitions on *all* properties (CSS initial `transition-property: all`) — this once animated a dialog's width swap and reflowed its text mid-transition. Size-changing surfaces get `transition-none`; open/close keyframe animations (`animate-in` / `animate-out`) are unaffected by it.
-* **Looping / infinite animations should respect `prefers-reduced-motion`.** Nothing in the codebase does yet — this is the standard going forward, not a description of the status quo.
+* **Looping / infinite animations must respect `prefers-reduced-motion`.** The global rule in `src/app/globals.css` ends CSS animations and transitions under `prefers-reduced-motion: reduce` (except `.animate-spin`), and framer-motion users wrap themselves in `MotionConfig reducedMotion="user"`; keep new motion inside that contract.

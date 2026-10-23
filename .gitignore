@@ -20,6 +20,7 @@ build
 # misc
 .DS_Store
 *.pem
+.openchamber/
 
 # debug
 npm-debug.log*
