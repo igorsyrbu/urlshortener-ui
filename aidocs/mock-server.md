@@ -8,7 +8,7 @@ Related: [api-layer](api-layer.md) · [configuration](configuration.md) · [test
 
 The real backend is a closed-source REST API; the mock server (Express 4 + TypeScript, package `@url-shortener/url-shortener-mock-server`) mirrors every endpoint the UI uses with in-memory data. The UI reaches it through the Next.js `/api/*` rewrite (see [configuration](configuration.md)), so UI requests use an `/api` prefix while the mock's routes are unprefixed. Setup, ports and the API reference table are in the root [README](../README.md) (mock-server sections); this guide describes the code.
 
-Layering: `routes/*.ts` (path + middleware wiring only) to `controllers/*Controller.ts` (HTTP: parse request, status codes, response shape) to `services/*Service.ts` (logic and state) to `services/MemoryStore.ts` (per-user state). Controllers are classes of static methods; services are singleton instances (`shortLinksService`, `tagsService`, `usersService`, `analyticsService`, `importJobsService`, `billingService`, `authService`).
+Layering: `routes/*.ts` (path + middleware wiring only) to `controllers/*Controller.ts` (HTTP: parse request, status codes, response shape) to `services/*Service.ts` (logic and state) to `services/MemoryStore.ts` (per-user state). Controllers are classes of static methods; services are singleton instances (`shortLinksService`, `tagsService`, `usersService`, `analyticsService`, `importJobsService`, `authService`), except `BillingService`, which `createApp` creates per app (see [MemoryStore and seed data](#memorystore-and-seed-data)).
 
 Two rules keep a bad request from taking the process down:
 

@@ -37,7 +37,7 @@ Why server vs client per file is in [architecture](architecture.md#rendering-mod
 - `inspect/[key]` calls `notFound()` when the backend has no preview for the key, so a visitor sees "Link not found" instead of being bounced through `/` -> `/links` -> `/login`. Not-found pages share `components/layout/NotFoundView` (404 mark, heading, text, action buttons as children).
 - Client redirects use `router.replace` when the previous entry must not stay in history (login after a failed auth check, after logout, `auth/exchange` -> `/links` so Back cannot resend the spent code) and `router.push` otherwise (link creation and import -> `/links`).
 - Hard navigations (`window.location`) exist for things the router cannot do: `fetchWithAuth` goes to `/login` when refresh fails ([api-layer](api-layer.md)), Google sign-in goes to `/api/oauth2/authorization/google` (cross-origin redirect chain through the proxy), billing checkout/portal go to provider URLs (`src/lib/billing-redirect.ts`).
-- Route constants: `ROUTES` (`LOGIN`, `LINKS`, `SETTINGS`) in [`src/lib/constants.ts`](../url-shortener-ui/src/lib/constants.ts) and `SETTINGS_ROUTES` in [`src/lib/settings-constants.ts`](../url-shortener-ui/src/lib/settings-constants.ts). Prefer them over string literals for these paths.
+- Route constants: `ROUTES` (`LOGIN`, `DASHBOARD`, `LINKS`, `ANALYTICS`, `TAGS`, `SETTINGS`) in [`src/lib/constants.ts`](../url-shortener-ui/src/lib/constants.ts) and `SETTINGS_ROUTES` in [`src/lib/settings-constants.ts`](../url-shortener-ui/src/lib/settings-constants.ts). Prefer them over string literals for these paths.
 
 ## Auth guarding
 
@@ -59,7 +59,7 @@ Guarding is client-side only; there is no server-side check.
 - [`src/app/(dashboard)/error.tsx`](../url-shortener-ui/src/app/(dashboard)/error.tsx) catches render errors of dashboard pages (not of the dashboard layout itself, per Next.js semantics). It logs through `logger.error` and offers "Try again" (`reset`).
 - Segment boundaries with their own wording: `auth/error.tsx` (code exchange and one-time token), `inspect/[key]/error.tsx` (preview fetch failed), `(legal)/error.tsx` (report-abuse). [`src/app/error.tsx`](../url-shortener-ui/src/app/error.tsx) (`RootError`) catches the rest, such as `/login`. All of them render `components/layout/ErrorView` (`variant` `page` or `section`), which logs through `logger.error` with the digest, never shows the error message, and offers "Try again" (`reset`).
 - [`src/app/global-error.tsx`](../url-shortener-ui/src/app/global-error.tsx) replaces the root layout when the layout itself throws, so it renders its own `<html>`/`<body>` and imports `globals.css`. Next ships it with every route, so it uses a plain `<button>` and no shared UI components (`ErrorView` with `Button` and an icon cost about 2.4 KB gzip on every route).
-- [`src/app/not-found.tsx`](../url-shortener-ui/src/app/not-found.tsx) renders the 404 with "Go back" (`router.back()`) and "Go to Dashboard" (`router.push("/dashboard")`).
+- [`src/app/not-found.tsx`](../url-shortener-ui/src/app/not-found.tsx) renders the 404 with "Go back" (`router.back()`) and "Go to Dashboard" (`router.push(ROUTES.DASHBOARD)`).
 - Add an `error.tsx` at a segment when that segment needs its own recovery UI; do not wrap pages in ad-hoc error boundaries.
 
 ## No route-level `loading.tsx`
@@ -95,22 +95,23 @@ Search and the archived toggle reset the URL to `/links` (first page) when the c
 
 ## Keyboard shortcuts
 
-No shortcut navigates between routes. Shortcuts that exist, all guarded so they do not fire while typing in inputs or while a modal is open (`isModalOpen()` from `src/lib/utils.ts`):
+No shortcut navigates between routes. The single-key shortcuts live in [`src/lib/keyboard-shortcuts.ts`](../url-shortener-ui/src/lib/keyboard-shortcuts.ts) (`SHORTCUTS`, `canRunShortcut`); every handler calls `canRunShortcut`, so none fires while typing in a field, with Ctrl/Meta/Alt held, while a dialog is open (`isModalOpen()` from `src/lib/utils.ts`) or after the user turned shortcuts off in Settings.
 
 | Key | Where | Effect |
 |---|---|---|
 | `C` | `Header.tsx` (all dashboard pages) | Opens "Create link", or "Create tag" on `/tags`. |
-| `Cmd/Ctrl+K` | `SearchBar.tsx` | Focuses the search input; `Esc` clears or blurs it. |
-| `A` | `links/page.tsx` | Archives the hovered link, or toggles "show archived" when none is hovered. |
-| `E`, `D`, `Q` | `LinkCard.tsx` (menu open) | Edit, delete, QR code. |
-| `E`, `D` | `TagCard.tsx` (menu open) | Edit, delete. |
+| `?` | `(dashboard)/layout.tsx` | Opens `KeyboardShortcutsDialog`. |
+| `Cmd/Ctrl+K` | `SearchBar.tsx` | Focuses the search input; `Esc` clears or blurs it. Not a single-key shortcut: it skips only while a dialog is open and ignores the Settings switch. |
+| `A` | `links/page.tsx` | Toggles "show archived" when no link card is active. |
+| `E`, `Q`, `A`, `D` | `LinkCard.tsx` (card focused, hovered or menu open) | Edit, QR code, archive or unarchive, delete. |
+| `E`, `D` | `TagCard.tsx` (card focused, hovered or menu open) | Edit, delete. |
 
-Details of the links and tags behaviours: [features/links-and-tags](features/links-and-tags.md).
+Rules, the focus/hover definition and the settings switch: [features/links-and-tags](features/links-and-tags.md) and [state-management](state-management.md).
 
 ## Known limitations and existing exceptions
 
 - Observation: `/dashboard` is a placeholder page, yet it is the target of "Go to Dashboard" in `not-found.tsx` and the first sidebar item, while `/` redirects to `/links`. Existing behaviour - do not change as a drive-by.
-- Observation: `sidebar-user-menu.tsx` uses the string literal `"/login"` instead of `ROUTES.LOGIN`; `ROUTES` has no entries for `/inspect` or `/report-abuse`. Existing exception - not a template.
+- Observation: `ROUTES` has no entries for `/inspect` or `/report-abuse`; the inspect page builds those paths inline. Existing exception - not a template.
 - Observation: `inspect/[key]/page.tsx` (server fetch, `notFound()` on a missing key) and `report-abuse/page.tsx` (async server page) are exceptions to the client-rendered model; see [architecture](architecture.md#known-limitations-and-existing-exceptions).
 - Observation: the auth gate is client-side, so a protected page's JS bundle is delivered before the check completes; nothing user-specific is rendered until it passes.
 - Observation (dev server only): Back to a dashboard page that was opened with a full page load (for example from the mock checkout) reloads it from the HTTP cache (`Cache-Control: no-cache`), and React never hydrates, so the page stays on "Securing session..." until a reload. Seen with `next dev` in the in-app browser; the same Back on a production build (`next start`) hydrates normally. Reload the page; this is not an app bug to fix.

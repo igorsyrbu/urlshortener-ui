@@ -16,7 +16,7 @@ The app is client-rendered with no SSR data (see the rule in [api-layer.md](api-
 
 ## Stores
 
-All stores are created with `create` from `zustand` (v5) and exported as hooks. Each has a co-located `*.test.ts`.
+All stores are created with `create` from `zustand` (v5) and exported as hooks. Most have a co-located `*.test.ts`; `announcer.ts` and `tags-with-count.ts` have none.
 
 | Store (hook) | File | State | Actions | Used by |
 |---|---|---|---|---|

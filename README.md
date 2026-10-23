@@ -139,8 +139,8 @@ Copy `.env.example` to `.env` in the `url-shortener-ui` directory to customize:
 
 | Method | Path                           | Query / Body Params                                                                                       | Description                                                |
 |--------|--------------------------------|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------|
-| POST   | `/ott/generate`                | Body: `{ email }`                                                                                         | Generate magic link                                        |
-| POST   | `/ott/login`                   | Body (token): `loginType=token&token=<uuid>`<br/>Body (OTP): `loginType=otp&email=<email>&code=<6-digit>` | Verify OTT token or OTP code and redirect to `/auth/exchange?code=...` |
+| POST   | `/ott/generate`                | Form body: `username=<email>` (plus `cf-turnstile-response` when Turnstile is on)                          | Generate magic link                                        |
+| POST   | `/ott/login`                   | Body (token): `loginType=token&token=<token>&email=<email>`<br/>Body (OTP): `loginType=otp&email=<email>&code=<6-digit>` | Verify OTT token or OTP code and redirect to `/auth/exchange?code=...` |
 | GET    | `/auth/code/exchange`          | Query: `code` (required)                                                                                  | Exchange the code for an access token and set the `refresh_token` cookie |
 | POST   | `/token/refresh`               | (Uses `refresh_token` cookie)                                                                             | Refresh access token                                       |
 | GET    | `/oauth2/authorization/google` | -                                                                                                         | Start Google OAuth2 flow                                   |
@@ -294,7 +294,8 @@ curl -X POST http://localhost:8080/mock/billing/scenario \
 The response is the new subscription DTO. Reload the app after seeding to establish fresh frontend state. Seeding
 invalidates that user's previous hosted links. The endpoint accepts the scenarios above and an optional
 `portalExpiryMode`; it uses the bearer token's UUID, never a user ID supplied in the body. An existing portal also
-offers **Mock billing scenarios** with **Set scenario and return to billing** for changing its own sandbox.
+offers a collapsible **Sandbox controls** panel with a **Subscription scenario** selector and **Set scenario and return to
+billing** for changing its own sandbox.
 
 Click **Manage subscription** to create a fresh portal session and open it in a new tab. The hosted portal offers
 **Cancel yearly switch** when a change is pending, **Cancel subscription at renewal**, **Resume subscription** when
@@ -355,7 +356,7 @@ To simulate an 500 Internal Server Error, you can send the `x-mock-error: true` 
 
 ```bash
 curl -H "x-mock-error: true" http://localhost:8080/users/me
-# → 500 { "error": "Simulated server error", ... }
+# → 500 application/problem+json { "type": "about:blank", "title": "Internal Server Error", "status": 500, "detail": "Simulated server error: ..." }
 ```
 
 ---

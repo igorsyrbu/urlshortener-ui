@@ -76,7 +76,7 @@ To ensure consistent alignment across all pages:
 * **Small (`rounded-sm`):** `calc(var(--radius) - 4px)` (approx. `4px`) — used for inline tags or very small elements.
 * **Medium (`rounded-md`):** `calc(var(--radius) - 2px)` (approx. `6px`) — standard input fields, badges, buttons.
 * **Large (`rounded-xl`):** `calc(var(--radius) + 4px)` (approx. `12px`) — main cards (link cards, tag cards, settings panels), sidebar menu buttons, the Mock Dashboard container, and size-16 icon wrappers (e.g. 404 page icon); `rounded-lg` is the 8px step below it.
-* **Extra Large (`rounded-2xl`):** `calc(var(--radius) + 8px)` (approx. `16px`) — modals, `DialogContent`, and `AlertDialogContent` desktop containers.
+* **Extra Large (`rounded-2xl`):** `calc(var(--radius) + 8px)` (approx. `16px`) — modals and `DialogContent` desktop containers (there is no `AlertDialog` component).
 
 ### Shadows
 * **Soft Shadow:** `shadow-soft` custom utility (`0 2px 12px -2px rgba(0, 0, 0, 0.04)`) used for layout widgets.

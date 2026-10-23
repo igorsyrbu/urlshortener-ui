@@ -45,7 +45,7 @@ Defined in [`vitest.config.ts`](../url-shortener-ui/vitest.config.ts):
 - Auto-reset flags: `clearMocks`, `restoreMocks`, `unstubGlobals`, `unstubEnvs` are all `true`. Do not repeat that cleanup by hand.
 - Coverage: provider `v8`, reporters `text`, `json`, `html`. Thresholds: statements 90, branches 85, functions 88, lines 90. Excluded: `src/test/**`, test files, `src/components/ui/**`, `**/*.d.ts`.
 
-[`tsconfig.test.json`](../url-shortener-ui/tsconfig.test.json) extends `tsconfig.json`, disables `incremental`, adds the global types `vitest/globals` and `@testing-library/jest-dom`, and includes `src/**/*.ts(x)` plus `vitest.config.ts`. `pnpm type-check` runs it, so type errors in tests fail the check.
+[`tsconfig.test.json`](../url-shortener-ui/tsconfig.test.json) extends `tsconfig.json`, disables `incremental`, adds the global types `vitest/globals` and `@testing-library/jest-dom`, and includes `src/**/*.ts(x)` plus `vitest.config.ts` and `vitest.compiler.config.ts`. `pnpm type-check` runs it, so type errors in tests fail the check.
 
 ## Global setup (`src/test/setup.ts`)
 
@@ -118,7 +118,7 @@ Add new global polyfills here, never inside individual tests.
 | [`billing-utils.ts`](../url-shortener-ui/src/test/billing-utils.ts) | `createBillingSubscriptionDto`, `allowTestBillingOrigins`, `TEST_BILLING_ORIGINS`, `createFakeBillingTab` | Billing subscription DTO fixture; puts the test origins on the billing allowlist; a fake `window.open` tab with spies on `location.replace` and `close` |
 | [`page-toolbar-utils.ts`](../url-shortener-ui/src/test/page-toolbar-utils.ts) | `getOptionsTrigger` | Locate the toolbar options trigger |
 | [`time-zone-utils.ts`](../url-shortener-ui/src/test/time-zone-utils.ts) | `FAR_FROM_UTC_TIME_ZONES` | Run date logic under UTC+14 and UTC-7/-8 with `describe.each` + `vi.stubEnv("TZ", timeZone)` (Node applies it immediately; vitest restores it). Every test of code that turns dates into strings or back uses it |
-| [`viewport-utils.ts`](../url-shortener-ui/src/test/viewport-utils.ts) | `stubDesktopViewport`, `stubMobileViewport` | Stub `matchMedia` by viewport width (derived from `MOBILE_BREAKPOINT_PX`) |
+| [`viewport-utils.ts`](../url-shortener-ui/src/test/viewport-utils.ts) | `stubDesktopViewport`, `stubMobileViewport`, `stubReducedMotion` | Stub `matchMedia` by viewport width (derived from `MOBILE_BREAKPOINT_PX`) or for `prefers-reduced-motion` |
 
 Shared fixtures should be extended here when a second test file needs them.
 

@@ -71,7 +71,7 @@ Controlled by `NEXT_PUBLIC_ENABLE_TURNSTILE` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY
 1. No `code`: renders an "Error / No authorization code provided" card.
 2. Otherwise one effect calls, at most once per code (a ref guard survives StrictMode's double effect run and router identity changes, because the code is single-use), first removes the query string from the address bar and the current history entry (`clearQueryString` from `lib/url-utils.ts`, a `history.replaceState` without a navigation), then calls `GET /api/auth/code/exchange?code=<encoded>` with `credentials: "include"` so the response can set the refresh cookie. Plain `fetch`, no `Authorization` header.
 3. On success it stores `data.accessToken` via `useAuthStore().setAccessToken`, sets the session hint (so the first dashboard render is the shell, see [Session bootstrap](#session-bootstrap)) and immediately calls `router.replace(ROUTES.LINKS)`: no wait, and the exchange URL with its single-use code leaves the history, so Back cannot resend it.
-4. On failure it renders "Exchange Failed" with the error message and offers no retry or link back to `/login`. The code is already gone from the URL, so a reload shows "No authorization code provided".
+4. On failure it renders "Exchange Failed" with a user-facing message and offers no retry or link back to `/login`: `REJECTED_CODE_MESSAGE` ("This sign-in link has expired or was already used...") for 400, 401, 404 and 410, otherwise `describeHttpFailure(status)` or, for a network error, `describeRequestError`. The code is already gone from the URL, so a reload shows "No authorization code provided".
 
 Why the code is read into state: Next.js syncs `useSearchParams` with `history.replaceState`, so after the address bar is cleared the search params are empty; the page keeps the value it was opened with. `Referrer-Policy: no-referrer` on `/auth/*` (see [configuration](../configuration.md)) covers the moment before the URL is cleared.
 
@@ -100,7 +100,7 @@ Two implementations end the current session; both call `DELETE /users/sessions/c
 
 | Place | Behaviour |
 |---|---|
-| Sidebar user menu, [`src/components/layout/sidebar-user-menu.tsx`](../../url-shortener-ui/src/components/layout/sidebar-user-menu.tsx) | Confirm dialog or drawer (`LogoutConfirmDialog`, loaded on first open; the phone account drawer is `AccountMenuDrawer`, also on demand), request, then `logout()` and `router.replace("/login")` in `finally`, so the UI signs out even if the request fails |
+| Sidebar user menu, [`src/components/layout/sidebar-user-menu.tsx`](../../url-shortener-ui/src/components/layout/sidebar-user-menu.tsx) | Confirm dialog or drawer (`LogoutConfirmDialog`, loaded on first open; the phone account drawer is `AccountMenuDrawer`, also on demand), request, then `logout()` and `router.replace(ROUTES.LOGIN)` whether or not the request succeeded (failure is logged), so the UI always signs out locally |
 | Settings current-session row | Request first; only on `res.ok` does it call `logout()` and navigate; otherwise a toast "Failed to terminate session" |
 
 Neither resets other stores (links, tags, preferences, import). Navigation is client-side, so their in-memory data stays until overwritten by the next login's fetches.
@@ -118,9 +118,8 @@ Neither resets other stores (links, tags, preferences, import). Navigation is cl
 
 ## Known limitations and existing exceptions
 
-- Observation: `LoginPage` is about 236 lines and mixes network calls with state (it calls `fetch` directly rather than using a store or hook). Existing exception, not a template.
+- Observation: `LoginPage` is about 240 lines and keeps the form state and the magic-link request (`requestMagicLink`, a module-level function that calls `fetch` directly) in the page rather than in a store or hook. Existing exception, not a template.
 - Observation: a failed native post to `/api/ott/login` leaves the user on whatever the backend returned (the UI has no handler); a wrong OTP is therefore not reported inside the login card.
-- Observation: `/auth/exchange` has no retry or back-to-login action on failure, and its `setTimeout` redirect is not cleaned up on unmount.
+- Observation: `/auth/exchange` has no retry or back-to-login action on failure.
 - Observation: the sidebar logout and the settings logout differ on failure (sidebar always signs out locally; settings does not).
 - Observation: `app/auth/ott/page.tsx` and `app/auth/exchange/page.tsx` use raw `useEffect` + `fetch` for the exchange; they are pre-token flows and are not a pattern for authenticated data loading.
-- Observation: the settings page uses a non-null assertion (`currentSession!`) in the current-session logout handler; the button only renders when `currentSession` exists.
