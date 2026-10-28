@@ -12,14 +12,26 @@ describe("development render scanning", () => {
 
     it("starts scanning in development without requiring a blob worker", async () => {
         vi.stubEnv("NODE_ENV", "development");
+        vi.stubEnv("NEXT_PUBLIC_ENABLE_REACT_SCAN", "true");
 
         await import("./instrumentation-client");
 
         await vi.waitFor(() => expect(vi.mocked(scan)).toHaveBeenCalledExactlyOnceWith(DEVELOPMENT_SCAN_OPTIONS));
     });
 
-    it.each(["production", "test"])("does not start scanning in %s", async (environment) => {
+    it.each(["production", "test"])("does not start scanning in %s even when the flag is on", async (environment) => {
         vi.stubEnv("NODE_ENV", environment);
+        vi.stubEnv("NEXT_PUBLIC_ENABLE_REACT_SCAN", "true");
+
+        await import("./instrumentation-client");
+        await import("react-scan");
+
+        expect(vi.mocked(scan)).not.toHaveBeenCalled();
+    });
+
+    it.each([undefined, "false", "1"])("does not start scanning in development when the flag is %s", async (flag) => {
+        vi.stubEnv("NODE_ENV", "development");
+        vi.stubEnv("NEXT_PUBLIC_ENABLE_REACT_SCAN", flag);
 
         await import("./instrumentation-client");
         await import("react-scan");

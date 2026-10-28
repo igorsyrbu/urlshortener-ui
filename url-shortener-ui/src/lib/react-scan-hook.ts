@@ -5,7 +5,7 @@ import {logger} from "@/lib/logger";
 const REACT_SCAN_HOOK_MODULE = "react-scan/dist/install-hook.global.js";
 
 export function getReactScanHook(): string | undefined {
-    if (process.env.NODE_ENV !== "development") return undefined;
+    if (process.env.NODE_ENV !== "development" || process.env.NEXT_PUBLIC_ENABLE_REACT_SCAN !== "true") return undefined;
 
     // React must see the observer hook before its renderer loads, earlier than client instrumentation runs.
     // Node resolves the package at runtime (Turbopack would turn the path into a module id), and a missing install
