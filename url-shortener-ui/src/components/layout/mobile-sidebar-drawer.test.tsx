@@ -1,5 +1,5 @@
 import type {ComponentProps, ReactElement} from "react";
-import {render, screen} from "@testing-library/react";
+import {act, fireEvent, render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {MobileSidebarDrawer} from "@/components/layout/mobile-sidebar-drawer";
@@ -46,6 +46,11 @@ function controlLargeScreenQuery(initiallyMatches: boolean): ControlledMediaQuer
     };
 }
 
+// Radix starts listening for presses outside the dialog one task after it opens.
+async function waitForOutsidePressListener(): Promise<void> {
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+}
+
 describe("MobileSidebarDrawer", () => {
     beforeEach(() => {
         useAuthStore.setState({user: {email: "ada@example.com", name: "Ada"}});
@@ -57,6 +62,28 @@ describe("MobileSidebarDrawer", () => {
 
         expect(screen.getByRole("dialog", {name: "Main navigation"})).toBeInTheDocument();
         expect(screen.getByRole("link", {name: "Links"})).toBeInTheDocument();
+    });
+
+    it("stays open when a press lands in a drawer or dialog opened on top of it", async () => {
+        controlLargeScreenQuery(false);
+        const onOpenChange = vi.fn();
+        render(<><MobileSidebarDrawer open onOpenChange={onOpenChange}/><div data-slot="drawer-content">Account</div></>);
+        await waitForOutsidePressListener();
+
+        fireEvent.pointerDown(screen.getByText("Account"));
+
+        expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it("closes when a press lands anywhere else outside it", async () => {
+        controlLargeScreenQuery(false);
+        const onOpenChange = vi.fn();
+        render(<><MobileSidebarDrawer open onOpenChange={onOpenChange}/><div>Page</div></>);
+        await waitForOutsidePressListener();
+
+        fireEvent.pointerDown(screen.getByText("Page"));
+
+        expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
     it("renders nothing while closed", () => {

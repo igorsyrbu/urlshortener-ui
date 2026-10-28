@@ -7,6 +7,18 @@ import {cn} from "@/lib/utils";
 import {SidebarPanel} from "@/components/layout/sidebar-panel";
 import {LARGE_SCREEN_MIN_WIDTH_PX} from "@/lib/constants";
 
+// Drawers and dialogs opened from this drawer render in their own portals, outside it: a press inside them must not close it.
+const STACKED_OVERLAY_SELECTOR = [
+    '[data-slot="drawer-content"]',
+    '[data-slot="drawer-overlay"]',
+    '[data-slot="alert-dialog-content"]',
+    '[data-slot="alert-dialog-overlay"]',
+].join(", ");
+
+function isInsideStackedOverlay(target: EventTarget | null): boolean {
+    return target instanceof Element && target.closest(STACKED_OVERLAY_SELECTOR) !== null;
+}
+
 interface MobileSidebarDrawerProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -45,26 +57,10 @@ export function MobileSidebarDrawer({open, onOpenChange}: MobileSidebarDrawerPro
                         "focus:outline-none",
                     )}
                     onPointerDownOutside={(e) => {
-                        const target = e.target as HTMLElement | null;
-                        if (
-                            target?.closest('[data-slot="drawer-content"]') ||
-                            target?.closest('[data-slot="drawer-overlay"]') ||
-                            target?.closest('[data-slot="alert-dialog-content"]') ||
-                            target?.closest('[data-slot="alert-dialog-overlay"]')
-                        ) {
-                            e.preventDefault();
-                        }
+                        if (isInsideStackedOverlay(e.target)) e.preventDefault();
                     }}
                     onInteractOutside={(e) => {
-                        const target = e.target as HTMLElement | null;
-                        if (
-                            target?.closest('[data-slot="drawer-content"]') ||
-                            target?.closest('[data-slot="drawer-overlay"]') ||
-                            target?.closest('[data-slot="alert-dialog-content"]') ||
-                            target?.closest('[data-slot="alert-dialog-overlay"]')
-                        ) {
-                            e.preventDefault();
-                        }
+                        if (isInsideStackedOverlay(e.target)) e.preventDefault();
                     }}
                 >
                     <DialogPrimitive.Title className="sr-only">Main navigation</DialogPrimitive.Title>

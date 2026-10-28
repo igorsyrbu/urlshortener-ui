@@ -13,10 +13,15 @@ interface ReasonSelectProps {
 }
 
 export function ReasonSelect({id, value, onChange, error, errorId}: ReasonSelectProps) {
+    const handleValueChange = (selected: string): void => {
+        const reason = ABUSE_REASONS.find((allowed) => allowed === selected);
+        if (reason) onChange(reason);
+    };
+
     return (
         <Select
             value={value || undefined}
-            onValueChange={(v) => onChange(v as AbuseReason)}
+            onValueChange={handleValueChange}
         >
             <SelectTrigger
                 id={id}

@@ -37,7 +37,7 @@ export function CreateLinkSuccess({shortUrl, onClose}: CreateLinkSuccessProps) {
                     readOnly
                     value={shortUrl}
                     className="text-base font-medium text-center focus-visible:ring-0 focus-visible:ring-offset-0 bg-muted/50"
-                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                    onClick={(e) => e.currentTarget.select()}
                 />
                 <Button
                     variant="outline"

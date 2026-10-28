@@ -57,7 +57,7 @@ export function TagCard({tag, onEdit, onDelete}: TagCardProps) {
         >
             <div className="flex-1 min-w-0 flex items-center gap-3">
                 <Badge
-                    variant={tag.color as never}
+                    variant={tag.color}
                     className="inline-flex items-center justify-center rounded-md px-1.5 py-1.5 shrink-0"
                 >
                     <Tag className="size-3.5 shrink-0"/>

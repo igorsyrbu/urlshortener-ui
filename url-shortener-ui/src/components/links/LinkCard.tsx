@@ -76,7 +76,7 @@ function TagsSection({tags}: { tags: TagItem[] }) {
         <div className="relative inline-flex items-center">
             {/* Mobile: icon-only badge */}
             <Badge
-                variant={first.color as never}
+                variant={first.color}
                 className="inline-flex items-center justify-center rounded-md px-1.5 py-1.5 sm:hidden"
             >
                 <Tag className="size-3.5 shrink-0"/>

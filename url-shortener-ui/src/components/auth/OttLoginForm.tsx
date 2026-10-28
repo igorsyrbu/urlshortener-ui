@@ -25,8 +25,8 @@ function submitForm(form: HTMLFormElement): void {
         return;
     }
 
-    const submitButton = form.querySelector("button[type='submit']") as HTMLButtonElement | null;
-    if (submitButton) {
+    const submitButton = form.querySelector("button[type='submit']");
+    if (submitButton instanceof HTMLButtonElement) {
         submitButton.click();
         return;
     }

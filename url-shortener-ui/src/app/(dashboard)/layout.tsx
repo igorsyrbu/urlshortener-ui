@@ -105,8 +105,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     };
 
     const handleScroll = (e: React.UIEvent<HTMLElement>) => {
-        const target = e.target as HTMLElement;
-        const currentScrollY = target.scrollTop;
+        const currentScrollY = e.currentTarget.scrollTop;
 
         // At the top
         if (currentScrollY < SCROLL_TOP_THRESHOLD) {

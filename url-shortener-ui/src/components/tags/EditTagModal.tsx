@@ -14,9 +14,9 @@ interface EditTagModalProps {
 export function EditTagModal({open, onOpenChange, tag}: EditTagModalProps) {
     const {updateTag} = useTagMutations();
 
-    const handleUpdate = async (name: string, color: string) => {
+    const handleUpdate = async (name: string, color: BadgeVariant) => {
         if (!tag?.id) return;
-        await updateTag(tag.id, name, color as BadgeVariant);
+        await updateTag(tag.id, name, color);
     };
 
     return (

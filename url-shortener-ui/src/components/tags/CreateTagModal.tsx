@@ -12,8 +12,8 @@ interface CreateTagModalProps {
 export function CreateTagModal({open, onOpenChange}: CreateTagModalProps) {
     const {createTag} = useTagMutations();
 
-    const handleCreate = async (name: string, color: string) => {
-        return createTag(name, color as BadgeVariant);
+    const handleCreate = async (name: string, color: BadgeVariant) => {
+        return createTag(name, color);
     };
 
     return (

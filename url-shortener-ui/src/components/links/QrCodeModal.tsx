@@ -155,12 +155,12 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
             const qr = await getOrBuildHighResQr();
             if (!qr) throw new Error("QR instance not ready");
             const raw = await qr.getRawData(ext);
-            if (!raw) throw new Error("No data returned from getRawData");
+            if (!(raw instanceof Blob)) throw new Error("No data returned from getRawData");
             if (ext === "svg") {
-                const text = await (raw as Blob).text();
+                const text = await raw.text();
                 return new Blob([text], {type: "text/plain"});
             }
-            return raw as Blob;
+            return raw;
         })();
 
         if (!IS_CLIPBOARD_ITEM_SUPPORTED) {

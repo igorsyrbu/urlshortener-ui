@@ -133,7 +133,7 @@ Use `toast.success(message)` / `toast.error(message)` from `sonner` for the outc
 - Function parameters and return types are explicit unless trivially inferred (a small arrow returning a primitive). Utilities and hooks in `lib/` declare return types; many components omit them (see observations).
 - `interface` for object shapes and props; `type` for unions, intersections, aliases and `typeof` derivations (`type AbuseReason = (typeof ABUSE_REASONS)[number]`).
 - Constant option sets use `as const` objects or arrays and derive the union from them (`ROUTES`, `TRACKER_MODE`, `ABUSE_REASONS`).
-- Avoid assertions (`as Foo`). When truly unavoidable, add a comment saying why (`theme-tokens.ts` does this for `Object.entries`). Prefer narrowing helpers (`isTokenMap`, `isHexColor` in `theme-storage.ts`).
+- Avoid assertions (`as Foo`). When truly unavoidable, add a comment saying why (`theme-tokens.ts` does this for `Object.entries`). Prefer narrowing helpers (`isTokenMap`, `isHexColor` in `theme-storage.ts`), `instanceof` for DOM targets (`target instanceof Element`, as in `isInsideStackedOverlay`), `e.currentTarget` instead of `e.target as …` when the handler's own element is meant, `"key" in payload` to read a field of an `unknown` payload (`billing-api.ts`), and a lookup in the allowed list for a string that must be a union member (`ABUSE_REASONS.find`, `ALLOWED_TAG_COLORS.find`).
 - DTOs for API payloads are in `lib/api-types.ts` / `lib/types.ts` ([api-layer.md](api-layer.md)).
 
 ## Logging
@@ -174,7 +174,7 @@ These are observations of how the code differs from the rules above. They are no
 - Observation: files over the size guidance: `LinkFormFields.tsx` (~600 lines, ~20 `useState`, a ~50-line `handleSubmit`, direct `fetchWithAuth` calls in effects), `QrCodeModal.tsx`, `links/page.tsx`, `LinkCard.tsx`, `DateRangeDrawer.tsx`.
 - Observation: `app/login/page.tsx` and `ReportAbuseForm` call `fetch` directly because the endpoints are unauthenticated ([api-layer.md](api-layer.md)).
 - Observation: about 45 raw `<button>` elements (e.g. `AppearanceCard`, `CustomThemeBuilder`, `TagSelect`, `LinkCard`, `PageToolbar`) and raw `<label>` elements exist outside `components/ui` instead of `Button` / `Label`. New buttons must use `Button`; the existing raw ones render bespoke chrome.
-- Observation: type assertions without an explanatory comment exist (`e.target as HTMLElement` in several keyboard handlers, `color as BadgeVariant` in `CreateTagModal`/`EditTagModal`, `variant={tag.color as never}` in `TagCard`, `payload as Partial<...>` in `billing-api.ts`, `theme as ToasterProps["theme"]` in `sonner.tsx`).
+- Observation: the vendored shadcn files keep their own assertions without a comment (`theme as ToasterProps["theme"]` in `sonner.tsx`, `as React.CSSProperties` in `chart.tsx` and `glowing-effect.tsx`); they are not edited as a drive-by.
 - Observation: many components omit explicit return types (`LinkFavicon.getFaviconSource`, most `export function Foo()` components).
 - Observation: some handlers are not named `handle*` (`markFailed` in `LinkFavicon`, `applyDraft` in `CustomColorRow`, inline `onClick={() => ...}` closures are common).
 - Observation: raw `<img>` is used where `next/image` cannot be: `OgImage` (arbitrary external preview images, no lint suppression) and `DeviceTab` (static icons inside a Recharts `foreignObject`, with `eslint-disable-next-line @next/next/no-img-element`). Country flags are an SVG sprite in `LocationIcon`, not images.

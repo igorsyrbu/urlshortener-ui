@@ -30,10 +30,6 @@ export function isUnauthorizedBillingError(error: unknown): boolean {
     return error instanceof BillingApiError && error.status === HTTP_UNAUTHORIZED;
 }
 
-interface BillingUrlPayload {
-    url: string;
-}
-
 function throwBillingError(response: Response, fallbackMessage: string): never {
     const retryAfterSeconds = parseRetryAfterSeconds(response.headers, RATE_LIMIT_RETRY_AFTER_HEADER) ?? parseRetryAfterSeconds(response.headers);
     throw new BillingApiError(response.status, fallbackMessage, retryAfterSeconds);
@@ -46,16 +42,16 @@ export function readRateLimitDelay(error: unknown): number | null {
 
 function parseBillingUrlPayload(payload: unknown): string {
     if (typeof payload !== "object" || payload === null) throw new Error("Invalid billing URL payload");
-    const url = (payload as Partial<BillingUrlPayload>).url;
+    const url = "url" in payload ? payload.url : undefined;
     if (typeof url !== "string" || url.length === 0) throw new Error("Invalid billing URL payload");
     return parseBillingUrl(url).href;
 }
 
 function parsePeriodUpgradePayload(payload: unknown): BillingPeriodUpgradeResponse {
     if (typeof payload !== "object" || payload === null) throw new Error("Invalid period upgrade payload");
-    const status = (payload as Partial<BillingPeriodUpgradeResponse>).status;
+    const status = "status" in payload ? payload.status : undefined;
     if (status !== "scheduled") throw new Error("Invalid period upgrade payload");
-    const effectiveDate = (payload as Partial<BillingPeriodUpgradeResponse>).effectiveDate;
+    const effectiveDate = "effectiveDate" in payload ? payload.effectiveDate : undefined;
     if (effectiveDate !== undefined && typeof effectiveDate !== "string") throw new Error("Invalid period upgrade payload");
     return effectiveDate === undefined ? {status} : {status, effectiveDate};
 }
