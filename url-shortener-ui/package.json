@@ -20,7 +20,7 @@
     "type-check": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=24.22.1"
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.5.3",

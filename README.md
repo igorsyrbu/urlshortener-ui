@@ -31,7 +31,7 @@ high-performance URL Shortener SaaS.
 
 ### Prerequisites
 
-- **Node.js** `>= 24.0.0`
+- **Node.js** `>= 24.22.1`
 - **pnpm** `>= 9.0.0`
 
 ### Installation

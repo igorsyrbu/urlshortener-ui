@@ -5,3 +5,4 @@ allowBuilds:
 packages:
   - 'url-shortener-ui'
   - 'url-shortener-mock-server'
+engineStrict: true
