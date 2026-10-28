@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { memoryStore } from "../services/MemoryStore";
 import { sendProblem } from "../problem";
+import { isUuid } from "../utils/uuid";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -30,9 +31,7 @@ export function authentication(req: Request, res: Response, next: NextFunction):
 
       if (payload.sub && payload.sub.startsWith("mock-user-")) {
         const uuid = payload.sub.replace("mock-user-", "");
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-        if (uuidRegex.test(uuid)) {
+        if (isUuid(uuid)) {
           if (!memoryStore.hasUserState(uuid)) {
             sendProblem(res, 401, "User not logged in.");
             return;

@@ -1,6 +1,7 @@
 import {randomUUID} from "crypto";
 import {tagsService} from "./TagsService";
 import {memoryStore} from "./MemoryStore";
+import type {PagedModel} from "./page";
 
 export interface ShortLink {
   id: string;
@@ -10,18 +11,6 @@ export interface ShortLink {
   longUrl: string;
   isActive: boolean;
   tagIds?: string[];
-}
-
-export interface Page<T> {
-  content: T[];
-  page: PageMetadata;
-}
-
-export interface PageMetadata {
-  size: number;
-  number: number;
-  totalElements: number;
-  totalPages: number;
 }
 
 export interface CreateShortLinkDto {
@@ -187,7 +176,7 @@ export class ShortLinksService {
    * @param size - The number of items per page
    * @returns A Page object containing the content and metadata
    */
-  public getPaginatedLinks(uuid: string, page: number, size: number, showArchived: boolean = false, search?: string): Page<ShortLink> {
+  public getPaginatedLinks(uuid: string, page: number, size: number, showArchived: boolean = false, search?: string): PagedModel<ShortLink> {
     const userState = memoryStore.getUserState(uuid);
     let links = showArchived ? userState.links : userState.links.filter((l) => l.isActive);
 

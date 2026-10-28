@@ -2,7 +2,18 @@ import rawAnalyticsData from "../data/analytics.json";
 
 export interface AnalyticsMetric {
   clicks: number;
-  [key: string]: any;
+}
+
+export interface LabeledMetric extends AnalyticsMetric {
+  label: string;
+}
+
+export interface ReferrerMetric extends LabeledMetric {
+  hostname: string;
+}
+
+export interface TopLinkMetric extends AnalyticsMetric {
+  shortLinkId: string;
 }
 
 export interface TrendData {
@@ -12,14 +23,15 @@ export interface TrendData {
 
 export interface AnalyticsData {
   daily: TrendData[];
-  countries: AnalyticsMetric[];
-  continents: AnalyticsMetric[];
-  devices: AnalyticsMetric[];
-  os: AnalyticsMetric[];
-  referrers: AnalyticsMetric[];
-  topLinks: AnalyticsMetric[];
-  [key: string]: any;
+  countries: LabeledMetric[];
+  continents: LabeledMetric[];
+  devices: LabeledMetric[];
+  os: LabeledMetric[];
+  referrers: ReferrerMetric[];
+  topLinks: TopLinkMetric[];
 }
+
+export type AnalyticsBreakdownKey = Exclude<keyof AnalyticsData, "daily">;
 
 export class AnalyticsService {
   private static readonly CONSTANTS = {
@@ -83,7 +95,7 @@ export class AnalyticsService {
    * Retrieves the baseline raw analytics mock data.
    */
   public getAnalyticsData(): AnalyticsData {
-    return rawAnalyticsData as AnalyticsData;
+    return rawAnalyticsData;
   }
 
   private applyRandomProportions<T extends AnalyticsMetric>(data: T[], totalClicks: number): T[] {

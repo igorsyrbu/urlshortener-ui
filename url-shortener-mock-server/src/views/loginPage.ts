@@ -1,3 +1,5 @@
+import { UUID_PATTERN_SOURCE } from "../utils/uuid";
+
 export function getLoginPageHtml(frontendUrl: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -475,8 +477,7 @@ export function getLoginPageHtml(frontendUrl: string): string {
       const input = document.getElementById('existing-uuid').value.trim();
       const errorDiv = document.getElementById('resume-error');
 
-      // UUID v4 format regex
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const uuidRegex = /${UUID_PATTERN_SOURCE}/i;
       
       if (!uuidRegex.test(input)) {
         errorDiv.style.display = 'block';

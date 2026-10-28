@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { memoryStore } from "./MemoryStore";
+import type { Page } from "./page";
 
 export interface Tag {
   id: string;
@@ -20,17 +21,6 @@ export interface UpdateTagDto {
   id: string;
   name: string;
   color: string;
-}
-
-export interface Page<T> {
-  content: T[];
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  number: number;
-  first: boolean;
-  last: boolean;
-  empty: boolean;
 }
 
 const ALLOWED_COLORS = ["red", "yellow", "lime", "green", "blue", "cyan", "purple", "gray"];

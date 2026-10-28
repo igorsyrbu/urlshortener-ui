@@ -8,7 +8,8 @@ import {
   type TestServer,
   type TestUser,
 } from "../test-utils";
-import type { Page, ShortLink } from "../services/ShortLinksService";
+import type { ShortLink } from "../services/ShortLinksService";
+import type { PagedModel } from "../services/page";
 import { createProblem } from "../problem";
 
 const HTTP_OK = 200;
@@ -150,7 +151,7 @@ describe("GET /shortlinks", () => {
   it("paginates with the default size and hides archived links", async () => {
     await createLink("visible");
     await createLink("archived", { isActive: false });
-    const page = (await request("GET", "/shortlinks")).body as Page<ShortLink>;
+    const page = (await request("GET", "/shortlinks")).body as PagedModel<ShortLink>;
     assert.deepEqual(page.content.map((link) => link.key), ["visible"]);
     assert.equal(page.page.size, DEFAULT_PAGE_SIZE);
   });
@@ -158,14 +159,14 @@ describe("GET /shortlinks", () => {
   it("includes archived links with showArchived=true and filters with search", async () => {
     await createLink("alpha");
     await createLink("beta", { isActive: false });
-    const all = (await request("GET", "/shortlinks?showArchived=true")).body as Page<ShortLink>;
-    const searched = (await request("GET", "/shortlinks?showArchived=true&search=BET")).body as Page<ShortLink>;
+    const all = (await request("GET", "/shortlinks?showArchived=true")).body as PagedModel<ShortLink>;
+    const searched = (await request("GET", "/shortlinks?showArchived=true&search=BET")).body as PagedModel<ShortLink>;
     assert.equal(all.page.totalElements, 2);
     assert.deepEqual(searched.content.map((link) => link.key), ["beta"]);
   });
 
   it("falls back to safe paging values for invalid params", async () => {
-    const page = (await request("GET", "/shortlinks?page=-1&size=0")).body as Page<ShortLink>;
+    const page = (await request("GET", "/shortlinks?page=-1&size=0")).body as PagedModel<ShortLink>;
     assert.equal(page.page.number, 0);
     assert.equal(page.page.size, DEFAULT_PAGE_SIZE);
   });

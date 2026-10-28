@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { analyticsService } from "../services/AnalyticsService";
+import { analyticsService, type AnalyticsBreakdownKey, type AnalyticsData, type AnalyticsMetric, type TopLinkMetric, type TrendData } from "../services/AnalyticsService";
 import { shortLinksService } from "../services/ShortLinksService";
 import { requireUserUuid } from "../middleware/authentication";
 import { getAppContext } from "../app-context";
@@ -71,9 +71,9 @@ export class AnalyticsController {
     groupBy: string | undefined,
     expectedTotal: number,
     isRandom: boolean,
-    trend: any[],
-    mockData: any
-  ): any {
+    trend: TrendData[],
+    mockData: AnalyticsData
+  ): number | TrendData[] | AnalyticsMetric[] {
     if (!groupBy) {
       return expectedTotal;
     }
@@ -82,7 +82,7 @@ export class AnalyticsController {
       return trend;
     }
 
-    const groupKeyMap: Record<string, string> = {
+    const groupKeyMap: Record<string, AnalyticsBreakdownKey | undefined> = {
       country: "countries",
       continent: "continents",
       device: "devices",
@@ -98,10 +98,10 @@ export class AnalyticsController {
         const userLinks = shortLinksService.getAllLinks(uuid);
         const userLinkIds = new Set(userLinks.map((l) => l.id));
         
-        let filteredTopLinks = mockData.topLinks.filter((item: any) => userLinkIds.has(item.shortLinkId));
+        const filteredTopLinks: TopLinkMetric[] = mockData.topLinks.filter((item) => userLinkIds.has(item.shortLinkId));
         
         // Dynamically add any newly created links that are not yet in the baseline topLinks
-        const topLinkIds = new Set(filteredTopLinks.map((item: any) => item.shortLinkId));
+        const topLinkIds = new Set(filteredTopLinks.map((item) => item.shortLinkId));
         for (const link of userLinks) {
           if (!topLinkIds.has(link.id)) {
             filteredTopLinks.push({ shortLinkId: link.id, clicks: 12 });
@@ -111,7 +111,8 @@ export class AnalyticsController {
         return analyticsService.processProportionalData(filteredTopLinks, expectedTotal, isRandom);
       }
 
-      return analyticsService.processProportionalData(mockData[targetKey], expectedTotal, isRandom);
+      const breakdown: AnalyticsMetric[] = mockData[targetKey];
+      return analyticsService.processProportionalData(breakdown, expectedTotal, isRandom);
     }
 
     // Fallback if groupBy is unrecognized

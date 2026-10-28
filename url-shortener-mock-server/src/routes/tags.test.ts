@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { after, before, beforeEach, describe, it } from "node:test";
 import { createTestUser, requestJson, startTestServer, type TestServer, type TestUser } from "../test-utils";
-import type { Page, Tag, TagWithCount } from "../services/TagsService";
+import type { Tag, TagWithCount } from "../services/TagsService";
+import type { Page } from "../services/page";
 
 const HTTP_OK = 200;
 const HTTP_CREATED = 201;

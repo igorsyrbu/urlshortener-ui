@@ -45,7 +45,7 @@ export class MemoryStore {
 
   private initializeUserState(uuid: string): UserState {
     // 1. Initialize tags
-    const tags: Tag[] = tagsData.tags.map((tag: any) => ({
+    const tags: Tag[] = tagsData.tags.map((tag) => ({
       id: tag.id,
       name: tag.name,
       color: tag.color,
@@ -55,7 +55,7 @@ export class MemoryStore {
 
     // 2. Initialize tag associations and filter links
     const tagAssociations = new Map<string, string[]>();
-    const links: ShortLink[] = linksData.links.map((link: any) => {
+    const links: ShortLink[] = linksData.links.map((link) => {
       const { tagIds, ...rest } = link;
       if (tagIds && tagIds.length > 0) {
         const validIds = tagIds.filter((id: string) => validTagIds.has(id));
@@ -67,7 +67,7 @@ export class MemoryStore {
       return {
         id: rest.id,
         title: rest.title,
-        key: rest.key ?? shortUrl.split("/").pop() ?? "",
+        key: shortUrl.split("/").pop() ?? "",
         shortUrl,
         longUrl: rest.longUrl,
         isActive: link.isActive ?? true,
@@ -85,7 +85,7 @@ export class MemoryStore {
     };
 
     // 4. Initialize sessions
-    const sessions: Session[] = sessionsData.sessions.map((session: any) => ({
+    const sessions: Session[] = sessionsData.sessions.map((session) => ({
       id: session.id,
       city: session.city,
       country: session.country,

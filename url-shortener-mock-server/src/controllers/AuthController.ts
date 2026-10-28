@@ -5,6 +5,7 @@ import { getLoginPageHtml } from "../views/loginPage";
 import { memoryStore } from "../services/MemoryStore";
 import { getAppContext } from "../app-context";
 import { sendProblem } from "../problem";
+import { isUuid } from "../utils/uuid";
 
 const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const SECOND_MS = 1000;
@@ -90,8 +91,7 @@ export class AuthController {
       uuid = code.replace("mock-auth-code-", "");
     }
     
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuid || !uuidRegex.test(uuid)) {
+    if (!uuid || !isUuid(uuid)) {
       res.clearCookie("refresh_token");
       sendProblem(res, 401, "Missing or invalid user UUID.");
       return;
@@ -120,8 +120,7 @@ export class AuthController {
       uuid = refreshToken.replace("mock-refresh-token-", "");
     }
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuid || !uuidRegex.test(uuid)) {
+    if (!uuid || !isUuid(uuid)) {
       res.clearCookie("refresh_token");
       sendProblem(res, 401, "Missing or invalid refresh token.");
       return;
