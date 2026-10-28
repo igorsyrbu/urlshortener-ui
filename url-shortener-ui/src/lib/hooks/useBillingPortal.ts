@@ -3,12 +3,11 @@
 import {useState} from "react";
 import {
     BillingApiError,
-    HTTP_NOT_FOUND,
-    HTTP_TOO_MANY_REQUESTS,
     createBillingPortalUrl,
     isUnauthorizedBillingError,
     readRateLimitDelay,
 } from "@/lib/billing-api";
+import {HTTP_NOT_FOUND, HTTP_TOO_MANY_REQUESTS} from "@/lib/http-status";
 import {BILLING_COPY, buildRateLimitedMessage} from "@/lib/billing-constants";
 import {markPortalOpened} from "@/lib/billing-portal-return";
 import {logger} from "@/lib/logger";

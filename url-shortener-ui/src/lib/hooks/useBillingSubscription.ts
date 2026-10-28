@@ -1,7 +1,8 @@
 "use client";
 
 import {useCallback, useEffect, useRef, useState} from "react";
-import {BillingApiError, getBillingSubscription, HTTP_TOO_MANY_REQUESTS, isUnauthorizedBillingError, readRateLimitDelay} from "@/lib/billing-api";
+import {BillingApiError, getBillingSubscription, isUnauthorizedBillingError, readRateLimitDelay} from "@/lib/billing-api";
+import {HTTP_TOO_MANY_REQUESTS} from "@/lib/http-status";
 import {BILLING_COPY, buildRateLimitedMessage, FREE_BILLING_SUBSCRIPTION, type BillingSubscription} from "@/lib/billing-constants";
 import {useCooldown} from "@/lib/hooks/useCooldown";
 import {logger} from "@/lib/logger";

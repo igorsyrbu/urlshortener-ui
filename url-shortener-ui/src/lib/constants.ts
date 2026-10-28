@@ -46,6 +46,7 @@ export const API_ENDPOINTS = {
     USERS_ME: "/users/me",
     USERS_ME_NAME: "/users/me/name",
     USERS_SESSIONS: "/users/sessions",
+    USERS_SESSION: (id: string) => `/users/sessions/${id}`,
     USERS_SESSIONS_CURRENT: "/users/sessions/current",
     USERS_SESSIONS_OTHER: "/users/sessions/other",
     USERS_ME_PREFERENCES: "/users/me/preferences",

@@ -19,6 +19,7 @@ import {FieldError} from "@/components/ui/field-error";
 import {focusElementById} from "@/lib/utils";
 import {withPending} from "@/lib/async-utils";
 import {readProblemDetail} from "@/lib/problem-details";
+import {HTTP_CREATED, HTTP_TOO_MANY_REQUESTS, HTTP_UNPROCESSABLE_ENTITY} from "@/lib/http-status";
 
 const ABUSE_FIELD_IDS = {SHORT_URL: "shortUrl", REASON: "reason", REPORTER_EMAIL: "reporterEmail"} as const;
 const ABUSE_FIELD_ERROR_IDS = {
@@ -29,9 +30,6 @@ const ABUSE_FIELD_ERROR_IDS = {
 const ABUSE_FORM_ERROR_ID = "abuse-report-error";
 const FIELD_ERROR_WITH_ICON_CLASS = "flex items-center gap-1";
 
-const HTTP_CREATED = 201;
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-const HTTP_TOO_MANY_REQUESTS = 429;
 
 interface AbuseReportInput {
     shortUrl: string;

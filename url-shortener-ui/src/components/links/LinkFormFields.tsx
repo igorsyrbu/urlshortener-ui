@@ -33,6 +33,7 @@ import {logger} from "@/lib/logger";
 import {attempt, withPending} from "@/lib/async-utils";
 import {buildFinalUrl, buildTrackerEntries} from "@/lib/url-cleaner-utils";
 import {LINK_FORM_FIELD_IDS} from "@/components/links/link-form-constants";
+import {HTTP_NOT_FOUND, HTTP_OK} from "@/lib/http-status";
 
 interface LinkFormFieldsProps {
     title: string;
@@ -235,9 +236,9 @@ export function LinkFormFields({
                 const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS_EXISTS(trimmedKey));
                 if (cancelled) return;
 
-                if (res.status === 200) {
+                if (res.status === HTTP_OK) {
                     setKeyError(SHORT_KEY_TAKEN_MESSAGE);
-                } else if (res.status === 404) {
+                } else if (res.status === HTTP_NOT_FOUND) {
                     setKeyError(null);
                 }
             } catch (err) {

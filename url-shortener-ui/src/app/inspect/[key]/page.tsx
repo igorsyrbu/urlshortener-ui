@@ -9,6 +9,7 @@ import {LinkIcon, Flag} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {InspectLinkPreviewCard} from "@/components/inspect/InspectLinkPreviewCard";
+import {HTTP_NOT_FOUND} from "@/lib/http-status";
 
 export const metadata: Metadata = {title: PAGE_TITLES.LINK_PREVIEW};
 
@@ -21,7 +22,7 @@ async function fetchPreview(key: string): Promise<ShortLinkPreviewDTO | null> {
         const res = await fetch(`${getBackendApiBaseUrl()}${API_ENDPOINTS.SHORTLINKS_PREVIEW(key)}`, {
             cache: "no-store",
         });
-        if (res.status === 404) return null;
+        if (res.status === HTTP_NOT_FOUND) return null;
         if (!res.ok) throw new Error(`Preview fetch failed: ${res.status}`);
         return res.json();
     } catch (error) {

@@ -15,6 +15,7 @@ import {API_ENDPOINTS, CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD, ROUTES} from "@
 import {ShortKeyConflictError, type ShortLinkData} from "@/components/links/create-link-types";
 import {logger} from "@/lib/logger";
 import {cn} from "@/lib/utils";
+import {HTTP_CONFLICT} from "@/lib/http-status";
 
 type ViewState = "form" | "success";
 
@@ -28,7 +29,6 @@ interface CreateLinkModalBodyProps {
 }
 
 const CONFETTI_ORIGIN_Y = 0.6;
-const HTTP_CONFLICT = 409;
 
 function loadConfetti() {
     return import("canvas-confetti").then((confettiModule) => confettiModule.default);

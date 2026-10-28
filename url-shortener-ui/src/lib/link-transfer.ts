@@ -9,6 +9,7 @@ import {
 import type {LinkImportJobDTO} from "@/lib/api-types";
 import {logger} from "@/lib/logger";
 import {parseProblemDetail} from "@/lib/problem-details";
+import {HTTP_TOO_MANY_REQUESTS} from "@/lib/http-status";
 
 export interface ExportFilters {
     showArchived: boolean;
@@ -30,7 +31,6 @@ export class TransferError extends Error {
     }
 }
 
-const HTTP_TOO_MANY_REQUESTS = 429;
 
 export function isRateLimitedError(error: unknown): boolean {
     return error instanceof TransferError && error.status === HTTP_TOO_MANY_REQUESTS;

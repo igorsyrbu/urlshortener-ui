@@ -3,13 +3,11 @@
 import {useEffect, useState} from "react";
 import {
     BillingApiError,
-    HTTP_BAD_REQUEST,
-    HTTP_CONFLICT,
-    HTTP_TOO_MANY_REQUESTS,
     createBillingCheckoutUrl,
     isUnauthorizedBillingError,
     readRateLimitDelay,
 } from "@/lib/billing-api";
+import {HTTP_BAD_REQUEST, HTTP_CONFLICT, HTTP_TOO_MANY_REQUESTS} from "@/lib/http-status";
 import {
     BILLING_COPY,
     buildRateLimitedMessage,

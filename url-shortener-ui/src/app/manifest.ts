@@ -1,4 +1,5 @@
 import type {MetadataRoute} from "next";
+import {ROUTES} from "@/lib/constants";
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
@@ -6,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: "Short Links",
         description: "Dashboard for URL Shortener",
         display: "standalone",
-        start_url: "/links",
+        start_url: ROUTES.LINKS,
         theme_color: "#d96a47",
         background_color: "#ffffff",
         icons: [

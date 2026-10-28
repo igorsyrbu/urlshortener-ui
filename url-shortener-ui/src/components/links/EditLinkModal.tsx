@@ -6,6 +6,7 @@ import {API_ENDPOINTS} from "@/lib/constants";
 import {LinkItem} from "@/lib/types";
 import {ShortKeyConflictError} from "@/components/links/create-link-types";
 import {extractKeyFromShortUrl, withShortKey} from "@/lib/url-utils";
+import {HTTP_CONFLICT} from "@/lib/http-status";
 
 interface EditLinkModalProps {
     open: boolean;
@@ -31,7 +32,7 @@ export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkMod
             }),
         });
 
-        if (res.status === 409) {
+        if (res.status === HTTP_CONFLICT) {
             throw new ShortKeyConflictError();
         }
 

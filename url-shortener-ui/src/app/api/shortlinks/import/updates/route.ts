@@ -1,7 +1,6 @@
 import {getBackendApiBaseUrl} from "@/lib/backend-url";
 import {API_ENDPOINTS} from "@/lib/constants";
-
-const HTTP_UNAUTHORIZED = 401;
+import {HTTP_OK, HTTP_UNAUTHORIZED} from "@/lib/http-status";
 
 // Only the content type is forwarded on failure: backend hop-by-hop and Set-Cookie headers must not reach the browser.
 function forwardFailure(backend: Response): Response {
@@ -31,7 +30,7 @@ export async function GET(request: Request): Promise<Response> {
         return forwardFailure(backend);
     }
     return new Response(backend.body, {
-        status: 200,
+        status: HTTP_OK,
         headers: {
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache, no-transform",

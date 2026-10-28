@@ -82,7 +82,7 @@ Rules for new code:
 
 - Check `res.ok` before parsing the body; do not assume JSON on errors.
 - Log through `logger` from `@/lib/logger`, never `console.*`. Failures usually pass `{status}` as context.
-- Name status codes as constants (`HTTP_TOO_MANY_REQUESTS`, `HTTP_CONFLICT`, ...), never inline literals. Existing literals are listed under limitations.
+- Status codes come from [`src/lib/http-status.ts`](../url-shortener-ui/src/lib/http-status.ts) (`HTTP_OK`, `HTTP_CONFLICT`, `HTTP_TOO_MANY_REQUESTS`, ...): never an inline literal and never a file-local copy. Add a missing code there. Endpoints come from `API_ENDPOINTS`, including the ones with a parameter (`USERS_SESSION(id)`, `SHORTLINKS_EXISTS(key)`).
 
 ### Error body shape
 
@@ -149,5 +149,4 @@ The three POST calls take an optional `AbortSignal` (passed to `fetchWithAuth`).
 - Observation: [`src/app/inspect/[key]/page.tsx`](../url-shortener-ui/src/app/inspect/[key]/page.tsx) fetches `/public/preview/:key` on the server. Existing exception to the rule above, described in [architecture.md](architecture.md#known-limitations-and-existing-exceptions); not a template.
 - Observation: `src/app/(dashboard)/settings/general/page.tsx` builds `/users/sessions/${id}` inline instead of through `API_ENDPOINTS`. Existing exception, not a template.
 - Observation: `useTagMutations` and several component handlers (`CreateLinkModal`, `EditLinkModal`, `LinkFormFields`, `ProfileCard`, the settings general page) call `fetchWithAuth` directly in components or hooks rather than through a `lib/*-api.ts` module; error bodies are surfaced differently in each (`parseProblemDetail` in tag mutations, status text elsewhere).
-- Observation: status codes appear as inline literals in `EditLinkModal` (`409`), `LinkFormFields` (`200`, `404`) and the inspect page (`404`), contrary to the named-constants rule in [coding-patterns.md](coding-patterns.md). `CreateLinkModal`, `login/page.tsx` and `ReportAbuseForm` declare their own file-local `HTTP_*` constants, and `billing-api.ts` exports its own, instead of importing from `src/lib/http-status.ts`. Existing exceptions, not templates.
 - Observation: `API_ENDPOINTS` has no entry for `/ott/login` and `/oauth2/authorization/google`; they are inline strings in `OttLoginForm` and `login/page.tsx`.

@@ -83,7 +83,7 @@ export default function GeneralSettingsPage() {
 
     const handleLogoutSession = async (id: string, isCurrent: boolean = false) => {
         setSessionActionLoading(id);
-        const endpoint = isCurrent ? API_ENDPOINTS.USERS_SESSIONS_CURRENT : `/users/sessions/${id}`;
+        const endpoint = isCurrent ? API_ENDPOINTS.USERS_SESSIONS_CURRENT : API_ENDPOINTS.USERS_SESSION(id);
         const outcome = await deleteSessions(endpoint, "Error terminating session");
         setSessionActionLoading(null);
         if (outcome === "rejected") {

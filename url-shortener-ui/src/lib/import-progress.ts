@@ -4,6 +4,7 @@ import {API_ENDPOINTS} from "@/lib/constants";
 import {TransferError} from "@/lib/link-transfer";
 import {parseProblemDetail} from "@/lib/problem-details";
 import {readServerSentEvents, type ServerSentEvent} from "@/lib/server-sent-events";
+import {HTTP_INTERNAL_SERVER_ERROR, HTTP_TOO_MANY_REQUESTS} from "@/lib/http-status";
 
 export type ImportConnectionState = "processing" | "reconnecting";
 
@@ -18,8 +19,6 @@ export type DiscoveredImportResult = "completed" | "empty";
 const RECONNECT_BASE_DELAY_MS = 2000;
 const MAX_RECONNECT_DELAY_MS = 60_000;
 const STREAM_TIMEOUT_MS = 315_000;
-const HTTP_TOO_MANY_REQUESTS = 429;
-const HTTP_SERVER_ERROR = 500;
 
 export function parseImportProgress(data: string): LinkImportProgressDTO {
     const value: unknown = JSON.parse(data);
@@ -56,7 +55,7 @@ function waitToReconnect(signal: AbortSignal, delayMs: number): Promise<void> {
 
 function isRetryableSubscriptionError(error: unknown): boolean {
     if (error instanceof TransferError) {
-        return error.status >= HTTP_SERVER_ERROR || error.status === HTTP_TOO_MANY_REQUESTS;
+        return error.status >= HTTP_INTERNAL_SERVER_ERROR || error.status === HTTP_TOO_MANY_REQUESTS;
     }
     return true;
 }

@@ -19,6 +19,7 @@ import {logger} from "@/lib/logger";
 import {parseRetryAfterSeconds} from "@/lib/retry-after";
 import {withPending} from "@/lib/async-utils";
 import {describeHttpFailure, describeRequestError} from "@/lib/errors";
+import {HTTP_TOO_MANY_REQUESTS} from "@/lib/http-status";
 
 const OTP_CODE_LENGTH = 6;
 
@@ -27,7 +28,6 @@ function loadLoginOtpForm() {
 }
 
 const LoginOtpForm = dynamic(loadLoginOtpForm, {ssr: false});
-const HTTP_TOO_MANY_REQUESTS = 429;
 
 type MagicLinkRequestResult =
     | {kind: "sent"}
