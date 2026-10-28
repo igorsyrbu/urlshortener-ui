@@ -9,7 +9,7 @@ import {
     IMPORT_FROM_CSV_LABEL,
     IMPORT_PROCESSED_TITLE,
 } from "@/components/links/import-export-constants";
-import {API_ENDPOINTS, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINKS_LOAD_COPY, ROUTES, SEARCH_DEBOUNCE_MS, SHOW_ARCHIVED_STORAGE_KEY, TRY_AGAIN_LABEL} from "@/lib/constants";
+import {API_ENDPOINTS, ARCHIVED_FILTER_COPY, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINKS_LOAD_COPY, ROUTES, SEARCH_DEBOUNCE_MS, SHOW_ARCHIVED_STORAGE_KEY, TRY_AGAIN_LABEL} from "@/lib/constants";
 import {toast} from "sonner";
 import {useLinkStore} from "@/lib/store/links";
 import {IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
-vi.mock("sonner", () => ({toast: {error: vi.fn(), success: vi.fn()}}));
+vi.mock("sonner", () => ({toast: {error: vi.fn(), success: vi.fn(), info: vi.fn()}}));
 vi.mock("@/lib/hooks/useMediaQuery", () => ({useIsDesktop: () => true, useIsMobile: () => false}));
 vi.mock("next/navigation", () => ({
     useRouter: () => ({push: mocks.routerPush}),
@@ -456,6 +456,32 @@ describe("links page", () => {
 
             await waitFor(() => expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).some((query) => query.get("showArchived") === "true")).toBe(true));
             expect(localStorage.getItem(SHOW_ARCHIVED_STORAGE_KEY)).toBe("true");
+        });
+
+        it("says which links are shown each time the a key switches the filter", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(1)});
+            render(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Link 0"});
+
+            await user.keyboard("a");
+            expect(toast.info).toHaveBeenLastCalledWith(ARCHIVED_FILTER_COPY.SHOWING, expect.anything());
+
+            await user.keyboard("a");
+            expect(toast.info).toHaveBeenLastCalledWith(ARCHIVED_FILTER_COPY.HIDING, expect.anything());
+        });
+
+        it("stays quiet when the filter is switched from the options menu, which shows the state itself", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(1)});
+            render(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Link 0"});
+
+            await user.click(getOptionsTrigger());
+            await user.click(await screen.findByRole("menuitem", {name: /Show archived links/}));
+
+            await waitFor(() => expect(useLinkStore.getState().showArchived).toBe(true));
+            expect(toast.info).not.toHaveBeenCalled();
         });
 
         it("archives the link whose menu is open instead of switching the filter", async () => {

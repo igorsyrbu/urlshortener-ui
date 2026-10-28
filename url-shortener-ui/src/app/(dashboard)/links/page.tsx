@@ -17,7 +17,7 @@ import {IMPORT_TRACKING_STATUS, useImportTracker} from "@/lib/store/import";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {PageToolbar} from "@/components/layout/PageToolbar";
-import {CARD_LIST_CLASS, DEFAULT_PAGE_SIZE, MIN_LINK_SEARCH_LENGTH, SEARCH_DEBOUNCE_MS, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, ROUTES} from "@/lib/constants";
+import {ARCHIVED_FILTER_COPY, CARD_LIST_CLASS, DEFAULT_PAGE_SIZE, MIN_LINK_SEARCH_LENGTH, SEARCH_DEBOUNCE_MS, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, ROUTES} from "@/lib/constants";
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
 import {toast} from "sonner";
 import {buildLinksPageUrl, parseLinksPageParam} from "@/lib/pagination";
@@ -28,6 +28,7 @@ import {preloadOnIdle} from "@/lib/preload-on-idle";
 import {canRunShortcut, isShortcutKey, SHORTCUTS} from "@/lib/keyboard-shortcuts";
 
 const LINKS_LIST_TOP_ID = "links-list-top";
+const ARCHIVED_FILTER_TOAST_ID = "archived-filter";
 
 function loadEditLinkModal() {
     return import("@/components/links/EditLinkModal").then((modalModule) => modalModule.EditLinkModal);
@@ -165,7 +166,9 @@ function LinksPageContent() {
             if (archiveModalLink) return;
 
             e.preventDefault();
-            setShowArchived(!showArchived);
+            const isShowingArchived = !showArchived;
+            setShowArchived(isShowingArchived);
+            toast.info(isShowingArchived ? ARCHIVED_FILTER_COPY.SHOWING : ARCHIVED_FILTER_COPY.HIDING, {id: ARCHIVED_FILTER_TOAST_ID});
             resetUrlToFirstPage();
             fetchLinks(0);
         };

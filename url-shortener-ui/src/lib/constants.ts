@@ -84,6 +84,11 @@ export const LINK_ACTION_COPY = {
     RETRY: "Retry",
 } as const;
 
+export const ARCHIVED_FILTER_COPY = {
+    SHOWING: "Showing archived links",
+    HIDING: "Hiding archived links",
+} as const;
+
 export const SESSION_CHECK_COPY = {
     CHECKING: "Securing session...",
     UNAVAILABLE_TITLE: "Can't reach the server",
