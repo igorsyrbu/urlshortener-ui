@@ -18,7 +18,7 @@ All authentication is performed by the external REST API. The UI only collects t
 | Session hint | [`src/lib/session-hint.ts`](../../url-shortener-ui/src/lib/session-hint.ts) | `localStorage` flag "this browser had a session"; lets the shell render before the session is confirmed |
 | Token refresh | [`src/lib/api.ts`](../../url-shortener-ui/src/lib/api.ts) | `fetchWithAuth`; see [API layer](../api-layer.md) |
 | Cooldown hook | [`src/lib/hooks/useMagicLinkCooldown.ts`](../../url-shortener-ui/src/lib/hooks/useMagicLinkCooldown.ts) | Per-email resend cooldown persisted in `localStorage` |
-| Session UI | [`src/app/(dashboard)/settings/general/page.tsx`](../../url-shortener-ui/src/app/(dashboard)/settings/general/page.tsx) | Lists and terminates sessions |
+| Session UI | [`src/components/settings/SessionsSection.tsx`](../../url-shortener-ui/src/components/settings/SessionsSection.tsx), [`src/lib/hooks/useUserSessions.ts`](../../url-shortener-ui/src/lib/hooks/useUserSessions.ts) | Lists and terminates sessions |
 
 The auth store holds only `accessToken: string | null` and `user: UserProfile | null` (`email`, `name`, optional `pictureUrl`). `logout()` nulls both and clears the session hint. Nothing is persisted: a reload always starts with an empty store and recovers through the refresh cookie (see [Session bootstrap](#session-bootstrap)). See [State management](../state-management.md) for store conventions.
 
@@ -107,7 +107,7 @@ Neither resets other stores (links, tags, preferences, import). Navigation is cl
 
 ## Sessions list (Settings, General tab)
 
-`GeneralSettingsPage` owns the state; the cards are presentational. The tab shell is covered in [Billing and settings](billing-and-settings.md).
+`useUserSessions` loads the list (current session first), logs sessions out and shows the toasts; `SessionsSection` holds the confirmation target and renders the presentational cards and `SessionLogoutDialog`. The tab shell is covered in [Billing and settings](billing-and-settings.md).
 
 - Load: one `GET /users/sessions` on mount (a `useRef` guard prevents the strict-mode double call). The array is sorted so the entry with `current: true` is first, then split into `currentSession` and `otherSessions`. Failures are logged and the list stays empty.
 - Display: both cards render [`SessionRow`](../../url-shortener-ui/src/components/settings/SessionRow.tsx) (`role="group"` named by the device text; icon tile, device and location truncated with `title`, a ghost "Log out" button). `CurrentSessionCard` ("This device" badge, skeleton row while loading, "Current session information unavailable." when absent, and a footer bar with "Log out all other sessions" when there are others). `OtherSessionsList` ("Active sessions" heading, one card of rows, scrollable at `max-h-96`, hidden when empty and while loading, because the number of other sessions is unknown). Labels come from [`src/lib/session-utils.ts`](../../url-shortener-ui/src/lib/session-utils.ts): `formatDeviceText` (`"Device (OS)"`, hides `unknown`), `formatLocation` (city, region, country, or "Unknown Location"), `getIconForDevice` (monitor, phone, laptop, help icon).

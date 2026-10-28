@@ -147,6 +147,5 @@ The three POST calls take an optional `AbortSignal` (passed to `fetchWithAuth`).
 ## Known limitations and existing exceptions
 
 - Observation: [`src/app/inspect/[key]/page.tsx`](../url-shortener-ui/src/app/inspect/[key]/page.tsx) fetches `/public/preview/:key` on the server. Existing exception to the rule above, described in [architecture.md](architecture.md#known-limitations-and-existing-exceptions); not a template.
-- Observation: `src/app/(dashboard)/settings/general/page.tsx` builds `/users/sessions/${id}` inline instead of through `API_ENDPOINTS`. Existing exception, not a template.
 - Observation: `useTagMutations` and several component handlers (`CreateLinkModal`, `EditLinkModal`, `LinkFormFields`, `ProfileCard`, the settings general page) call `fetchWithAuth` directly in components or hooks rather than through a `lib/*-api.ts` module; error bodies are surfaced differently in each (`parseProblemDetail` in tag mutations, status text elsewhere).
 - Observation: `API_ENDPOINTS` has no entry for `/ott/login` and `/oauth2/authorization/google`; they are inline strings in `OttLoginForm` and `login/page.tsx`.

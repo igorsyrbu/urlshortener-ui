@@ -20,7 +20,7 @@ Adding a settings tab: add a route folder under `settings/`, then extend the thr
 
 ## General tab
 
-[`src/app/(dashboard)/settings/general/page.tsx`](../../url-shortener-ui/src/app/(dashboard)/settings/general/page.tsx) is a client page made of `SettingsSection` rows: Profile (`ProfileCard`), Appearance (`AppearanceCard`, `ThemeCard`), Preferences (`PreferencesCard`), Sessions (current/other sessions), Danger zone (`DangerZoneCard`), plus `SessionLogoutDialog`. Section titles and descriptions come from `SETTINGS_SECTION_COPY`, so the cards themselves carry no title.
+[`src/app/(dashboard)/settings/general/page.tsx`](../../url-shortener-ui/src/app/(dashboard)/settings/general/page.tsx) is a client page made of `SettingsSection` rows: Profile (`ProfileCard`), Appearance (`AppearanceCard`, `ThemeCard`), Preferences (`PreferencesCard`), Sessions ([`SessionsSection`](../../url-shortener-ui/src/components/settings/SessionsSection.tsx): current and other sessions plus `SessionLogoutDialog`), Danger zone (`DangerZoneCard`). The page only lays out the sections and holds the delete-account dialog flag. Section titles and descriptions come from `SETTINGS_SECTION_COPY`, so the cards themselves carry no title.
 
 ### Profile
 
