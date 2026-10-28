@@ -5,6 +5,7 @@ import {MotionConfig, motion, useMotionValue, useSpring} from "framer-motion";
 import {CloudUpload, FileText, X} from "lucide-react";
 import {cn} from "@/lib/utils";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
+import {useCoalescedCallback} from "@/lib/hooks/useCoalescedCallback";
 import {
     CSV_ACCEPT,
     DROPZONE_ARIA_LABEL,
@@ -33,6 +34,11 @@ interface MagnetPull {
     y: number;
 }
 
+interface DragPointer {
+    clientX: number;
+    clientY: number;
+}
+
 function clampPullMagnitude(dx: number, dy: number): MagnetPull {
     const magnitude = Math.hypot(dx, dy);
     if (magnitude <= MAGNET_MAX_PULL_PX || magnitude === 0) {
@@ -40,6 +46,22 @@ function clampPullMagnitude(dx: number, dy: number): MagnetPull {
     }
     const scale = MAGNET_MAX_PULL_PX / magnitude;
     return {x: dx * scale, y: dy * scale};
+}
+
+const NO_PULL: MagnetPull = {x: 0, y: 0};
+
+function isInsideRect(pointer: DragPointer, rect: DOMRect): boolean {
+    return pointer.clientX >= rect.left && pointer.clientX <= rect.right
+        && pointer.clientY >= rect.top && pointer.clientY <= rect.bottom;
+}
+
+/** A small pull toward the pointer while a file is dragged outside the dropzone; none once it is over it. */
+function getMagnetPull(pointer: DragPointer, rect: DOMRect): MagnetPull {
+    if (isInsideRect(pointer, rect)) return NO_PULL;
+    return clampPullMagnitude(
+        (pointer.clientX - (rect.left + rect.width / 2)) * MAGNET_FACTOR,
+        (pointer.clientY - (rect.top + rect.height / 2)) * MAGNET_FACTOR,
+    );
 }
 
 function isFileDrag(event: DragEvent): boolean {
@@ -56,38 +78,25 @@ export function ImportCsvDropzone({file, onFileChange, disabled = false}: Import
     const springX = useSpring(magnetX, {stiffness: 300, damping: 20});
     const springY = useSpring(magnetY, {stiffness: 300, damping: 20});
 
+    // dragover fires about every 50 ms; one layout read and one magnet update per frame is enough.
+    const applyMagnet = (pointer: DragPointer | null): void => {
+        const rect = pointer ? labelRef.current?.getBoundingClientRect() : undefined;
+        const pull = pointer && rect ? getMagnetPull(pointer, rect) : NO_PULL;
+        magnetX.set(pull.x);
+        magnetY.set(pull.y);
+    };
+    const {schedule: scheduleMagnet} = useCoalescedCallback(applyMagnet);
+
     useEffect(() => {
         if (!isDesktop) {
             return;
         }
-        const resetMagnet = (): void => {
-            magnetX.set(0);
-            magnetY.set(0);
-        };
+        const resetMagnet = (): void => scheduleMagnet(null);
         const handleWindowDragOver = (event: DragEvent): void => {
             if (disabled || !isFileDrag(event)) {
                 return;
             }
-            const rect = labelRef.current?.getBoundingClientRect();
-            if (!rect) {
-                return;
-            }
-            const isInside =
-                event.clientX >= rect.left &&
-                event.clientX <= rect.right &&
-                event.clientY >= rect.top &&
-                event.clientY <= rect.bottom;
-            if (isInside) {
-                magnetX.set(0);
-                magnetY.set(0);
-                return;
-            }
-            const pull = clampPullMagnitude(
-                (event.clientX - (rect.left + rect.width / 2)) * MAGNET_FACTOR,
-                (event.clientY - (rect.top + rect.height / 2)) * MAGNET_FACTOR,
-            );
-            magnetX.set(pull.x);
-            magnetY.set(pull.y);
+            scheduleMagnet({clientX: event.clientX, clientY: event.clientY});
         };
         const handleWindowDragLeave = (event: DragEvent): void => {
             if (event.relatedTarget === null) {
@@ -104,7 +113,7 @@ export function ImportCsvDropzone({file, onFileChange, disabled = false}: Import
             window.removeEventListener("dragleave", handleWindowDragLeave);
             window.removeEventListener("dragend", resetMagnet);
         };
-    }, [isDesktop, disabled, magnetX, magnetY]);
+    }, [isDesktop, disabled, scheduleMagnet]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
         const selected = event.target.files?.[0];

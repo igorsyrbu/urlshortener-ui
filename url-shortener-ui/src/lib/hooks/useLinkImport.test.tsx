@@ -1,7 +1,9 @@
 import {act, renderHook, waitFor} from "@testing-library/react";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS} from "@/lib/constants";
+import {toast} from "sonner";
+import {API_ENDPOINTS, MAX_IMPORT_FILE_BYTES, MAX_IMPORT_FILE_MEGABYTES} from "@/lib/constants";
+import {buildFileTooLargeMessage} from "@/components/links/import-export-constants";
 import {IMPORT_SESSION_STATE, useLinkImport} from "@/lib/hooks/useLinkImport";
 import {IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
 import {createCsvFile} from "@/test/csv-utils";
@@ -9,6 +11,7 @@ import {createImportJob} from "@/test/import-utils";
 
 const mocks = vi.hoisted(() => ({refreshLinks: vi.fn(), refreshTags: vi.fn(), push: vi.fn()}));
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
+vi.mock("sonner", () => ({toast: {error: vi.fn(), success: vi.fn()}}));
 vi.mock("next/navigation", () => ({useRouter: () => ({push: mocks.push})}));
 vi.mock("@/lib/store/links", () => ({useLinkStore: {getState: () => ({fetchLinks: mocks.refreshLinks})}}));
 vi.mock("@/lib/store/tags", () => ({useTagStoreWithoutCount: {getState: () => ({fetchTags: mocks.refreshTags})}}));
@@ -28,6 +31,23 @@ function mockAcceptedJob(): ReadableStreamDefaultController<Uint8Array> {
     if (!streamController) throw new Error("Stream controller was not initialized");
     return streamController;
 }
+
+describe("file size guard", () => {
+    beforeEach(() => { resetImportTrackerForTests(); });
+
+    it("rejects a file above the size cap without reading or uploading it", async () => {
+        const file = createCsvFile();
+        Object.defineProperty(file, "size", {value: MAX_IMPORT_FILE_BYTES + 1});
+        const readText = vi.spyOn(file, "text");
+        const {result} = renderHook(() => useLinkImport());
+
+        await act(async () => { await result.current.handleImport(file, false); });
+
+        expect(toast.error).toHaveBeenCalledWith(buildFileTooLargeMessage(MAX_IMPORT_FILE_MEGABYTES));
+        expect(readText).not.toHaveBeenCalled();
+        expect(fetchWithAuth).not.toHaveBeenCalled();
+    });
+});
 
 describe("import session lifecycle", () => {
     beforeEach(() => { resetImportTrackerForTests(); });

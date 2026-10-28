@@ -44,6 +44,10 @@ export function buildImportSummaryMessage(imported: number, failedCount: number)
 
 export const IMPORT_EMPTY_FILE_MESSAGE = "The selected file is empty. Choose a CSV file with a header row and at least one link.";
 
+export function buildFileTooLargeMessage(maxMegabytes: number): string {
+    return `The selected file is larger than ${maxMegabytes} MB, far more than a CSV of links needs. Check that you chose the right file.`;
+}
+
 export function buildTooManyRowsMessage(limit: number): string {
     return `The selected file exceeds the maximum of ${limit} links per import. Split it into smaller files and try again.`;
 }

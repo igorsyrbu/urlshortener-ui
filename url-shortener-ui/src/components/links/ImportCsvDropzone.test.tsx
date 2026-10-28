@@ -1,4 +1,4 @@
-import {fireEvent, render, screen} from "@testing-library/react";
+import {act, fireEvent, render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {describe, expect, it, vi} from "vitest";
 import {ImportCsvDropzone} from "@/components/links/ImportCsvDropzone";
@@ -100,6 +100,21 @@ describe("ImportCsvDropzone", () => {
 
         expect(onFileChange).toHaveBeenCalledExactlyOnceWith(null);
         expect(pickerClick).not.toHaveBeenCalled();
+    });
+
+    it("measures the zone at most once per frame while a file is dragged across the window", () => {
+        const pendingFrames: FrameRequestCallback[] = [];
+        vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => pendingFrames.push(callback));
+        renderDropzone();
+        const measureZone = vi.spyOn(getDropzone(), "getBoundingClientRect");
+
+        for (let step = 0; step < 5; step += 1) {
+            fireEvent.dragOver(window, {dataTransfer: {types: ["Files"]}, clientX: step, clientY: step});
+        }
+        expect(measureZone).not.toHaveBeenCalled();
+        act(() => { pendingFrames.splice(0).forEach((runFrame) => runFrame(0)); });
+
+        expect(measureZone).toHaveBeenCalledOnce();
     });
 
     it("does not react to drops while disabled", () => {

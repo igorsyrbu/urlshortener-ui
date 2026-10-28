@@ -198,6 +198,15 @@ export const CONFETTI_SPREAD = 50;
 /** Max data rows (excluding header and blank lines) accepted per CSV import. */
 export const MAX_IMPORT_DATA_ROWS = 1000;
 
+const BYTES_PER_MEGABYTE = 1024 * 1024;
+
+/**
+ * Largest CSV the import reads into memory. Not the API's limit: 1000 rows with 2 KB URLs stay under 2 MB, so only a
+ * wrong or runaway file reaches it, and it is rejected before being read.
+ */
+export const MAX_IMPORT_FILE_MEGABYTES = 5;
+export const MAX_IMPORT_FILE_BYTES = MAX_IMPORT_FILE_MEGABYTES * BYTES_PER_MEGABYTE;
+
 /** Filename prefix for CSV exports; full name is `<prefix>-YYYY-MM-DD.csv`. */
 export const EXPORT_FILENAME_PREFIX = "shortlinks-export";
 

@@ -4,7 +4,7 @@ import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import {toast} from "sonner";
 import type {LinkImportJobDTO, LinkImportProgressDTO} from "@/lib/api-types";
-import {MAX_IMPORT_DATA_ROWS, ROUTES} from "@/lib/constants";
+import {MAX_IMPORT_DATA_ROWS, MAX_IMPORT_FILE_BYTES, MAX_IMPORT_FILE_MEGABYTES, ROUTES} from "@/lib/constants";
 import {precheckCsv, TransferError, uploadLinksImport} from "@/lib/link-transfer";
 import {logger} from "@/lib/logger";
 import {attempt} from "@/lib/async-utils";
@@ -12,7 +12,7 @@ import {buildDiscoveredJob, IMPORT_TRACKING_STATUS, useImportTracker, type Impor
 import {useLinkStore} from "@/lib/store/links";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {
-    buildTooManyRowsMessage, IMPORT_EMPTY_FILE_MESSAGE, IMPORT_FAILED_MESSAGE,
+    buildFileTooLargeMessage, buildTooManyRowsMessage, IMPORT_EMPTY_FILE_MESSAGE, IMPORT_FAILED_MESSAGE,
 } from "@/components/links/import-export-constants";
 
 export const IMPORT_SESSION_STATE = {
@@ -40,6 +40,7 @@ interface UseLinkImportResult {
 }
 
 async function readImportFile(file: File): Promise<string> {
+    if (file.size > MAX_IMPORT_FILE_BYTES) throw new Error(buildFileTooLargeMessage(MAX_IMPORT_FILE_MEGABYTES));
     const csvText = await file.text();
     const precheck = precheckCsv(csvText);
     if (precheck.status === "empty") throw new Error(IMPORT_EMPTY_FILE_MESSAGE);
