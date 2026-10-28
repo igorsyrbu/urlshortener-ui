@@ -6,12 +6,14 @@
 const APP_URL = process.env.LHCI_APP_URL ?? "http://localhost:3095";
 const AUTH_CODE = process.env.LHCI_AUTH_CODE ?? "mock-auth-code-2e40748f-cfaa-434f-96f5-b921f5c96c90";
 const AUTHENTICATED_PATHS = ["/links", "/tags", "/analytics", "/settings"];
+// Public, but the mock creates a user's seeded links only at sign-in, so on a fresh mock the inspected key does not exist yet.
+const SEEDED_LINK_PATHS = ["/inspect"];
 const LOGIN_REDIRECT_PATH = "/links";
 const LOGIN_TIMEOUT_MS = 15_000;
 
-function isAuthenticatedRoute(url) {
+function needsSignIn(url) {
     const {pathname} = new URL(url);
-    return AUTHENTICATED_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+    return [...AUTHENTICATED_PATHS, ...SEEDED_LINK_PATHS].some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
 async function signIn(browser) {
@@ -25,7 +27,7 @@ async function signIn(browser) {
 }
 
 export default async function login(browser, context) {
-    if (!isAuthenticatedRoute(context.url)) return;
+    if (!needsSignIn(context.url)) return;
     await signIn(browser);
 }
 
