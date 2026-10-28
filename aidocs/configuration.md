@@ -76,7 +76,7 @@ There is no `middleware.ts`/`proxy.ts` and no `env` block. Deliberately absent: 
 - [`tsconfig.json`](../url-shortener-ui/tsconfig.json): `strict`, `moduleResolution: bundler`, `jsx: react-jsx`, `noEmit`, `incremental`, `paths: {"@/*": ["./src/*"]}`. It excludes all `*.test.ts(x)` and `src/test`.
 - [`tsconfig.test.json`](../url-shortener-ui/tsconfig.test.json) extends it, adds `vitest/globals` and `@testing-library/jest-dom` types and includes `src/**` plus `vitest.config.ts` and `vitest.compiler.config.ts`. `pnpm type-check` runs both projects.
 - The same `@/` alias is mirrored in [`vitest.config.ts`](../url-shortener-ui/vitest.config.ts) (`resolve.alias`) and in `components.json` aliases. Use `@/...` imports for cross-folder imports.
-- The mock server has its own [`tsconfig.json`](../url-shortener-mock-server/tsconfig.json): CommonJS, ES2022, `strict`, `rootDir: src`, `outDir: dist`; no alias.
+- The mock server has its own [`tsconfig.json`](../url-shortener-mock-server/tsconfig.json): CommonJS, ES2022, `strict`, `rootDir: src`, `outDir: dist`; no alias. `typecheck` uses it (tests included); `build` uses `tsconfig.build.json` (tests excluded).
 
 ## Tooling config
 
@@ -128,7 +128,7 @@ Errors (fail the run): cumulative layout shift above 0.02 in any run, page weigh
 
 [`bundle-budgets.json`](../url-shortener-ui/bundle-budgets.json) caps each route's first-load JavaScript (gzip level 9, the sum of the route's `firstLoadChunkPaths` in `.next/diagnostics/route-bundle-stats.json`) and the largest single chunk; `pnpm check:bundle-budgets` prints every route with its headroom and exits 1 when one is over. Budgets are the measured value plus about 2 KB, rounded up, so re-adding any heavy library to a shared component fails (culori ~16 KB, vaul ~8 KB, framer-motion ~26 KB; a probe import of culori in the sidebar took `/dashboard` from 234.3 to 248.1 KB). A route without an entry gets `defaultRouteKb` (215), so a new dashboard route needs its own entry. Budgets only go down: after a saving, lower the number to the new value plus about 2 KB; raising one needs a written reason in the commit. Turnstile is switched off for the measurement so local `.env` files do not change the result.
 
-Mock server scripts: `dev` (`tsx watch src/index.ts`), `start` (`node dist/index.js`), `build` (`tsc`), `typecheck`, `test` (`node --import tsx --test 'src/**/*.test.ts'`).
+Mock server scripts: `dev` (`tsx watch src/index.ts`), `start` (`node dist/index.js`), `clean` (`rm -rf dist`), `build` (`rm -rf dist && tsc -p tsconfig.build.json`: [`tsconfig.build.json`](../url-shortener-mock-server/tsconfig.build.json) extends `tsconfig.json` and leaves out `*.test.ts` and `test-utils.ts`, so `dist/` holds only the server), `typecheck`, `test` (`node --import tsx --test 'src/**/*.test.ts'`).
 
 There is no CI workflow; every check runs locally. The root `typecheck` does not cover the UI, so run `pnpm --filter=url-shortener-ui type-check` for it.
 

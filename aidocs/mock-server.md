@@ -15,7 +15,7 @@ Two rules keep a bad request from taking the process down:
 - Controller methods are synchronous unless they `await`. Express 4 turns a synchronous throw into a 500 through `jsonErrors`, but it ignores a rejected promise, and Node then ends the process. An `async` handler is therefore registered through `asyncHandler` ([`middleware/asyncHandler.ts`](../url-shortener-mock-server/src/middleware/asyncHandler.ts)), which forwards the rejection to `next`. [`routes/handlers.test.ts`](../url-shortener-mock-server/src/routes/handlers.test.ts) fails for any unwrapped `async` handler in any router.
 - Request bodies are untyped JSON: read fields with a type check (`typeof value === "string"`, `Array.isArray`) before calling methods on them, even when the DTO interface says `string`.
 
-Scripts (from [`package.json`](../url-shortener-mock-server/package.json)): `dev` (`tsx watch src/index.ts`), `build` (`tsc`), `start` (`node dist/index.js`), `typecheck`, `test`. Tests: [testing](testing.md#mock-server-tests).
+Scripts (from [`package.json`](../url-shortener-mock-server/package.json)): `dev` (`tsx watch src/index.ts`), `build` (`rm -rf dist && tsc -p tsconfig.build.json`, tests and `test-utils.ts` left out), `clean`, `start` (`node dist/index.js`), `typecheck`, `test`. Tests: [testing](testing.md#mock-server-tests).
 
 ## Request pipeline
 
