@@ -64,6 +64,15 @@ describe("useTagSelectKeyboard", () => {
             expect(result.current.showCreateOption).toBe(false);
         });
 
+        it("does not offer to create a tag that already exists when the search has surrounding spaces", () => {
+            const {result} = renderKeyboard();
+
+            act(() => { result.current.handleSearchChange("Alpha "); });
+
+            expect(result.current.filteredTags.map((tag) => tag.name)).toEqual(["Alpha"]);
+            expect(result.current.showCreateOption).toBe(false);
+        });
+
         it("does not offer to create a tag from whitespace only", () => {
             const {result} = renderKeyboard();
 

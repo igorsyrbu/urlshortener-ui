@@ -1,5 +1,6 @@
 import React, {useCallback, useMemo, useState} from "react";
 import {TagItem} from "@/lib/types";
+import {searchTags} from "@/lib/tag-search";
 
 interface UseTagSelectKeyboardOptions {
     tags: TagItem[];
@@ -28,49 +29,30 @@ export function useTagSelectKeyboard({
     closePopover,
 }: UseTagSelectKeyboardOptions): UseTagSelectKeyboardReturn {
     const [search, setSearch] = useState("");
-    const [activeIndex, setActiveIndex] = useState(-1);
+    // null until the user moves the highlight; then the highlight follows the search result (the "Create" row, if any).
+    const [pickedIndex, setPickedIndex] = useState<number | null>(null);
 
-    const filteredTags = useMemo(
-        () => tags
-            .filter((t) => t.name.toLowerCase().includes(search.toLowerCase()))
-            .sort((a, b) => a.name.localeCompare(b.name)),
-        [tags, search],
-    );
-
-    const exactMatch = filteredTags.some(
-        (t) => t.name.toLowerCase() === search.toLowerCase(),
-    );
-    const showCreateOption = search.trim().length > 0 && !exactMatch;
+    const {matchingTags: filteredTags, canCreateTag: showCreateOption} = useMemo(() => searchTags(tags, search), [tags, search]);
     const totalItems = filteredTags.length + (showCreateOption ? 1 : 0);
+    const activeIndex = pickedIndex ?? (showCreateOption ? filteredTags.length : -1);
+
+    const setActiveIndex = useCallback((index: number) => setPickedIndex(index), []);
 
     const handleSearchChange = useCallback((value: string) => {
         setSearch(value);
-        const nextFiltered = tags
-            .filter((t) => t.name.toLowerCase().includes(value.toLowerCase()))
-            .sort((a, b) => a.name.localeCompare(b.name));
-        const nextExactMatch = nextFiltered.some(
-            (t) => t.name.toLowerCase() === value.toLowerCase(),
-        );
-        const nextShowCreate = value.trim().length > 0 && !nextExactMatch;
-        setActiveIndex(nextShowCreate ? nextFiltered.length : -1);
-    }, [tags]);
+        setPickedIndex(null);
+    }, []);
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         switch (e.key) {
             case "ArrowDown":
                 e.preventDefault();
-                setActiveIndex((prev) => {
-                    if (prev >= totalItems - 1) return 0;
-                    return prev + 1;
-                });
+                setPickedIndex(activeIndex >= totalItems - 1 ? 0 : activeIndex + 1);
                 break;
 
             case "ArrowUp":
                 e.preventDefault();
-                setActiveIndex((prev) => {
-                    if (prev <= 0) return totalItems - 1;
-                    return prev - 1;
-                });
+                setPickedIndex(activeIndex <= 0 ? totalItems - 1 : activeIndex - 1);
                 break;
 
             case "Enter": {

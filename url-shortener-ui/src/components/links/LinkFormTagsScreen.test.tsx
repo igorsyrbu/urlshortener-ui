@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import {describe, expect, it, vi} from "vitest";
 import {TagsScreenContent} from "@/components/links/LinkFormTagsScreen";
 import {createTag} from "@/test/tag-utils";
+import {TAG_CREATE_FAILED_MESSAGE} from "@/lib/tag-constants";
 
 type TagsScreenProps = ComponentProps<typeof TagsScreenContent>;
 
@@ -99,9 +100,9 @@ describe("TagsScreenContent", () => {
     });
 
     it("shows the tag creation error", () => {
-        renderScreen({tagError: "Failed to create tag"});
+        renderScreen({tagError: TAG_CREATE_FAILED_MESSAGE});
 
-        expect(screen.getByText("Failed to create tag")).toBeInTheDocument();
+        expect(screen.getByText(TAG_CREATE_FAILED_MESSAGE)).toBeInTheDocument();
     });
 
     it("submits, goes back and cancels from the matching buttons", async () => {

@@ -8,6 +8,7 @@ import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import type {TagItem} from "@/lib/types";
 import {getRequestsTo, parseRequestBody, routeFetchWithAuth} from "@/test/link-form-utils";
 import {createTag} from "@/test/tag-utils";
+import {TAG_CREATE_FAILED_MESSAGE} from "@/lib/tag-constants";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 
@@ -235,7 +236,7 @@ describe("TagSelect", () => {
             await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "Broken");
             await user.click(screen.getByRole("option", {name: /Create/}));
 
-            expect(await screen.findByText("Failed to create tag")).toBeInTheDocument();
+            expect(await screen.findByText(TAG_CREATE_FAILED_MESSAGE)).toBeInTheDocument();
             expect(onChange).not.toHaveBeenCalled();
         });
     });

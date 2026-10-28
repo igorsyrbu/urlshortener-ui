@@ -7,23 +7,17 @@ import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {BadgeVariant} from "@/components/ui/badge";
 import {TagBadge} from "@/components/tags/TagBadge";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
-import {ALLOWED_TAG_COLORS} from "@/lib/tag-constants";
 import {TagItem} from "@/lib/types";
-import {useTagMutations} from "@/lib/hooks/useTagMutations";
+import {useCreateTagFromSearch} from "@/lib/hooks/useCreateTagFromSearch";
 import {useTagSelectKeyboard} from "@/lib/hooks/useTagSelectKeyboard";
 import {TagSelectSearch} from "@/components/links/TagSelectSearch";
 import {cn} from "@/lib/utils";
-import {attempt, withPending} from "@/lib/async-utils";
 import {FieldError} from "@/components/ui/field-error";
 
 interface TagSelectProps {
     selectedTagIds: string[];
     onChange: (tagIds: string[]) => void;
     disabled?: boolean;
-}
-
-function getRandomColor(): BadgeVariant {
-    return ALLOWED_TAG_COLORS[Math.floor(Math.random() * ALLOWED_TAG_COLORS.length)];
 }
 
 function iconColorForTag(color: BadgeVariant): string {
@@ -51,26 +45,17 @@ function iconColorForTag(color: BadgeVariant): string {
 
 export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) {
     const {tags, loading} = useTagStoreWithoutCount(useShallow((s) => ({tags: s.tags, loading: s.loading})));
-    const {createTag} = useTagMutations();
     const [open, setOpen] = useState(false);
-    const [createLoading, setCreateLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const listboxId = useId();
 
+    const {isCreatingTag, createTagError, clearCreateTagError, createTagFromSearch} = useCreateTagFromSearch();
+
     const handleCreate = async () => {
-        const tagName = search.trim();
-        if (!tagName || createLoading) return;
-        setError(null);
-        await withPending(setCreateLoading, async () => {
-            const result = await attempt(() => createTag(tagName, getRandomColor()));
-            if (!result.isSuccess) {
-                setError("Failed to create tag");
-                return;
-            }
-            onChange([...selectedTagIds, result.value.id]);
-            setSearch("");
-        });
+        const createdTagId = await createTagFromSearch(search);
+        if (createdTagId === null) return;
+        onChange([...selectedTagIds, createdTagId]);
+        setSearch("");
     };
 
     const {
@@ -100,7 +85,7 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
         if (!value) {
             setSearch("");
             setActiveIndex(-1);
-            setError(null);
+            clearCreateTagError();
         }
         setOpen(value);
     };
@@ -228,14 +213,14 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
                             aria-selected={false}
                             onMouseEnter={() => setActiveIndex(filteredTags.length)}
                             onClick={handleCreate}
-                            disabled={createLoading}
+                            disabled={isCreatingTag}
                             className={cn(
                                 "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-left transition-colors min-w-0",
                                 activeIndex === filteredTags.length ? "bg-muted" : "hover:bg-muted/50",
-                                createLoading && "cursor-not-allowed opacity-50",
+                                isCreatingTag && "cursor-not-allowed opacity-50",
                             )}
                         >
-                            {createLoading ? (
+                            {isCreatingTag ? (
                                 <Loader2 className="size-4 animate-spin text-muted-foreground shrink-0"/>
                             ) : (
                                 <Plus className="size-4 text-muted-foreground shrink-0"/>
@@ -247,8 +232,8 @@ export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) 
                     )}
                 </div>
 
-                {error && (
-                    <FieldError id="tag-select-error" className="px-3 pb-2 text-xs">{error}</FieldError>
+                {createTagError && (
+                    <FieldError id="tag-select-error" className="px-3 pb-2 text-xs">{createTagError}</FieldError>
                 )}
             </PopoverContent>
         </Popover>

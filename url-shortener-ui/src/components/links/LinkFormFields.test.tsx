@@ -18,6 +18,7 @@ import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {getRequestsTo, routeFetchWithAuth} from "@/test/link-form-utils";
 import {peekPrefetchedRandomKey, prefetchRandomKey, resetRandomKeyPrefetchForTests} from "@/lib/random-key";
 import {createTag} from "@/test/tag-utils";
+import {TAG_CREATE_FAILED_MESSAGE} from "@/lib/tag-constants";
 
 const media = vi.hoisted(() => ({isDesktop: true}));
 
@@ -489,7 +490,7 @@ describe("LinkFormFields", () => {
             await user.type(await screen.findByPlaceholderText("Search or create tags..."), "Dup");
             await user.click(screen.getByRole("button", {name: /Create tag/}));
 
-            expect(await screen.findByText("Failed to create tag")).toBeInTheDocument();
+            expect(await screen.findByText(TAG_CREATE_FAILED_MESSAGE)).toBeInTheDocument();
         });
     });
 

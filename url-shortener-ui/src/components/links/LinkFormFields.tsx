@@ -23,14 +23,14 @@ import {useUrlCleaner} from "@/lib/hooks/useUrlCleaner";
 import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {usePreferencesStore} from "@/lib/store/preferences";
-import {useTagMutations} from "@/lib/hooks/useTagMutations";
+import {useCreateTagFromSearch} from "@/lib/hooks/useCreateTagFromSearch";
 import {type GlowState, ShortKeyConflictError} from "@/components/links/create-link-types";
 import {FormScreenContent} from "@/components/links/LinkFormMainScreen";
 import {TagsScreenContent} from "@/components/links/LinkFormTagsScreen";
 import {TrackerReviewScreen} from "@/components/links/TrackerReviewScreen";
-import {ALLOWED_TAG_COLORS} from "@/lib/tag-constants";
+import {searchTags} from "@/lib/tag-search";
 import {logger} from "@/lib/logger";
-import {attempt, withPending} from "@/lib/async-utils";
+import {withPending} from "@/lib/async-utils";
 import {buildFinalUrl, buildTrackerEntries} from "@/lib/url-cleaner-utils";
 import {LINK_FORM_FIELD_IDS} from "@/components/links/link-form-constants";
 import {HTTP_NOT_FOUND, HTTP_OK} from "@/lib/http-status";
@@ -120,10 +120,12 @@ export function LinkFormFields({
     const {tags, loading: tagsLoading} = useTagStoreWithoutCount(useShallow((s) => ({
         tags: s.tags, loading: s.loading,
     })));
-    const {createTag} = useTagMutations();
     const [tagSearch, setTagSearch] = useState("");
-    const [createTagLoading, setCreateTagLoading] = useState(false);
-    const [tagError, setTagError] = useState<string | null>(null);
+    const {
+        isCreatingTag: createTagLoading,
+        createTagError: tagError,
+        createTagFromSearch,
+    } = useCreateTagFromSearch();
     const [cleanedTrackerCount, setCleanedTrackerCount] = useState<number | null>(null);
     const [keptTrackers, setKeptTrackers] = useState<Set<string>>(new Set());
     const [appliedUrl, setAppliedUrl] = useState<string | null>(null);
@@ -144,15 +146,7 @@ export function LinkFormFields({
         url: longUrl,
     });
 
-    const filteredTags = tags
-        .filter((t) => t.name.toLowerCase().includes(tagSearch.toLowerCase()))
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-    const hasExactMatch = tags.some(
-        (t) => t.name.toLowerCase() === tagSearch.trim().toLowerCase()
-    );
-
-    const showCreateOption = tagSearch.trim() !== "" && !hasExactMatch;
+    const {matchingTags: filteredTags, canCreateTag: showCreateOption} = searchTags(tags, tagSearch);
 
     useEffect(() => {
         if (!hasUserEditedKeyRef.current) {
@@ -457,19 +451,10 @@ export function LinkFormFields({
     };
 
     const handleCreateTag = async () => {
-        const tagName = tagSearch.trim();
-        if (!tagName || createTagLoading) return;
-        setTagError(null);
-        const randomColor = ALLOWED_TAG_COLORS[Math.floor(Math.random() * ALLOWED_TAG_COLORS.length)];
-        await withPending(setCreateTagLoading, async () => {
-            const result = await attempt(() => createTag(tagName, randomColor));
-            if (!result.isSuccess) {
-                setTagError("Failed to create tag");
-                return;
-            }
-            setSelectedTagIds((prev) => [...prev, result.value.id]);
-            setTagSearch("");
-        });
+        const createdTagId = await createTagFromSearch(tagSearch);
+        if (createdTagId === null) return;
+        setSelectedTagIds((prev) => [...prev, createdTagId]);
+        setTagSearch("");
     };
 
     const handleToggleTag = (tagId: string) => {
