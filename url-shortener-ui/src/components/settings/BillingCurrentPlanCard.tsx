@@ -15,6 +15,8 @@ import {
 import type {BillingPortalState} from "@/lib/hooks/useBillingPortal";
 import {cn} from "@/lib/utils";
 import {formatFullDate} from "@/lib/format";
+import {SKELETON_FILL_CLASS, SKELETON_PULSE_CLASS} from "@/components/ui/skeleton";
+import {SkeletonText} from "@/components/ui/skeleton-text";
 
 interface BillingCurrentPlanCardProps {
     subscription: BillingSubscription;
@@ -30,7 +32,6 @@ interface PlanStatus {
     variant: BadgeVariant;
 }
 
-const TEXT_PULSE_CLASS = "inline-block rounded bg-muted animate-pulse";
 
 function formatPeriodEnd(currentPeriodEnd: string | undefined): string | null {
     if (!currentPeriodEnd) return null;
@@ -72,11 +73,11 @@ function renderLoadingContent(): React.ReactNode {
     return (
         <div aria-hidden="true" className="flex min-w-0 flex-col gap-3">
             <div className="flex min-w-0 items-center gap-2">
-                <p className="text-sm font-semibold"><span className={cn(TEXT_PULSE_CLASS, "w-12")}>&nbsp;</span></p>
-                <Badge variant="gray" className="border-transparent bg-muted text-transparent animate-pulse">{BILLING_COPY.STATUS_FREE}</Badge>
+                <p className="text-sm font-semibold"><SkeletonText className="w-12"/></p>
+                <Badge variant="gray" className={cn("border-transparent bg-muted text-transparent", SKELETON_PULSE_CLASS)}>{BILLING_COPY.STATUS_FREE}</Badge>
             </div>
             {/* The real note, hidden: on a phone it wraps, and a one-line bar would make the card grow when it loads. */}
-            <p className="text-sm"><span className="rounded bg-muted text-transparent box-decoration-clone animate-pulse">{BILLING_COPY.FREE_PLAN_NOTE}</span></p>
+            <p className="text-sm"><span className={cn(SKELETON_FILL_CLASS, SKELETON_PULSE_CLASS, "text-transparent box-decoration-clone")}>{BILLING_COPY.FREE_PLAN_NOTE}</span></p>
         </div>
     );
 }

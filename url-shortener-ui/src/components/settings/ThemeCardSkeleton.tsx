@@ -4,6 +4,7 @@ import {Card, CardContent} from "@/components/ui/card";
 import {PALETTE_GRID_CLASS} from "@/components/settings/PresetPaletteGrid";
 import {PALETTES} from "@/lib/themes/palettes";
 import {ThemeCardHeading} from "@/components/settings/ThemeCardHeading";
+import {Skeleton} from "@/components/ui/skeleton";
 
 const SWATCH_DOT_COUNT = 4;
 
@@ -14,7 +15,7 @@ export function ThemeCardSkeleton() {
             <CardContent className="@container flex flex-col gap-4" aria-hidden="true">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <ThemeCardHeading/>
-                    <div className="h-12 w-full rounded-xl bg-muted animate-pulse sm:w-40"/>
+                    <Skeleton className="h-12 w-full rounded-xl sm:w-40"/>
                 </div>
                 <div className={PALETTE_GRID_CLASS}>
                     {PALETTES.map((palette) => (
@@ -22,7 +23,7 @@ export function ThemeCardSkeleton() {
                              className="flex flex-col items-center justify-center rounded-xl border-[0.5px] border-border p-3">
                             <div className="mb-2 flex gap-1.5">
                                 {Array.from({length: SWATCH_DOT_COUNT}, (_, dot) => (
-                                    <span key={dot} className="size-4 rounded-full bg-muted animate-pulse"/>
+                                    <Skeleton key={dot} className="size-4 rounded-full"/>
                                 ))}
                             </div>
                             <span className="text-xs font-medium sm:text-sm">{palette.name}</span>

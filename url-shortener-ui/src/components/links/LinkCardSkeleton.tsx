@@ -1,12 +1,14 @@
 "use client";
 
 import {CARD_LIST_CLASS} from "@/lib/constants";
+import {SKELETON_PULSE_CLASS} from "@/components/ui/skeleton";
+import {cn} from "@/lib/utils";
 
 const NON_BREAKING_SPACE = "\u00A0";
 
 export function LinkCardSkeleton() {
   return (
-    <div className="flex items-center p-4 md:p-5 rounded-xl bg-card border-[0.5px] border-border gap-4 animate-pulse">
+    <div className={cn("flex items-center p-4 md:p-5 rounded-xl bg-card border-[0.5px] border-border gap-4", SKELETON_PULSE_CLASS)}>
       <div className="shrink-0 size-9 rounded-full bg-muted border-[0.5px] border-border" />
 
       <div className="flex-1 min-w-0 flex flex-col gap-1">

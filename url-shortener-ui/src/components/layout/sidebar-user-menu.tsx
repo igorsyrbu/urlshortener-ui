@@ -22,6 +22,7 @@ import {API_ENDPOINTS, FOCUS_RING_CLASS, ICON_BUTTON_LABELS, ROUTES} from "@/lib
 import {SETTINGS_ROUTES} from "@/lib/settings-constants";
 import {attempt} from "@/lib/async-utils";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
+import {Skeleton} from "@/components/ui/skeleton";
 
 const AccountMenuDrawer = dynamic(
     () => import("@/components/layout/AccountMenuDrawer").then((drawerModule) => drawerModule.AccountMenuDrawer),
@@ -80,7 +81,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
                 {user ? (
                     <p className="truncate text-sidebar-foreground" title={user.name || user.email}>{user.name || user.email}</p>
                 ) : (
-                    <div className="h-4 w-24 rounded bg-muted animate-pulse" aria-hidden="true"/>
+                    <Skeleton className="h-4 w-24"/>
                 )}
             </div>
         </button>

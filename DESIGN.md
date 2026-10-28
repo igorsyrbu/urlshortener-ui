@@ -151,7 +151,7 @@ The `QrCodeModal` generation settings in [`url-shortener-ui/src/components/links
 
 ### Loader Conventions
 * **Spinners:** Use the shared `Spinner` for content areas and `ButtonSpinner` (`LoaderIcon` with `animate-spin`) inside buttons. A few inline icon spinners still use `Loader2`; new code should prefer the shared components.
-* **Skeletons:** `animate-pulse` blocks.
+* **Skeletons:** `bg-muted` pulse blocks from the `Skeleton` / `SkeletonText` primitives (`components/ui`).
 
 ### Gotchas
 * **Always pair `duration-*` with an explicit `transition-*` scope.** A bare `duration-200` activates transitions on *all* properties (CSS initial `transition-property: all`) — this once animated a dialog's width swap and reflowed its text mid-transition. Size-changing surfaces get `transition-none`; open/close keyframe animations (`animate-in` / `animate-out`) are unaffected by it.

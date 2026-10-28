@@ -7,13 +7,14 @@ import {
     ANALYTICS_SUMMARY_CARD_CLASS,
 } from "@/components/analytics/analytics-layout";
 import {cn} from "@/lib/utils";
+import {Skeleton, SKELETON_PULSE_CLASS} from "@/components/ui/skeleton";
 
 const SKELETON_BAR_WIDTHS_PERCENT = [75, 55, 40, 25, 15];
 const BREAKDOWN_CARD_COUNT = 4;
 
 export function AnalyticsCardSkeleton() {
     return (
-        <div className={cn(ANALYTICS_CARD_CLASS, "animate-pulse")}>
+        <div className={cn(ANALYTICS_CARD_CLASS, SKELETON_PULSE_CLASS)}>
             <div className={ANALYTICS_CARD_HEADER_CLASS}>
                 <div className="h-5 bg-muted rounded w-24"/>
                 <div className="h-5 bg-muted rounded w-10 mr-3"/>
@@ -40,7 +41,7 @@ export function AnalyticsCardSkeleton() {
 
 export function AnalyticsChartSkeleton() {
     return (
-        <div className={cn(ANALYTICS_SUMMARY_CARD_CLASS, "animate-pulse")}>
+        <div className={cn(ANALYTICS_SUMMARY_CARD_CLASS, SKELETON_PULSE_CLASS)}>
             <div>
                 <div className="h-4 bg-muted rounded w-24"/>
                 <div className="mt-2 flex flex-wrap items-center gap-4">
@@ -58,7 +59,7 @@ export function AnalyticsPageSkeleton() {
     return (
         <>
             <div className={ANALYTICS_PERIOD_ROW_CLASS}>
-                <div className="h-10 bg-muted rounded w-44 animate-pulse"/>
+                <Skeleton className="h-10 w-44"/>
             </div>
             <AnalyticsChartSkeleton/>
             <div className={ANALYTICS_GRID_CLASS}>

@@ -7,6 +7,7 @@ import {SETTINGS_CARD_WITH_FOOTER_CLASS, SettingsCardFooter} from "@/components/
 import {BillingPrice} from "@/components/settings/BillingPrice";
 import {BILLING_COPY, BILLING_PRICES, type BillingCycle, type BillingPlan} from "@/lib/billing-constants";
 import {cn} from "@/lib/utils";
+import {Skeleton} from "@/components/ui/skeleton";
 
 interface BillingPlanCardProps {
     plan: BillingPlan;
@@ -47,7 +48,7 @@ function renderUpgradeLabel(plan: BillingPlan, isCurrent: boolean, isUpgrading: 
 
 function renderAction(plan: BillingPlan, props: BillingPlanCardProps): React.ReactNode {
     const {isCurrent, isUpgrading, isPeriodSwitchable, isSchedulingPeriod, onUpgrade} = props;
-    if (props.isLoading) return <div aria-hidden="true" className="h-9 w-full rounded-md bg-muted animate-pulse"/>;
+    if (props.isLoading) return <Skeleton className="h-9 w-full rounded-md"/>;
     const isFree = plan.id === "free";
     const isUpgradePending = !isCurrent && !isFree && isUpgrading;
     const isSwitchPending = isPeriodSwitchable && isSchedulingPeriod;
