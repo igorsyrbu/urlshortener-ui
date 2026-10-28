@@ -252,7 +252,7 @@ Copy `.env.example` to `.env` in the `url-shortener-mock-server` directory to cu
 | Variable               | Example                 | Description                                  |
 |------------------------|-------------------------|----------------------------------------------|
 | `PORT`                 | `8080`                  | Port the mock server listens on              |
-| `FRONTEND_URL`         | `http://localhost:3000` | URL the UI is served from                    |
+| `FRONTEND_URL`         | `http://localhost:3000` | URL the UI is served from; sign-in and the hosted billing pages redirect back to it |
 | `MOCK_DELAY`           | `200`                   | Artificial response delay (ms); `0` disables it |
 | `MOCK_COOKIE_SAMESITE` | `lax`                   | `SameSite` for the `refresh_token` cookie    |
 | `MOCK_COOKIE_SECURE`   | `false`                 | Marks the `refresh_token` cookie as `Secure` |
