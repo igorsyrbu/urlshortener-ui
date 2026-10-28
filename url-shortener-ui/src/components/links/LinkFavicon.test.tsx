@@ -1,10 +1,23 @@
-import {fireEvent, render, screen} from "@testing-library/react";
+import {act, fireEvent, render, screen} from "@testing-library/react";
 import {describe, expect, it} from "vitest";
 import {LinkFavicon} from "@/components/links/LinkFavicon";
 import {FAVICON_SERVICE_URL} from "@/lib/constants";
 
+const GOOGLE_PLACEHOLDER_SIZE = 16;
+
 function getFaviconImage(container: HTMLElement): HTMLImageElement | null {
     return container.querySelector("img");
+}
+
+async function loadWithNaturalSize(container: HTMLElement, size: number): Promise<void> {
+    const image = getFaviconImage(container);
+    if (!image) throw new Error("The favicon image was not rendered");
+    // jsdom never decodes images, so the size the browser would report is set by hand.
+    Object.defineProperty(image, "naturalWidth", {value: size});
+    Object.defineProperty(image, "naturalHeight", {value: size});
+    fireEvent.load(image);
+    // next/image calls onLoad from a promise callback, after the load event.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
 }
 
 describe("LinkFavicon", () => {
@@ -36,5 +49,21 @@ describe("LinkFavicon", () => {
 
         expect(getFaviconImage(container)).toBeNull();
         expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    });
+
+    it("falls back to the link icon when the service answers with its 16 px placeholder globe", async () => {
+        const {container} = render(<LinkFavicon longUrl="https://unknown-site.example"/>);
+
+        await loadWithNaturalSize(container, GOOGLE_PLACEHOLDER_SIZE);
+
+        expect(getFaviconImage(container)).toBeNull();
+    });
+
+    it("keeps an icon larger than the placeholder", async () => {
+        const {container} = render(<LinkFavicon longUrl="https://known-site.example"/>);
+
+        await loadWithNaturalSize(container, 32);
+
+        expect(getFaviconImage(container)).toBeInTheDocument();
     });
 });
