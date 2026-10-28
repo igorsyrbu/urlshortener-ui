@@ -83,6 +83,7 @@ Rules for new code:
 - Check `res.ok` before parsing the body; do not assume JSON on errors.
 - Log through `logger` from `@/lib/logger`, never `console.*`. Failures usually pass `{status}` as context.
 - Status codes come from [`src/lib/http-status.ts`](../url-shortener-ui/src/lib/http-status.ts) (`HTTP_OK`, `HTTP_CONFLICT`, `HTTP_TOO_MANY_REQUESTS`, ...): never an inline literal and never a file-local copy. Add a missing code there. Endpoints come from `API_ENDPOINTS`, including the ones with a parameter (`USERS_SESSION(id)`, `SHORTLINKS_EXISTS(key)`).
+- Queries and mutations use `requestJson(endpoint, options)` ([`src/lib/api-request.ts`](../url-shortener-ui/src/lib/api-request.ts)): the parsed body, or an `ApiError` whose `status` drives retries and per-status handling and whose `message` is the problem detail (or `describeHttpFailure` wording), safe to show.
 
 ### Error body shape
 

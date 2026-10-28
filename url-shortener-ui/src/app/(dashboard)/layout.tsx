@@ -26,6 +26,7 @@ import {canRunShortcut, isShortcutKey, SHORTCUTS} from "@/lib/keyboard-shortcuts
 import {useShortcutsStore} from "@/lib/store/shortcuts";
 import {ROUTES} from "@/lib/constants";
 import {isPathWithin} from "@/lib/route-match";
+import {QueryProvider} from "@/providers/query-provider";
 
 function loadCreateLinkModal() {
     return import("@/components/links/CreateLinkModal").then((modalModule) => modalModule.CreateLinkModal);
@@ -52,6 +53,14 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
+    return (
+        <QueryProvider>
+            <DashboardShell>{children}</DashboardShell>
+        </QueryProvider>
+    );
+}
+
+function DashboardShell({ children }: DashboardLayoutProps) {
     const {phase, handleRetry} = useSessionBootstrap();
     const pathname = usePathname();
     const {

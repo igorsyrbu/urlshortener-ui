@@ -48,6 +48,9 @@ importers:
       '@marsidev/react-turnstile':
         specifier: ^1.5.3
         version: 1.5.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@tanstack/react-query':
+        specifier: 5.104.2
+        version: 5.104.2(react@19.2.6)
       canvas-confetti:
         specifier: ^1.9.4
         version: 1.9.4
@@ -2238,6 +2241,14 @@ packages:
 
   '@tailwindcss/postcss@4.3.0':
     resolution: {integrity: sha512-Jm05Tjx+9yCLGv5qw1c+84Psds8MnyrEQYCB+FFk2lgGiUjlRqdxke4mVTuYrj2xnVZqKim2Apr5ySuQRYAw/w==}
+
+  '@tanstack/query-core@5.104.2':
+    resolution: {integrity: sha512-/qbsxJK5c3Ve1aFIULWYNcT2jeRUAiD4HME6Eu2ZdpofHoVgAjpkQhLg5xHuOoBkTPQUJLfP7zOxy0qsBcqROA==}
+
+  '@tanstack/react-query@5.104.2':
+    resolution: {integrity: sha512-xKmzWGhadbE5wGS/ZmXShRITnI9oItox5GO14KvFZco3+vhTAyXS1erYzJWdiY280zapAGJXFUL9nHgwP6SV/g==}
+    peerDependencies:
+      react: ^18 || ^19
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -6869,6 +6880,13 @@ snapshots:
       '@tailwindcss/oxide': 4.3.0
       postcss: 8.5.23
       tailwindcss: 4.3.0
+
+  '@tanstack/query-core@5.104.2': {}
+
+  '@tanstack/react-query@5.104.2(react@19.2.6)':
+    dependencies:
+      '@tanstack/query-core': 5.104.2
+      react: 19.2.6
 
   '@testing-library/dom@10.4.1':
     dependencies:

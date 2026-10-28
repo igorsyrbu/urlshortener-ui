@@ -10,7 +10,7 @@ pnpm workspace (see [`pnpm-workspace.yaml`](../pnpm-workspace.yaml)) with two pa
 
 | Package | Path | What it is |
 |---|---|---|
-| `url-shortener-ui` | `url-shortener-ui/` | Next.js 16 App Router UI (React 19, Zustand 5, Tailwind v4, Radix/shadcn, Vitest). Talks to an external REST API. |
+| `url-shortener-ui` | `url-shortener-ui/` | Next.js 16 App Router UI (React 19, Zustand 5, TanStack Query 5, Tailwind v4, Radix/shadcn, Vitest). Talks to an external REST API. |
 | `@url-shortener/url-shortener-mock-server` | `url-shortener-mock-server/` | Express 4 + TypeScript stand-in for that REST API (in-memory, per-user sandbox). See [mock-server](mock-server.md). |
 
 Root files that stay outside `aidocs/`: [`README.md`](../README.md) (setup, API reference, mock billing reproduction), [`DESIGN.md`](../DESIGN.md) (visual design system), [`CONTRIBUTING.md`](../CONTRIBUTING.md). Root and per-package scripts are listed in [configuration](configuration.md#scripts).
@@ -28,9 +28,10 @@ All UI code lives in `src/`; the alias `@/` points at it (see [configuration](co
 | `src/components/ui/` | shadcn/Radix primitives and small shared widgets (button, dialog, drawer, segmented control, ...). See [coding-patterns](coding-patterns.md). |
 | `src/lib/` | Framework-agnostic logic: `api.ts`, `api-types.ts`, `types.ts`, `constants.ts`, `*-constants.ts`, `*-utils.ts`, `logger.ts`, SSE client, billing API. |
 | `src/lib/store/` | Zustand stores. See [state-management](state-management.md). |
+| `src/lib/query/` | TanStack Query setup: `query-client.ts` (defaults, retry rule) and `query-keys.ts` (one root key per resource). See [state-management](state-management.md#server-state-tanstack-query). |
 | `src/lib/hooks/` | Reusable hooks (billing flows, debounce, media query, import, url cleaner, ...). |
 | `src/lib/themes/` | Palette definitions, custom theme builder, theme storage, the palette init script. See [styling-and-theming](styling-and-theming.md). |
-| `src/providers/` | Client providers mounted by the root layout: `theme-provider.tsx` (`next-themes`) and `palette-provider.tsx` (palette selection context). |
+| `src/providers/` | Client providers: `theme-provider.tsx` (`next-themes`) and `palette-provider.tsx` (palette selection context), mounted by the root layout; `query-provider.tsx` (TanStack Query), mounted by the dashboard layout only. |
 | `src/test/` | Shared test infrastructure only. See [testing](testing.md). |
 
 ### Dependency direction

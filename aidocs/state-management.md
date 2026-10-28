@@ -8,11 +8,23 @@ Related: [api-layer.md](api-layer.md) · [architecture.md](architecture.md) · [
 
 The app is client-rendered with no SSR data (see the rule in [api-layer.md](api-layer.md#data-fetching-rule-client-rendered-app)), so all data state is client state:
 
+- **TanStack Query** for server state on dashboard routes, as each resource is migrated (see [below](#server-state-tanstack-query)); the Zustand stores below still hold the resources not migrated yet.
 - **Zustand stores** in `src/lib/store/` for data shared between components or routes (lists, filters, session, import tracking).
 - **Component/hook `useState`** for form fields, dialogs, and feature-local loads (billing hooks, sessions list, URL cleaner).
 - **React context** only where a provider composes several hooks (billing) or wraps a browser-side system (palette).
 - **URL search params** for the links page number (`?page=`, see [routing-and-navigation.md](routing-and-navigation.md)).
 - **`localStorage`** for a small set of preferences (table below).
+
+
+## Server state (TanStack Query)
+
+Being introduced one resource at a time (decision D1); nothing reads from the cache yet. Pieces in place:
+
+- [`QueryProvider`](../url-shortener-ui/src/providers/query-provider.tsx) wraps the dashboard layout (`app/(dashboard)/layout.tsx` renders `<QueryProvider><DashboardShell/></QueryProvider>`, so the layout's own hooks can use queries). Public routes (`/`, `/login`, `/report-abuse`, `/inspect`, `/auth/*`) do not load the library. The client is created once per layout mount and cleared when the access token goes from a value to `null` (sign-out, or a session the refresh rejected), so cached data never crosses users; a token refresh keeps it.
+- [`createQueryClient`](../url-shortener-ui/src/lib/query/query-client.ts): `staleTime` 30 s; queries retry a network failure or a 5xx/408 response twice (`shouldRetryQuery`), never a 4xx; mutations never retry.
+- [`queryKeys`](../url-shortener-ui/src/lib/query/query-keys.ts): one root key per resource (`queryKeys.links.all`, ...) so a resource can be invalidated as a whole. Each migration adds its key builders under its root.
+- Query functions call [`requestJson`](../url-shortener-ui/src/lib/api-request.ts), which goes through `fetchWithAuth` and rejects with `ApiError` (`status` plus a user-safe `message` from the problem detail), see [api-layer](api-layer.md#error-handling-conventions).
+- Tests: `createTestQueryClient()` (no retries, no garbage collection) and `renderWithQuery(ui)` in [`src/test/query-utils.tsx`](../url-shortener-ui/src/test/query-utils.tsx).
 
 ## Stores
 
