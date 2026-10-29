@@ -1,11 +1,12 @@
 import {act, render, screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import {afterEach, beforeEach, describe, expect, it, vi, type Mock} from "vitest";
+import {afterAll, afterEach, beforeEach, describe, expect, it, vi, type Mock} from "vitest";
 import LoginPage from "./page";
 import {API_BASE_URL} from "@/lib/api";
 import {API_ENDPOINTS, MAGIC_LINK_COOLDOWN_STORAGE_KEY} from "@/lib/constants";
 import {ERROR_COPY} from "@/lib/errors";
 import {getTurnstileProps, resetTurnstileMock} from "@/test/turnstile-utils";
+import {waitForInputOtpTimers} from "@/test/input-otp-utils";
 
 vi.mock("@marsidev/react-turnstile", async () => (await import("@/test/turnstile-utils")).turnstileModuleMock);
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn()}}));
@@ -40,6 +41,8 @@ function sentBody(fetchMock: Mock): URLSearchParams {
     return new URLSearchParams(fetchMock.mock.calls[0][1].body);
 }
 
+
+afterAll(waitForInputOtpTimers);
 describe("login page magic link request", () => {
     it("asks for an email before sending anything", async () => {
         const user = userEvent.setup();

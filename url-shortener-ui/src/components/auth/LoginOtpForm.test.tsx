@@ -1,8 +1,9 @@
 import {render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {useState, type ReactElement} from "react";
-import {describe, expect, it, vi} from "vitest";
+import {afterAll, describe, expect, it, vi} from "vitest";
 import {LoginOtpForm} from "@/components/auth/LoginOtpForm";
+import {waitForInputOtpTimers} from "@/test/input-otp-utils";
 
 const EMAIL = "user@example.com";
 const OTP_LENGTH = 6;
@@ -39,6 +40,8 @@ function getCodeInput(): HTMLElement {
     return screen.getByLabelText("Verification code");
 }
 
+
+afterAll(waitForInputOtpTimers);
 describe("LoginOtpForm", () => {
     it("shows the email the code was sent to as read only", () => {
         renderForm();
