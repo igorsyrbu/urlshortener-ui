@@ -1,4 +1,4 @@
-import {act, render, screen, waitFor} from "@testing-library/react";
+import {act, screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
@@ -12,6 +12,7 @@ import {
 import {API_ENDPOINTS, ARCHIVED_FILTER_COPY, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINKS_LOAD_COPY, ROUTES, SEARCH_DEBOUNCE_MS, SHOW_ARCHIVED_STORAGE_KEY, TRY_AGAIN_LABEL} from "@/lib/constants";
 import {toast} from "sonner";
 import {useLinkStore} from "@/lib/store/links";
+import {queryKeys} from "@/lib/query/query-keys";
 import {IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useUIStore} from "@/lib/store/ui";
@@ -19,6 +20,7 @@ import {createImportJob} from "@/test/import-utils";
 import {getQueriesOfRequestsTo, getRequestsTo, parseRequestBody, routeFetchWithAuth} from "@/test/link-form-utils";
 import {createPage, createShortLink} from "@/test/link-utils";
 import {createTag} from "@/test/tag-utils";
+import {renderWithQuery} from "@/test/query-utils";
 import {getOptionsTrigger} from "@/test/page-toolbar-utils";
 import type {ShortLinkDTO} from "@/lib/api-types";
 
@@ -110,10 +112,7 @@ async function openLinkActions(user: ReturnType<typeof userEvent.setup>, linkInd
 describe("links page", () => {
     beforeEach(() => {
         mocks.searchParams = new URLSearchParams();
-        useLinkStore.setState({
-            links: [], loading: false, error: null, showArchived: false, searchQuery: "",
-            currentPage: 0, totalElements: 0, totalPages: 0,
-        });
+        useLinkStore.setState(useLinkStore.getInitialState(), true);
         useTagStoreWithoutCount.setState({tags: [], loading: false, error: null, searchQuery: ""});
         useUIStore.setState({isCreateModalOpen: false});
         resetImportTrackerForTests();
@@ -124,7 +123,7 @@ describe("links page", () => {
         it("loads the first page of links and shows each link", async () => {
             mockApi({links: createLinks(3)});
 
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
 
             expect(await screen.findByRole("heading", {name: "Link 0"})).toBeInTheDocument();
             expect(screen.getByRole("heading", {name: "Link 2"})).toBeInTheDocument();
@@ -138,13 +137,13 @@ describe("links page", () => {
                 [API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES]: () => new Response("", {headers: {"Content-Type": "text/event-stream"}}),
             });
 
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
 
             expect(await screen.findByText("Marketing")).toBeInTheDocument();
         });
 
         it("invites the user to create a first link when there are none", async () => {
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
 
             expect(await screen.findByRole("heading", {name: "Your links will live here"})).toBeInTheDocument();
         });
@@ -153,7 +152,7 @@ describe("links page", () => {
             mocks.searchParams = new URLSearchParams({page: "3"});
             mockApi({links: createLinks(2), totalElements: 45});
 
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
 
             await screen.findByRole("heading", {name: "Link 0"});
             expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS)[0].get("page")).toBe("2");
@@ -162,7 +161,7 @@ describe("links page", () => {
         it("shows an error with a retry instead of the empty state when the first load fails", async () => {
             mockApi({links: [], linksStatus: HTTP_SERVER_ERROR});
 
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
 
             expect(await screen.findByRole("alert")).toHaveTextContent(LINKS_LOAD_COPY.LOAD_FAILED);
             expect(screen.queryByText(/create your first/i)).not.toBeInTheDocument();
@@ -172,7 +171,7 @@ describe("links page", () => {
         it("loads the links again when the user retries after a failed first load", async () => {
             const user = userEvent.setup();
             mockApi({links: [], linksStatus: HTTP_SERVER_ERROR});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("alert");
             mockApi({links: createLinks(1)});
 
@@ -185,13 +184,13 @@ describe("links page", () => {
         it("keeps the links and shows a dismissible notice when a refresh fails", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
-            render(<LinksPage/>);
+            const {queryClient} = renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
             mockApi({links: [], linksStatus: HTTP_SERVER_ERROR});
 
-            await act(() => useLinkStore.getState().fetchLinks(0));
+            await act(() => queryClient.invalidateQueries({queryKey: queryKeys.links.all}));
 
-            expect(screen.getByRole("alert")).toHaveTextContent(LINKS_LOAD_COPY.REFRESH_FAILED);
+            expect(await screen.findByRole("alert")).toHaveTextContent(LINKS_LOAD_COPY.REFRESH_FAILED);
             expect(screen.getByRole("heading", {name: "Link 0"})).toBeInTheDocument();
             await user.click(screen.getByRole("button", {name: LINKS_LOAD_COPY.DISMISS}));
             expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -202,13 +201,15 @@ describe("links page", () => {
         it("keeps an open dialog when the list goes back to loading with no links", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
-            render(<LinksPage/>);
+            const {queryClient} = renderWithQuery(<LinksPage/>);
             await openLinkActions(user, 0);
             await user.click(await screen.findByRole("menuitem", {name: /QR Code/}));
             await screen.findByRole("dialog");
+            mockApi({links: []});
 
-            act(() => useLinkStore.setState({links: [], loading: true}));
+            await act(() => queryClient.invalidateQueries({queryKey: queryKeys.links.all}));
 
+            await screen.findByRole("heading", {name: "Your links will live here"});
             expect(screen.getByRole("dialog")).toBeInTheDocument();
         });
     });
@@ -217,7 +218,7 @@ describe("links page", () => {
         it("searches by the trimmed text typed into the search field", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(2)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
 
             await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "  promo ");
@@ -229,7 +230,7 @@ describe("links page", () => {
         it("searches at once when Enter is pressed, without waiting for the typing pause", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(2)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
 
             await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "promo{Enter}");
@@ -240,7 +241,7 @@ describe("links page", () => {
         it("sends no request for a single character, even on Enter", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(2)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
             const requestsBefore = getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).length;
 
@@ -253,7 +254,7 @@ describe("links page", () => {
         it("goes back to the unfiltered list when a search is shortened to one character", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(2)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
             const searchField = screen.getByPlaceholderText(SEARCH_PLACEHOLDER);
             await user.type(searchField, "pr{Enter}");
@@ -267,7 +268,7 @@ describe("links page", () => {
         it("drops the search at once when the field is cleared", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(2)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
             await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "promo");
             await waitFor(() => expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).at(-1)?.get("search")).toBe("promo"),
@@ -281,7 +282,7 @@ describe("links page", () => {
         it("loads only the requested page, unfiltered, on a visit after leaving with a search", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(2), totalElements: 60});
-            const {unmount} = render(<LinksPage/>);
+            const {unmount} = renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
             await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "promo{Enter}");
             unmount();
@@ -289,7 +290,7 @@ describe("links page", () => {
             mocks.routerPush.mockClear();
             mocks.searchParams = new URLSearchParams({page: "3"});
 
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
             await new Promise((resolve) => setTimeout(resolve, SEARCH_DEBOUNCE_MS + 50));
 
@@ -302,7 +303,7 @@ describe("links page", () => {
         it("says nothing matched when a search returns no links", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
             mockApi({links: []});
 
@@ -316,17 +317,31 @@ describe("links page", () => {
         it("shows the range label and moves to the next page", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(DEFAULT_PAGE_SIZE), totalElements: 45});
-            render(<LinksPage/>);
+            const {unmount, queryClient} = renderWithQuery(<LinksPage/>);
             expect(await screen.findByText("1-20 of 45 links")).toBeInTheDocument();
+            await waitFor(() => expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).map((query) => query.get("page"))).toContain("1"));
 
             await user.click(screen.getByRole("button", {name: "Go to next page"}));
-
-            await waitFor(() => expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).some((query) => query.get("page") === "1")).toBe(true));
             expect(mocks.routerPush).toHaveBeenCalledWith(`${ROUTES.LINKS}?page=2`, {scroll: false});
+
+            // The pushed URL renders the page again, as Next does; the prefetched page shows without a skeleton.
+            unmount();
+            mocks.searchParams = new URLSearchParams({page: "2"});
+            renderWithQuery(<LinksPage/>, queryClient);
+            expect(screen.getByText("21-40 of 45 links")).toBeInTheDocument();
+        });
+
+        it("fetches the next page ahead so it is already requested before the user moves on", async () => {
+            mockApi({links: createLinks(DEFAULT_PAGE_SIZE), totalElements: 45});
+
+            renderWithQuery(<LinksPage/>);
+            await screen.findByText("1-20 of 45 links");
+
+            await waitFor(() => expect(getQueriesOfRequestsTo(API_ENDPOINTS.SHORTLINKS).map((query) => query.get("page"))).toContain("1"));
         });
 
         it("hides pagination when there are no links", async () => {
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Your links will live here"});
 
             expect(screen.queryByRole("navigation", {name: "Links pagination"})).not.toBeInTheDocument();
@@ -337,7 +352,7 @@ describe("links page", () => {
         it("deletes a link after the user types its handle and closes the dialog", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(2)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
 
             await confirmDelete(user, 1);
 
@@ -349,7 +364,7 @@ describe("links page", () => {
             const user = userEvent.setup();
             const deletion = Promise.withResolvers<Response>();
             mockApi({links: createLinks(2), deleteResponse: deletion.promise});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
 
             await confirmDelete(user, 1);
 
@@ -362,7 +377,7 @@ describe("links page", () => {
         it("puts the link back and offers a retry when the server refuses to delete", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1), deleteStatus: HTTP_SERVER_ERROR});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
 
             await confirmDelete(user, 0);
 
@@ -375,7 +390,7 @@ describe("links page", () => {
         it("archives a link after confirmation", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
 
             await confirmArchive(user, 0);
 
@@ -386,7 +401,7 @@ describe("links page", () => {
         it("puts the link back and offers a retry when the server refuses to archive", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1), putStatus: HTTP_SERVER_ERROR});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
 
             await confirmArchive(user, 0);
 
@@ -397,7 +412,7 @@ describe("links page", () => {
         it("opens the edit form prefilled with the link", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await openLinkActions(user, 0);
 
             await user.click(await screen.findByRole("menuitem", {name: /Edit/}));
@@ -421,7 +436,7 @@ describe("links page", () => {
                 [API_ENDPOINTS.TAGS]: () => Response.json([]),
                 [API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES]: () => new Response("", {headers: {"Content-Type": "text/event-stream"}}),
             });
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await openLinkActions(user, 0);
             await user.click(await screen.findByRole("menuitem", {name: /Edit/}));
 
@@ -436,7 +451,7 @@ describe("links page", () => {
         it("opens the QR code dialog for the link", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await openLinkActions(user, 0);
 
             await user.click(await screen.findByRole("menuitem", {name: /QR Code/}));
@@ -449,7 +464,7 @@ describe("links page", () => {
         it("toggles archived links with the a key and remembers the choice", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
 
             await user.keyboard("a");
@@ -461,7 +476,7 @@ describe("links page", () => {
         it("says which links are shown each time the a key switches the filter", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
 
             await user.keyboard("a");
@@ -474,7 +489,7 @@ describe("links page", () => {
         it("stays quiet when the filter is switched from the options menu, which shows the state itself", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
 
             await user.click(getOptionsTrigger());
@@ -487,7 +502,7 @@ describe("links page", () => {
         it("archives the link whose menu is open instead of switching the filter", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await openLinkActions(user, 0);
             await screen.findByRole("menu");
 
@@ -500,7 +515,7 @@ describe("links page", () => {
         it("ignores the a key while typing in the search field", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1)});
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Link 0"});
 
             await user.type(screen.getByPlaceholderText(SEARCH_PLACEHOLDER), "a");
@@ -512,7 +527,7 @@ describe("links page", () => {
     describe("export", () => {
         it("opens the export dialog from the options menu", async () => {
             const user = userEvent.setup();
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
             await screen.findByRole("heading", {name: "Your links will live here"});
 
             await user.click(getOptionsTrigger());
@@ -530,7 +545,7 @@ describe("links page", () => {
                 progress: {processedRows: 10, totalRows: 10},
                 job: {...createImportJob(), status: "COMPLETED", processedRows: 10},
             });
-            render(<LinksPage/>);
+            renderWithQuery(<LinksPage/>);
 
             await user.click(getOptionsTrigger());
             await user.click(await screen.findByRole("menuitem", {name: IMPORT_FROM_CSV_LABEL}));
@@ -544,7 +559,7 @@ describe("links page", () => {
             openUpdatesStream();
             act(() => { useImportTracker.getState().trackSubmission(createImportJob()); });
             const signal = vi.mocked(fetchWithAuth).mock.calls.at(-1)?.[1]?.signal;
-            const {unmount} = render(<LinksPage/>);
+            const {unmount} = renderWithQuery(<LinksPage/>);
             expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.ACTIVE);
 
             unmount();

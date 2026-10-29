@@ -2,7 +2,8 @@ import {create} from "zustand";
 import type {LinkImportJobDTO, LinkImportProgressDTO} from "@/lib/api-types";
 import {subscribeToDiscoveredImport} from "@/lib/import-progress";
 import {logger} from "@/lib/logger";
-import {useLinkStore} from "@/lib/store/links";
+import {invalidateServerState} from "@/lib/query/active-query-client";
+import {queryKeys} from "@/lib/query/query-keys";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 
 export const IMPORT_TRACKING_STATUS = {
@@ -75,7 +76,7 @@ function stopRun(): void {
 function refreshLinksAndTagsOnce(): void {
     if (didRefreshCurrentRun) return;
     didRefreshCurrentRun = true;
-    void useLinkStore.getState().fetchLinks(0);
+    invalidateServerState(queryKeys.links.all);
     void useTagStoreWithoutCount.getState().fetchTags();
 }
 

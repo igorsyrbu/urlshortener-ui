@@ -1,14 +1,15 @@
-import {render, screen, waitFor} from "@testing-library/react";
+import {screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {CreateLinkModal} from "@/components/links/CreateLinkModal";
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS, DEFAULT_LINK_TITLE, ROUTES, SHORT_KEY_TAKEN_MESSAGE} from "@/lib/constants";
-import {useLinkStore} from "@/lib/store/links";
+import {queryKeys} from "@/lib/query/query-keys";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {getRequestsTo, parseRequestBody, routeFetchWithAuth} from "@/test/link-form-utils";
 import {createShortLink} from "@/test/link-utils";
 import {createTag} from "@/test/tag-utils";
+import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 
 const mocks = vi.hoisted(() => ({
     isDesktop: true,
@@ -38,10 +39,12 @@ function mockCreateEndpoint(respond: () => Response): void {
     });
 }
 
-function renderModal(): {onOpenChange: ReturnType<typeof vi.fn<(open: boolean) => void>>} {
+function renderModal(): {onOpenChange: ReturnType<typeof vi.fn<(open: boolean) => void>>; invalidateQueries: ReturnType<typeof vi.spyOn>} {
     const onOpenChange = vi.fn<(open: boolean) => void>();
-    render(<CreateLinkModal open onOpenChange={onOpenChange}/>);
-    return {onOpenChange};
+    const queryClient = createTestQueryClient();
+    const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
+    renderWithQuery(<CreateLinkModal open onOpenChange={onOpenChange}/>, queryClient);
+    return {onOpenChange, invalidateQueries};
 }
 
 async function submitLink(user: ReturnType<typeof userEvent.setup>, url: string): Promise<void> {
@@ -51,12 +54,8 @@ async function submitLink(user: ReturnType<typeof userEvent.setup>, url: string)
 }
 
 describe("CreateLinkModal", () => {
-    const fetchLinks = vi.fn<(page?: number) => Promise<void>>();
-
     beforeEach(() => {
         mocks.isDesktop = true;
-        fetchLinks.mockResolvedValue(undefined);
-        useLinkStore.setState({fetchLinks});
         useTagStoreWithoutCount.setState({tags: [], loading: false, error: null, hasLoaded: false});
     });
 
@@ -83,7 +82,7 @@ describe("CreateLinkModal", () => {
     });
 
     it("renders nothing of the form while closed", () => {
-        render(<CreateLinkModal open={false} onOpenChange={vi.fn()}/>);
+        renderWithQuery(<CreateLinkModal open={false} onOpenChange={vi.fn()}/>);
 
         expect(screen.queryByLabelText("Destination URL")).not.toBeInTheDocument();
     });
@@ -116,11 +115,11 @@ describe("CreateLinkModal", () => {
     it("celebrates, returns to the first page of links and refreshes the list after creation", async () => {
         const user = userEvent.setup();
         mockCreateEndpoint(() => Response.json(createShortLink()));
-        renderModal();
+        const {invalidateQueries} = renderModal();
 
         await submitLink(user, LONG_URL);
 
-        await waitFor(() => expect(fetchLinks).toHaveBeenCalledExactlyOnceWith(0));
+        await waitFor(() => expect(invalidateQueries).toHaveBeenCalledExactlyOnceWith({queryKey: queryKeys.links.all}));
         expect(mocks.confetti).toHaveBeenCalledOnce();
         expect(mocks.routerPush).toHaveBeenCalledWith(ROUTES.LINKS, {scroll: false});
     });
@@ -166,13 +165,13 @@ describe("CreateLinkModal", () => {
     it("stays on the form without celebrating when the server fails", async () => {
         const user = userEvent.setup();
         mockCreateEndpoint(() => new Response(null, {status: 500}));
-        renderModal();
+        const {invalidateQueries} = renderModal();
 
         await submitLink(user, LONG_URL);
 
         await waitFor(() => expect(screen.getByRole("button", {name: /^Create/})).toBeEnabled());
         expect(screen.queryByText("Link Created!")).not.toBeInTheDocument();
-        expect(fetchLinks).not.toHaveBeenCalled();
+        expect(invalidateQueries).not.toHaveBeenCalled();
         expect(vi.mocked(fetchWithAuth)).toHaveBeenCalledWith(API_ENDPOINTS.SHORTLINKS, expect.objectContaining({method: "POST"}));
     });
 

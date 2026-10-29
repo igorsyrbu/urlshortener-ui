@@ -9,7 +9,8 @@ import {precheckCsv, TransferError, uploadLinksImport} from "@/lib/link-transfer
 import {logger} from "@/lib/logger";
 import {attempt} from "@/lib/async-utils";
 import {buildDiscoveredJob, IMPORT_TRACKING_STATUS, useImportTracker, type ImportTrackingStatus} from "@/lib/store/import";
-import {useLinkStore} from "@/lib/store/links";
+import {useQueryClient} from "@tanstack/react-query";
+import {queryKeys} from "@/lib/query/query-keys";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {
     buildFileTooLargeMessage, buildTooManyRowsMessage, IMPORT_EMPTY_FILE_MESSAGE, IMPORT_FAILED_MESSAGE,
@@ -78,6 +79,7 @@ function mapTrackingToSession(
 
 export function useLinkImport(): UseLinkImportResult {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const status = useImportTracker((state) => state.status);
     const job = useImportTracker((state) => state.job);
     const progress = useImportTracker((state) => state.progress);
@@ -112,7 +114,7 @@ export function useLinkImport(): UseLinkImportResult {
 
     const handleRefreshLinks = (): void => {
         router.push(ROUTES.LINKS, {scroll: false});
-        void useLinkStore.getState().fetchLinks(0);
+        void queryClient.invalidateQueries({queryKey: queryKeys.links.all});
         void useTagStoreWithoutCount.getState().fetchTags();
     };
 

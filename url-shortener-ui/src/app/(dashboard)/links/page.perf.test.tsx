@@ -1,4 +1,4 @@
-import {act, render, screen} from "@testing-library/react";
+import {act, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import LinksPage from "@/app/(dashboard)/links/page";
@@ -7,6 +7,7 @@ import {resetImportTrackerForTests} from "@/lib/store/import";
 import {useLinkStore} from "@/lib/store/links";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {routeFetchWithAuth} from "@/test/link-form-utils";
+import {renderWithQuery} from "@/test/query-utils";
 import {createPage, createShortLink} from "@/test/link-utils";
 import {stubDesktopViewport} from "@/test/viewport-utils";
 
@@ -58,7 +59,7 @@ async function renderLinksPage(): Promise<void> {
         [API_ENDPOINTS.TAGS]: () => Response.json([]),
         [API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES]: () => new Response("", {headers: {"Content-Type": "text/event-stream"}}),
     });
-    render(<LinksPage/>);
+    renderWithQuery(<LinksPage/>);
     await screen.findByRole("heading", {name: "Link 0"});
 }
 

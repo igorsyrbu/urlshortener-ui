@@ -1,4 +1,5 @@
-import {render, waitFor} from "@testing-library/react";
+import {waitFor} from "@testing-library/react";
+import {renderWithQuery} from "@/test/query-utils";
 import {describe, expect, it, vi} from "vitest";
 import {CreateLinkModal} from "@/components/links/CreateLinkModal";
 
@@ -15,7 +16,7 @@ vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn(() => new Promise(() => undefi
 
 describe("CreateLinkModal confetti", () => {
     it("does not download the confetti while closed", async () => {
-        render(<CreateLinkModal open={false} onOpenChange={vi.fn()}/>);
+        renderWithQuery(<CreateLinkModal open={false} onOpenChange={vi.fn()}/>);
 
         await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -23,7 +24,7 @@ describe("CreateLinkModal confetti", () => {
     });
 
     it("starts downloading the confetti as soon as the dialog opens, before any link is created", async () => {
-        render(<CreateLinkModal open onOpenChange={vi.fn()}/>);
+        renderWithQuery(<CreateLinkModal open onOpenChange={vi.fn()}/>);
 
         await waitFor(() => expect(confettiModule.loads).toBe(1));
     });

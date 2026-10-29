@@ -5,7 +5,8 @@ import {useRouter} from "next/navigation";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/components/ui/drawer";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
-import {useLinkStore} from "@/lib/store/links";
+import {useQueryClient} from "@tanstack/react-query";
+import {queryKeys} from "@/lib/query/query-keys";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {AnimatePresence, MotionConfig, motion} from "framer-motion";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
@@ -69,7 +70,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
     const router = useRouter();
     const [viewState, setViewState] = useState<ViewState>("form");
     const [shortLink, setShortLink] = useState<ShortLinkData | null>(null);
-    const fetchLinks = useLinkStore((s) => s.fetchLinks);
+    const queryClient = useQueryClient();
 
     const handleFormSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {
         const createdLink = await createShortLink(longUrl, title, key, tagIds);
@@ -78,7 +79,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
         // The confetti chunk downloads on the first link; the list refresh must not wait for it.
         void celebrateCreatedLink();
         router.push(ROUTES.LINKS, {scroll: false});
-        fetchLinks(0);
+        void queryClient.invalidateQueries({queryKey: queryKeys.links.all});
     };
 
     return (

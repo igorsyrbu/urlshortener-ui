@@ -2,11 +2,13 @@ import {act, waitFor} from "@testing-library/react";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
 import {buildDiscoveredJob, IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
+import {invalidateServerState} from "@/lib/query/active-query-client";
+import {queryKeys} from "@/lib/query/query-keys";
 import {createImportJob} from "@/test/import-utils";
 
-const mocks = vi.hoisted(() => ({refreshLinks: vi.fn(), refreshTags: vi.fn()}));
+const mocks = vi.hoisted(() => ({refreshTags: vi.fn()}));
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
-vi.mock("@/lib/store/links", () => ({useLinkStore: {getState: () => ({fetchLinks: mocks.refreshLinks})}}));
+vi.mock("@/lib/query/active-query-client", () => ({invalidateServerState: vi.fn()}));
 vi.mock("@/lib/store/tags", () => ({useTagStoreWithoutCount: {getState: () => ({fetchTags: mocks.refreshTags})}}));
 
 function progressChunk(processedRows: number, totalRows = 10): Uint8Array {
@@ -52,7 +54,7 @@ describe("shared import tracker", () => {
         expect(useImportTracker.getState().progress?.processedRows).toBe(5);
         await act(async () => { stream.send(10); });
         await waitFor(() => expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.COMPLETED));
-        expect(mocks.refreshLinks).toHaveBeenCalledExactlyOnceWith(0);
+        expect(invalidateServerState).toHaveBeenCalledExactlyOnceWith(queryKeys.links.all);
         expect(mocks.refreshTags).toHaveBeenCalledOnce();
     });
 
@@ -62,7 +64,7 @@ describe("shared import tracker", () => {
         await waitFor(() => expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.COMPLETED));
         expect(useImportTracker.getState().progress).toEqual({processedRows: 0, totalRows: 10});
         expect(useImportTracker.getState().job?.status).not.toBe("COMPLETED");
-        expect(mocks.refreshLinks).toHaveBeenCalledExactlyOnceWith(0);
+        expect(invalidateServerState).toHaveBeenCalledExactlyOnceWith(queryKeys.links.all);
         expect(mocks.refreshTags).toHaveBeenCalledOnce();
     });
 
@@ -72,7 +74,7 @@ describe("shared import tracker", () => {
         expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.DISCOVERING);
         await waitFor(() => expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.IDLE));
         expect(useImportTracker.getState().progress).toBeNull();
-        expect(mocks.refreshLinks).not.toHaveBeenCalled();
+        expect(invalidateServerState).not.toHaveBeenCalled();
         expect(mocks.refreshTags).not.toHaveBeenCalled();
     });
 
@@ -87,7 +89,7 @@ describe("shared import tracker", () => {
         expect(buildDiscoveredJob(useImportTracker.getState().progress ?? {processedRows: 0, totalRows: 0}).status).not.toBe("COMPLETED");
         await act(async () => { stream.send(10); });
         await waitFor(() => expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.COMPLETED));
-        expect(mocks.refreshLinks).toHaveBeenCalledExactlyOnceWith(0);
+        expect(invalidateServerState).toHaveBeenCalledExactlyOnceWith(queryKeys.links.all);
     });
 
     it("reconnects internally with backoff instead of asking for a manual retry", async () => {
@@ -107,7 +109,7 @@ describe("shared import tracker", () => {
         const postCalls = vi.mocked(fetchWithAuth).mock.calls.filter(([, options]) => options?.method === "POST");
         expect(postCalls).toHaveLength(0);
         vi.useRealTimers();
-        await waitFor(() => expect(mocks.refreshLinks).toHaveBeenCalledExactlyOnceWith(0));
+        await waitFor(() => expect(invalidateServerState).toHaveBeenCalledExactlyOnceWith(queryKeys.links.all));
     });
 
     it("keeps a single stream owner when a new submission replaces the previous one", async () => {

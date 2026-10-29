@@ -1,4 +1,5 @@
-import {render, screen, waitFor} from "@testing-library/react";
+import {screen, waitFor} from "@testing-library/react";
+import {renderWithQuery} from "@/test/query-utils";
 import userEvent from "@testing-library/user-event";
 import {toast} from "sonner";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
@@ -51,7 +52,7 @@ function sendProgress(controller: ReadableStreamDefaultController<Uint8Array>, p
 
 function renderModal(open = true): {onOpenChange: ReturnType<typeof vi.fn<(open: boolean) => void>>} {
     const onOpenChange = vi.fn<(open: boolean) => void>();
-    render(<ImportCsvModal open={open} onOpenChange={onOpenChange}/>);
+    renderWithQuery(<ImportCsvModal open={open} onOpenChange={onOpenChange}/>);
     return {onOpenChange};
 }
 

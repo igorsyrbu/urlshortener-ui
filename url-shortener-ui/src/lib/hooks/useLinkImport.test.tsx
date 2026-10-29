@@ -1,4 +1,6 @@
-import {act, renderHook, waitFor} from "@testing-library/react";
+import type {ReactNode} from "react";
+import {QueryClientProvider} from "@tanstack/react-query";
+import {act, renderHook as renderHookBare, waitFor} from "@testing-library/react";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
 import {toast} from "sonner";
@@ -6,15 +8,32 @@ import {API_ENDPOINTS, MAX_IMPORT_FILE_BYTES, MAX_IMPORT_FILE_MEGABYTES} from "@
 import {buildFileTooLargeMessage} from "@/components/links/import-export-constants";
 import {IMPORT_SESSION_STATE, useLinkImport} from "@/lib/hooks/useLinkImport";
 import {IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
+import {setActiveQueryClient} from "@/lib/query/active-query-client";
+import {queryKeys} from "@/lib/query/query-keys";
 import {createCsvFile} from "@/test/csv-utils";
 import {createImportJob} from "@/test/import-utils";
+import {createTestQueryClient} from "@/test/query-utils";
 
-const mocks = vi.hoisted(() => ({refreshLinks: vi.fn(), refreshTags: vi.fn(), push: vi.fn()}));
+const mocks = vi.hoisted(() => ({refreshTags: vi.fn(), push: vi.fn()}));
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("sonner", () => ({toast: {error: vi.fn(), success: vi.fn()}}));
 vi.mock("next/navigation", () => ({useRouter: () => ({push: mocks.push})}));
-vi.mock("@/lib/store/links", () => ({useLinkStore: {getState: () => ({fetchLinks: mocks.refreshLinks})}}));
 vi.mock("@/lib/store/tags", () => ({useTagStoreWithoutCount: {getState: () => ({fetchTags: mocks.refreshTags})}}));
+
+let queryClient = createTestQueryClient();
+let invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
+
+function renderHook<Result>(callback: () => Result): ReturnType<typeof renderHookBare<Result, unknown>> {
+    const wrapper = ({children}: {children: ReactNode}): ReactNode => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return renderHookBare(callback, {wrapper});
+}
+
+beforeEach(() => {
+    queryClient = createTestQueryClient();
+    invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
+    setActiveQueryClient(queryClient);
+});
+afterEach(() => { setActiveQueryClient(null); });
 
 function sendProgress(controller: ReadableStreamDefaultController<Uint8Array>, processedRows: number): void {
     controller.enqueue(new TextEncoder().encode(`event: progress\ndata: ${JSON.stringify({processedRows, totalRows: 10})}\n\n`));
@@ -60,10 +79,10 @@ describe("import session lifecycle", () => {
         await act(async () => { sendProgress(controller, 3); });
         await waitFor(() => expect(result.current.session?.progress.processedRows).toBe(3));
         expect(result.current.session?.state).toBe(IMPORT_SESSION_STATE.PROCESSING);
-        expect(mocks.refreshLinks).not.toHaveBeenCalled();
+        expect(invalidateQueries).not.toHaveBeenCalled();
         await act(async () => { sendProgress(controller, 10); });
         await waitFor(() => expect(result.current.session?.state).toBe(IMPORT_SESSION_STATE.COMPLETED));
-        expect(mocks.refreshLinks).toHaveBeenCalledExactlyOnceWith(0);
+        expect(invalidateQueries).toHaveBeenCalledExactlyOnceWith({queryKey: queryKeys.links.all});
         expect(mocks.refreshTags).toHaveBeenCalledOnce();
     });
 
@@ -99,7 +118,7 @@ describe("import session lifecycle", () => {
         expect(useImportTracker.getState().job?.id).toBe("job-1");
         await act(async () => { sendProgress(controller, 10); });
         await waitFor(() => expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.COMPLETED));
-        expect(mocks.refreshLinks).toHaveBeenCalledExactlyOnceWith(0);
+        expect(invalidateQueries).toHaveBeenCalledExactlyOnceWith({queryKey: queryKeys.links.all});
     });
 
     it("skips SSE if the POST already returned a completed job", async () => {
@@ -109,7 +128,7 @@ describe("import session lifecycle", () => {
         await act(async () => { await result.current.handleImport(createCsvFile(), false); });
         expect(result.current.session?.state).toBe(IMPORT_SESSION_STATE.COMPLETED);
         expect(fetchWithAuth).toHaveBeenCalledOnce();
-        expect(mocks.refreshLinks).toHaveBeenCalledOnce();
+        expect(invalidateQueries).toHaveBeenCalledExactlyOnceWith({queryKey: queryKeys.links.all});
     });
 
     it("reconnects internally after a transient failure without resubmitting the CSV", async () => {
@@ -123,7 +142,7 @@ describe("import session lifecycle", () => {
         await waitFor(() => expect(result.current.session?.state).toBe(IMPORT_SESSION_STATE.COMPLETED), {timeout: 10000});
         expect(vi.mocked(fetchWithAuth).mock.calls.filter(([endpoint]) => endpoint.startsWith(`${API_ENDPOINTS.SHORTLINKS_IMPORT}?`))).toHaveLength(1);
         expect(fetchWithAuth).toHaveBeenCalledTimes(3);
-        expect(mocks.refreshLinks).toHaveBeenCalledExactlyOnceWith(0);
+        expect(invalidateQueries).toHaveBeenCalledExactlyOnceWith({queryKey: queryKeys.links.all});
     });
 
     it("surfaces an interrupted state without retrying authorization failures", async () => {
@@ -131,7 +150,7 @@ describe("import session lifecycle", () => {
         const {result} = renderHook(() => useLinkImport());
         await act(async () => { await result.current.handleImport(createCsvFile(), false); });
         await waitFor(() => expect(result.current.session?.state).toBe(IMPORT_SESSION_STATE.INTERRUPTED));
-        expect(mocks.refreshLinks).not.toHaveBeenCalled();
+        expect(invalidateQueries).not.toHaveBeenCalled();
         expect(fetchWithAuth).toHaveBeenCalledTimes(2);
     });
 });

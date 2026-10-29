@@ -13,6 +13,8 @@ import {TooltipProvider} from "@/components/ui/tooltip";
 import {Button} from "@/components/ui/button";
 import {useLinkStore} from "@/lib/store/links";
 import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {useLinksPage} from "@/lib/hooks/useLinksPage";
+import {useLinkListActions} from "@/lib/hooks/useLinkListActions";
 import {IMPORT_TRACKING_STATUS, useImportTracker} from "@/lib/store/import";
 import {LinkItem} from "@/lib/types";
 import {PageContainer} from "@/components/layout/PageContainer";
@@ -29,6 +31,7 @@ import {canRunShortcut, isShortcutKey, SHORTCUTS} from "@/lib/keyboard-shortcuts
 
 const LINKS_LIST_TOP_ID = "links-list-top";
 const ARCHIVED_FILTER_TOAST_ID = "archived-filter";
+const NO_LINKS: LinkItem[] = [];
 
 function loadEditLinkModal() {
     return import("@/components/links/EditLinkModal").then((modalModule) => modalModule.EditLinkModal);
@@ -61,28 +64,18 @@ function LinksPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const urlPage = parseLinksPageParam(searchParams.get("page"));
-    const {
-        links,
-        loading,
-        error,
-        currentPage,
-        totalElements,
-        fetchLinks,
-        clearError,
-        showArchived,
-        setShowArchived,
-        setLinkArchived,
-        deleteLink,
-        applySavedLink,
-        hydrateShowArchived,
-        searchQuery
-    } = useLinkStore(useShallow((s) => ({
-        links: s.links, loading: s.loading, error: s.error, currentPage: s.currentPage,
-        totalElements: s.totalElements, fetchLinks: s.fetchLinks, clearError: s.clearError,
-        showArchived: s.showArchived, setShowArchived: s.setShowArchived, setLinkArchived: s.setLinkArchived,
-        deleteLink: s.deleteLink, applySavedLink: s.applySavedLink, hydrateShowArchived: s.hydrateShowArchived,
-        searchQuery: s.searchQuery,
+    const {showArchived, isShowArchivedHydrated, setShowArchived, hydrateShowArchived, searchQuery} = useLinkStore(useShallow((s) => ({
+        showArchived: s.showArchived, isShowArchivedHydrated: s.isShowArchivedHydrated, setShowArchived: s.setShowArchived,
+        hydrateShowArchived: s.hydrateShowArchived, searchQuery: s.searchQuery,
     })));
+    const pageParams = {page: urlPage, showArchived, search: searchQuery};
+    // Destructured so render closures depend on these values, not on the query result object, which is new on every
+    // render: otherwise the compiler rebuilds every card on each keystroke in the search box.
+    const {data: linksPage, isPending, isFetching, isError, isPlaceholderData, errorUpdatedAt, refetch} = useLinksPage(pageParams, isShowArchivedHydrated);
+    const {setLinkArchived, deleteLink, applySavedLink} = useLinkListActions(pageParams);
+    const links = linksPage?.links ?? NO_LINKS;
+    const totalElements = linksPage?.totalElements ?? 0;
+    const [dismissedErrorAt, setDismissedErrorAt] = useState(0);
     const fetchTags = useTagStoreWithoutCount((s) => s.fetchTags);
     const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -116,17 +109,16 @@ function LinksPageContent() {
     }, []);
 
     const resetUrlToFirstPage = useCallback((): void => {
-        if (useLinkStore.getState().currentPage > 0) {
+        if (urlPage > 0) {
             router.push(ROUTES.LINKS, {scroll: false});
         }
-    }, [router]);
+    }, [router, urlPage]);
 
-    const syncPageAfterRemoval = async (): Promise<void> => {
-        const store = useLinkStore.getState();
-        if (store.links.length === 0 && store.totalElements > 0 && store.currentPage > 0) {
-            const previousPage = store.currentPage - 1;
-            router.push(buildLinksPageUrl(previousPage), {scroll: false});
-            await store.fetchLinks(previousPage);
+    // A removal can empty the last page; then the previous page is the one that still has links.
+    const syncPageAfterRemoval = (): void => {
+        const page = linksPage;
+        if (page && page.links.length === 0 && page.totalElements > 0 && urlPage > 0) {
+            router.push(buildLinksPageUrl(urlPage - 1), {scroll: false});
         }
     };
 
@@ -137,17 +129,12 @@ function LinksPageContent() {
         if (store.searchQuery === query) return;
         store.setSearchQuery(query);
         resetUrlToFirstPage();
-        store.fetchLinks(0);
     };
     const commitDebouncedSearch = useEffectEvent(commitSearch);
 
     useEffect(() => {
         commitDebouncedSearch(debouncedSearch);
     }, [debouncedSearch]);
-
-    useEffect(() => {
-        fetchLinks(urlPage);
-    }, [urlPage, fetchLinks]);
 
     // The search box starts empty on every visit. A query left in the store would filter the next visit's first load,
     // and clearing it then would also drop the `?page=` of a back navigation.
@@ -170,43 +157,36 @@ function LinksPageContent() {
             setShowArchived(isShowingArchived);
             toast.info(isShowingArchived ? ARCHIVED_FILTER_COPY.SHOWING : ARCHIVED_FILTER_COPY.HIDING, {id: ARCHIVED_FILTER_TOAST_ID});
             resetUrlToFirstPage();
-            fetchLinks(0);
         };
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [showArchived, fetchLinks, setShowArchived, archiveModalLink, resetUrlToFirstPage]);
+    }, [showArchived, setShowArchived, archiveModalLink, resetUrlToFirstPage]);
 
     const handleShowArchivedChange = (value: boolean) => {
         setShowArchived(value);
         resetUrlToFirstPage();
-        fetchLinks(0);
+    };
+
+    const goToPage = (page: number): void => {
+        router.push(buildLinksPageUrl(page), {scroll: false});
+        scrollLinksToTop();
     };
 
     const handlePreviousPage = (): void => {
-        if (currentPage <= 0 || loading) {
-            return;
-        }
-        const previousPage = currentPage - 1;
-        router.push(buildLinksPageUrl(previousPage), {scroll: false});
-        scrollLinksToTop();
-        fetchLinks(previousPage);
+        if (urlPage <= 0 || isPlaceholderData) return;
+        goToPage(urlPage - 1);
     };
 
     const handleNextPage = (): void => {
-        if (loading || (currentPage + 1) * DEFAULT_PAGE_SIZE >= totalElements) {
-            return;
-        }
-        const nextPage = currentPage + 1;
-        router.push(buildLinksPageUrl(nextPage), {scroll: false});
-        scrollLinksToTop();
-        fetchLinks(nextPage);
+        if (isPlaceholderData || (urlPage + 1) * DEFAULT_PAGE_SIZE >= totalElements) return;
+        goToPage(urlPage + 1);
     };
 
     const archiveLink = async (link: LinkItem): Promise<void> => {
-        const isSaved = await setLinkArchived(link.id, link.isActive);
+        const isSaved = await setLinkArchived(link, link.isActive);
         if (isSaved) {
-            await syncPageAfterRemoval();
+            syncPageAfterRemoval();
             return;
         }
         toast.error(link.isActive ? LINK_ACTION_COPY.ARCHIVE_FAILED : LINK_ACTION_COPY.UNARCHIVE_FAILED, {
@@ -228,7 +208,7 @@ function LinksPageContent() {
 
     const removeLink = async (link: LinkItem): Promise<void> => {
         if (await deleteLink(link.id)) {
-            await syncPageAfterRemoval();
+            syncPageAfterRemoval();
             return;
         }
         toast.error(LINK_ACTION_COPY.DELETE_FAILED, {
@@ -281,14 +261,15 @@ function LinksPageContent() {
     );
 
     const handleRetryLoad = () => {
-        clearError();
-        void fetchLinks(currentPage);
+        void refetch();
     };
 
+    const isRefreshErrorShown = isError && links.length > 0 && errorUpdatedAt !== dismissedErrorAt;
+
     const renderListBody = (): React.ReactNode => {
-        if (links.length === 0 && loading) return <LinkCardSkeletonList count={5}/>;
+        if (links.length === 0 && (isPending || isFetching)) return <LinkCardSkeletonList count={5}/>;
         // A failed first load is an error, never the "create your first link" empty state.
-        if (links.length === 0 && error) {
+        if (links.length === 0 && isError) {
             return <ErrorWithRetry message={LINKS_LOAD_COPY.LOAD_FAILED} onRetry={handleRetryLoad} className={LIST_LOAD_ERROR_CLASS}/>;
         }
         if (links.length === 0) return searchQuery !== "" ? <NoLinksFoundState/> : <EmptyLinksState/>;
@@ -309,10 +290,10 @@ function LinksPageContent() {
                 {totalElements > 0 && (
                     <>
                         <LinksPagination
-                            page={currentPage}
+                            page={urlPage}
                             pageSize={DEFAULT_PAGE_SIZE}
                             totalElements={totalElements}
-                            isLoading={loading}
+                            isLoading={isPlaceholderData}
                             onPrevious={handlePreviousPage}
                             onNext={handleNextPage}
                         />
@@ -328,7 +309,7 @@ function LinksPageContent() {
             <PageContainer className={totalElements > 0 && links.length > 0 ? "pb-0" : undefined}>
                 {toolbar}
 
-                {error && links.length > 0 && (
+                {isRefreshErrorShown && (
                     <div
                         role="alert"
                         className="bg-destructive/10 text-destructive p-4 rounded-lg flex items-center justify-between gap-3">
@@ -336,7 +317,7 @@ function LinksPageContent() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => clearError()}
+                            onClick={() => setDismissedErrorAt(errorUpdatedAt)}
                             className="text-destructive hover:text-destructive hover:bg-destructive/20"
                         >
                             {LINKS_LOAD_COPY.DISMISS}
