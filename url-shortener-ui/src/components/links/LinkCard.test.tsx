@@ -5,7 +5,9 @@ import {useShortcutsStore} from "@/lib/store/shortcuts";
 import {LinkCard} from "@/components/links/LinkCard";
 import {toast} from "sonner";
 import {COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {allTagsQueryOptions} from "@/lib/query/tag-queries";
+import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
+import type {TagItem} from "@/lib/types";
 import type {LinkItem} from "@/lib/types";
 import {createLinkItem} from "@/test/link-utils";
 import {createTag} from "@/test/tag-utils";
@@ -27,9 +29,11 @@ interface CardHandlers {
     onArchiveRequest: ReturnType<typeof vi.fn<(link: LinkItem) => void>>;
 }
 
-function renderCard(link: LinkItem, withArchive = true): CardHandlers {
+function renderCard(link: LinkItem, withArchive = true, tags: TagItem[] = []): CardHandlers {
     const handlers: CardHandlers = {onEdit: vi.fn(), onDelete: vi.fn(), onQrCode: vi.fn(), onArchiveRequest: vi.fn()};
-    render(
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(allTagsQueryOptions.queryKey, tags);
+    renderWithQuery(
         <LinkCard
             link={link}
             onEdit={handlers.onEdit}
@@ -37,6 +41,7 @@ function renderCard(link: LinkItem, withArchive = true): CardHandlers {
             onQrCode={handlers.onQrCode}
             onArchiveRequest={withArchive ? handlers.onArchiveRequest : undefined}
         />,
+        queryClient,
     );
     return handlers;
 }
@@ -51,7 +56,6 @@ describe.each([
 ])("LinkCard QR code preload in the $layout", ({isDesktop}) => {
     beforeEach(() => {
         media.isDesktop = isDesktop;
-        useTagStoreWithoutCount.setState({tags: [], loading: false, error: null});
     });
 
     it("starts loading the QR code dialog when the action menu opens, not before", async () => {
@@ -68,7 +72,6 @@ describe.each([
 describe("LinkCard", () => {
     beforeEach(() => {
         media.isDesktop = true;
-        useTagStoreWithoutCount.setState({tags: [], loading: false, error: null});
     });
 
     afterEach(() => { vi.useRealTimers(); });
@@ -111,28 +114,26 @@ describe("LinkCard", () => {
     });
 
     describe("tags", () => {
-        it("renders nothing for tags that are missing from the store", () => {
+        it("renders nothing for tags that are missing from the tag list", () => {
             renderCard(createLinkItem({tagIds: ["ghost"]}));
 
             expect(screen.queryByText(/\+\d/)).not.toBeInTheDocument();
         });
 
         it("shows a single tag by name", () => {
-            useTagStoreWithoutCount.setState({tags: [createTag({id: "t1", name: "Marketing"})]});
-
-            renderCard(createLinkItem({tagIds: ["t1"]}));
+            renderCard(createLinkItem({tagIds: ["t1"]}), true, [createTag({id: "t1", name: "Marketing"})]);
 
             expect(screen.getByText("Marketing")).toBeInTheDocument();
         });
 
         it("shows the first tag alphabetically with a counter and lists the others on hover", async () => {
             const user = userEvent.setup();
-            useTagStoreWithoutCount.setState({tags: [
+            const tags = [
                 createTag({id: "t1", name: "Zeta"}),
                 createTag({id: "t2", name: "Alpha"}),
                 createTag({id: "t3", name: "Beta"}),
-            ]});
-            renderCard(createLinkItem({tagIds: ["t1", "t2", "t3"]}));
+            ];
+            renderCard(createLinkItem({tagIds: ["t1", "t2", "t3"]}), true, tags);
 
             await user.hover(screen.getByText("+2"));
 

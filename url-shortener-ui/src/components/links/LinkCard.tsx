@@ -33,7 +33,7 @@ import {
     MORE_ACTIONS_BUTTON_CLASS,
     SHORTCUT_KEY_CLASS
 } from "@/lib/constants";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {useAllTags} from "@/lib/hooks/useAllTags";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
 import {LazyActionDrawer, preloadActionDrawer} from "@/components/ui/lazy-action-drawer";
@@ -127,7 +127,7 @@ export function LinkCard({
         setIsMenuOpen(open);
     };
     const cardRef = useRef<HTMLDivElement>(null);
-    const storeTags = useTagStoreWithoutCount((state) => state.tags);
+    const {tags: storeTags} = useAllTags();
     const isDesktop = useIsDesktop();
 
     const resolvedTags = useMemo(

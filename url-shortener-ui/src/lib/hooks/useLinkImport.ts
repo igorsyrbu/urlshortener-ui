@@ -11,7 +11,6 @@ import {attempt} from "@/lib/async-utils";
 import {buildDiscoveredJob, IMPORT_TRACKING_STATUS, useImportTracker, type ImportTrackingStatus} from "@/lib/store/import";
 import {useQueryClient} from "@tanstack/react-query";
 import {queryKeys} from "@/lib/query/query-keys";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {
     buildFileTooLargeMessage, buildTooManyRowsMessage, IMPORT_EMPTY_FILE_MESSAGE, IMPORT_FAILED_MESSAGE,
 } from "@/components/links/import-export-constants";
@@ -115,7 +114,7 @@ export function useLinkImport(): UseLinkImportResult {
     const handleRefreshLinks = (): void => {
         router.push(ROUTES.LINKS, {scroll: false});
         void queryClient.invalidateQueries({queryKey: queryKeys.links.all});
-        void useTagStoreWithoutCount.getState().fetchTags();
+        void queryClient.invalidateQueries({queryKey: queryKeys.tags.all});
     };
 
     return {session, isUploading, handleImport, handleReset, handleRefreshLinks};

@@ -5,9 +5,11 @@ import {CreateLinkModal} from "@/components/links/CreateLinkModal";
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS, DEFAULT_LINK_TITLE, ROUTES, SHORT_KEY_TAKEN_MESSAGE} from "@/lib/constants";
 import {queryKeys} from "@/lib/query/query-keys";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {allTagsQueryOptions} from "@/lib/query/tag-queries";
 import {getRequestsTo, parseRequestBody, routeFetchWithAuth} from "@/test/link-form-utils";
 import {createShortLink} from "@/test/link-utils";
+import type {TagItem} from "@/lib/types";
+import type {QueryClient} from "@tanstack/react-query";
 import {createTag} from "@/test/tag-utils";
 import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 
@@ -39,12 +41,17 @@ function mockCreateEndpoint(respond: () => Response): void {
     });
 }
 
-function renderModal(): {onOpenChange: ReturnType<typeof vi.fn<(open: boolean) => void>>; invalidateQueries: ReturnType<typeof vi.spyOn>} {
+function getTagRequests(): string[] {
+    return vi.mocked(fetchWithAuth).mock.calls.map(([url]) => String(url)).filter((url) => url.startsWith(API_ENDPOINTS.TAGS));
+}
+
+function renderModal(tags?: TagItem[]): {onOpenChange: ReturnType<typeof vi.fn<(open: boolean) => void>>; invalidateQueries: ReturnType<typeof vi.spyOn>; queryClient: QueryClient} {
     const onOpenChange = vi.fn<(open: boolean) => void>();
     const queryClient = createTestQueryClient();
+    if (tags) queryClient.setQueryData(allTagsQueryOptions.queryKey, tags);
     const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
     renderWithQuery(<CreateLinkModal open onOpenChange={onOpenChange}/>, queryClient);
-    return {onOpenChange, invalidateQueries};
+    return {onOpenChange, invalidateQueries, queryClient};
 }
 
 async function submitLink(user: ReturnType<typeof userEvent.setup>, url: string): Promise<void> {
@@ -56,7 +63,6 @@ async function submitLink(user: ReturnType<typeof userEvent.setup>, url: string)
 describe("CreateLinkModal", () => {
     beforeEach(() => {
         mocks.isDesktop = true;
-        useTagStoreWithoutCount.setState({tags: [], loading: false, error: null, hasLoaded: false});
     });
 
     it("loads the tags for its picker when it opens outside the links page", async () => {
@@ -66,19 +72,19 @@ describe("CreateLinkModal", () => {
             [API_ENDPOINTS.TAGS]: () => Response.json({content: [tag]}),
         });
 
-        renderModal();
+        const {queryClient} = renderModal();
 
-        await waitFor(() => expect(useTagStoreWithoutCount.getState().tags).toEqual([tag]));
+        await waitFor(() => expect(queryClient.getQueryData(allTagsQueryOptions.queryKey)).toEqual([tag]));
+        expect(getTagRequests()).toHaveLength(1);
     });
 
     it("reuses tags that are already loaded instead of asking again", async () => {
-        useTagStoreWithoutCount.setState({tags: [createTag()], hasLoaded: true});
         mockCreateEndpoint(() => Response.json(createShortLink()));
 
-        renderModal();
+        renderModal([createTag()]);
 
         await screen.findByLabelText("Destination URL");
-        expect(vi.mocked(fetchWithAuth).mock.calls.some(([url]) => String(url).startsWith(API_ENDPOINTS.TAGS))).toBe(false);
+        expect(getTagRequests()).toHaveLength(0);
     });
 
     it("renders nothing of the form while closed", () => {
@@ -137,9 +143,8 @@ describe("CreateLinkModal", () => {
     it("sends the selected tags with the new link", async () => {
         const user = userEvent.setup();
         const tag = createTag({id: "tag-7", name: "Launch"});
-        useTagStoreWithoutCount.setState({tags: [tag]});
         mockCreateEndpoint(() => Response.json(createShortLink()));
-        renderModal();
+        renderModal([tag]);
 
         await user.click(await screen.findByRole("button", {name: "Select tags"}));
         await user.click(await screen.findByRole("option", {name: tag.name}));

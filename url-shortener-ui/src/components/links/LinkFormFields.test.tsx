@@ -1,4 +1,4 @@
-import {render, screen, waitFor} from "@testing-library/react";
+import {screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
@@ -14,7 +14,9 @@ import {
     ICON_BUTTON_LABELS,
 } from "@/lib/constants";
 import {usePreferencesStore} from "@/lib/store/preferences";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {allTagsQueryOptions} from "@/lib/query/tag-queries";
+import type {TagItem} from "@/lib/types";
+import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 import {getRequestsTo, routeFetchWithAuth} from "@/test/link-form-utils";
 import {peekPrefetchedRandomKey, prefetchRandomKey, resetRandomKeyPrefetchForTests} from "@/lib/random-key";
 import {createTag} from "@/test/tag-utils";
@@ -48,12 +50,15 @@ interface RenderOptions {
     initialTitle?: string;
     initialKey?: string;
     initialTagIds?: string[];
+    tags?: TagItem[];
 }
 
 function renderForm(options: RenderOptions = {}): {onSubmit: ReturnType<typeof vi.fn<SubmitHandler>>, onCancel: () => void} {
     const onSubmit = vi.fn<SubmitHandler>(options.onSubmit ?? (async () => undefined));
     const onCancel = vi.fn();
-    render(
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(allTagsQueryOptions.queryKey, options.tags ?? []);
+    renderWithQuery(
         <LinkFormFields
             title="Create link"
             submitLabel={SUBMIT_LABEL}
@@ -68,6 +73,7 @@ function renderForm(options: RenderOptions = {}): {onSubmit: ReturnType<typeof v
             initialKey={options.initialKey}
             initialTagIds={options.initialTagIds}
         />,
+        queryClient,
     );
     return {onSubmit, onCancel};
 }
@@ -105,7 +111,6 @@ describe("LinkFormFields", () => {
     beforeEach(() => {
         media.isDesktop = true;
         usePreferencesStore.setState({trackerMode: null, hasLoaded: false, isLoading: false, isSaving: false});
-        useTagStoreWithoutCount.setState({tags: [], loading: false, error: null});
         routeFetchWithAuth({});
     });
 
@@ -441,8 +446,7 @@ describe("LinkFormFields", () => {
         it("lists selected tags on the form and submits their ids on desktop", async () => {
             const user = userEvent.setup();
             const tag = createTag({id: "tag-9", name: "Launch"});
-            useTagStoreWithoutCount.setState({tags: [tag]});
-            const {onSubmit} = renderForm({initialLongUrl: "https://example.com", initialKey: "k", initialTagIds: [tag.id]});
+            const {onSubmit} = renderForm({initialLongUrl: "https://example.com", initialKey: "k", initialTagIds: [tag.id], tags: [tag]});
 
             expect(screen.getByText(tag.name)).toBeInTheDocument();
             await user.click(getSubmitButton());
@@ -454,8 +458,7 @@ describe("LinkFormFields", () => {
             media.isDesktop = false;
             const user = userEvent.setup();
             const tag = createTag({id: "tag-2", name: "Promo"});
-            useTagStoreWithoutCount.setState({tags: [tag]});
-            const {onSubmit} = renderForm({initialLongUrl: "https://example.com", initialKey: "k"});
+            const {onSubmit} = renderForm({initialLongUrl: "https://example.com", initialKey: "k", tags: [tag]});
 
             await user.click(screen.getByRole("button", {name: "Select tags"}));
             await user.click(await screen.findByRole("button", {name: tag.name}));

@@ -1,70 +1,43 @@
-import {fetchWithAuth} from "@/lib/api";
-import {TagItem} from "@/lib/types";
-import {BadgeVariant} from "@/components/ui/badge";
-import {API_ENDPOINTS} from "@/lib/constants";
-import {parseProblemDetail} from "@/lib/problem-details";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
-import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
+"use client";
 
-async function readTagMutationError(response: Response): Promise<string> {
-    const body = await response.text().catch(() => "");
-    return parseProblemDetail(body, response.status);
+import {useQueryClient} from "@tanstack/react-query";
+import type {BadgeVariant} from "@/components/ui/badge";
+import {queryKeys} from "@/lib/query/query-keys";
+import {createTagRequest, deleteTagRequest, updateTagRequest} from "@/lib/tags-api";
+import type {TagItem} from "@/lib/types";
+
+interface TagMutations {
+    createTag: (name: string, color: BadgeVariant) => Promise<TagItem>;
+    updateTag: (id: string, name: string, color: BadgeVariant) => Promise<void>;
+    deleteTag: (id: string) => Promise<void>;
 }
 
 /**
- * Tag create/update/delete. Failures reject with a user-facing message and leave both tag-list stores untouched:
- * the list `error` belongs to loading the list, and callers show mutation errors where the action happened.
+ * Tag create/update/delete. Success edits every cached tag list in place (badges, picker, tags page, any search), so
+ * nothing refetches. Failures reject with an `ApiError` whose message is user-facing and leave the cache untouched;
+ * callers show it where the action happened.
  */
-export function useTagMutations() {
+export function useTagMutations(): TagMutations {
+    const queryClient = useQueryClient();
+
+    const editCachedTagLists = (edit: (tags: TagItem[]) => TagItem[]): void => {
+        queryClient.setQueriesData<TagItem[]>({queryKey: queryKeys.tags.all}, (tags) => tags && edit(tags));
+    };
+
     const createTag = async (name: string, color: BadgeVariant): Promise<TagItem> => {
-        const res = await fetchWithAuth(API_ENDPOINTS.TAGS, {
-            method: "POST",
-            body: JSON.stringify({name: name.trim(), color}),
-        });
-
-        if (!res.ok) {
-            throw new Error(await readTagMutationError(res));
-        }
-
-        const newTag: TagItem = await res.json();
-        const addToState = (state: {tags: TagItem[]}) => ({tags: [newTag, ...state.tags]});
-        useTagStoreWithoutCount.setState(addToState);
-        useTagStoreWithCount.setState(addToState);
+        const newTag = await createTagRequest(name, color);
+        editCachedTagLists((tags) => [newTag, ...tags]);
         return newTag;
     };
 
     const updateTag = async (id: string, name: string, color: BadgeVariant): Promise<void> => {
-        const res = await fetchWithAuth(API_ENDPOINTS.TAGS, {
-            method: "PUT",
-            body: JSON.stringify({id, name: name.trim(), color}),
-        });
-
-        if (!res.ok) {
-            throw new Error(await readTagMutationError(res));
-        }
-
-        const updated: TagItem = await res.json();
-        const replaceInState = (state: {tags: TagItem[]}) => ({
-            tags: state.tags.map((tag) => (tag.id === id ? updated : tag)),
-        });
-        useTagStoreWithoutCount.setState(replaceInState);
-        useTagStoreWithCount.setState(replaceInState);
+        const updatedTag = await updateTagRequest(id, name, color);
+        editCachedTagLists((tags) => tags.map((tag) => (tag.id === id ? {...tag, ...updatedTag} : tag)));
     };
 
     const deleteTag = async (id: string): Promise<void> => {
-        const res = await fetchWithAuth(`${API_ENDPOINTS.TAGS}/${id}`, {
-            method: "DELETE",
-        });
-
-        if (!res.ok) {
-            throw new Error(await readTagMutationError(res));
-        }
-
-        const removeFromState = (state: {tags: TagItem[]}) => ({
-            tags: state.tags.filter((tag) => tag.id !== id),
-        });
-        useTagStoreWithoutCount.setState(removeFromState);
-        useTagStoreWithCount.setState(removeFromState);
+        await deleteTagRequest(id);
+        editCachedTagLists((tags) => tags.filter((tag) => tag.id !== id));
     };
 
     return {createTag, updateTag, deleteTag};

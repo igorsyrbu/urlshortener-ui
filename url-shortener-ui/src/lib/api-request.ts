@@ -21,3 +21,11 @@ export async function requestJson<T>(endpoint: string, options?: RequestInit): P
     // DTOs are trusted as typed until the API modules validate them at runtime.
     return (await response.json()) as T;
 }
+
+/** An authenticated request whose success has no body to read (DELETE): resolves, or rejects with an `ApiError`. */
+export async function requestNoContent(endpoint: string, options?: RequestInit): Promise<void> {
+    const response = await fetchWithAuth(endpoint, options);
+    if (!response.ok) {
+        throw new ApiError(response.status, parseProblemDetail(await response.text(), response.status));
+    }
+}

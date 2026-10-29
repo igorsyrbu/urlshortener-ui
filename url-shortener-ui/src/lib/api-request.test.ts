@@ -1,8 +1,8 @@
 import {describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
-import {ApiError, requestJson} from "@/lib/api-request";
+import {ApiError, requestJson, requestNoContent} from "@/lib/api-request";
 import {describeHttpFailure} from "@/lib/errors";
-import {HTTP_CONFLICT, HTTP_INTERNAL_SERVER_ERROR} from "@/lib/http-status";
+import {HTTP_CONFLICT, HTTP_INTERNAL_SERVER_ERROR, HTTP_NO_CONTENT} from "@/lib/http-status";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 
@@ -33,5 +33,20 @@ describe("requestJson", () => {
             status: HTTP_INTERNAL_SERVER_ERROR,
             message: describeHttpFailure(HTTP_INTERNAL_SERVER_ERROR),
         });
+    });
+});
+
+describe("requestNoContent", () => {
+    it("resolves without reading a body", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: HTTP_NO_CONTENT}));
+
+        await expect(requestNoContent(ENDPOINT, {method: "DELETE"})).resolves.toBeUndefined();
+        expect(fetchWithAuth).toHaveBeenCalledWith(ENDPOINT, {method: "DELETE"});
+    });
+
+    it("rejects with an ApiError carrying the problem detail", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({detail: "Not yours."}, {status: HTTP_CONFLICT}));
+
+        await expect(requestNoContent(ENDPOINT)).rejects.toMatchObject({status: HTTP_CONFLICT, message: "Not yours."});
     });
 });

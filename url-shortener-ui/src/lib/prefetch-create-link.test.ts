@@ -1,28 +1,43 @@
-import {afterEach, describe, expect, it, vi} from "vitest";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import type {QueryClient} from "@tanstack/react-query";
 import {prefetchCreateLinkData} from "@/lib/prefetch-create-link";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {setActiveQueryClient} from "@/lib/query/active-query-client";
+import {allTagsQueryOptions} from "@/lib/query/tag-queries";
 import {usePreferencesStore} from "@/lib/store/preferences";
 import {prefetchRandomKey} from "@/lib/random-key";
+import {createTestQueryClient} from "@/test/query-utils";
 
 vi.mock("@/lib/random-key", () => ({prefetchRandomKey: vi.fn()}));
 
 describe("prefetchCreateLinkData", () => {
-    const initialTags = useTagStoreWithoutCount.getInitialState();
+    let queryClient: QueryClient;
+
+    beforeEach(() => {
+        queryClient = createTestQueryClient();
+        setActiveQueryClient(queryClient);
+        vi.spyOn(usePreferencesStore.getState(), "fetchPreferences").mockResolvedValue(true);
+        vi.spyOn(queryClient, "prefetchQuery").mockResolvedValue(undefined);
+    });
 
     afterEach(() => {
-        useTagStoreWithoutCount.setState(initialTags, true);
+        setActiveQueryClient(null);
     });
 
     it("starts the random key, the preferences and the tags for the picker", () => {
-        const ensureLoaded = vi.fn();
-        const fetchPreferences = vi.fn().mockResolvedValue(true);
-        useTagStoreWithoutCount.setState({ensureLoaded});
-        vi.spyOn(usePreferencesStore.getState(), "fetchPreferences").mockImplementation(fetchPreferences);
+        prefetchCreateLinkData();
+
+        expect(prefetchRandomKey).toHaveBeenCalledOnce();
+        expect(usePreferencesStore.getState().fetchPreferences).toHaveBeenCalledOnce();
+        expect(queryClient.prefetchQuery).toHaveBeenCalledExactlyOnceWith(allTagsQueryOptions);
+    });
+
+    it("still starts the random key and the preferences outside the dashboard, where there is no query client", () => {
+        setActiveQueryClient(null);
 
         prefetchCreateLinkData();
 
         expect(prefetchRandomKey).toHaveBeenCalledOnce();
-        expect(fetchPreferences).toHaveBeenCalledOnce();
-        expect(ensureLoaded).toHaveBeenCalledOnce();
+        expect(usePreferencesStore.getState().fetchPreferences).toHaveBeenCalledOnce();
+        expect(queryClient.prefetchQuery).not.toHaveBeenCalled();
     });
 });

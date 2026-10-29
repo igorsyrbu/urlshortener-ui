@@ -1,7 +1,6 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {useShallow} from "zustand/react/shallow";
 import dynamic from "next/dynamic";
 import {TagCard} from "@/components/tags/TagCard";
 import {EmptyTagsState} from "@/components/tags/EmptyTagsState";
@@ -10,7 +9,7 @@ import {TagCardSkeletonList} from "@/components/tags/TagCardSkeleton";
 import {PageContainer} from "@/components/layout/PageContainer";
 import {PageToolbar} from "@/components/layout/PageToolbar";
 import {Button} from "@/components/ui/button";
-import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
+import {useTagsWithCount} from "@/lib/hooks/useTagsWithCount";
 import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import {TagItem} from "@/lib/types";
 import {useDebounce} from "@/lib/hooks/useDebounce";
@@ -34,19 +33,10 @@ function loadDeleteTagModal() {
 const EditTagModal = dynamic(loadEditTagModal, {ssr: false});
 const DeleteTagModal = dynamic(loadDeleteTagModal, {ssr: false});
 
-function commitTagSearch(text: string): void {
-    const trimmed = text.trim();
-    const store = useTagStoreWithCount.getState();
-    if (store.searchQuery === trimmed) return;
-    store.setSearchQuery(trimmed);
-    store.fetchTags();
-}
+const NO_TAGS: TagItem[] = [];
 
 export default function TagsPage() {
-    const {tags, loading, error, fetchTags, clearError, searchQuery} = useTagStoreWithCount(useShallow((s) => ({
-        tags: s.tags, loading: s.loading, error: s.error, fetchTags: s.fetchTags, clearError: s.clearError,
-        searchQuery: s.searchQuery,
-    })));
+    const [dismissedErrorAt, setDismissedErrorAt] = useState(0);
     const {deleteTag} = useTagMutations();
     const [editingTag, setEditingTag] = useState<TagItem | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -55,23 +45,20 @@ export default function TagsPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [searchInput, setSearchInput] = useState("");
     const debouncedSearch = useDebounce(searchInput, SEARCH_DEBOUNCE_MS);
+    // Enter, Clear and Escape apply the box's text at once; typing applies it after the debounce. Local state, so the
+    // box and the list start unfiltered on every visit.
+    const [submittedInput, setSubmittedInput] = useState<string | null>(null);
+    const searchQuery = (submittedInput === searchInput ? searchInput : debouncedSearch).trim();
+    // Destructured so render code does not close over the query result object, which is new on every render.
+    const {data, isPending, isFetching, isError, errorUpdatedAt, refetch} = useTagsWithCount(searchQuery);
+    const tags = data ?? NO_TAGS;
     const hasOpenedEdit = useHasBeenOpened(isEditModalOpen);
     const hasOpenedDelete = useHasBeenOpened(deleteModalOpen);
-
-    useEffect(() => {
-        fetchTags();
-    }, [fetchTags]);
-
-    // The search box starts empty on every visit; a query left in the store would filter the next visit's first load.
-    useEffect(() => () => useTagStoreWithCount.getState().setSearchQuery(""), []);
 
     useEffect(() => {
         preloadOnIdle([loadEditTagModal, loadDeleteTagModal]);
     }, []);
 
-    useEffect(() => {
-        commitTagSearch(debouncedSearch);
-    }, [debouncedSearch]);
 
     const handleDeleteClick = (tag: TagItem) => {
         setTagToDelete(tag);
@@ -102,19 +89,20 @@ export default function TagsPage() {
         <PageToolbar
             searchValue={searchInput}
             onSearchChange={setSearchInput}
-            onSearchSubmit={commitTagSearch}
+            onSearchSubmit={setSubmittedInput}
             placeholder="Search..."
         />
     );
 
     const handleRetryLoad = () => {
-        clearError();
-        void fetchTags();
+        void refetch();
     };
 
+    const isRefreshErrorShown = isError && tags.length > 0 && errorUpdatedAt !== dismissedErrorAt;
+
     const renderTagList = (): React.ReactNode => {
-        if (tags.length === 0 && loading) return <TagCardSkeletonList count={5}/>;
-        if (tags.length === 0 && error) {
+        if (tags.length === 0 && (isPending || isFetching)) return <TagCardSkeletonList count={5}/>;
+        if (tags.length === 0 && isError) {
             return <ErrorWithRetry message={TAGS_LOAD_COPY.LOAD_FAILED} onRetry={handleRetryLoad} className={LIST_LOAD_ERROR_CLASS}/>;
         }
         if (tags.length === 0) return searchQuery !== "" ? <NoTagsFoundState/> : <EmptyTagsState/>;
@@ -131,7 +119,7 @@ export default function TagsPage() {
         <PageContainer>
             {toolbar}
 
-            {error && tags.length > 0 && (
+            {isRefreshErrorShown && (
                 <div
                     role="alert"
                     className="bg-destructive/10 text-destructive p-4 rounded-lg flex items-center justify-between gap-3">
@@ -139,7 +127,7 @@ export default function TagsPage() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => clearError()}
+                        onClick={() => setDismissedErrorAt(errorUpdatedAt)}
                         className="text-destructive hover:text-destructive hover:bg-destructive/20"
                     >
                         {LINKS_LOAD_COPY.DISMISS}

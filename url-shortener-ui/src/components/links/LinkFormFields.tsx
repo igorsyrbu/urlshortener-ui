@@ -1,7 +1,6 @@
 "use client";
 
 import React, {useCallback, useEffect, useRef, useState} from "react";
-import {useShallow} from "zustand/react/shallow";
 import {AnimatePresence, MotionConfig, motion} from "framer-motion";
 import {fetchWithAuth} from "@/lib/api";
 import {generateTitleFromHostname, focusElementById} from "@/lib/utils";
@@ -21,7 +20,7 @@ import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useDebounce} from "@/lib/hooks/useDebounce";
 import {useUrlCleaner} from "@/lib/hooks/useUrlCleaner";
 import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {useAllTags} from "@/lib/hooks/useAllTags";
 import {usePreferencesStore} from "@/lib/store/preferences";
 import {useCreateTagFromSearch} from "@/lib/hooks/useCreateTagFromSearch";
 import {type GlowState, ShortKeyConflictError} from "@/components/links/create-link-types";
@@ -117,9 +116,7 @@ export function LinkFormFields({
     const hasUserEditedKeyRef = useRef(false);
     const pendingKeyRequestRef = useRef<Promise<string | null> | null>(null);
 
-    const {tags, loading: tagsLoading} = useTagStoreWithoutCount(useShallow((s) => ({
-        tags: s.tags, loading: s.loading,
-    })));
+    const {tags, isLoading: tagsLoading} = useAllTags();
     const [tagSearch, setTagSearch] = useState("");
     const {
         isCreatingTag: createTagLoading,

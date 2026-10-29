@@ -1,12 +1,11 @@
 "use client";
 
 import React, {useEffect, useId, useRef, useState} from "react";
-import {useShallow} from "zustand/react/shallow";
 import {Check, ChevronDown, Loader2, Plus, Tag} from "lucide-react";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {BadgeVariant} from "@/components/ui/badge";
 import {TagBadge} from "@/components/tags/TagBadge";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {useAllTags} from "@/lib/hooks/useAllTags";
 import {TagItem} from "@/lib/types";
 import {useCreateTagFromSearch} from "@/lib/hooks/useCreateTagFromSearch";
 import {useTagSelectKeyboard} from "@/lib/hooks/useTagSelectKeyboard";
@@ -44,7 +43,7 @@ function iconColorForTag(color: BadgeVariant): string {
 }
 
 export function TagSelect({selectedTagIds, onChange, disabled}: TagSelectProps) {
-    const {tags, loading} = useTagStoreWithoutCount(useShallow((s) => ({tags: s.tags, loading: s.loading})));
+    const {tags, isLoading: loading} = useAllTags();
     const [open, setOpen] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const listboxId = useId();

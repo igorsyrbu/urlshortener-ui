@@ -4,7 +4,6 @@ import {subscribeToDiscoveredImport} from "@/lib/import-progress";
 import {logger} from "@/lib/logger";
 import {invalidateServerState} from "@/lib/query/active-query-client";
 import {queryKeys} from "@/lib/query/query-keys";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
 
 export const IMPORT_TRACKING_STATUS = {
     IDLE: "idle",
@@ -77,7 +76,7 @@ function refreshLinksAndTagsOnce(): void {
     if (didRefreshCurrentRun) return;
     didRefreshCurrentRun = true;
     invalidateServerState(queryKeys.links.all);
-    void useTagStoreWithoutCount.getState().fetchTags();
+    invalidateServerState(queryKeys.tags.all);
 }
 
 function applyTrackedProgress(progress: LinkImportProgressDTO): void {

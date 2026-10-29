@@ -12,7 +12,6 @@ import {NoLinksFoundState} from "@/components/links/NoLinksFoundState";
 import {TooltipProvider} from "@/components/ui/tooltip";
 import {Button} from "@/components/ui/button";
 import {useLinkStore} from "@/lib/store/links";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useLinksPage} from "@/lib/hooks/useLinksPage";
 import {useLinkListActions} from "@/lib/hooks/useLinkListActions";
 import {IMPORT_TRACKING_STATUS, useImportTracker} from "@/lib/store/import";
@@ -76,7 +75,6 @@ function LinksPageContent() {
     const links = linksPage?.links ?? NO_LINKS;
     const totalElements = linksPage?.totalElements ?? 0;
     const [dismissedErrorAt, setDismissedErrorAt] = useState(0);
-    const fetchTags = useTagStoreWithoutCount((s) => s.fetchTags);
     const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -139,10 +137,6 @@ function LinksPageContent() {
     // The search box starts empty on every visit. A query left in the store would filter the next visit's first load,
     // and clearing it then would also drop the `?page=` of a back navigation.
     useEffect(() => () => useLinkStore.getState().setSearchQuery(""), []);
-
-    useEffect(() => {
-        fetchTags();
-    }, [fetchTags]);
 
     // Without an active card, A switches the archived filter. A card with its menu open or under the pointer takes A
     // first (its listener is on document and calls preventDefault); this one is on window, so it always runs after.

@@ -7,7 +7,6 @@ import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/component
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useQueryClient} from "@tanstack/react-query";
 import {queryKeys} from "@/lib/query/query-keys";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {AnimatePresence, MotionConfig, motion} from "framer-motion";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
 import {CreateLinkSuccess} from "@/components/links/CreateLinkSuccess";
@@ -123,12 +122,10 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
 export function CreateLinkModal({open, onOpenChange}: CreateLinkModalProps) {
     const isDesktop = useIsDesktop();
 
-    // Download the confetti while the form is filled in, so it fires the moment the link is created. The tag picker
-    // needs the tags, which only `/links` loads itself (the modal also opens from other pages and from the `c` key).
+    // Download the confetti while the form is filled in, so it fires the moment the link is created.
     useEffect(() => {
         if (!open) return;
         void loadConfetti();
-        useTagStoreWithoutCount.getState().ensureLoaded();
     }, [open]);
 
     if (isDesktop) {

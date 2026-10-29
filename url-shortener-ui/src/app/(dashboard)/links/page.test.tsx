@@ -14,7 +14,6 @@ import {toast} from "sonner";
 import {useLinkStore} from "@/lib/store/links";
 import {queryKeys} from "@/lib/query/query-keys";
 import {IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
 import {useUIStore} from "@/lib/store/ui";
 import {createImportJob} from "@/test/import-utils";
 import {getQueriesOfRequestsTo, getRequestsTo, parseRequestBody, routeFetchWithAuth} from "@/test/link-form-utils";
@@ -113,7 +112,6 @@ describe("links page", () => {
     beforeEach(() => {
         mocks.searchParams = new URLSearchParams();
         useLinkStore.setState(useLinkStore.getInitialState(), true);
-        useTagStoreWithoutCount.setState({tags: [], loading: false, error: null, searchQuery: ""});
         useUIStore.setState({isCreateModalOpen: false});
         resetImportTrackerForTests();
         mockApi({links: []});
@@ -140,6 +138,15 @@ describe("links page", () => {
             renderWithQuery(<LinksPage/>);
 
             expect(await screen.findByText("Marketing")).toBeInTheDocument();
+        });
+
+        it("requests the tags once for all the cards", async () => {
+            mockApi({links: createLinks(3)});
+
+            renderWithQuery(<LinksPage/>);
+
+            await screen.findByRole("heading", {name: "Link 2"});
+            await waitFor(() => expect(getQueriesOfRequestsTo(API_ENDPOINTS.TAGS)).toHaveLength(1));
         });
 
         it("invites the user to create a first link when there are none", async () => {

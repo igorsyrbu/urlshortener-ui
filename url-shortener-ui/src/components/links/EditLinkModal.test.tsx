@@ -1,10 +1,11 @@
-import {render, screen, waitFor} from "@testing-library/react";
+import {screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {EditLinkModal} from "@/components/links/EditLinkModal";
 import {API_ENDPOINTS, SHORT_KEY_TAKEN_MESSAGE} from "@/lib/constants";
 import type {LinkItem} from "@/lib/types";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {allTagsQueryOptions} from "@/lib/query/tag-queries";
+import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 import {getRequestsTo, parseRequestBody, routeFetchWithAuth} from "@/test/link-form-utils";
 import {createLinkItem} from "@/test/link-utils";
 import {createTag} from "@/test/tag-utils";
@@ -25,7 +26,9 @@ interface RenderedModal {
 function renderModal(link: LinkItem | null = createLinkItem({title: "My article", tagIds: ["tag-1"]})): RenderedModal {
     const onOpenChange = vi.fn<(open: boolean) => void>();
     const onSuccess = vi.fn<(savedLink: LinkItem) => void>();
-    render(<EditLinkModal open onOpenChange={onOpenChange} link={link} onSuccess={onSuccess}/>);
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(allTagsQueryOptions.queryKey, [createTag({id: "tag-1", name: "Marketing"})]);
+    renderWithQuery(<EditLinkModal open onOpenChange={onOpenChange} link={link} onSuccess={onSuccess}/>, queryClient);
     return {onOpenChange, onSuccess};
 }
 
@@ -36,7 +39,6 @@ function mockUpdateEndpoint(respond: () => Response): void {
 describe("EditLinkModal", () => {
     beforeEach(() => {
         media.isDesktop = true;
-        useTagStoreWithoutCount.setState({tags: [createTag({id: "tag-1", name: "Marketing"})], loading: false, error: null});
     });
 
     it.each([true, false])("prefills the form with the link being edited (desktop=%s)", async (isDesktop) => {

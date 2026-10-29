@@ -1,10 +1,12 @@
 import {useState} from "react";
-import {render, screen, waitFor} from "@testing-library/react";
+import {screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {TagSelect} from "@/components/links/TagSelect";
 import {API_ENDPOINTS} from "@/lib/constants";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
+import {allTagsQueryOptions} from "@/lib/query/tag-queries";
+import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
+import {fetchWithAuth} from "@/lib/api";
 import type {TagItem} from "@/lib/types";
 import {getRequestsTo, parseRequestBody, routeFetchWithAuth} from "@/test/link-form-utils";
 import {createTag} from "@/test/tag-utils";
@@ -39,10 +41,16 @@ function ControlledTagSelect({initialIds, onChange, disabled}: ControlledTagSele
     return <TagSelect selectedTagIds={selectedTagIds} onChange={handleChange} disabled={disabled}/>;
 }
 
-function renderSelect(initialIds: string[] = [], disabled?: boolean): RenderedSelect {
+function renderSelect(initialIds: string[] = [], disabled?: boolean, tags: TagItem[] = [marketing, zeta, alpha]): RenderedSelect {
     const onChange = vi.fn<(tagIds: string[]) => void>();
-    render(<ControlledTagSelect initialIds={initialIds} onChange={onChange} disabled={disabled}/>);
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(allTagsQueryOptions.queryKey, tags);
+    renderWithQuery(<ControlledTagSelect initialIds={initialIds} onChange={onChange} disabled={disabled}/>, queryClient);
     return {onChange};
+}
+
+function renderPendingSelect(): void {
+    renderWithQuery(<ControlledTagSelect initialIds={[]} onChange={vi.fn()}/>);
 }
 
 function getTrigger(): HTMLElement {
@@ -55,7 +63,6 @@ function getOptionNames(): string[] {
 
 describe("TagSelect", () => {
     beforeEach(() => {
-        useTagStoreWithoutCount.setState({tags: [marketing, zeta, alpha], loading: false, error: null});
         routeFetchWithAuth({});
     });
 
@@ -76,14 +83,13 @@ describe("TagSelect", () => {
 
         it("summarises tags beyond the visible limit", () => {
             const manyTags: TagItem[] = Array.from({length: MAX_VISIBLE_BADGES + 2}, (_, index) => createTag({id: `t${index}`, name: `Tag ${index}`}));
-            useTagStoreWithoutCount.setState({tags: manyTags});
 
-            renderSelect(manyTags.map((tag) => tag.id));
+            renderSelect(manyTags.map((tag) => tag.id), false, manyTags);
 
             expect(screen.getByText("+2")).toBeInTheDocument();
         });
 
-        it("ignores selected ids that are not in the tag store", () => {
+        it("ignores selected ids that are not in the tag list", () => {
             renderSelect(["unknown-id"]);
 
             expect(screen.getByText(NO_SELECTION_PLACEHOLDER)).toBeInTheDocument();
@@ -134,8 +140,8 @@ describe("TagSelect", () => {
 
         it("shows a loading indicator while tags are being fetched", async () => {
             const user = userEvent.setup();
-            useTagStoreWithoutCount.setState({tags: [], loading: true});
-            renderSelect();
+            vi.mocked(fetchWithAuth).mockReturnValue(new Promise<Response>(() => undefined));
+            renderPendingSelect();
 
             await user.click(getTrigger());
 
@@ -144,8 +150,7 @@ describe("TagSelect", () => {
 
         it("says there are no tags when the account has none", async () => {
             const user = userEvent.setup();
-            useTagStoreWithoutCount.setState({tags: []});
-            renderSelect();
+            renderSelect([], false, []);
 
             await user.click(getTrigger());
 
@@ -155,8 +160,7 @@ describe("TagSelect", () => {
         it("exposes the full tag name for long names", async () => {
             const user = userEvent.setup();
             const longName = "a".repeat(200);
-            useTagStoreWithoutCount.setState({tags: [createTag({id: "long", name: longName})]});
-            renderSelect();
+            renderSelect([], false, [createTag({id: "long", name: longName})]);
 
             await user.click(getTrigger());
 

@@ -1,29 +1,45 @@
+import {createElement, type ReactNode} from "react";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {renderHook} from "@testing-library/react";
-import {afterEach, describe, expect, it, vi} from "vitest";
+import {describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
+import {ApiError} from "@/lib/api-request";
 import {API_ENDPOINTS} from "@/lib/constants";
-import {useTagMutations} from "@/lib/hooks/useTagMutations";
-import {useTagStoreWithoutCount} from "@/lib/store/tags";
-import {useTagStoreWithCount} from "@/lib/store/tags-with-count";
-import {createTag} from "@/test/tag-utils";
 import {ERROR_COPY} from "@/lib/errors";
+import {useTagMutations} from "@/lib/hooks/useTagMutations";
+import {allTagsQueryOptions, tagsWithCountQueryOptions} from "@/lib/query/tag-queries";
+import type {TagItem} from "@/lib/types";
+import {createTestQueryClient} from "@/test/query-utils";
+import {createTag} from "@/test/tag-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 
-const initialPlainState = useTagStoreWithoutCount.getInitialState();
-const initialCountState = useTagStoreWithCount.getInitialState();
-const stores = [useTagStoreWithoutCount, useTagStoreWithCount];
+const countKey = tagsWithCountQueryOptions("").queryKey;
+const searchedCountKey = tagsWithCountQueryOptions("mark").queryKey;
 
-type SharedTagState = Pick<ReturnType<typeof useTagStoreWithCount.getState>, "tags" | "error">;
-
-/** The two stores have different shapes, so a union of them cannot be written to in one call. */
-function setBothStores(partial: Partial<SharedTagState>): void {
-    useTagStoreWithoutCount.setState(partial);
-    useTagStoreWithCount.setState(partial);
+function seedAllCachedLists(queryClient: QueryClient, tags: TagItem[]): void {
+    queryClient.setQueryData(allTagsQueryOptions.queryKey, tags);
+    queryClient.setQueryData(countKey, tags);
+    queryClient.setQueryData(searchedCountKey, tags);
 }
 
-function seedTags(...tags: ReturnType<typeof createTag>[]): void {
-    setBothStores({tags});
+function expectAllCachedLists(queryClient: QueryClient, tags: TagItem[]): void {
+    expect(queryClient.getQueryData(allTagsQueryOptions.queryKey)).toEqual(tags);
+    expect(queryClient.getQueryData(countKey)).toEqual(tags);
+    expect(queryClient.getQueryData(searchedCountKey)).toEqual(tags);
+}
+
+function createQueryWrapper(queryClient: QueryClient) {
+    return function QueryWrapper({children}: {children: ReactNode}) {
+        return createElement(QueryClientProvider, {client: queryClient}, children);
+    };
+}
+
+function renderMutations(tags: TagItem[] = []) {
+    const queryClient = createTestQueryClient();
+    seedAllCachedLists(queryClient, tags);
+    const {result} = renderHook(() => useTagMutations(), {wrapper: createQueryWrapper(queryClient)});
+    return {mutations: result.current, queryClient};
 }
 
 function sentRequest(): {url: string; method: string | undefined; body: unknown} {
@@ -31,156 +47,153 @@ function sentRequest(): {url: string; method: string | undefined; body: unknown}
     return {url, method: options?.method, body: options?.body ? JSON.parse(String(options.body)) : undefined};
 }
 
-describe("useTagMutations", () => {
-    afterEach(() => {
-        useTagStoreWithoutCount.setState(initialPlainState, true);
-        useTagStoreWithCount.setState(initialCountState, true);
-    });
+async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
+    return promise.then(
+        () => {
+            throw new Error("expected the promise to reject");
+        },
+        (error: unknown) => error,
+    );
+}
 
+describe("useTagMutations", () => {
     describe("createTag", () => {
         it("posts the trimmed name with the color", async () => {
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(createTag()));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations} = renderMutations();
 
-            await result.current.createTag("  Marketing  ", "blue");
+            await mutations.createTag("  Marketing  ", "blue");
 
             expect(sentRequest()).toEqual({url: API_ENDPOINTS.TAGS, method: "POST", body: {name: "Marketing", color: "blue"}});
         });
 
-        it("returns the created tag and prepends it to both stores", async () => {
+        it("returns the created tag and prepends it to every cached tag list", async () => {
             const existing = createTag({id: "tag-0", name: "Existing"});
             const created = createTag({id: "tag-1"});
-            seedTags(existing);
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(created));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations, queryClient} = renderMutations([existing]);
 
-            const returned = await result.current.createTag("Marketing", "blue");
+            const returned = await mutations.createTag("Marketing", "blue");
 
             expect(returned).toEqual(created);
-            stores.forEach((store) => expect(store.getState().tags).toEqual([created, existing]));
+            expectAllCachedLists(queryClient, [created, existing]);
         });
 
-        it("uses the response body as the error message when the server rejects the tag", async () => {
-            seedTags(createTag());
+        it("does not create a cache entry for a list that was never loaded", async () => {
+            vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(createTag()));
+            const queryClient = createTestQueryClient();
+            const {result} = renderHook(() => useTagMutations(), {wrapper: createQueryWrapper(queryClient)});
+
+            await result.current.createTag("Marketing", "blue");
+
+            expect(queryClient.getQueryData(allTagsQueryOptions.queryKey)).toBeUndefined();
+        });
+
+        it("rejects with the response body as the message and leaves the cache untouched when the server rejects the tag", async () => {
+            const existing = createTag();
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response("Tag already exists", {status: 409}));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations, queryClient} = renderMutations([existing]);
 
-            await expect(result.current.createTag("Marketing", "blue")).rejects.toThrow("Tag already exists");
+            const error = await rejectionOf(mutations.createTag("Marketing", "blue"));
 
-            stores.forEach((store) => expect(store.getState().tags).toHaveLength(1));
+            expect(error).toBeInstanceOf(ApiError);
+            expect(error).toHaveProperty("message", "Tag already exists");
+            expectAllCachedLists(queryClient, [existing]);
         });
 
         it("reads the message from a JSON error body", async () => {
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({error: "Invalid tag data or duplicate name"}, {status: 400}));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations} = renderMutations();
 
-            await expect(result.current.createTag("Marketing", "blue")).rejects.toThrow(/^Invalid tag data or duplicate name$/);
-        });
-
-        it("leaves the list error of both stores untouched when it fails", async () => {
-            setBothStores({error: null});
-            vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response("Tag already exists", {status: 409}));
-            const {result} = renderHook(() => useTagMutations());
-
-            await expect(result.current.createTag("Marketing", "blue")).rejects.toThrow();
-
-            stores.forEach((store) => expect(store.getState().error).toBeNull());
+            await expect(mutations.createTag("Marketing", "blue")).rejects.toThrow(/^Invalid tag data or duplicate name$/);
         });
 
         it("describes the failure in plain words when the error body is empty", async () => {
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 500}));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations} = renderMutations();
 
-            await expect(result.current.createTag("Marketing", "blue")).rejects.toThrow(ERROR_COPY.SERVER);
+            await expect(mutations.createTag("Marketing", "blue")).rejects.toThrow(ERROR_COPY.SERVER);
         });
 
-        it("rethrows a network failure without touching the stores", async () => {
-            seedTags(createTag());
+        it("rethrows a network failure without touching the cache", async () => {
+            const existing = createTag();
             vi.mocked(fetchWithAuth).mockRejectedValueOnce(new Error("offline"));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations, queryClient} = renderMutations([existing]);
 
-            await expect(result.current.createTag("Marketing", "blue")).rejects.toThrow("offline");
+            await expect(mutations.createTag("Marketing", "blue")).rejects.toThrow("offline");
 
-            stores.forEach((store) => expect(store.getState().tags).toHaveLength(1));
+            expectAllCachedLists(queryClient, [existing]);
         });
     });
 
     describe("updateTag", () => {
         it("puts the id with the trimmed name and color", async () => {
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(createTag()));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations} = renderMutations();
 
-            await result.current.updateTag("tag-1", " Sales ", "green");
+            await mutations.updateTag("tag-1", " Sales ", "green");
 
             expect(sentRequest()).toEqual({url: API_ENDPOINTS.TAGS, method: "PUT", body: {id: "tag-1", name: "Sales", color: "green"}});
         });
 
-        it("replaces only the updated tag in both stores", async () => {
+        it("replaces only the updated tag in every cached list and keeps its other fields", async () => {
             const untouched = createTag({id: "tag-2", name: "Other"});
+            const original = createTag({id: "tag-1", linkCount: 4});
             const updated = createTag({id: "tag-1", name: "Sales", color: "green"});
-            seedTags(createTag({id: "tag-1"}), untouched);
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(updated));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations, queryClient} = renderMutations([original, untouched]);
 
-            await result.current.updateTag("tag-1", "Sales", "green");
+            await mutations.updateTag("tag-1", "Sales", "green");
 
-            stores.forEach((store) => expect(store.getState().tags).toEqual([updated, untouched]));
+            expectAllCachedLists(queryClient, [{...updated, linkCount: 4}, untouched]);
         });
 
-        it("exposes the server message and keeps the tags when the update fails", async () => {
+        it("rejects with the server message and keeps the cache when the update fails", async () => {
             const original = createTag();
-            seedTags(original);
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response("Name taken", {status: 409}));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations, queryClient} = renderMutations([original]);
 
-            await expect(result.current.updateTag("tag-1", "Sales", "green")).rejects.toThrow("Name taken");
+            await expect(mutations.updateTag("tag-1", "Sales", "green")).rejects.toThrow("Name taken");
 
-            stores.forEach((store) => {
-                expect(store.getState().error).toBeNull();
-                expect(store.getState().tags).toEqual([original]);
-            });
+            expectAllCachedLists(queryClient, [original]);
         });
 
         it("falls back to the HTTP status when the error body is empty", async () => {
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 404}));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations} = renderMutations();
 
-            await expect(result.current.updateTag("tag-1", "Sales", "green")).rejects.toThrow(ERROR_COPY.NOT_FOUND);
+            await expect(mutations.updateTag("tag-1", "Sales", "green")).rejects.toThrow(ERROR_COPY.NOT_FOUND);
         });
     });
 
     describe("deleteTag", () => {
         it("sends a DELETE for the tag id", async () => {
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 204}));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations} = renderMutations();
 
-            await result.current.deleteTag("tag-1");
+            await mutations.deleteTag("tag-1");
 
             expect(sentRequest()).toEqual({url: `${API_ENDPOINTS.TAGS}/tag-1`, method: "DELETE", body: undefined});
         });
 
-        it("removes the tag from both stores", async () => {
+        it("removes the tag from every cached list", async () => {
             const kept = createTag({id: "tag-2", name: "Kept"});
-            seedTags(createTag({id: "tag-1"}), kept);
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 204}));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations, queryClient} = renderMutations([createTag({id: "tag-1"}), kept]);
 
-            await result.current.deleteTag("tag-1");
+            await mutations.deleteTag("tag-1");
 
-            stores.forEach((store) => expect(store.getState().tags).toEqual([kept]));
+            expectAllCachedLists(queryClient, [kept]);
         });
 
         it("keeps the tag and explains the failure when deletion fails", async () => {
-            seedTags(createTag({id: "tag-1"}));
+            const tag = createTag({id: "tag-1"});
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 403}));
-            const {result} = renderHook(() => useTagMutations());
+            const {mutations, queryClient} = renderMutations([tag]);
 
-            await expect(result.current.deleteTag("tag-1")).rejects.toThrow(ERROR_COPY.FORBIDDEN);
+            await expect(mutations.deleteTag("tag-1")).rejects.toThrow(ERROR_COPY.FORBIDDEN);
 
-            stores.forEach((store) => {
-                expect(store.getState().error).toBeNull();
-                expect(store.getState().tags).toHaveLength(1);
-            });
+            expectAllCachedLists(queryClient, [tag]);
         });
     });
 });
