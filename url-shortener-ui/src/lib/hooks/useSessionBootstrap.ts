@@ -1,13 +1,14 @@
 "use client";
 
-import {useEffect, useState, useSyncExternalStore} from "react";
+import {useEffect, useSyncExternalStore} from "react";
 import {useRouter} from "next/navigation";
-import {fetchWithAuth} from "@/lib/api";
+import {useQuery} from "@tanstack/react-query";
+import {ApiError} from "@/lib/api-request";
 import {HTTP_FORBIDDEN, HTTP_UNAUTHORIZED} from "@/lib/http-status";
-import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
+import {ROUTES} from "@/lib/constants";
 import {logger} from "@/lib/logger";
+import {currentUserQueryOptions} from "@/lib/query/user-queries";
 import {clearSessionHint, hasSessionHint, setSessionHint} from "@/lib/session-hint";
-import {useAuthStore, type UserProfile} from "@/lib/store/auth";
 
 /**
  * `ready`: render the shell and the page (the profile may still be loading). `checking`: the session is unconfirmed
@@ -21,8 +22,6 @@ export interface SessionBootstrap {
     handleRetry: () => void;
 }
 
-type ProfileResult = {kind: "loaded"; user: UserProfile} | {kind: "rejected"} | {kind: "unavailable"};
-
 const PROFILE_LOG_ERROR = "Failed to load the current user";
 
 function subscribeToNothing(): () => void {
@@ -33,61 +32,45 @@ function hasNoSessionHintOnServer(): boolean {
     return false;
 }
 
-async function loadCurrentUser(): Promise<ProfileResult> {
-    try {
-        const response = await fetchWithAuth(API_ENDPOINTS.USERS_ME);
-        if (response.ok) return {kind: "loaded", user: await response.json()};
-        const isRejected = response.status === HTTP_UNAUTHORIZED || response.status === HTTP_FORBIDDEN;
-        return isRejected ? {kind: "rejected"} : {kind: "unavailable"};
-    } catch (error) {
-        logger.error(PROFILE_LOG_ERROR, error);
-        return {kind: "unavailable"};
-    }
+function isSessionRejected(error: Error | null): boolean {
+    return error instanceof ApiError && (error.status === HTTP_UNAUTHORIZED || error.status === HTTP_FORBIDDEN);
 }
 
-function resolvePhase(hasUser: boolean, hasHint: boolean, result: ProfileResult | null): SessionPhase {
+function resolvePhase(hasUser: boolean, hasHint: boolean, error: Error | null, isRetrying: boolean): SessionPhase {
     if (hasUser) return "ready";
-    if (result?.kind === "rejected") return "checking";
+    if (isSessionRejected(error)) return "checking";
     if (hasHint) return "ready";
-    return result?.kind === "unavailable" ? "unavailable" : "checking";
+    return error && !isRetrying ? "unavailable" : "checking";
 }
 
 /**
- * Loads the signed-in user for the dashboard. With a session hint the shell and page render at once and the profile
- * loads alongside the page's own requests (they share one token refresh); without one the page waits for the check,
- * so a signed-out visitor never sees the dashboard.
+ * Loads the signed-in user (`currentUserQueryOptions`) for the dashboard. With a session hint the shell and page
+ * render at once and the profile loads alongside the page's own requests (they share one token refresh); without one
+ * the page waits for the check, so a signed-out visitor never sees the dashboard.
  */
 export function useSessionBootstrap(): SessionBootstrap {
     const router = useRouter();
-    const hasUser = useAuthStore((state) => state.user !== null);
     // The server cannot read localStorage, so the prerendered HTML is the unhinted state and the hint applies on hydration.
     const hasHint = useSyncExternalStore(subscribeToNothing, hasSessionHint, hasNoSessionHintOnServer);
-    const [result, setResult] = useState<ProfileResult | null>(null);
-    const [attempt, setAttempt] = useState(0);
+    const {data: user, error, isFetching, refetch} = useQuery(currentUserQueryOptions);
 
     useEffect(() => {
-        if (useAuthStore.getState().user !== null) return;
-        let isCurrent = true;
-        void loadCurrentUser().then((loaded) => {
-            if (!isCurrent) return;
-            setResult(loaded);
-            if (loaded.kind === "loaded") {
-                useAuthStore.getState().setUser(loaded.user);
-                setSessionHint();
-            } else if (loaded.kind === "rejected") {
-                clearSessionHint();
-                router.replace(ROUTES.LOGIN);
-            }
-        });
-        return () => {
-            isCurrent = false;
-        };
-    }, [attempt, router]);
+        if (user) setSessionHint();
+    }, [user]);
 
-    function handleRetry(): void {
-        setResult(null);
-        setAttempt((count) => count + 1);
-    }
+    useEffect(() => {
+        if (!error) return;
+        if (isSessionRejected(error)) {
+            clearSessionHint();
+            router.replace(ROUTES.LOGIN);
+            return;
+        }
+        logger.error(PROFILE_LOG_ERROR, error);
+    }, [error, router]);
 
-    return {phase: resolvePhase(hasUser, hasHint, result), handleRetry};
+    const handleRetry = (): void => {
+        void refetch();
+    };
+
+    return {phase: resolvePhase(user !== undefined, hasHint, error, isFetching), handleRetry};
 }

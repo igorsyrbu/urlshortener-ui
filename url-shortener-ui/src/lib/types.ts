@@ -16,3 +16,9 @@ export interface LinkItem {
     isActive: boolean;
     tagIds?: string[];
 }
+
+export interface UserProfile {
+    email: string;
+    name: string;
+    pictureUrl?: string;
+}

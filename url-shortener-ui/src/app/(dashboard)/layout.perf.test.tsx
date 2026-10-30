@@ -2,7 +2,8 @@ import {act, fireEvent, render, screen} from "@testing-library/react";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import DashboardLayout from "@/app/(dashboard)/layout";
 import {MAIN_CONTENT_ID, SCROLL_DELTA_THRESHOLD, SCROLL_TOP_THRESHOLD} from "@/lib/constants";
-import {useAuthStore} from "@/lib/store/auth";
+import {fetchWithAuth} from "@/lib/api";
+import {setSessionHint} from "@/lib/session-hint";
 import {useUIStore} from "@/lib/store/ui";
 
 // Render counts are allowed only in *.perf.test.tsx (run by `pnpm test:perf` with the React Compiler on).
@@ -39,7 +40,8 @@ function scrollMainTo(scrollTop: number): void {
 
 describe("dashboard layout render counts", () => {
     beforeEach(async () => {
-        useAuthStore.setState({accessToken: "token", user: {email: "ada@example.com", name: "Ada"}});
+        setSessionHint();
+        vi.mocked(fetchWithAuth).mockImplementation(() => Promise.resolve(Response.json({email: "ada@example.com", name: "Ada"})));
         useUIStore.setState({isCreateModalOpen: false, isCreateTagModalOpen: false, isShortcutsDialogOpen: false});
         render(<DashboardLayout><p>page content</p></DashboardLayout>);
         await screen.findByText("page content");

@@ -24,7 +24,7 @@ Adding a settings tab: add a route folder under `settings/`, then extend the thr
 
 ### Profile
 
-`ProfileCard` reads `user` from `useAuthStore`; until it exists it renders `ProfileCardSkeleton` (the same layout: avatar circle, text-sized bars for name and email, the real field labels, field-sized placeholders, the footer bar). The card starts with the avatar (`pictureUrl`, user icon fallback), name and email, both truncated with `title`; then full-width Email (disabled) and Name fields; Save sits in the `SettingsCardFooter`. Saving the name does `PUT /users/me/name` (`API_ENDPOINTS.USERS_ME_NAME`), then refetches `GET /users/me` and writes the result with `setUser`, then toasts. Save is disabled while saving or when the trimmed name is empty. Local form state (`name`, `email`) is re-synced from the store whenever `user` changes. Form conventions: [coding-patterns](../coding-patterns.md).
+`ProfileCard` reads the user with `useCurrentUser()`; until it exists it renders `ProfileCardSkeleton` (the same layout: avatar circle, text-sized bars for name and email, the real field labels, field-sized placeholders, the footer bar). The card starts with the avatar (`pictureUrl`, user icon fallback), name and email, both truncated with `title`; then full-width Email (disabled) and Name fields; Save sits in the `SettingsCardFooter`. Saving the name does `PUT /users/me/name` (`API_ENDPOINTS.USERS_ME_NAME`), then invalidates `currentUserQueryOptions` and waits for the refetch of `GET /users/me`, then toasts. Save is disabled while saving or when the trimmed name is empty. Local form state (`name`, `email`) is re-synced whenever the cached user changes. Form conventions: [coding-patterns](../coding-patterns.md).
 
 ### Appearance and color theme
 

@@ -2,7 +2,7 @@
 
 import {LogOut, Settings} from "lucide-react";
 import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/components/ui/drawer";
-import type {UserProfile} from "@/lib/store/auth";
+import type {UserProfile} from "@/lib/types";
 
 interface AccountMenuDrawerProps {
     open: boolean;

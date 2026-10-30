@@ -5,6 +5,7 @@ import {useRouter} from "next/navigation";
 import {LogOut, Settings, User} from "lucide-react";
 import dynamic from "next/dynamic";
 import {useAuthStore} from "@/lib/store/auth";
+import {useCurrentUser} from "@/lib/hooks/useCurrentUser";
 import {fetchWithAuth} from "@/lib/api";
 import {
     DropdownMenu,
@@ -39,7 +40,7 @@ interface SidebarUserMenuProps {
 
 export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
     const router = useRouter();
-    const user = useAuthStore((state) => state.user);
+    const user = useCurrentUser();
     const logout = useAuthStore((state) => state.logout);
     const isDesktop = useIsDesktop();
 

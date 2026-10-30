@@ -29,7 +29,7 @@ async function openWithQuery(query: string): Promise<void> {
 
 describe("auth code exchange page", () => {
     afterEach(() => {
-        useAuthStore.setState({accessToken: null, user: null});
+        useAuthStore.setState({accessToken: null});
         window.history.replaceState(null, "", "/");
     });
 

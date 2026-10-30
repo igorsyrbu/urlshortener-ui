@@ -1,4 +1,4 @@
-import {render, screen, waitFor} from "@testing-library/react";
+import {screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {toast} from "sonner";
 import {beforeEach, describe, expect, it, vi} from "vitest";
@@ -6,7 +6,9 @@ import {ProfileCard} from "@/components/settings/ProfileCard";
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {logger} from "@/lib/logger";
-import {useAuthStore, UserProfile} from "@/lib/store/auth";
+import {currentUserQueryOptions} from "@/lib/query/user-queries";
+import type {UserProfile} from "@/lib/types";
+import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn(), warn: vi.fn(), info: vi.fn()}}));
@@ -16,8 +18,9 @@ const USER: UserProfile = {email: "ada@example.com", name: "Ada"};
 const UPDATED_USER: UserProfile = {email: "ada@example.com", name: "Ada Lovelace"};
 
 function renderProfileCard(user: UserProfile | null = USER): ReturnType<typeof userEvent.setup> {
-    useAuthStore.setState({user});
-    render(<ProfileCard/>);
+    const queryClient = createTestQueryClient();
+    if (user) queryClient.setQueryData(currentUserQueryOptions.queryKey, user);
+    renderWithQuery(<ProfileCard/>, queryClient);
     return userEvent.setup();
 }
 
@@ -29,10 +32,11 @@ async function renameTo(user: ReturnType<typeof userEvent.setup>, name: string):
 
 describe("ProfileCard", () => {
     beforeEach(() => {
-        useAuthStore.setState({accessToken: null, user: null});
+        vi.mocked(fetchWithAuth).mockReset();
     });
 
     it("shows a loading skeleton until the profile is available", () => {
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise(() => undefined));
         renderProfileCard(null);
 
         expect(screen.getByRole("status", {name: "Loading profile"})).toBeInTheDocument();
@@ -55,7 +59,7 @@ describe("ProfileCard", () => {
         expect(screen.getByRole("button", {name: "Save Changes"})).toBeDisabled();
     });
 
-    it("saves the new name, reloads the profile and confirms with a toast", async () => {
+    it("saves the new name, shows the refreshed profile and confirms with a toast", async () => {
         vi.mocked(fetchWithAuth)
             .mockResolvedValueOnce(new Response(null, {status: 200}))
             .mockResolvedValueOnce(Response.json(UPDATED_USER));
@@ -69,8 +73,9 @@ describe("ProfileCard", () => {
             method: "PUT",
             body: JSON.stringify({name: "Ada Lovelace"}),
         });
-        expect(fetchWithAuth).toHaveBeenNthCalledWith(2, API_ENDPOINTS.USERS_ME);
-        expect(useAuthStore.getState().user).toEqual(UPDATED_USER);
+        expect(fetchWithAuth).toHaveBeenCalledTimes(2);
+        expect(fetchWithAuth).toHaveBeenNthCalledWith(2, API_ENDPOINTS.USERS_ME, expect.anything());
+        expect(screen.getByLabelText("Name")).toHaveValue(UPDATED_USER.name);
     });
 
     it("disables the button and shows progress while saving", async () => {
@@ -90,7 +95,7 @@ describe("ProfileCard", () => {
 
         await waitFor(() => expect(toast.error).toHaveBeenCalledExactlyOnceWith("Failed to update profile"));
         expect(fetchWithAuth).toHaveBeenCalledOnce();
-        expect(useAuthStore.getState().user).toEqual(USER);
+        expect(screen.getByLabelText("Name")).toHaveValue(USER.name);
         expect(screen.getByRole("button", {name: "Save Changes"})).toBeEnabled();
     });
 
@@ -106,7 +111,7 @@ describe("ProfileCard", () => {
         expect(screen.getByRole("button", {name: "Save Changes"})).toBeEnabled();
     });
 
-    it("still confirms the update when reloading the profile fails", async () => {
+    it("still confirms the update when refreshing the profile fails", async () => {
         vi.mocked(fetchWithAuth)
             .mockResolvedValueOnce(new Response(null, {status: 200}))
             .mockRejectedValueOnce(new Error("offline"));
@@ -115,6 +120,5 @@ describe("ProfileCard", () => {
         await user.click(screen.getByRole("button", {name: "Save Changes"}));
 
         await waitFor(() => expect(toast.success).toHaveBeenCalledOnce());
-        expect(logger.error).toHaveBeenCalledWith("Failed to load profile", expect.any(Error));
     });
 });

@@ -13,7 +13,7 @@ All authentication is performed by the external REST API. The UI only collects t
 | Login page | [`src/app/login/page.tsx`](../../url-shortener-ui/src/app/login/page.tsx) | Client page; email form, OTP form, Google button, Turnstile |
 | Magic-link landing | [`src/app/auth/ott/page.tsx`](../../url-shortener-ui/src/app/auth/ott/page.tsx) | Reads `token` + `email` from the query string, auto-submits `OttLoginForm` |
 | OAuth / OTT exchange | [`src/app/auth/exchange/page.tsx`](../../url-shortener-ui/src/app/auth/exchange/page.tsx) | Trades `code` for an access token, then goes to `/links` |
-| Auth store | [`src/lib/store/auth.ts`](../../url-shortener-ui/src/lib/store/auth.ts) | `useAuthStore`: `accessToken`, `user`, `logout()` |
+| Auth store | [`src/lib/store/auth.ts`](../../url-shortener-ui/src/lib/store/auth.ts) | `useAuthStore`: `accessToken`, `logout()`. The profile is the `currentUserQueryOptions` query ([`src/lib/query/user-queries.ts`](../../url-shortener-ui/src/lib/query/user-queries.ts)), read with `useCurrentUser()` |
 | Session bootstrap | [`src/app/(dashboard)/layout.tsx`](../../url-shortener-ui/src/app/(dashboard)/layout.tsx), [`src/lib/hooks/useSessionBootstrap.ts`](../../url-shortener-ui/src/lib/hooks/useSessionBootstrap.ts) | Restores the session for every dashboard route |
 | Session hint | [`src/lib/session-hint.ts`](../../url-shortener-ui/src/lib/session-hint.ts) | `localStorage` flag "this browser had a session"; lets the shell render before the session is confirmed |
 | Token refresh | [`src/lib/api.ts`](../../url-shortener-ui/src/lib/api.ts) | `fetchWithAuth`; see [API layer](../api-layer.md) |
@@ -85,12 +85,12 @@ Reached from the email link. It reads `token` and `email` into state once and cl
 
 The dashboard layout ([`src/app/(dashboard)/layout.tsx`](../../url-shortener-ui/src/app/(dashboard)/layout.tsx)) is the only auth gate; see [Routing](../routing-and-navigation.md) and [Architecture](../architecture.md).
 
-1. If the store has a `user`, the shell and page render immediately and no profile request is sent.
-2. Otherwise `useSessionBootstrap` calls `fetchWithAuth("/users/me")`. With no token, `fetchWithAuth` first runs `POST /api/token/refresh` (cookie based); the page's own requests wait for the same single refresh (see [API layer](../api-layer.md#token-refresh)).
+1. If the user is already cached (a client navigation inside the dashboard), the shell and page render immediately and no profile request is sent.
+2. Otherwise `useSessionBootstrap` runs `useQuery(currentUserQueryOptions)`, which requests `/users/me` through `fetchWithAuth`. With no token, `fetchWithAuth` first runs `POST /api/token/refresh` (cookie based); the page's own requests wait for the same single refresh (see [API layer](../api-layer.md#token-refresh)).
 3. **With the session hint** the shell and page render while that request runs (the sidebar shows a name placeholder until the profile arrives). **Without it** a full-screen "Securing session..." spinner is shown until the profile arrives, so a signed-out visitor never sees the dashboard.
-4. `res.ok` gives `setUser(data)` and sets the hint. 401/403 clears the hint, hides the page and calls `router.replace("/login")`. Any other failure (offline, 5xx, 503 from an unreachable refresh) never signs the user out: without a hint it shows "Can't reach the server" with a retry button; with a hint the shell stays and the pages show their own errors.
+4. A loaded profile stays in the query cache and sets the hint. 401/403 clears the hint, hides the page and calls `router.replace("/login")`. Any other failure (offline, 5xx, 503 from an unreachable refresh) is logged and never signs the user out (the query does not retry on its own): without a hint it shows "Can't reach the server" with a retry button (`refetch`); with a hint the shell stays and the pages show their own errors.
 5. The hint is set after a loaded profile and cleared by `logout()` and by a rejected token refresh. It is never a credential: a stale hint only means the shell flashes for one round trip before the redirect.
-6. Components that read `user` must cope with `null` while the profile loads (`ProfileCard` shows its skeleton, the sidebar menu a placeholder, and `DangerZoneCard` never accepts an empty confirmation for an unknown email).
+6. Components that read `useCurrentUser()` must cope with `null` while the profile loads (`ProfileCard` shows its skeleton, the sidebar menu a placeholder, and `DangerZoneCard` never accepts an empty confirmation for an unknown email).
 
 The public pages (`/login`, `/auth/*`, `/inspect/[key]`, `/report-abuse`) sit outside this layout and have no gate.
 

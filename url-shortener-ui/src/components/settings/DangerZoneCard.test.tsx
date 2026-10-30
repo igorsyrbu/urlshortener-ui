@@ -1,9 +1,13 @@
-import {render, screen} from "@testing-library/react";
+import {screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {DangerZoneCard} from "@/components/settings/DangerZoneCard";
-import {useAuthStore} from "@/lib/store/auth";
+import {fetchWithAuth} from "@/lib/api";
+import {currentUserQueryOptions} from "@/lib/query/user-queries";
+import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 import {stubDesktopViewport, stubMobileViewport} from "@/test/viewport-utils";
+
+vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 
 const EMAIL = "Ada@Example.com";
 const CONFIRM_LABEL = "Please type in your email to confirm.";
@@ -16,20 +20,22 @@ interface RenderedCard {
     rerenderWith: (isDeleteDialogOpen: boolean) => void;
 }
 
-function renderCard(isDeleteDialogOpen: boolean): RenderedCard {
+function renderCard(isDeleteDialogOpen: boolean, hasProfile = true): RenderedCard {
+    const queryClient = createTestQueryClient();
+    if (hasProfile) queryClient.setQueryData(currentUserQueryOptions.queryKey, {email: EMAIL, name: "Ada"});
     const handlers = {
         onOpenDeleteDialog: vi.fn<() => void>(),
         onCloseDeleteDialog: vi.fn<() => void>(),
         onConfirmDelete: vi.fn<() => void>(),
     };
     const buildCard = (isOpen: boolean) => <DangerZoneCard isDeleteDialogOpen={isOpen} {...handlers}/>;
-    const {rerender} = render(buildCard(isDeleteDialogOpen));
+    const {rerender} = renderWithQuery(buildCard(isDeleteDialogOpen), queryClient);
     return {user: userEvent.setup(), ...handlers, rerenderWith: (isOpen) => rerender(buildCard(isOpen))};
 }
 
 describe("DangerZoneCard", () => {
     beforeEach(() => {
-        useAuthStore.setState({accessToken: null, user: {email: EMAIL, name: "Ada"}});
+        vi.mocked(fetchWithAuth).mockReset();
     });
 
     it("asks to open the delete dialog from the Delete Account button", async () => {
@@ -55,7 +61,7 @@ describe.each([
     ["mobile drawer", stubMobileViewport],
 ])("DangerZoneCard confirmation as a %s", (_name, useViewport) => {
     beforeEach(() => {
-        useAuthStore.setState({accessToken: null, user: {email: EMAIL, name: "Ada"}});
+        vi.mocked(fetchWithAuth).mockReset();
         useViewport();
     });
 
@@ -74,9 +80,9 @@ describe.each([
     });
 
     it("keeps the final delete button disabled while the profile has not loaded", async () => {
-        useAuthStore.setState({user: null});
+        vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise(() => undefined));
 
-        renderCard(true);
+        renderCard(true, false);
 
         expect(await screen.findByRole("button", {name: "Yes, Delete Account"})).toBeDisabled();
     });

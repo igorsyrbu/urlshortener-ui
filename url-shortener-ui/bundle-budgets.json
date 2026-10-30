@@ -9,11 +9,11 @@
     "/inspect/[key]": 186,
     "/login": 182,
     "/report-abuse": 211,
-    "/dashboard": 225,
-    "/settings": 225,
-    "/settings/billing": 240,
-    "/settings/general": 239,
-    "/analytics": 247,
+    "/dashboard": 229,
+    "/settings": 230,
+    "/settings/billing": 244,
+    "/settings/general": 243,
+    "/analytics": 251,
     "/tags": 262,
     "/links": 279
   }

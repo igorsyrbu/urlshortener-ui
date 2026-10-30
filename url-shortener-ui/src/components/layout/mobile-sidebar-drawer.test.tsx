@@ -1,10 +1,11 @@
 import type {ComponentProps, ReactElement} from "react";
-import {act, fireEvent, render, screen} from "@testing-library/react";
+import {act, fireEvent, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import {beforeEach, describe, expect, it, vi} from "vitest";
+import {describe, expect, it, vi} from "vitest";
 import {MobileSidebarDrawer} from "@/components/layout/mobile-sidebar-drawer";
 import {LARGE_SCREEN_MIN_WIDTH_PX} from "@/lib/constants";
-import {useAuthStore} from "@/lib/store/auth";
+import {currentUserQueryOptions} from "@/lib/query/user-queries";
+import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 
 vi.mock("next/navigation", () => ({
     usePathname: () => "/",
@@ -51,14 +52,16 @@ async function waitForOutsidePressListener(): Promise<void> {
     await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
 }
 
-describe("MobileSidebarDrawer", () => {
-    beforeEach(() => {
-        useAuthStore.setState({user: {email: "ada@example.com", name: "Ada"}});
-    });
+function renderDrawer(ui: ReactElement): void {
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(currentUserQueryOptions.queryKey, {email: "ada@example.com", name: "Ada"});
+    renderWithQuery(ui, queryClient);
+}
 
+describe("MobileSidebarDrawer", () => {
     it("shows the navigation links while open", () => {
         controlLargeScreenQuery(false);
-        render(<MobileSidebarDrawer open onOpenChange={vi.fn()}/>);
+        renderDrawer(<MobileSidebarDrawer open onOpenChange={vi.fn()}/>);
 
         expect(screen.getByRole("dialog", {name: "Main navigation"})).toBeInTheDocument();
         expect(screen.getByRole("link", {name: "Links"})).toBeInTheDocument();
@@ -67,7 +70,7 @@ describe("MobileSidebarDrawer", () => {
     it("stays open when a press lands in a drawer or dialog opened on top of it", async () => {
         controlLargeScreenQuery(false);
         const onOpenChange = vi.fn();
-        render(<><MobileSidebarDrawer open onOpenChange={onOpenChange}/><div data-slot="drawer-content">Account</div></>);
+        renderDrawer(<><MobileSidebarDrawer open onOpenChange={onOpenChange}/><div data-slot="drawer-content">Account</div></>);
         await waitForOutsidePressListener();
 
         fireEvent.pointerDown(screen.getByText("Account"));
@@ -78,7 +81,7 @@ describe("MobileSidebarDrawer", () => {
     it("closes when a press lands anywhere else outside it", async () => {
         controlLargeScreenQuery(false);
         const onOpenChange = vi.fn();
-        render(<><MobileSidebarDrawer open onOpenChange={onOpenChange}/><div>Page</div></>);
+        renderDrawer(<><MobileSidebarDrawer open onOpenChange={onOpenChange}/><div>Page</div></>);
         await waitForOutsidePressListener();
 
         fireEvent.pointerDown(screen.getByText("Page"));
@@ -88,7 +91,7 @@ describe("MobileSidebarDrawer", () => {
 
     it("renders nothing while closed", () => {
         controlLargeScreenQuery(false);
-        render(<MobileSidebarDrawer open={false} onOpenChange={vi.fn()}/>);
+        renderDrawer(<MobileSidebarDrawer open={false} onOpenChange={vi.fn()}/>);
 
         expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
@@ -97,7 +100,7 @@ describe("MobileSidebarDrawer", () => {
         const user = userEvent.setup();
         controlLargeScreenQuery(false);
         const onOpenChange = vi.fn();
-        render(<MobileSidebarDrawer open onOpenChange={onOpenChange}/>);
+        renderDrawer(<MobileSidebarDrawer open onOpenChange={onOpenChange}/>);
 
         await user.click(screen.getByRole("link", {name: "Tags"}));
 
@@ -108,7 +111,7 @@ describe("MobileSidebarDrawer", () => {
         const user = userEvent.setup();
         controlLargeScreenQuery(false);
         const onOpenChange = vi.fn();
-        render(<MobileSidebarDrawer open onOpenChange={onOpenChange}/>);
+        renderDrawer(<MobileSidebarDrawer open onOpenChange={onOpenChange}/>);
 
         await user.keyboard("{Escape}");
 
@@ -119,7 +122,7 @@ describe("MobileSidebarDrawer", () => {
         controlLargeScreenQuery(true);
         const onOpenChange = vi.fn();
 
-        render(<MobileSidebarDrawer open onOpenChange={onOpenChange}/>);
+        renderDrawer(<MobileSidebarDrawer open onOpenChange={onOpenChange}/>);
 
         expect(onOpenChange).toHaveBeenCalledWith(false);
     });
@@ -127,7 +130,7 @@ describe("MobileSidebarDrawer", () => {
     it("closes when the viewport grows to a large screen", () => {
         const viewport = controlLargeScreenQuery(false);
         const onOpenChange = vi.fn();
-        render(<MobileSidebarDrawer open onOpenChange={onOpenChange}/>);
+        renderDrawer(<MobileSidebarDrawer open onOpenChange={onOpenChange}/>);
         expect(onOpenChange).not.toHaveBeenCalled();
 
         viewport.setMatches(true);

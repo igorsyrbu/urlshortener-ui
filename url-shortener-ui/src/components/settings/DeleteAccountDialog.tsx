@@ -3,7 +3,7 @@
 import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
-import {useAuthStore} from "@/lib/store/auth";
+import {useCurrentUser} from "@/lib/hooks/useCurrentUser";
 import {
     Dialog,
     DialogContent,
@@ -31,7 +31,7 @@ interface DeleteAccountDialogProps {
 
 export function DeleteAccountDialog({open, onClose, onConfirm}: DeleteAccountDialogProps) {
     const isDesktop = useIsDesktop();
-    const user = useAuthStore((state) => state.user);
+    const user = useCurrentUser();
     const userEmail = user?.email || "";
 
     const [confirmEmail, setConfirmEmail] = useState("");

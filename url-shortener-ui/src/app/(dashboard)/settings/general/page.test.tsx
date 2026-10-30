@@ -1,4 +1,4 @@
-import {render, screen, waitFor, within} from "@testing-library/react";
+import {screen, waitFor, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {toast} from "sonner";
 import {beforeEach, describe, expect, it, vi} from "vitest";
@@ -8,6 +8,7 @@ import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import type {UserSession} from "@/lib/session-utils";
 import {useAuthStore} from "@/lib/store/auth";
+import {renderWithQuery} from "@/test/query-utils";
 import {createUserSession} from "@/test/user-session-utils";
 import {stubDesktopViewport} from "@/test/viewport-utils";
 
@@ -50,7 +51,7 @@ function deleteCalls(): string[] {
 
 async function renderPageWith(sessions: UserSession[]): Promise<ReturnType<typeof userEvent.setup>> {
     mockSessionsResponse(sessions);
-    render(<GeneralSettingsPage/>);
+    renderWithQuery(<GeneralSettingsPage/>);
     await waitFor(() => expect(screen.queryByRole("status", {name: "Loading sessions"})).not.toBeInTheDocument());
     return userEvent.setup();
 }
@@ -66,16 +67,16 @@ async function confirmInDialog(user: ReturnType<typeof userEvent.setup>): Promis
 describe("GeneralSettingsPage sessions", () => {
     beforeEach(() => {
         stubDesktopViewport();
-        useAuthStore.setState({accessToken: createAccessToken(), user: {email: "ada@example.com", name: "Ada"}});
-    });
+        useAuthStore.setState({accessToken: createAccessToken()});
+   });
 
     it("shows a skeleton only for the current device while the sessions load", () => {
         vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise(() => undefined));
-        render(<GeneralSettingsPage/>);
+        renderWithQuery(<GeneralSettingsPage/>);
 
         expect(screen.getByRole("status", {name: "Loading sessions"})).toBeInTheDocument();
         expect(screen.queryByText("Active sessions")).not.toBeInTheDocument();
-    });
+   });
 
     it("loads sessions and shows the current device apart from the other ones", async () => {
         await renderPageWith([PHONE, CURRENT]);
@@ -84,32 +85,32 @@ describe("GeneralSettingsPage sessions", () => {
         expect(within(rowOf("MacBook (macOS)")).getByText("This device")).toBeInTheDocument();
         expect(screen.getByText("Active sessions")).toBeInTheDocument();
         expect(screen.getByText("iPhone (iOS)")).toBeInTheDocument();
-    });
+   });
 
     it("hides the other sessions section when this is the only session", async () => {
         await renderPageWith([CURRENT]);
 
         expect(screen.queryByText("Active sessions")).not.toBeInTheDocument();
         expect(screen.queryByRole("button", {name: "Log out all other sessions"})).not.toBeInTheDocument();
-    });
+   });
 
     it("explains that the current session is unavailable when the request is rejected", async () => {
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 500}));
 
-        render(<GeneralSettingsPage/>);
+        renderWithQuery(<GeneralSettingsPage/>);
 
         expect(await screen.findByText("Current session information unavailable.")).toBeInTheDocument();
-    });
+   });
 
     it("logs the failure and stops loading when the request throws", async () => {
         const failure = new Error("offline");
         vi.mocked(fetchWithAuth).mockRejectedValueOnce(failure);
 
-        render(<GeneralSettingsPage/>);
+        renderWithQuery(<GeneralSettingsPage/>);
 
         expect(await screen.findByText("Current session information unavailable.")).toBeInTheDocument();
         expect(logger.error).toHaveBeenCalledWith("Failed to load sessions", failure);
-    });
+   });
 
     it("warns about the token lifetime before terminating another session", async () => {
         const user = await renderPageWith([CURRENT, PHONE]);
@@ -117,7 +118,7 @@ describe("GeneralSettingsPage sessions", () => {
         await user.click(within(rowOf("iPhone (iOS)")).getByRole("button", {name: "Log out"}));
 
         expect(await screen.findByText(/up to 2 hours 0 minutes to take effect on that device/)).toBeInTheDocument();
-    });
+   });
 
     it("terminates another session after confirmation and removes it from the list", async () => {
         const user = await renderPageWith([CURRENT, PHONE, LAPTOP]);
@@ -130,7 +131,7 @@ describe("GeneralSettingsPage sessions", () => {
         expect(deleteCalls()).toEqual(["/users/sessions/phone"]);
         expect(toast.success).toHaveBeenCalledExactlyOnceWith("Session terminated successfully");
         expect(screen.getByText("ThinkPad (Linux)")).toBeInTheDocument();
-    });
+   });
 
     it("does nothing when the confirmation is cancelled", async () => {
         const user = await renderPageWith([CURRENT, PHONE]);
@@ -140,7 +141,7 @@ describe("GeneralSettingsPage sessions", () => {
 
         expect(deleteCalls()).toEqual([]);
         expect(screen.getByText("iPhone (iOS)")).toBeInTheDocument();
-    });
+   });
 
     it("keeps the session and shows an error toast when termination is rejected", async () => {
         const user = await renderPageWith([CURRENT, PHONE]);
@@ -151,7 +152,7 @@ describe("GeneralSettingsPage sessions", () => {
 
         await waitFor(() => expect(toast.error).toHaveBeenCalledExactlyOnceWith("Failed to terminate session"));
         expect(screen.getByText("iPhone (iOS)")).toBeInTheDocument();
-    });
+   });
 
     it("reports an unexpected error when terminating a session throws", async () => {
         const user = await renderPageWith([CURRENT, PHONE]);
@@ -162,7 +163,7 @@ describe("GeneralSettingsPage sessions", () => {
 
         await waitFor(() => expect(toast.error).toHaveBeenCalledExactlyOnceWith("An unexpected error occurred while terminating session"));
         expect(logger.error).toHaveBeenCalledWith("Error terminating session", expect.any(Error));
-    });
+   });
 
     it("signs out and goes to the login page after terminating the current session", async () => {
         const user = await renderPageWith([CURRENT, PHONE]);
@@ -175,8 +176,7 @@ describe("GeneralSettingsPage sessions", () => {
         await waitFor(() => expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(ROUTES.LOGIN));
         expect(deleteCalls()).toEqual([API_ENDPOINTS.USERS_SESSIONS_CURRENT]);
         expect(useAuthStore.getState().accessToken).toBeNull();
-        expect(useAuthStore.getState().user).toBeNull();
-    });
+   });
 
     it("stays signed in when terminating the current session fails", async () => {
         const user = await renderPageWith([CURRENT]);
@@ -187,8 +187,8 @@ describe("GeneralSettingsPage sessions", () => {
 
         await waitFor(() => expect(toast.error).toHaveBeenCalledExactlyOnceWith("Failed to terminate session"));
         expect(mocks.replace).not.toHaveBeenCalled();
-        expect(useAuthStore.getState().user).not.toBeNull();
-    });
+        expect(useAuthStore.getState().accessToken).not.toBeNull();
+   });
 
     it("terminates all other sessions and keeps only the current one", async () => {
         const user = await renderPageWith([CURRENT, PHONE, LAPTOP]);
@@ -202,7 +202,7 @@ describe("GeneralSettingsPage sessions", () => {
         expect(deleteCalls()).toEqual([API_ENDPOINTS.USERS_SESSIONS_OTHER]);
         expect(toast.success).toHaveBeenCalledExactlyOnceWith("Successfully logged out of all other devices");
         expect(screen.getByText("MacBook (macOS)")).toBeInTheDocument();
-    });
+   });
 
     it("keeps the other sessions when terminating them is rejected", async () => {
         const user = await renderPageWith([CURRENT, PHONE]);
@@ -213,7 +213,7 @@ describe("GeneralSettingsPage sessions", () => {
 
         await waitFor(() => expect(toast.error).toHaveBeenCalledExactlyOnceWith("Failed to terminate other sessions"));
         expect(screen.getByText("iPhone (iOS)")).toBeInTheDocument();
-    });
+   });
 
     it("reports an unexpected error when terminating other sessions throws", async () => {
         const user = await renderPageWith([CURRENT, PHONE]);
@@ -223,7 +223,7 @@ describe("GeneralSettingsPage sessions", () => {
         await confirmInDialog(user);
 
         await waitFor(() => expect(toast.error).toHaveBeenCalledExactlyOnceWith("An unexpected error occurred while terminating other sessions"));
-    });
+   });
 
     it("falls back to the default token lifetime when the token is not a valid JWT", async () => {
         useAuthStore.setState({accessToken: "not-a-jwt"});
@@ -232,14 +232,14 @@ describe("GeneralSettingsPage sessions", () => {
         await user.click(within(rowOf("iPhone (iOS)")).getByRole("button", {name: "Log out"}));
 
         expect(await screen.findByText(/up to 1 hour to take effect/)).toBeInTheDocument();
-    });
+   });
 });
 
 describe("GeneralSettingsPage account deletion dialog", () => {
     beforeEach(() => {
         stubDesktopViewport();
-        useAuthStore.setState({accessToken: createAccessToken(), user: {email: "ada@example.com", name: "Ada"}});
-    });
+        useAuthStore.setState({accessToken: createAccessToken()});
+   });
 
     it("opens the delete account confirmation from the danger zone", async () => {
         const user = await renderPageWith([CURRENT]);
@@ -247,6 +247,6 @@ describe("GeneralSettingsPage account deletion dialog", () => {
         await user.click(screen.getByRole("button", {name: "Delete Account"}));
 
         expect(await screen.findByLabelText("Please type in your email to confirm.")).toBeInTheDocument();
-    });
+   });
 });
 

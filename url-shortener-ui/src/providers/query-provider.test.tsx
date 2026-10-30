@@ -21,7 +21,7 @@ function renderProviderAndGetClient(): QueryClient {
 
 describe("QueryProvider", () => {
     afterEach(() => {
-        useAuthStore.setState({accessToken: null, user: null});
+        useAuthStore.setState({accessToken: null});
     });
 
     it("forgets every cached response when the user signs out", () => {

@@ -7,41 +7,19 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {toast} from "sonner";
-import {fetchWithAuth} from "@/lib/api";
-import {useAuthStore, UserProfile} from "@/lib/store/auth";
-import {API_ENDPOINTS} from "@/lib/constants";
-import {logger} from "@/lib/logger";
+import {useQueryClient} from "@tanstack/react-query";
+import {useCurrentUser} from "@/lib/hooks/useCurrentUser";
+import {currentUserQueryOptions} from "@/lib/query/user-queries";
+import {saveProfileName} from "@/lib/user-api";
 import {PROFILE_FIELD_CLASS, PROFILE_LABEL_CLASS, ProfileCardSkeleton} from "@/components/settings/ProfileCardSkeleton";
 import {SETTINGS_CARD_WITH_FOOTER_CLASS, SettingsCardFooter} from "@/components/settings/SettingsCardFooter";
 import {PROFILE_FIELD_LABELS} from "@/lib/settings-constants";
 import {withPending} from "@/lib/async-utils";
 import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 
-type NameSaveOutcome = "saved" | "rejected" | "failed";
-
-async function loadProfile(): Promise<UserProfile | null> {
-    try {
-        const res = await fetchWithAuth(API_ENDPOINTS.USERS_ME);
-        return res.ok ? await res.json() : null;
-    } catch (error) {
-        logger.error("Failed to load profile", error);
-        return null;
-    }
-}
-
-async function saveProfileName(name: string): Promise<NameSaveOutcome> {
-    try {
-        const res = await fetchWithAuth(API_ENDPOINTS.USERS_ME_NAME, {method: "PUT", body: JSON.stringify({name})});
-        return res.ok ? "saved" : "rejected";
-    } catch (error) {
-        logger.error("Error updating name", error);
-        return "failed";
-    }
-}
-
 export function ProfileCard() {
-    const user = useAuthStore((state) => state.user);
-    const setUser = useAuthStore((state) => state.setUser);
+    const user = useCurrentUser();
+    const queryClient = useQueryClient();
 
     const [name, setName] = useState(user?.name ?? "");
     const [email, setEmail] = useState(user?.email ?? "");
@@ -64,8 +42,7 @@ export function ProfileCard() {
                 toast.error("An unexpected error occurred while updating profile");
                 return;
             }
-            const profile = await loadProfile();
-            if (profile) setUser(profile);
+            await queryClient.invalidateQueries({queryKey: currentUserQueryOptions.queryKey});
             toast.success("Profile updated successfully");
         });
     };

@@ -4,11 +4,12 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import DashboardLayout from "@/app/(dashboard)/layout";
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS, MAIN_CONTENT_ID, ROUTES, SESSION_CHECK_COPY, SKIP_TO_CONTENT_LABEL} from "@/lib/constants";
-import {hasSessionHint, setSessionHint} from "@/lib/session-hint";
+import {clearSessionHint, hasSessionHint, setSessionHint} from "@/lib/session-hint";
 import {preloadOnIdle} from "@/lib/preload-on-idle";
 import {CreateLinkModal} from "@/components/links/CreateLinkModal";
 import {CreateTagModal} from "@/components/tags/CreateTagModal";
-import {useAuthStore, UserProfile} from "@/lib/store/auth";
+import {useAuthStore} from "@/lib/store/auth";
+import type {UserProfile} from "@/lib/types";
 import {useUIStore} from "@/lib/store/ui";
 import {SHORTCUTS} from "@/lib/keyboard-shortcuts";
 import {useShortcutsStore} from "@/lib/store/shortcuts";
@@ -51,7 +52,8 @@ function renderLayout(): void {
 }
 
 function signIn(): void {
-    useAuthStore.setState({accessToken: "token", user: USER});
+    setSessionHint();
+    vi.mocked(fetchWithAuth).mockImplementation(() => Promise.resolve(Response.json(USER)));
 }
 
 function holdProfileRequest(): void {
@@ -61,17 +63,17 @@ function holdProfileRequest(): void {
 describe("DashboardLayout authentication", () => {
     beforeEach(() => {
         mocks.pathname.current = "/links";
-        useAuthStore.setState({accessToken: null, user: null});
+        useAuthStore.setState({accessToken: null});
         useUIStore.setState({isCreateModalOpen: false, isCreateTagModalOpen: false});
     });
 
-    it("renders the page without fetching the profile when a session already exists", async () => {
+    it("renders the page and loads the profile once when a session already exists", async () => {
         signIn();
 
         renderLayout();
 
         expect(await screen.findByText("page content")).toBeInTheDocument();
-        expect(fetchWithAuth).not.toHaveBeenCalled();
+        await waitFor(() => expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME, expect.anything()));
     });
 
     it("shows a progress message while a session this browser has not seen is verified", () => {
@@ -91,17 +93,16 @@ describe("DashboardLayout authentication", () => {
 
         expect(screen.getByText("page content")).toBeInTheDocument();
         expect(screen.getByRole("navigation")).toBeInTheDocument();
-        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME);
+        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME, expect.anything());
     });
 
-    it("restores the user, remembers the session and renders the page", async () => {
+    it("remembers the session and renders the page once the profile loads", async () => {
         vi.mocked(fetchWithAuth).mockResolvedValue(Response.json(USER));
 
         renderLayout();
 
         expect(await screen.findByText("page content")).toBeInTheDocument();
-        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME);
-        expect(useAuthStore.getState().user).toEqual(USER);
+        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME, expect.anything());
         expect(hasSessionHint()).toBe(true);
         expect(mocks.replace).not.toHaveBeenCalled();
     });
@@ -126,8 +127,8 @@ describe("DashboardLayout authentication", () => {
         expect(hasSessionHint()).toBe(false);
     });
 
-    it("redirects to login when a token exists but the user profile is missing", async () => {
-        useAuthStore.setState({accessToken: "token", user: null});
+    it("redirects to login when a token exists but the profile request is rejected", async () => {
+        useAuthStore.setState({accessToken: "token"});
         vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: 401}));
 
         renderLayout();
@@ -139,7 +140,7 @@ describe("DashboardLayout authentication", () => {
 describe("DashboardLayout when the session cannot be checked", () => {
     beforeEach(() => {
         mocks.pathname.current = "/links";
-        useAuthStore.setState({accessToken: null, user: null});
+        useAuthStore.setState({accessToken: null});
     });
 
     it.each([
@@ -238,7 +239,8 @@ describe("DashboardLayout create action", () => {
     });
 
     it("does not preload anything while the session is still being checked", async () => {
-        useAuthStore.setState({accessToken: null, user: null});
+        useAuthStore.setState({accessToken: null});
+        clearSessionHint();
         holdProfileRequest();
         renderLayout();
 

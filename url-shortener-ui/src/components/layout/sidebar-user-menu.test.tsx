@@ -1,10 +1,13 @@
-import {render, screen} from "@testing-library/react";
+import {screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {SidebarUserMenu} from "@/components/layout/sidebar-user-menu";
 import {fetchWithAuth} from "@/lib/api";
 import {logger} from "@/lib/logger";
+import {currentUserQueryOptions} from "@/lib/query/user-queries";
 import {useAuthStore} from "@/lib/store/auth";
+import type {UserProfile} from "@/lib/types";
+import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 import {ICON_BUTTON_LABELS} from "@/lib/constants";
 import {SETTINGS_ROUTES} from "@/lib/settings-constants";
 
@@ -27,9 +30,15 @@ const SESSION_ENDPOINT = "/users/sessions/current";
 
 type UserSession = ReturnType<typeof userEvent.setup>;
 
+function renderMenuFor(profile: UserProfile | undefined, onNavigate?: () => void): void {
+    const queryClient = createTestQueryClient();
+    if (profile) queryClient.setQueryData(currentUserQueryOptions.queryKey, profile);
+    renderWithQuery(<SidebarUserMenu onNavigate={onNavigate}/>, queryClient);
+}
+
 function renderMenu(onNavigate?: () => void): void {
-    useAuthStore.setState({user: USER, accessToken: "jwt"});
-    render(<SidebarUserMenu onNavigate={onNavigate}/>);
+    useAuthStore.setState({accessToken: "jwt"});
+    renderMenuFor(USER, onNavigate);
 }
 
 async function openMenu(user: UserSession): Promise<void> {
@@ -107,14 +116,13 @@ describe.each([
         expect(fetchWithAuth).not.toHaveBeenCalled();
     });
 
-    it("ends the session, clears the user and returns to login after confirming", async () => {
+    it("ends the session, clears the token and returns to login after confirming", async () => {
         const user = userEvent.setup();
         renderMenu();
 
         await chooseLogOutAndConfirm(user);
 
         expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(SESSION_ENDPOINT, {method: "DELETE"});
-        expect(useAuthStore.getState().user).toBeNull();
         expect(useAuthStore.getState().accessToken).toBeNull();
         expect(navigation.router.replace).toHaveBeenCalledExactlyOnceWith("/login");
     });
@@ -126,7 +134,7 @@ describe.each([
 
         await chooseLogOutAndConfirm(user);
 
-        expect(useAuthStore.getState().user).toBeNull();
+        expect(useAuthStore.getState().accessToken).toBeNull();
         expect(navigation.router.replace).toHaveBeenCalledExactlyOnceWith("/login");
         expect(logger.error).toHaveBeenCalledOnce();
     });
@@ -140,7 +148,7 @@ describe.each([
 
         await user.click(screen.getByRole("button", {name: "Cancel"}));
 
-        expect(useAuthStore.getState().user).toEqual(USER);
+        expect(useAuthStore.getState().accessToken).toBe("jwt");
         expect(navigation.router.replace).not.toHaveBeenCalled();
     });
 });
@@ -152,15 +160,13 @@ describe("SidebarUserMenu trigger", () => {
 
     it("exposes a very long name as a tooltip so it can be truncated", () => {
         const longName = "x".repeat(300);
-        useAuthStore.setState({user: {email: USER.email, name: longName}});
-        render(<SidebarUserMenu/>);
+        renderMenuFor({email: USER.email, name: longName});
 
         expect(screen.getByText(longName)).toHaveAttribute("title", longName);
     });
 
     it("falls back to the email when the user has no name", () => {
-        useAuthStore.setState({user: {email: USER.email, name: ""}});
-        render(<SidebarUserMenu/>);
+        renderMenuFor({email: USER.email, name: ""});
 
         expect(screen.getByText(USER.email)).toBeInTheDocument();
     });
@@ -169,11 +175,10 @@ describe("SidebarUserMenu trigger", () => {
 describe("SidebarUserMenu while the profile loads", () => {
     beforeEach(() => {
         mediaQuery.isDesktop = true;
-        useAuthStore.setState({user: null, accessToken: null});
     });
 
     it("keeps the account menu reachable without showing a name", () => {
-        render(<SidebarUserMenu/>);
+        renderMenuFor(undefined);
 
         const trigger = screen.getByRole("button", {name: ICON_BUTTON_LABELS.ACCOUNT_MENU});
         expect(trigger).toBeEnabled();

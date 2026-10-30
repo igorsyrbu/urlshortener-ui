@@ -68,7 +68,7 @@ describe("fetchWithAuth", () => {
         loginRedirects.mockReset();
         vi.stubGlobal("fetch", fetchMock);
         stubWindowLocation();
-        useAuthStore.setState({accessToken: ACCESS_TOKEN, user: null});
+        useAuthStore.setState({accessToken: ACCESS_TOKEN});
     });
 
     describe("authenticated requests", () => {

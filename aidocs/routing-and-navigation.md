@@ -43,7 +43,7 @@ Why server vs client per file is in [architecture](architecture.md#rendering-mod
 
 Guarding is client-side only; there is no server-side check.
 
-- Everything inside the `(dashboard)` group goes through the session bootstrap in [`src/app/(dashboard)/layout.tsx`](../url-shortener-ui/src/app/(dashboard)/layout.tsx): without a user it calls `/users/me` through `fetchWithAuth`; 401/403 -> `router.replace("/login")`. A browser with the session hint gets the shell and page while that runs; without it "Securing session..." is shown and the page is not rendered. Full description: [architecture](architecture.md#app-bootstrapping).
+- Everything inside the `(dashboard)` group goes through the session bootstrap in [`src/app/(dashboard)/layout.tsx`](../url-shortener-ui/src/app/(dashboard)/layout.tsx): without a cached user it loads `/users/me` (`currentUserQueryOptions`); 401/403 -> `router.replace("/login")`. A browser with the session hint gets the shell and page while that runs; without it "Securing session..." is shown and the page is not rendered. Full description: [architecture](architecture.md#app-bootstrapping).
 - Any later 401 that cannot be recovered by a token refresh makes `fetchWithAuth` hard-redirect to `/login` once ([api-layer](api-layer.md#token-refresh)); a refresh that cannot reach the server (offline, 5xx) does not redirect.
 - Logout (sidebar user menu and the current-session card in settings) calls `DELETE /users/sessions/current`, clears `useAuthStore` and `router.replace`s to `/login` ([features/auth](features/auth.md)).
 - Public pages (no gate): `/login`, `/auth/exchange`, `/auth/ott`, `/inspect/[key]`, `/report-abuse`, `not-found`. The login page does not redirect an already signed-in user away.
