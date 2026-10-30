@@ -36,7 +36,10 @@ function loadConfetti() {
 
 async function celebrateCreatedLink(): Promise<void> {
     const confetti = await loadConfetti();
-    confetti({
+    // The default instance draws in a blob: Web Worker, which the Content-Security-Policy blocks (it has no worker-src),
+    // so no confetti appeared. This one draws on the main thread and needs no policy change.
+    const fireOnMainThread = confetti.create(undefined, {resize: true, useWorker: false});
+    void fireOnMainThread({
         particleCount: CONFETTI_PARTICLE_COUNT,
         spread: CONFETTI_SPREAD,
         origin: {y: CONFETTI_ORIGIN_Y},

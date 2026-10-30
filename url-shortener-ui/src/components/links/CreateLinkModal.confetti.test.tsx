@@ -8,7 +8,7 @@ const confettiModule = vi.hoisted(() => ({loads: 0}));
 
 vi.mock("canvas-confetti", () => {
     confettiModule.loads += 1;
-    return {default: vi.fn()};
+    return {default: {create: vi.fn(() => vi.fn())}};
 });
 vi.mock("@/lib/hooks/useMediaQuery", () => ({useIsDesktop: () => true, useIsMobile: () => false}));
 vi.mock("next/navigation", () => ({useRouter: () => ({push: vi.fn()}), usePathname: () => "/", useSearchParams: () => new URLSearchParams()}));

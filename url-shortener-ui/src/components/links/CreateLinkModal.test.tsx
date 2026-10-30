@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     isDesktop: true,
     routerPush: vi.fn(),
     confetti: vi.fn(),
+    createConfetti: vi.fn(),
 }));
 
 vi.mock("@/lib/hooks/useMediaQuery", () => ({
@@ -28,7 +29,7 @@ vi.mock("next/navigation", () => ({
     usePathname: () => "/",
     useSearchParams: () => new URLSearchParams(),
 }));
-vi.mock("canvas-confetti", () => ({default: mocks.confetti}));
+vi.mock("canvas-confetti", () => ({default: {create: mocks.createConfetti}}));
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 
 const GENERATED_KEY = "gen-key";
@@ -63,6 +64,7 @@ async function submitLink(user: ReturnType<typeof userEvent.setup>, url: string)
 describe("CreateLinkModal", () => {
     beforeEach(() => {
         mocks.isDesktop = true;
+        mocks.createConfetti.mockReturnValue(mocks.confetti);
     });
 
     it("loads the tags for its picker when it opens outside the links page", async () => {
@@ -128,6 +130,17 @@ describe("CreateLinkModal", () => {
         await waitFor(() => expect(invalidateQueries).toHaveBeenCalledExactlyOnceWith({queryKey: queryKeys.links.all}));
         expect(mocks.confetti).toHaveBeenCalledOnce();
         expect(mocks.routerPush).toHaveBeenCalledWith(ROUTES.LINKS, {scroll: false});
+    });
+
+    it("draws the confetti on the main thread, as the security policy blocks the library's blob: worker", async () => {
+        const user = userEvent.setup();
+        mockCreateEndpoint(() => Response.json(createShortLink()));
+        renderModal();
+
+        await submitLink(user, LONG_URL);
+
+        await waitFor(() => expect(mocks.confetti).toHaveBeenCalledOnce());
+        expect(mocks.createConfetti).toHaveBeenCalledWith(undefined, expect.objectContaining({useWorker: false}));
     });
 
     it("leaves the confetti out for people who ask for reduced motion", async () => {

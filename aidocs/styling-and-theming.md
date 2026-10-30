@@ -97,7 +97,7 @@ Details and timing scale: [DESIGN.md](../DESIGN.md) section 6. What the code act
 - Component-level reduced-motion handling that predates the global rule: `PageToolbar` (`useReducedMotion`), in `SegmentedControl` and `BillingPrice` (`motion-safe:` / `motion-reduce:` utilities), in the import progress components (`motion-reduce:*` utilities) and in the analytics time-series chart (`usePrefersReducedMotion` from `lib/hooks/useMediaQuery.ts` turns the recharts animation off; `motion-safe:` for the fade).
 - Chart animations (recharts) are short (`CHART_ANIMATION_MS` = 400 ms) and off with reduced motion. The time-series area also animates data changes (the curve morphs to the new period). Bar charts animate only their first draw (`useFirstDrawAnimation`), because recharts hides bar labels while bars animate and the labels would blink on every update. Pass recharts `content` / label renderers as elements, not inline functions (a new function per render remounts every label).
 - Loading indicators for refreshes that are usually fast get a `delay-300` (it delays both the transition and the `tw-animate-css` animation), so they only appear when the wait is noticeable. Apply the same to new looping or large animations.
-- `canvas-confetti` fires once on link creation (lazy import).
+- `canvas-confetti` fires once on link creation (lazy import), from a main-thread instance (`confetti.create(undefined, {useWorker: false})`): the library's default instance draws in a `blob:` Web Worker, which the Content-Security-Policy blocks.
 
 ## Text truncation and overflow
 
