@@ -57,9 +57,11 @@ export class ServerSentEventDecoder {
     }
 }
 
+/** `onActivity` runs whenever bytes arrive, comments and partial events included, so a caller can watch for a stalled stream. */
 export async function readServerSentEvents(
     response: Response,
     handleEvent: (event: ServerSentEvent) => boolean,
+    onActivity?: () => void,
 ): Promise<void> {
     if (!response.body) return;
     const reader = response.body.getReader();
@@ -68,6 +70,7 @@ export async function readServerSentEvents(
     try {
         while (true) {
             const {value, done} = await reader.read();
+            onActivity?.();
             const events = eventDecoder.push(textDecoder.decode(value, {stream: !done}));
             if (done) events.push(...eventDecoder.finish());
             for (const event of events) {

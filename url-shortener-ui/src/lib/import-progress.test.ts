@@ -5,6 +5,7 @@ import {
     DiscoveredImportSubscription,
     parseImportProgress,
     reconnectDelayMs,
+    STREAM_IDLE_TIMEOUT_MS,
     subscribeToDiscoveredImport,
 } from "@/lib/import-progress";
 
@@ -25,6 +26,19 @@ function progressEvent(processedRows: number, totalRows = TOTAL_ROWS, eventName 
 
 function progressResponse(processedRows: number, totalRows = TOTAL_ROWS): Response {
     return new Response(progressEvent(processedRows, totalRows), {headers: SSE_HEADERS});
+}
+
+const encoder = new TextEncoder();
+
+/** A stream the test writes to; it fails like a real fetch body when the request's signal aborts. */
+function openStreamResponse(signal: AbortSignal | null | undefined): {response: Response; send: (text: string) => void} {
+    let streamController: ReadableStreamDefaultController<Uint8Array> | undefined;
+    const body = new ReadableStream<Uint8Array>({start(controller): void { streamController = controller; }});
+    signal?.addEventListener("abort", () => streamController?.error(new DOMException("Aborted", "AbortError")), {once: true});
+    return {
+        response: new Response(body, {headers: SSE_HEADERS}),
+        send: (text) => streamController?.enqueue(encoder.encode(text)),
+    };
 }
 
 async function settle<T>(promise: Promise<T>): Promise<T> {
@@ -184,6 +198,75 @@ describe("subscribeToDiscoveredImport", () => {
 
         expect(result).toBe("completed");
         expect(fetchWithAuth).toHaveBeenCalledTimes(6);
+    });
+
+    it("starts again at the shortest delay after a stream that delivered progress", async () => {
+        vi.useFakeTimers();
+        vi.mocked(fetchWithAuth)
+            .mockResolvedValueOnce(new Response(null, {status: HTTP_SERVER_ERROR}))
+            .mockResolvedValueOnce(new Response(null, {status: HTTP_SERVER_ERROR}))
+            .mockResolvedValueOnce(progressResponse(3))
+            .mockResolvedValueOnce(progressResponse(TOTAL_ROWS));
+        const subscription = subscribeToDiscoveredImport(createDiscoveryOptions());
+        await vi.advanceTimersByTimeAsync(reconnectDelayMs(0) + reconnectDelayMs(1));
+        expect(fetchWithAuth).toHaveBeenCalledTimes(3);
+
+        await vi.advanceTimersByTimeAsync(reconnectDelayMs(0));
+
+        expect(fetchWithAuth).toHaveBeenCalledTimes(4);
+        await expect(subscription).resolves.toBe("completed");
+    });
+
+    it("reconnects when an open stream stays silent for the idle timeout", async () => {
+        vi.useFakeTimers();
+        vi.mocked(fetchWithAuth)
+            .mockImplementationOnce(async (_endpoint, options) => openStreamResponse(options?.signal).response)
+            .mockResolvedValueOnce(progressResponse(TOTAL_ROWS));
+        const options = createDiscoveryOptions();
+        const subscription = subscribeToDiscoveredImport(options);
+
+        await vi.advanceTimersByTimeAsync(STREAM_IDLE_TIMEOUT_MS - 1);
+        expect(options.onConnectionChange).not.toHaveBeenCalledWith("reconnecting");
+        await vi.advanceTimersByTimeAsync(1 + reconnectDelayMs(0));
+
+        await expect(subscription).resolves.toBe("completed");
+        expect(options.onConnectionChange).toHaveBeenCalledWith("reconnecting");
+        expect(fetchWithAuth).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps a slow stream open as long as bytes keep arriving, comments included", async () => {
+        vi.useFakeTimers();
+        let send: (text: string) => void = () => undefined;
+        vi.mocked(fetchWithAuth).mockImplementationOnce(async (_endpoint, options) => {
+            const stream = openStreamResponse(options?.signal);
+            send = stream.send;
+            return stream.response;
+        });
+        const subscription = subscribeToDiscoveredImport(createDiscoveryOptions());
+
+        for (let tick = 0; tick < 3; tick++) {
+            await vi.advanceTimersByTimeAsync(STREAM_IDLE_TIMEOUT_MS - 1);
+            send(": keepalive\n\n");
+        }
+        send(progressEvent(TOTAL_ROWS));
+
+        await expect(subscription).resolves.toBe("completed");
+        expect(fetchWithAuth).toHaveBeenCalledOnce();
+    });
+
+    it("gives up on a connection that never answers within the idle timeout and tries again", async () => {
+        vi.useFakeTimers();
+        vi.mocked(fetchWithAuth)
+            .mockImplementationOnce((_endpoint, options) => new Promise<Response>((_resolve, reject) => {
+                options?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), {once: true});
+            }))
+            .mockResolvedValueOnce(progressResponse(TOTAL_ROWS));
+        const subscription = subscribeToDiscoveredImport(createDiscoveryOptions());
+
+        await vi.advanceTimersByTimeAsync(STREAM_IDLE_TIMEOUT_MS + reconnectDelayMs(0));
+
+        await expect(subscription).resolves.toBe("completed");
+        expect(fetchWithAuth).toHaveBeenCalledTimes(2);
     });
 
     it("reconnects when the stream switches to a different job", async () => {

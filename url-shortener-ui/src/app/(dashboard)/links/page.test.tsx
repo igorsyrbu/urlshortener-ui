@@ -562,18 +562,48 @@ describe("links page", () => {
             expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.IDLE);
         });
 
-        it("closes the import stream when navigating away from links", () => {
+        it("keeps a running import's stream open while the user is on another page", () => {
             openUpdatesStream();
             act(() => { useImportTracker.getState().trackSubmission(createImportJob()); });
             const signal = vi.mocked(fetchWithAuth).mock.calls.at(-1)?.[1]?.signal;
             const {unmount} = renderWithQuery(<LinksPage/>);
-            expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.ACTIVE);
 
             unmount();
 
-            expect(signal?.aborted).toBe(true);
-            expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.IDLE);
-            expect(useImportTracker.getState().progress).toBeNull();
+            expect(signal?.aborted).toBe(false);
+            expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.ACTIVE);
+        });
+
+        it("forgets a finished import when the user leaves links", () => {
+            useImportTracker.setState({status: IMPORT_TRACKING_STATUS.COMPLETED, progress: {processedRows: 10, totalRows: 10}});
+            const {unmount} = renderWithQuery(<LinksPage/>);
+
+            unmount();
+
+            expect(useImportTracker.getState()).toMatchObject({status: IMPORT_TRACKING_STATUS.IDLE, progress: null});
+        });
+
+        it("asks for a running import only on the first visit to links", async () => {
+            const first = renderWithQuery(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Your links will live here"});
+            first.unmount();
+
+            renderWithQuery(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Your links will live here"});
+
+            expect(getRequestsTo(API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES)).toHaveLength(1);
+        });
+
+        it("asks again on the next visit after the import stream was interrupted", async () => {
+            const first = renderWithQuery(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Your links will live here"});
+            first.unmount();
+            useImportTracker.setState({status: IMPORT_TRACKING_STATUS.INTERRUPTED});
+
+            renderWithQuery(<LinksPage/>);
+            await screen.findByRole("heading", {name: "Your links will live here"});
+
+            expect(getRequestsTo(API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES)).toHaveLength(2);
         });
     });
 });

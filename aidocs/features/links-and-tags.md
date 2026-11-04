@@ -130,17 +130,18 @@ Upload flow: choose a file in `ImportCsvDropzone` (click or drag; `accept=".csv,
 `status` is one of `idle`, `discovering`, `active`, `reconnecting`, `interrupted`, `completed`.
 
 ```
-idle --ensureDiscovery--> discovering --first progress--> active <--> reconnecting
+idle --discoverOnLinksVisit / ensureDiscovery--> discovering --first progress--> active <--> reconnecting
 idle --trackSubmission(job)--> active           active/reconnecting --stream ends--> completed
 interrupted <-- non-retryable stream error (from any tracking state)
 completed/idle --reset / stopTracking--> idle
 ```
 
-- `ensureDiscovery()` runs when `/links` mounts (and `stopTracking()` on unmount). It opens the SSE stream to find an import already running (started in another tab or before a reload). An empty stream returns the tracker to `idle`.
+- `/links` calls `discoverOnLinksVisit()` on mount. It runs `ensureDiscovery()` (opens the SSE stream to find an import already running, started in another tab or before a reload; an empty stream returns the tracker to `idle`) only on the first visit of the page load, or again after the stream was `interrupted`; later visits send no request. On unmount the page calls `reset()`, which forgets a `completed` import but leaves a running one alone: its stream stays open while the user is on other pages, and completion refreshes links and tags wherever the user is.
+- Sign-out (the access token going to `null`) stops tracking and lets the next user's first `/links` visit ask again; a token refresh changes nothing.
 - `trackSubmission(job)` after an upload: a job already `COMPLETED` goes straight to `completed`; otherwise it starts the stream in `active`.
 - Progress events carry only `processedRows` and `totalRows`. `parseImportProgress` rejects malformed counters; `applyTrackedProgress` ignores regressions; a changed `totalRows` is treated as a different job and aborts the stream. The stream is terminal when `processedRows === totalRows`.
 - Reconnects and stream timeouts are handled by `subscribeToDiscoveredImport` ([API layer](../api-layer.md#sse-client-import-progress)); a non-retryable error ends in `interrupted`.
-- On completion `refreshLinksAndTagsOnce()` refetches links (page 1) and tags once per run. Per-row success counts are not known from SSE; the "N imported, M failed" line appears only when the upload response itself was already `COMPLETED`.
+- On completion `refreshLinksAndTagsOnce()` refreshes links and tags once per run (`refreshServerStateAfter("importCompleted")`). Per-row success counts are not known from SSE; the "N imported, M failed" line appears only when the upload response itself was already `COMPLETED`.
 - A generation counter and `AbortController` in the module make late callbacks from a replaced stream harmless. `resetImportTrackerForTests()` is the test reset helper (see [Testing](../testing.md)).
 
 ### UI states

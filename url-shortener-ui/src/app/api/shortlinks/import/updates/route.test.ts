@@ -2,6 +2,10 @@ import {describe, expect, it, vi, type Mock} from "vitest";
 import {GET} from "@/app/api/shortlinks/import/updates/route";
 import {getBackendApiBaseUrl} from "@/lib/backend-url";
 import {API_ENDPOINTS} from "@/lib/constants";
+import {HTTP_BAD_GATEWAY} from "@/lib/http-status";
+import {logger} from "@/lib/logger";
+
+vi.mock("@/lib/logger", () => ({logger: {error: vi.fn()}}));
 
 const BACKEND_URL = `${getBackendApiBaseUrl()}${API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES}`;
 const ROUTE_URL = "http://localhost:3000/api/shortlinks/import/updates";
@@ -122,9 +126,36 @@ describe("import updates route", () => {
         expect(await response.text()).toBe("boom");
     });
 
-    it("propagates a backend connection failure", async () => {
+    it("answers an unreachable backend with a readable 502 problem, which the client retries", async () => {
         vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("connect ECONNREFUSED")));
 
-        await expect(GET(requestWith())).rejects.toThrow("connect ECONNREFUSED");
+        const response = await GET(requestWith());
+
+        expect(response.status).toBe(HTTP_BAD_GATEWAY);
+        expect(response.headers.get("Content-Type")).toBe("application/problem+json");
+        expect(response.headers.get("Cache-Control")).toBe("no-store");
+        expect(await response.json()).toEqual({status: HTTP_BAD_GATEWAY, detail: "The import progress service is unreachable."});
+        expect(logger.error).toHaveBeenCalledWith("Import progress backend unreachable", expect.any(TypeError));
+    });
+
+    it("logs nothing when the browser hung up before the backend answered", async () => {
+        const clientConnection = new AbortController();
+        vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => {
+            clientConnection.abort();
+            throw new DOMException("Aborted", "AbortError");
+        }));
+
+        await GET(requestWith(AUTHORIZED, clientConnection.signal));
+
+        expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it("sends no Connection header, which HTTP/2 forbids", async () => {
+        stubBackend(sseResponse());
+
+        const response = await GET(requestWith());
+
+        expect(response.headers.has("Connection")).toBe(false);
+        await response.body?.cancel();
     });
 });

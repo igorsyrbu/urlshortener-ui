@@ -18,7 +18,8 @@ export type DiscoveredImportResult = "completed" | "empty";
 
 const RECONNECT_BASE_DELAY_MS = 2000;
 const MAX_RECONNECT_DELAY_MS = 60_000;
-const STREAM_TIMEOUT_MS = 315_000;
+/** No bytes for this long means the connection is dead (a proxy can keep it open silently): reconnect instead of waiting. */
+export const STREAM_IDLE_TIMEOUT_MS = 45_000;
 
 export function parseImportProgress(data: string): LinkImportProgressDTO {
     const value: unknown = JSON.parse(data);
@@ -60,7 +61,8 @@ function isRetryableSubscriptionError(error: unknown): boolean {
     return true;
 }
 
-async function fetchImportUpdates(signal: AbortSignal): Promise<Response> {    const response = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES, {
+async function fetchImportUpdates(signal: AbortSignal): Promise<Response> {
+    const response = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES, {
         headers: {Accept: "text/event-stream"}, cache: "no-store", signal,
     });
     if (!response.ok) {
@@ -76,9 +78,39 @@ async function fetchImportUpdates(signal: AbortSignal): Promise<Response> {    c
 
 type DiscoveredStreamOutcome = DiscoveredImportResult | "incomplete";
 
+interface IdleWatchdog {
+    signal: AbortSignal;
+    /** Restarts the countdown; call on every sign of life. */
+    rearm: () => void;
+    stop: () => void;
+}
+
+/** Aborts its signal after `STREAM_IDLE_TIMEOUT_MS` without a `rearm`, covering both the connect and every later read. */
+function startIdleWatchdog(): IdleWatchdog {
+    const controller = new AbortController();
+    let timer = setTimeout(() => controller.abort(), STREAM_IDLE_TIMEOUT_MS);
+    return {
+        signal: controller.signal,
+        rearm: () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => controller.abort(), STREAM_IDLE_TIMEOUT_MS);
+        },
+        stop: () => clearTimeout(timer),
+    };
+}
+
 async function readDiscoveredImport(options: DiscoveredImportSubscription): Promise<DiscoveredStreamOutcome> {
-    const signal = AbortSignal.any([options.signal, AbortSignal.timeout(STREAM_TIMEOUT_MS)]);
-    const response = await fetchImportUpdates(signal);
+    const watchdog = startIdleWatchdog();
+    try {
+        return await readWatchedImport(options, watchdog);
+    } finally {
+        watchdog.stop();
+    }
+}
+
+async function readWatchedImport(options: DiscoveredImportSubscription, watchdog: IdleWatchdog): Promise<DiscoveredStreamOutcome> {
+    const response = await fetchImportUpdates(AbortSignal.any([options.signal, watchdog.signal]));
+    watchdog.rearm();
     options.onConnectionChange("processing");
     let sawEvent = false;
     let establishedTotal: number | null = null;
@@ -96,7 +128,7 @@ async function readDiscoveredImport(options: DiscoveredImportSubscription): Prom
         hasCompleted = progress.processedRows === progress.totalRows;
         return hasCompleted;
     };
-    await readServerSentEvents(response, handleEvent);
+    await readServerSentEvents(response, handleEvent, watchdog.rearm);
     if (hasCompleted) return "completed";
     // No events means the backend has no ongoing job for this user.
     if (!sawEvent) return "empty";
@@ -106,16 +138,28 @@ async function readDiscoveredImport(options: DiscoveredImportSubscription): Prom
 export async function subscribeToDiscoveredImport(options: DiscoveredImportSubscription): Promise<DiscoveredImportResult> {
     // Reconnect internally with exponential backoff until the stream reports a
     // terminal state, the backend confirms no ongoing import, or the caller aborts.
+    // A stream that delivered progress was healthy, so the next attempt starts again at the shortest delay; only
+    // consecutive attempts without progress back off.
     let failedAttempt = 0;
+    let hasDeliveredProgress = false;
+    const watchedOptions: DiscoveredImportSubscription = {
+        ...options,
+        onProgress: (progress) => {
+            hasDeliveredProgress = true;
+            options.onProgress(progress);
+        },
+    };
     for (;;) {
         options.signal.throwIfAborted();
+        hasDeliveredProgress = false;
         try {
-            const outcome = await readDiscoveredImport(options);
+            const outcome = await readDiscoveredImport(watchedOptions);
             if (outcome !== "incomplete") return outcome;
         } catch (error) {
             options.signal.throwIfAborted();
             if (!isRetryableSubscriptionError(error)) throw error;
         }
+        if (hasDeliveredProgress) failedAttempt = 0;
         options.onConnectionChange("reconnecting");
         await waitToReconnect(options.signal, reconnectDelayMs(failedAttempt));
         failedAttempt += 1;

@@ -3,6 +3,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
 import {buildDiscoveredJob, IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
 import {refreshServerStateAfter} from "@/lib/query/active-query-client";
+import {useAuthStore} from "@/lib/store/auth";
 import {createImportJob} from "@/test/import-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
@@ -42,7 +43,11 @@ function mockUpdatesStream(stream: { response: Response; fail: (error: unknown) 
 
 describe("shared import tracker", () => {
     beforeEach(() => { resetImportTrackerForTests(); });
-    afterEach(() => { vi.useRealTimers(); resetImportTrackerForTests(); });
+    afterEach(() => {
+        vi.useRealTimers();
+        useAuthStore.setState({accessToken: null});
+        resetImportTrackerForTests();
+    });
 
     it("tracks a submission, ignores backwards snapshots, and refreshes once on completion", async () => {
         const stream = openStream();
@@ -136,7 +141,7 @@ describe("shared import tracker", () => {
         expect(useImportTracker.getState().progress).toBeNull();
     });
 
-    it("stops the active stream when navigating away and rediscovers on return", async () => {
+    it("aborts the stream when tracking stops and opens a new one on the next discovery", async () => {
         const stream = openStream();
         mockUpdatesStream(stream);
         act(() => { useImportTracker.getState().trackSubmission(createImportJob()); });
@@ -153,5 +158,54 @@ describe("shared import tracker", () => {
         await waitFor(() => expect(useImportTracker.getState().progress?.processedRows).toBe(4));
         expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.ACTIVE);
         expect(vi.mocked(fetchWithAuth)).toHaveBeenCalledTimes(2);
+    });
+
+    it("asks for a running import on the first links visit only", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValue(new Response("", {headers: {"Content-Type": "text/event-stream"}}));
+
+        act(() => { useImportTracker.getState().discoverOnLinksVisit(); });
+        await waitFor(() => expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.IDLE));
+        act(() => { useImportTracker.getState().discoverOnLinksVisit(); });
+
+        expect(fetchWithAuth).toHaveBeenCalledOnce();
+    });
+
+    it("asks again on a links visit after the stream was interrupted", () => {
+        vi.mocked(fetchWithAuth).mockReturnValue(new Promise<Response>(() => undefined));
+        act(() => { useImportTracker.getState().discoverOnLinksVisit(); });
+        useImportTracker.setState({status: IMPORT_TRACKING_STATUS.INTERRUPTED});
+
+        act(() => { useImportTracker.getState().discoverOnLinksVisit(); });
+
+        expect(fetchWithAuth).toHaveBeenCalledTimes(2);
+        expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.DISCOVERING);
+    });
+
+    it("stops a running import's stream on sign-out and asks again for the next user", () => {
+        useAuthStore.setState({accessToken: "token-1"});
+        const stream = openStream();
+        mockUpdatesStream(stream);
+        act(() => { useImportTracker.getState().discoverOnLinksVisit(); });
+        const signal = vi.mocked(fetchWithAuth).mock.calls[0][1]?.signal;
+
+        act(() => { useAuthStore.getState().logout(); });
+
+        expect(signal?.aborted).toBe(true);
+        expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.IDLE);
+        vi.mocked(fetchWithAuth).mockReturnValue(new Promise<Response>(() => undefined));
+        useAuthStore.setState({accessToken: "token-2"});
+        act(() => { useImportTracker.getState().discoverOnLinksVisit(); });
+        expect(fetchWithAuth).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps tracking when the access token is refreshed", () => {
+        useAuthStore.setState({accessToken: "token-1"});
+        const stream = openStream();
+        mockUpdatesStream(stream);
+        act(() => { useImportTracker.getState().trackSubmission(createImportJob()); });
+
+        act(() => { useAuthStore.getState().setAccessToken("token-2"); });
+
+        expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.ACTIVE);
     });
 });

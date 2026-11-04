@@ -90,7 +90,7 @@ Rules that follow from this:
 
 ### SSE pass-through route handler
 
-`GET /api/shortlinks/import/updates` ([`src/app/api/shortlinks/import/updates/route.ts`](../url-shortener-ui/src/app/api/shortlinks/import/updates/route.ts)) forwards the caller's `Authorization` header (401 without a backend call when it is missing) to the backend at `getBackendApiBaseUrl() + /shortlinks/import/updates` and streams the body back unchanged as `text/event-stream`. It exists so the stream is not buffered by the generic `/api/:path*` rewrite ([configuration](configuration.md#nextconfigts)). The body must be forwarded as a stream, never read into memory. Client side: [api-layer](api-layer.md) and [features/links-and-tags](features/links-and-tags.md).
+`GET /api/shortlinks/import/updates` ([`src/app/api/shortlinks/import/updates/route.ts`](../url-shortener-ui/src/app/api/shortlinks/import/updates/route.ts)) forwards the caller's `Authorization` header (401 without a backend call when it is missing) to the backend at `getBackendApiBaseUrl() + /shortlinks/import/updates` and streams the body back unchanged as `text/event-stream`; an unreachable backend becomes a `502` JSON problem instead of an HTML error page. It exists so the stream is not buffered by the generic `/api/:path*` rewrite ([configuration](configuration.md#nextconfigts)). The body must be forwarded as a stream, never read into memory. Client side: [api-layer](api-layer.md) and [features/links-and-tags](features/links-and-tags.md).
 
 ## Main data flows (overview)
 

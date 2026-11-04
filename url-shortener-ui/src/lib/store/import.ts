@@ -3,6 +3,7 @@ import type {LinkImportJobDTO, LinkImportProgressDTO} from "@/lib/api-types";
 import {subscribeToDiscoveredImport} from "@/lib/import-progress";
 import {logger} from "@/lib/logger";
 import {refreshServerStateAfter} from "@/lib/query/active-query-client";
+import {useAuthStore} from "@/lib/store/auth";
 
 export const IMPORT_TRACKING_STATUS = {
     IDLE: "idle",
@@ -22,6 +23,12 @@ interface ImportTrackerState {
     job: LinkImportJobDTO | null;
     trackSubmission: (job: LinkImportJobDTO) => void;
     ensureDiscovery: () => void;
+    /**
+     * The links page calls this on every mount. It asks the backend for a running import only on the first visit of
+     * the page load, or again after the last stream was interrupted; a running import keeps its stream while the user
+     * is on other pages.
+     */
+    discoverOnLinksVisit: () => void;
     stopTracking: () => void;
     reset: () => void;
 }
@@ -31,6 +38,7 @@ const DISCOVERED_JOB_ID = "discovered-import";
 let activeController: AbortController | null = null;
 let activeGeneration = 0;
 let didRefreshCurrentRun = false;
+let hasDiscoveredThisPageLoad = false;
 
 export function buildDiscoveredJob(progress: LinkImportProgressDTO): LinkImportJobDTO {
     const timestamp = new Date().toISOString();
@@ -164,6 +172,12 @@ export const useImportTracker = create<ImportTrackerState>((set, get) => ({
         watchSharedUpdates(controller, generation, hadPrior);
     },
 
+    discoverOnLinksVisit: () => {
+        if (hasDiscoveredThisPageLoad && get().status !== IMPORT_TRACKING_STATUS.INTERRUPTED) return;
+        hasDiscoveredThisPageLoad = true;
+        get().ensureDiscovery();
+    },
+
     stopTracking: () => {
         stopRun();
         didRefreshCurrentRun = false;
@@ -180,8 +194,16 @@ export const useImportTracker = create<ImportTrackerState>((set, get) => ({
     },
 }));
 
+// A stream left running across pages must not outlive the session that opened it, and the next user is asked again.
+useAuthStore.subscribe((state, previousState) => {
+    if (previousState.accessToken === null || state.accessToken !== null) return;
+    useImportTracker.getState().stopTracking();
+    hasDiscoveredThisPageLoad = false;
+});
+
 export function resetImportTrackerForTests(): void {
     stopRun();
     didRefreshCurrentRun = false;
+    hasDiscoveredThisPageLoad = false;
     useImportTracker.setState({status: IMPORT_TRACKING_STATUS.IDLE, progress: null, job: null});
 }

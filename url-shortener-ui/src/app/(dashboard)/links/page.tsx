@@ -102,8 +102,8 @@ function LinksPageContent() {
     }, []);
 
     useEffect(() => {
-        useImportTracker.getState().ensureDiscovery();
-        return () => { useImportTracker.getState().stopTracking(); };
+        useImportTracker.getState().discoverOnLinksVisit();
+        return () => { useImportTracker.getState().reset(); };
     }, []);
 
     const resetUrlToFirstPage = useCallback((): void => {
