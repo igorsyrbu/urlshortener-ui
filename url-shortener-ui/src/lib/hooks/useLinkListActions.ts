@@ -5,6 +5,7 @@ import {DEFAULT_LINK_TITLE} from "@/lib/constants";
 import {deleteShortLink, saveArchiveStatus, type LinksPage, type LinksPageParams} from "@/lib/links-api";
 import {logger} from "@/lib/logger";
 import {queryKeys} from "@/lib/query/query-keys";
+import {refreshAfter, type ServerStateChange} from "@/lib/query/invalidation";
 import type {LinkItem} from "@/lib/types";
 
 interface LinkListActions {
@@ -24,7 +25,7 @@ function withLinkChanged(page: LinksPage, linkId: string, change: Partial<LinkIt
     return {...page, links: page.links.map((link) => (link.id === linkId ? {...link, ...change} : link))};
 }
 
-/** Optimistic edits of the page on screen; every action ends by refetching the links, as the server has the last word. */
+/** Optimistic edits of the page on screen; every action ends with `refreshAfter` its change, as the server has the last word. */
 export function useLinkListActions(params: LinksPageParams): LinkListActions {
     const queryClient = useQueryClient();
     const pageKey = queryKeys.links.page(params);
@@ -37,9 +38,9 @@ export function useLinkListActions(params: LinksPageParams): LinkListActions {
         return previousPage;
     };
 
-    const finishEdit = (isSaved: boolean, previousPage: LinksPage | undefined): void => {
+    const finishEdit = (change: ServerStateChange, isSaved: boolean, previousPage: LinksPage | undefined): void => {
         if (!isSaved && previousPage) queryClient.setQueryData<LinksPage>(pageKey, previousPage);
-        void queryClient.invalidateQueries({queryKey: queryKeys.links.all});
+        void refreshAfter(queryClient, change);
     };
 
     const setLinkArchived = async (link: LinkItem, archived: boolean): Promise<boolean> => {
@@ -51,21 +52,22 @@ export function useLinkListActions(params: LinksPageParams): LinkListActions {
         const leavesList = archived && !params.showArchived;
         const previousPage = await editPage((page) => (leavesList ? withoutLink(page, link.id) : withLinkChanged(page, link.id, {isActive: !archived})));
         const isSaved = await saveArchiveStatus(link, archived);
-        finishEdit(isSaved, previousPage);
+        finishEdit("linkArchived", isSaved, previousPage);
         return isSaved;
     };
 
     const deleteLink = async (linkId: string): Promise<boolean> => {
         const previousPage = await editPage((page) => withoutLink(page, linkId));
         const isDeleted = await deleteShortLink(linkId);
-        finishEdit(isDeleted, previousPage);
+        finishEdit("linkDeleted", isDeleted, previousPage);
         return isDeleted;
     };
 
     const applySavedLink = (savedLink: LinkItem): void => {
         const title = savedLink.title.trim() ? savedLink.title : DEFAULT_LINK_TITLE;
-        queryClient.setQueryData<LinksPage>(pageKey, (page) => page && withLinkChanged(page, savedLink.id, {...savedLink, title}));
-        void queryClient.invalidateQueries({queryKey: queryKeys.links.all});
+        // Every cached page, so going back to another page or filter that holds the link does not show the old version.
+        queryClient.setQueriesData<LinksPage>({queryKey: queryKeys.links.all}, (page) => page && withLinkChanged(page, savedLink.id, {...savedLink, title}));
+        void refreshAfter(queryClient, "linkSaved");
     };
 
     return {setLinkArchived, deleteLink, applySavedLink};

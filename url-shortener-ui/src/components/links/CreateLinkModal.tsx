@@ -6,7 +6,7 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {Drawer, DrawerContent, DrawerDescription, DrawerTitle} from "@/components/ui/drawer";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useQueryClient} from "@tanstack/react-query";
-import {queryKeys} from "@/lib/query/query-keys";
+import {refreshAfter} from "@/lib/query/invalidation";
 import {AnimatePresence, MotionConfig, motion} from "framer-motion";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
 import {CreateLinkSuccess} from "@/components/links/CreateLinkSuccess";
@@ -81,7 +81,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
         // The confetti chunk downloads on the first link; the list refresh must not wait for it.
         void celebrateCreatedLink();
         router.push(ROUTES.LINKS, {scroll: false});
-        void queryClient.invalidateQueries({queryKey: queryKeys.links.all});
+        void refreshAfter(queryClient, "linkCreated");
     };
 
     return (

@@ -6,6 +6,7 @@ import {DEFAULT_LINK_TITLE} from "@/lib/constants";
 import {useLinkListActions} from "@/lib/hooks/useLinkListActions";
 import {deleteShortLink, saveArchiveStatus, type LinksPage, type LinksPageParams} from "@/lib/links-api";
 import {queryKeys} from "@/lib/query/query-keys";
+import {STALE_AFTER} from "@/lib/query/invalidation";
 import {createLinkItem} from "@/test/link-utils";
 import {createTestQueryClient} from "@/test/query-utils";
 
@@ -57,14 +58,25 @@ describe("useLinkListActions", () => {
         expect(cachedPage(SHOWING_ARCHIVED)?.links.map((link) => [link.id, link.isActive])).toEqual([["a", false], ["b", true]]);
     });
 
-    it("refetches every links query once the server has answered", async () => {
+    it("refetches every links query once the server has answered an archive", async () => {
         vi.mocked(saveArchiveStatus).mockResolvedValueOnce(true);
         const invalidate = vi.spyOn(queryClient, "invalidateQueries");
         const actions = renderActions(HIDING_ARCHIVED);
 
         await act(() => actions.current.setLinkArchived(LINK_A, true));
 
-        expect(invalidate).toHaveBeenCalledWith({queryKey: queryKeys.links.all});
+        expect(invalidate.mock.calls).toEqual(STALE_AFTER.linkArchived.map((queryKey) => [{queryKey}]));
+    });
+
+    it("also refreshes the tags page's link counts after a delete", async () => {
+        vi.mocked(deleteShortLink).mockResolvedValueOnce(true);
+        const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+        const actions = renderActions(HIDING_ARCHIVED);
+
+        await act(() => actions.current.deleteLink("a"));
+
+        expect(invalidate.mock.calls).toEqual(STALE_AFTER.linkDeleted.map((queryKey) => [{queryKey}]));
+        expect(STALE_AFTER.linkDeleted).toContainEqual(queryKeys.tags.withLinkCounts);
     });
 
     it("refuses without calling the API when the link has no key", async () => {
@@ -117,7 +129,17 @@ describe("useLinkListActions", () => {
             ["a", "New", "https://example.com/new"],
             ["b", "Other", LINK_B.longUrl],
         ]);
-        expect(invalidate).toHaveBeenCalledWith({queryKey: queryKeys.links.all});
+        expect(invalidate.mock.calls).toEqual(STALE_AFTER.linkSaved.map((queryKey) => [{queryKey}]));
+    });
+
+    it("shows a saved link in every cached page that holds it, not only the one on screen", () => {
+        const otherFilter: LinksPageParams = {...HIDING_ARCHIVED, search: "old"};
+        queryClient.setQueryData(queryKeys.links.page(otherFilter), {...PAGE, links: [LINK_A]});
+        const actions = renderActions(HIDING_ARCHIVED);
+
+        act(() => actions.current.applySavedLink({...LINK_A, title: "New"}));
+
+        expect(queryClient.getQueryData<LinksPage>(queryKeys.links.page(otherFilter))?.links[0].title).toBe("New");
     });
 
     it("shows the default title for a link saved without one", () => {

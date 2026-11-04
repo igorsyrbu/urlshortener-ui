@@ -1,7 +1,7 @@
 import {act, render} from "@testing-library/react";
 import {useQueryClient, type QueryClient} from "@tanstack/react-query";
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {invalidateServerState} from "@/lib/query/active-query-client";
+import {refreshServerStateAfter} from "@/lib/query/active-query-client";
 import {queryKeys} from "@/lib/query/query-keys";
 import {useAuthStore} from "@/lib/store/auth";
 import {QueryProvider} from "@/providers/query-provider";
@@ -38,7 +38,7 @@ describe("QueryProvider", () => {
         const queryClient = renderProviderAndGetClient();
         const invalidate = vi.spyOn(queryClient, "invalidateQueries");
 
-        invalidateServerState(queryKeys.links.all);
+        refreshServerStateAfter("linkArchived");
 
         expect(invalidate).toHaveBeenCalledExactlyOnceWith({queryKey: queryKeys.links.all});
     });

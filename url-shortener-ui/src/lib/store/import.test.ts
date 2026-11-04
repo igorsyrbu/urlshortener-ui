@@ -2,17 +2,14 @@ import {act, waitFor} from "@testing-library/react";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
 import {buildDiscoveredJob, IMPORT_TRACKING_STATUS, resetImportTrackerForTests, useImportTracker} from "@/lib/store/import";
-import {invalidateServerState} from "@/lib/query/active-query-client";
-import {queryKeys} from "@/lib/query/query-keys";
+import {refreshServerStateAfter} from "@/lib/query/active-query-client";
 import {createImportJob} from "@/test/import-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
-vi.mock("@/lib/query/active-query-client", () => ({invalidateServerState: vi.fn()}));
+vi.mock("@/lib/query/active-query-client", () => ({refreshServerStateAfter: vi.fn()}));
 
 function expectLinksAndTagsRefreshedOnce(): void {
-    expect(invalidateServerState).toHaveBeenCalledTimes(2);
-    expect(invalidateServerState).toHaveBeenCalledWith(queryKeys.links.all);
-    expect(invalidateServerState).toHaveBeenCalledWith(queryKeys.tags.all);
+    expect(refreshServerStateAfter).toHaveBeenCalledExactlyOnceWith("importCompleted");
 }
 
 function progressChunk(processedRows: number, totalRows = 10): Uint8Array {
@@ -76,7 +73,7 @@ describe("shared import tracker", () => {
         expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.DISCOVERING);
         await waitFor(() => expect(useImportTracker.getState().status).toBe(IMPORT_TRACKING_STATUS.IDLE));
         expect(useImportTracker.getState().progress).toBeNull();
-        expect(invalidateServerState).not.toHaveBeenCalled();
+        expect(refreshServerStateAfter).not.toHaveBeenCalled();
     });
 
     it("discovers an ongoing import without a retained POST response", async () => {

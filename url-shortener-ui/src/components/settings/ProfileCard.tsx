@@ -9,7 +9,7 @@ import {Input} from "@/components/ui/input";
 import {toast} from "sonner";
 import {useQueryClient} from "@tanstack/react-query";
 import {useCurrentUser} from "@/lib/hooks/useCurrentUser";
-import {currentUserQueryOptions} from "@/lib/query/user-queries";
+import {refreshAfter} from "@/lib/query/invalidation";
 import {saveProfileName} from "@/lib/user-api";
 import {PROFILE_FIELD_CLASS, PROFILE_LABEL_CLASS, ProfileCardSkeleton} from "@/components/settings/ProfileCardSkeleton";
 import {SETTINGS_CARD_WITH_FOOTER_CLASS, SettingsCardFooter} from "@/components/settings/SettingsCardFooter";
@@ -42,7 +42,7 @@ export function ProfileCard() {
                 toast.error("An unexpected error occurred while updating profile");
                 return;
             }
-            await queryClient.invalidateQueries({queryKey: currentUserQueryOptions.queryKey});
+            await refreshAfter(queryClient, "profileNameSaved");
             toast.success("Profile updated successfully");
         });
     };

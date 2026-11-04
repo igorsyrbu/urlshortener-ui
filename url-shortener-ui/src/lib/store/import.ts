@@ -2,8 +2,7 @@ import {create} from "zustand";
 import type {LinkImportJobDTO, LinkImportProgressDTO} from "@/lib/api-types";
 import {subscribeToDiscoveredImport} from "@/lib/import-progress";
 import {logger} from "@/lib/logger";
-import {invalidateServerState} from "@/lib/query/active-query-client";
-import {queryKeys} from "@/lib/query/query-keys";
+import {refreshServerStateAfter} from "@/lib/query/active-query-client";
 
 export const IMPORT_TRACKING_STATUS = {
     IDLE: "idle",
@@ -75,8 +74,7 @@ function stopRun(): void {
 function refreshLinksAndTagsOnce(): void {
     if (didRefreshCurrentRun) return;
     didRefreshCurrentRun = true;
-    invalidateServerState(queryKeys.links.all);
-    invalidateServerState(queryKeys.tags.all);
+    refreshServerStateAfter("importCompleted");
 }
 
 function applyTrackedProgress(progress: LinkImportProgressDTO): void {

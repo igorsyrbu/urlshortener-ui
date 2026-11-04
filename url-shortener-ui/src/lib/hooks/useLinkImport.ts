@@ -10,7 +10,7 @@ import {logger} from "@/lib/logger";
 import {attempt} from "@/lib/async-utils";
 import {buildDiscoveredJob, IMPORT_TRACKING_STATUS, useImportTracker, type ImportTrackingStatus} from "@/lib/store/import";
 import {useQueryClient} from "@tanstack/react-query";
-import {queryKeys} from "@/lib/query/query-keys";
+import {refreshAfter} from "@/lib/query/invalidation";
 import {
     buildFileTooLargeMessage, buildTooManyRowsMessage, IMPORT_EMPTY_FILE_MESSAGE, IMPORT_FAILED_MESSAGE,
 } from "@/components/links/import-export-constants";
@@ -113,8 +113,7 @@ export function useLinkImport(): UseLinkImportResult {
 
     const handleRefreshLinks = (): void => {
         router.push(ROUTES.LINKS, {scroll: false});
-        void queryClient.invalidateQueries({queryKey: queryKeys.links.all});
-        void queryClient.invalidateQueries({queryKey: queryKeys.tags.all});
+        void refreshAfter(queryClient, "importCompleted");
     };
 
     return {session, isUploading, handleImport, handleReset, handleRefreshLinks};

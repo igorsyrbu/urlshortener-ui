@@ -1,4 +1,5 @@
 import type {FetchQueryOptions, QueryClient, QueryKey} from "@tanstack/react-query";
+import {refreshAfter, type ServerStateChange} from "@/lib/query/invalidation";
 
 let activeQueryClient: QueryClient | null = null;
 
@@ -7,9 +8,9 @@ export function setActiveQueryClient(queryClient: QueryClient | null): void {
     activeQueryClient = queryClient;
 }
 
-/** Marks the matching queries stale and refetches the ones on screen; does nothing outside the dashboard. */
-export function invalidateServerState(queryKey: QueryKey): void {
-    void activeQueryClient?.invalidateQueries({queryKey});
+/** `refreshAfter` for code outside React; does nothing outside the dashboard. */
+export function refreshServerStateAfter(change: ServerStateChange): void {
+    if (activeQueryClient) void refreshAfter(activeQueryClient, change);
 }
 
 /** Starts loading a query ahead of need (an intent to open a form); does nothing outside the dashboard. */

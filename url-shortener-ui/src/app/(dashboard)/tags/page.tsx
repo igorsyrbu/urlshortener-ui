@@ -16,11 +16,11 @@ import {useDebounce} from "@/lib/hooks/useDebounce";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 import {preloadOnIdle} from "@/lib/preload-on-idle";
 import {logger} from "@/lib/logger";
-import {attempt, withPending} from "@/lib/async-utils";
+import {attempt} from "@/lib/async-utils";
 import {TAG_DELETE_FAILED_MESSAGE} from "@/lib/tag-constants";
 import {toast} from "sonner";
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
-import {CARD_LIST_CLASS, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, SEARCH_DEBOUNCE_MS, TAGS_LOAD_COPY} from "@/lib/constants";
+import {CARD_LIST_CLASS, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, SEARCH_DEBOUNCE_MS, TAGS_LOAD_COPY} from "@/lib/constants";
 
 function loadEditTagModal() {
     return import("@/components/tags/EditTagModal").then((modalModule) => modalModule.EditTagModal);
@@ -42,7 +42,6 @@ export default function TagsPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [tagToDelete, setTagToDelete] = useState<TagItem | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
     const [searchInput, setSearchInput] = useState("");
     const debouncedSearch = useDebounce(searchInput, SEARCH_DEBOUNCE_MS);
     // Enter, Clear and Escape apply the box's text at once; typing applies it after the debounce. Local state, so the
@@ -65,19 +64,22 @@ export default function TagsPage() {
         setDeleteModalOpen(true);
     };
 
-    const confirmDelete = async () => {
+    // The tag leaves the list at once (useTagMutations); a refused delete puts it back and offers a retry.
+    const removeTag = async (tagId: string): Promise<void> => {
+        const result = await attempt(() => deleteTag(tagId));
+        if (result.isSuccess) return;
+        logger.error("Failed to delete tag", result.error, {tagId});
+        toast.error(TAG_DELETE_FAILED_MESSAGE, {
+            action: {label: LINK_ACTION_COPY.RETRY, onClick: () => void removeTag(tagId)},
+        });
+    };
+
+    const confirmDelete = () => {
         if (!tagToDelete?.id) return;
         const tagId = tagToDelete.id;
-        await withPending(setIsDeleting, async () => {
-            const result = await attempt(() => deleteTag(tagId));
-            if (!result.isSuccess) {
-                logger.error("Failed to delete tag", result.error, {tagId});
-                toast.error(TAG_DELETE_FAILED_MESSAGE);
-                return;
-            }
-            setDeleteModalOpen(false);
-            setTagToDelete(null);
-        });
+        setDeleteModalOpen(false);
+        setTagToDelete(null);
+        void removeTag(tagId);
     };
 
     const handleEdit = (tag: TagItem) => {
@@ -150,7 +152,6 @@ export default function TagsPage() {
                     open={deleteModalOpen}
                     onOpenChange={setDeleteModalOpen}
                     onConfirm={confirmDelete}
-                    loading={isDeleting}
                     tagName={tagToDelete?.name}
                     tagColor={tagToDelete?.color}
                 />

@@ -8,7 +8,7 @@ interface DeleteTagModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onConfirm: () => void;
-    loading: boolean;
+    loading?: boolean;
     tagName?: string;
     tagColor?: BadgeVariant;
 }
@@ -38,7 +38,7 @@ function TagPreviewCard({tagName, tagColor}: TagPreviewCardProps) {
     );
 }
 
-export function DeleteTagModal({tagName, tagColor, ...props}: DeleteTagModalProps) {
+export function DeleteTagModal({tagName, tagColor, loading = false, ...props}: DeleteTagModalProps) {
     const previewContent = tagName ? <TagPreviewCard tagName={tagName} tagColor={tagColor}/> : undefined;
 
     return (
@@ -49,6 +49,7 @@ export function DeleteTagModal({tagName, tagColor, ...props}: DeleteTagModalProp
             previewContent={previewContent}
             confirmationValue={tagName}
             confirmationType="tag name"
+            loading={loading}
             {...props}
         />
     );

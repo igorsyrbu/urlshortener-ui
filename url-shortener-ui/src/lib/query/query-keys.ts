@@ -13,6 +13,8 @@ export const queryKeys = {
     tags: {
         all: ["tags"] as const,
         list: (params: TagListParams) => ["tags", "list", params] as const,
+        /** Every list with link counts, whatever its search: query keys match objects by the fields they name. */
+        withLinkCounts: ["tags", "list", {withLinksCount: true}] as const,
     },
     analytics: {all: ["analytics"] as const},
     user: {all: ["user"] as const},

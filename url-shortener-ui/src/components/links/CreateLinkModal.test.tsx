@@ -4,7 +4,7 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import {CreateLinkModal} from "@/components/links/CreateLinkModal";
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS, DEFAULT_LINK_TITLE, ROUTES, SHORT_KEY_TAKEN_MESSAGE} from "@/lib/constants";
-import {queryKeys} from "@/lib/query/query-keys";
+import {STALE_AFTER} from "@/lib/query/invalidation";
 import {allTagsQueryOptions} from "@/lib/query/tag-queries";
 import {getRequestsTo, parseRequestBody, routeFetchWithAuth} from "@/test/link-form-utils";
 import {createShortLink} from "@/test/link-utils";
@@ -127,7 +127,7 @@ describe("CreateLinkModal", () => {
 
         await submitLink(user, LONG_URL);
 
-        await waitFor(() => expect(invalidateQueries).toHaveBeenCalledExactlyOnceWith({queryKey: queryKeys.links.all}));
+        await waitFor(() => expect(invalidateQueries.mock.calls).toEqual(STALE_AFTER.linkCreated.map((queryKey) => [{queryKey}])));
         expect(mocks.confetti).toHaveBeenCalledOnce();
         expect(mocks.routerPush).toHaveBeenCalledWith(ROUTES.LINKS, {scroll: false});
     });

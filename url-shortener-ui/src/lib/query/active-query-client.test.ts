@@ -1,25 +1,25 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {invalidateServerState, prefetchServerState, setActiveQueryClient} from "@/lib/query/active-query-client";
+import {prefetchServerState, refreshServerStateAfter, setActiveQueryClient} from "@/lib/query/active-query-client";
 import {queryKeys} from "@/lib/query/query-keys";
 import {createTestQueryClient} from "@/test/query-utils";
 
-describe("invalidateServerState", () => {
+describe("server state outside React", () => {
     afterEach(() => {
         setActiveQueryClient(null);
     });
 
-    it("invalidates the matching queries of the active client", () => {
+    it("refreshes what a change makes stale on the active client", () => {
         const queryClient = createTestQueryClient();
         const invalidate = vi.spyOn(queryClient, "invalidateQueries");
         setActiveQueryClient(queryClient);
 
-        invalidateServerState(queryKeys.links.all);
+        refreshServerStateAfter("importCompleted");
 
-        expect(invalidate).toHaveBeenCalledExactlyOnceWith({queryKey: queryKeys.links.all});
+        expect(invalidate.mock.calls).toEqual([[{queryKey: queryKeys.links.all}], [{queryKey: queryKeys.tags.all}]]);
     });
 
     it("does nothing while no dashboard is mounted", () => {
-        expect(() => invalidateServerState(queryKeys.links.all)).not.toThrow();
+        expect(() => refreshServerStateAfter("importCompleted")).not.toThrow();
     });
 
     it("prefetches a query on the active client", () => {

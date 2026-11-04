@@ -1,10 +1,11 @@
 import {act, screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import {toast} from "sonner";
+import {toast, Toaster} from "sonner";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import TagsPage from "./page";
 import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS, LINKS_LOAD_COPY, SEARCH_DEBOUNCE_MS, TAGS_LOAD_COPY, TRY_AGAIN_LABEL} from "@/lib/constants";
+import {API_ENDPOINTS, LINK_ACTION_COPY, LINKS_LOAD_COPY, SEARCH_DEBOUNCE_MS, TAGS_LOAD_COPY, TRY_AGAIN_LABEL} from "@/lib/constants";
+import {HTTP_INTERNAL_SERVER_ERROR} from "@/lib/http-status";
 import {logger} from "@/lib/logger";
 import {queryKeys} from "@/lib/query/query-keys";
 import {useUIStore} from "@/lib/store/ui";
@@ -27,6 +28,13 @@ function requestedUrls(): string[] {
     return vi.mocked(fetchWithAuth).mock.calls.map(([url]) => String(url));
 }
 
+
+async function confirmTagDelete(user: ReturnType<typeof userEvent.setup>, tagName: string): Promise<void> {
+    await user.click(screen.getAllByRole("button", {name: "More actions for tag"})[0]);
+    await user.click(await screen.findByRole("menuitem", {name: /Delete/}));
+    await user.type(await screen.findByPlaceholderText("Type the tag name here"), tagName);
+    await user.click(screen.getByRole("button", {name: "Delete tag"}));
+}
 describe("tags page", () => {
     beforeEach(() => {
         vi.useFakeTimers({shouldAdvanceTime: true});
@@ -217,25 +225,38 @@ describe("tags page", () => {
         expect(screen.getByText("Sales")).toBeInTheDocument();
     });
 
-    it("keeps the tag list and shows a toast when deleting fails", async () => {
+    it("removes the tag and closes the dialog before the server answers", async () => {
+        const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        mockTagsResponse([createTag({id: "tag-1", name: "Marketing"}), createTag({id: "tag-2", name: "Sales"})]);
+        renderWithQuery(<TagsPage/>);
+        await screen.findByText("Marketing");
+        vi.mocked(fetchWithAuth).mockReturnValue(new Promise<Response>(() => undefined));
+
+        await confirmTagDelete(user, "Marketing");
+
+        await waitFor(() => expect(screen.queryByText("Marketing")).not.toBeInTheDocument());
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(screen.getByText("Sales")).toBeInTheDocument();
+    });
+
+    it("puts the tag back and offers a retry when deleting fails", async () => {
         const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
         const showError = vi.spyOn(toast, "error");
         mockTagsResponse([createTag({name: "Marketing"})]);
-        renderWithQuery(<TagsPage/>);
+        renderWithQuery(<><TagsPage/><Toaster/></>);
         await screen.findByText("Marketing");
-        vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: 500}));
+        vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null, {status: HTTP_INTERNAL_SERVER_ERROR}));
 
-        await user.click(screen.getByRole("button", {name: "More actions for tag"}));
-        await user.click(await screen.findByRole("menuitem", {name: /Delete/}));
-        await user.type(await screen.findByPlaceholderText("Type the tag name here"), "Marketing");
-        await user.click(screen.getByRole("button", {name: "Delete tag"}));
+        await confirmTagDelete(user, "Marketing");
 
-        await waitFor(() => expect(showError).toHaveBeenCalledExactlyOnceWith(TAG_DELETE_FAILED_MESSAGE));
+        await waitFor(() => expect(showError).toHaveBeenCalledExactlyOnceWith(TAG_DELETE_FAILED_MESSAGE, expect.objectContaining({
+            action: expect.objectContaining({label: LINK_ACTION_COPY.RETRY}),
+        })));
+        expect(await screen.findByText("Marketing")).toBeInTheDocument();
         expect(logger.error).toHaveBeenCalledWith("Failed to delete tag", expect.any(Error), {tagId: "tag-1"});
-        // The delete dialog stays open on failure, so the page behind it is aria-hidden by Radix.
-        expect(screen.getByRole("button", {name: "More actions for tag", hidden: true})).toBeInTheDocument();
-        expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument();
-        expect(screen.queryByRole("button", {name: "Dismiss"})).not.toBeInTheDocument();
+
+        await user.click(await screen.findByRole("button", {name: LINK_ACTION_COPY.RETRY}));
+        await waitFor(() => expect(vi.mocked(fetchWithAuth).mock.calls.filter(([url]) => url === `${API_ENDPOINTS.TAGS}/tag-1`)).toHaveLength(2));
     });
 
     it("opens the edit form for the chosen tag", async () => {

@@ -5,6 +5,8 @@ import {describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
 import {ApiError} from "@/lib/api-request";
 import {API_ENDPOINTS} from "@/lib/constants";
+import {HTTP_NO_CONTENT} from "@/lib/http-status";
+import {STALE_AFTER} from "@/lib/query/invalidation";
 import {ERROR_COPY} from "@/lib/errors";
 import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import {allTagsQueryOptions, tagsWithCountQueryOptions} from "@/lib/query/tag-queries";
@@ -148,6 +150,16 @@ describe("useTagMutations", () => {
             expectAllCachedLists(queryClient, [{...updated, linkCount: 4}, untouched]);
         });
 
+        it("shows the edit in every cached list before the server answers", async () => {
+            const original = createTag({id: "tag-1", name: "Marketing", color: "blue", linkCount: 4});
+            vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise<Response>(() => undefined));
+            const {mutations, queryClient} = renderMutations([original]);
+
+            void mutations.updateTag("tag-1", "  Sales ", "green");
+
+            await vi.waitFor(() => expectAllCachedLists(queryClient, [{...original, name: "Sales", color: "green"}]));
+        });
+
         it("rejects with the server message and keeps the cache when the update fails", async () => {
             const original = createTag();
             vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response("Name taken", {status: 409}));
@@ -184,6 +196,26 @@ describe("useTagMutations", () => {
             await mutations.deleteTag("tag-1");
 
             expectAllCachedLists(queryClient, [kept]);
+        });
+
+        it("removes the tag from every cached list before the server answers", async () => {
+            const kept = createTag({id: "tag-2", name: "Kept"});
+            vi.mocked(fetchWithAuth).mockReturnValueOnce(new Promise<Response>(() => undefined));
+            const {mutations, queryClient} = renderMutations([createTag({id: "tag-1"}), kept]);
+
+            void mutations.deleteTag("tag-1");
+
+            await vi.waitFor(() => expectAllCachedLists(queryClient, [kept]));
+        });
+
+        it("refreshes the links once the tag is deleted, as links that carried it change on the server", async () => {
+            vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: HTTP_NO_CONTENT}));
+            const {mutations, queryClient} = renderMutations([createTag({id: "tag-1"})]);
+            const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+
+            await mutations.deleteTag("tag-1");
+
+            expect(invalidate.mock.calls).toEqual(STALE_AFTER.tagDeleted.map((queryKey) => [{queryKey}]));
         });
 
         it("keeps the tag and explains the failure when deletion fails", async () => {
