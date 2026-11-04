@@ -27,5 +27,8 @@ export const queryKeys = {
     user: {all: ["user"] as const},
     preferences: {all: ["preferences"] as const},
     sessions: {all: ["sessions"] as const},
-    billing: {all: ["billing"] as const},
+    billing: {
+        all: ["billing"] as const,
+        subscription: ["billing", "subscription"] as const,
+    },
 } as const;

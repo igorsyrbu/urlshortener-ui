@@ -2,7 +2,6 @@ import {act, renderHook} from "@testing-library/react";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
 import {BILLING_COPY} from "@/lib/billing-constants";
-import {PORTAL_RETURN_STORAGE_KEY} from "@/lib/billing-portal-return";
 import {useBillingPortal} from "@/lib/hooks/useBillingPortal";
 import {logger} from "@/lib/logger";
 import {allowTestBillingOrigins, createFakeBillingTab, TEST_BILLING_ORIGINS, type FakeBillingTab} from "@/test/billing-utils";
@@ -39,14 +38,13 @@ describe("useBillingPortal", () => {
         expect(result.current.isManaging).toBe(true);
     });
 
-    it("sends the opened tab to the portal and remembers that the portal was opened", async () => {
+    it("sends the opened tab to the portal", async () => {
         const {replaceLocation} = openFakeTab();
         const {result} = renderHook(() => useBillingPortal());
 
         await act(() => result.current.handleManage());
 
         expect(replaceLocation).toHaveBeenCalledExactlyOnceWith(PORTAL_URL);
-        expect(sessionStorage.getItem(PORTAL_RETURN_STORAGE_KEY)).not.toBeNull();
         expect(result.current.isManaging).toBe(false);
     });
 
@@ -75,7 +73,7 @@ describe("useBillingPortal", () => {
         expect(result.current.errorMessage).toBeNull();
     });
 
-    it("closes the empty tab and remembers nothing when the portal URL arrives after the page unmounted", async () => {
+    it("closes the empty tab when the portal URL arrives after the page unmounted", async () => {
         const {close, replaceLocation} = openFakeTab();
         let respond = (_response: Response): void => undefined;
         vi.mocked(fetchWithAuth).mockReturnValue(new Promise<Response>((resolve) => { respond = resolve; }));
@@ -91,7 +89,6 @@ describe("useBillingPortal", () => {
 
         expect(replaceLocation).not.toHaveBeenCalled();
         expect(close).toHaveBeenCalledOnce();
-        expect(sessionStorage.getItem(PORTAL_RETURN_STORAGE_KEY)).toBeNull();
         expect(logger.error).not.toHaveBeenCalled();
     });
 });

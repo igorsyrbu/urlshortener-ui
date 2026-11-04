@@ -20,7 +20,6 @@ import {SkeletonText} from "@/components/ui/skeleton-text";
 
 interface BillingCurrentPlanCardProps {
     subscription: BillingSubscription;
-    scheduledSwitch: ScheduledPeriodSwitch | null;
     portal: BillingPortalState;
     isLoading: boolean;
     /** Another billing action is running; Manage waits for it. */
@@ -93,7 +92,7 @@ function renderManageButton(portal: BillingPortalState, isActionPending: boolean
     );
 }
 
-export function BillingCurrentPlanCard({subscription, scheduledSwitch, portal, isLoading, isActionPending = false}: BillingCurrentPlanCardProps) {
+export function BillingCurrentPlanCard({subscription, portal, isLoading, isActionPending = false}: BillingCurrentPlanCardProps) {
     if (isLoading) {
         // The status lives on the card, not beside the sections: an extra first child would cost "Current plan" its first:pt-0.
         return (
@@ -102,8 +101,8 @@ export function BillingCurrentPlanCard({subscription, scheduledSwitch, portal, i
             </Card>
         );
     }
-    const effectiveSwitch = subscription.pendingSwitch ?? scheduledSwitch;
-    const status = getPlanStatus(subscription, effectiveSwitch !== null);
+    const {pendingSwitch} = subscription;
+    const status = getPlanStatus(subscription, pendingSwitch !== null);
     const isPro = isProSubscription(subscription);
     const planName = getPlanName(subscription);
 
@@ -115,7 +114,7 @@ export function BillingCurrentPlanCard({subscription, scheduledSwitch, portal, i
                     <Badge variant={status.variant}>{status.label}</Badge>
                 </div>
                 {renderPeriodNote(subscription)}
-                {effectiveSwitch !== null && renderScheduledSwitch(effectiveSwitch)}
+                {pendingSwitch !== null && renderScheduledSwitch(pendingSwitch)}
                 {portal.errorMessage && <SettingsCallout tone="destructive" isAlert>{portal.errorMessage}</SettingsCallout>}
             </CardContent>
             {isPro && <SettingsCardFooter>{renderManageButton(portal, isActionPending)}</SettingsCardFooter>}

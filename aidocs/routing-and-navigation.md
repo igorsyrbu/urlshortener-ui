@@ -20,7 +20,7 @@ The UI uses the App Router exclusively (`src/app/`); there is no Pages Router an
 | `/dashboard` | `(dashboard)/dashboard/page.tsx` | server, static | Placeholder card ("Dashboard Content (Mock)"). |
 | `/settings` | `(dashboard)/settings/page.tsx` | HTTP 307 from `next.config.ts` `redirects()`; the `redirect()`-only page is a fallback | Redirects to `SETTINGS_ROUTES.DEFAULT` (`/settings/general`). Nothing in the app links here. |
 | `/settings/general` | `(dashboard)/settings/general/page.tsx` | client | Profile, appearance, theme, preferences, sessions, danger zone. |
-| `/settings/billing` | `(dashboard)/settings/billing/page.tsx` | server wrapper | `BillingSettingsProvider` + `BillingSettings` (client). |
+| `/settings/billing` | `(dashboard)/settings/billing/page.tsx` | server wrapper | `BillingSettings` (client). |
 | `/inspect/[key]` | `inspect/[key]/page.tsx` | server, async | Public link inspector (preview card, destination URL, report link). Answers HTTP 404 with its own `not-found.tsx` ("Link not found") when the preview returns 404. |
 | `/report-abuse?shortUrl=` | `(legal)/report-abuse/page.tsx` | server, async | Public abuse report form; `shortUrl` prefills the field. |
 | `/api/shortlinks/import/updates` | `api/shortlinks/import/updates/route.ts` | route handler | SSE pass-through, not a page. See [architecture](architecture.md#sse-pass-through-route-handler). |

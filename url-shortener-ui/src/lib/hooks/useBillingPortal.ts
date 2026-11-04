@@ -9,7 +9,6 @@ import {
 } from "@/lib/billing-api";
 import {HTTP_NOT_FOUND, HTTP_TOO_MANY_REQUESTS} from "@/lib/http-status";
 import {BILLING_COPY, buildRateLimitedMessage} from "@/lib/billing-constants";
-import {markPortalOpened} from "@/lib/billing-portal-return";
 import {logger} from "@/lib/logger";
 import {openBlankBillingTab, showBillingUrlInTab} from "@/lib/billing-redirect";
 import {useAbortOnUnmount} from "@/lib/hooks/useAbortOnUnmount";
@@ -40,7 +39,6 @@ async function openPortalInTab(portalTab: Window | null, signal: AbortSignal): P
         const portalUrl = await createBillingPortalUrl(signal);
         if (signal.aborted) return {kind: "aborted"};
         showBillingUrlInTab(portalTab, portalUrl);
-        markPortalOpened();
         return {kind: "opened"};
     } catch (error) {
         return signal.aborted || isUnauthorizedBillingError(error) ? {kind: "aborted"} : {kind: "failed", error};

@@ -15,6 +15,8 @@ export const STALE_AFTER = {
     tagDeleted: [queryKeys.links.all],
     importCompleted: [queryKeys.links.all, queryKeys.tags.all],
     profileNameSaved: [queryKeys.user.all],
+    /** Checkout or the yearly switch answered 409: the plan changed elsewhere (another tab, the portal). */
+    billingConflict: [queryKeys.billing.subscription],
 } as const satisfies Record<string, readonly QueryKey[]>;
 
 export type ServerStateChange = keyof typeof STALE_AFTER;

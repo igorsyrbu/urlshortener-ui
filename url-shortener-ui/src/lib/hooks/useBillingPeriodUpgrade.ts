@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useState} from "react";
+import {useState} from "react";
 import {
     BillingApiError,
     isUnauthorizedBillingError,
@@ -17,10 +17,8 @@ import {useCooldown} from "@/lib/hooks/useCooldown";
 export interface BillingPeriodUpgradeState {
     isScheduling: boolean;
     errorMessage: string | null;
-    scheduledSwitch: ScheduledPeriodSwitch | null;
     /** True while a rate limit's delay runs; the switch button waits for it. */
     isCoolingDown: boolean;
-    clearScheduledSwitch: () => void;
     handleSwitch: () => Promise<void>;
 }
 
@@ -34,27 +32,24 @@ function resolvePeriodUpgradeErrorMessage(error: unknown): string {
     return BILLING_COPY.PERIOD_UPGRADE_FAILED;
 }
 
-export function useBillingPeriodUpgrade(onConflict: () => void, onScheduled?: () => void): BillingPeriodUpgradeState {
+export function useBillingPeriodUpgrade(
+    onConflict: () => void, onScheduled: (scheduledSwitch: ScheduledPeriodSwitch) => void,
+): BillingPeriodUpgradeState {
     const [isScheduling, setIsScheduling] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [scheduledSwitch, setScheduledSwitch] = useState<ScheduledPeriodSwitch | null>(null);
     const startRequest = useAbortOnUnmount();
     const {isCoolingDown, startCooldown} = useCooldown();
-    const clearScheduledSwitch = useCallback((): void => {
-        setScheduledSwitch(null);
-    }, []);
 
     async function handleSwitch(): Promise<void> {
-        if (isScheduling || isCoolingDown || scheduledSwitch !== null) return;
+        if (isScheduling || isCoolingDown) return;
         setIsScheduling(true);
         setErrorMessage(null);
         const signal = startRequest();
         const result = await attempt(() => scheduleBillingPeriodUpgrade(signal));
         if (signal.aborted) return;
         if (result.isSuccess) {
-            setScheduledSwitch({effectiveDate: result.value.effectiveDate ?? null});
+            onScheduled({effectiveDate: result.value.effectiveDate ?? null});
             setIsScheduling(false);
-            onScheduled?.();
             return;
         }
         if (isUnauthorizedBillingError(result.error)) {
@@ -72,5 +67,5 @@ export function useBillingPeriodUpgrade(onConflict: () => void, onScheduled?: ()
         setIsScheduling(false);
     }
 
-    return {isScheduling, errorMessage, scheduledSwitch, isCoolingDown, clearScheduledSwitch, handleSwitch};
+    return {isScheduling, errorMessage, isCoolingDown, handleSwitch};
 }

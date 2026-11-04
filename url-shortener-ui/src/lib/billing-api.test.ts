@@ -39,7 +39,7 @@ describe("getBillingSubscription", () => {
 
         const subscription = await getBillingSubscription();
 
-        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.BILLING_SUBSCRIPTION);
+        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.BILLING_SUBSCRIPTION, {signal: undefined});
         expect(subscription).toEqual({planId: "free", cancelAtPeriodEnd: false, pendingSwitch: null});
     });
 

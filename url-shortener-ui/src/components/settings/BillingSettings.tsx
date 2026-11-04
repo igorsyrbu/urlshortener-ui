@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useId, useState} from "react";
+import {useId, useState} from "react";
 import dynamic from "next/dynamic";
 import {Button} from "@/components/ui/button";
 import {BillingCurrentPlanCard} from "@/components/settings/BillingCurrentPlanCard";
@@ -10,8 +10,7 @@ import {SETTINGS_SECTION_COPY} from "@/lib/settings-constants";
 import {BillingCycleSelector} from "@/components/settings/BillingCycleSelector";
 import {BillingPlanCard} from "@/components/settings/BillingPlanCard";
 import {BILLING_COPY, BILLING_PLANS, isProSubscription} from "@/lib/billing-constants";
-import {clearPortalReturn, peekPortalReturn} from "@/lib/billing-portal-return";
-import {useBillingSettings} from "@/components/settings/BillingSettingsProvider";
+import {useBillingSettings} from "@/lib/hooks/useBillingSettings";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 
 const PeriodSwitchConfirmModal = dynamic(
@@ -20,38 +19,15 @@ const PeriodSwitchConfirmModal = dynamic(
 );
 
 export function BillingSettings() {
-    const {cycle, handleCycleChange, handlePortalReturn, subscription, checkout, periodUpgrade, portal, isActionPending} = useBillingSettings();
+    const {cycle, handleCycleChange, subscription, checkout, periodUpgrade, portal, isActionPending} = useBillingSettings();
     const isPro = isProSubscription(subscription.subscription);
     const isBusy = subscription.isLoading || isActionPending;
     // A plan button upgrades or switches; after either answered 429, both wait out the delay.
     const isPlanActionCoolingDown = checkout.isCoolingDown || periodUpgrade.isCoolingDown;
-    const hasScheduledSwitch = periodUpgrade.scheduledSwitch !== null || subscription.subscription.pendingSwitch !== null;
+    const hasScheduledSwitch = subscription.subscription.pendingSwitch !== null;
     const [isSwitchConfirmOpen, setIsSwitchConfirmOpen] = useState(false);
     const hasOpenedSwitchConfirm = useHasBeenOpened(isSwitchConfirmOpen);
     const plansHeadingId = useId();
-
-    useEffect(() => {
-        // The flag is cleared only after a successful refresh, so a failed one is tried again on the next return.
-        async function refreshOnReturn(): Promise<void> {
-            if (!peekPortalReturn()) return;
-            if (await handlePortalReturn()) clearPortalReturn();
-        }
-
-        function handleVisibilityChange(): void {
-            if (document.visibilityState === "visible") void refreshOnReturn();
-        }
-
-        function handleFocus(): void {
-            void refreshOnReturn();
-        }
-
-        window.addEventListener("focus", handleFocus);
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-        return () => {
-            window.removeEventListener("focus", handleFocus);
-            document.removeEventListener("visibilitychange", handleVisibilityChange);
-        };
-    }, [handlePortalReturn]);
 
     function handleUpgrade(): void {
         if (isPro && cycle === "yearly") {
@@ -67,8 +43,7 @@ export function BillingSettings() {
     }
 
     function isPeriodSwitchable(planId: string): boolean {
-        return isPro && planId === "pro" && cycle === "yearly" && periodUpgrade.scheduledSwitch === null
-            && subscription.subscription.pendingSwitch === null;
+        return isPro && planId === "pro" && cycle === "yearly" && !hasScheduledSwitch;
     }
 
     if (subscription.errorMessage) {
@@ -83,8 +58,7 @@ export function BillingSettings() {
     return (
         <div className={SETTINGS_SECTION_LIST_CLASS}>
             <SettingsSection {...SETTINGS_SECTION_COPY.CURRENT_PLAN}>
-                <BillingCurrentPlanCard subscription={subscription.subscription} scheduledSwitch={periodUpgrade.scheduledSwitch}
-                                        portal={portal} isLoading={subscription.isLoading} isActionPending={isActionPending || portal.isCoolingDown}/>
+                <BillingCurrentPlanCard subscription={subscription.subscription} portal={portal} isLoading={subscription.isLoading} isActionPending={isActionPending || portal.isCoolingDown}/>
             </SettingsSection>
             <section aria-labelledby={plansHeadingId} className="flex min-w-0 flex-col gap-4 py-8 last:pb-0">
                 <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

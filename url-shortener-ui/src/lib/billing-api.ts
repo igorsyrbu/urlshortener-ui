@@ -1,4 +1,5 @@
 import {fetchWithAuth} from "@/lib/api";
+import {ApiError} from "@/lib/api-request";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {
     BILLING_PERIOD_BY_CYCLE,
@@ -13,14 +14,16 @@ import {parseBillingUrl} from "@/lib/billing-redirect";
 import {parseRetryAfterSeconds} from "@/lib/retry-after";
 import {HTTP_TOO_MANY_REQUESTS, HTTP_UNAUTHORIZED} from "@/lib/http-status";
 
-export class BillingApiError extends Error {
-    readonly status: number;
+/**
+ * An `ApiError`, so queries retry it by the shared status rule. Its message is for the logs: billing shows its own copy
+ * per status.
+ */
+export class BillingApiError extends ApiError {
     readonly retryAfterSeconds: number | null;
 
     constructor(status: number, message: string, retryAfterSeconds: number | null = null) {
-        super(message);
+        super(status, message);
         this.name = "BillingApiError";
-        this.status = status;
         this.retryAfterSeconds = retryAfterSeconds;
     }
 }
@@ -56,8 +59,8 @@ function parsePeriodUpgradePayload(payload: unknown): BillingPeriodUpgradeRespon
     return effectiveDate === undefined ? {status} : {status, effectiveDate};
 }
 
-export async function getBillingSubscription(): Promise<BillingSubscription> {
-    const response = await fetchWithAuth(API_ENDPOINTS.BILLING_SUBSCRIPTION);
+export async function getBillingSubscription(signal?: AbortSignal): Promise<BillingSubscription> {
+    const response = await fetchWithAuth(API_ENDPOINTS.BILLING_SUBSCRIPTION, {signal});
     if (!response.ok) throwBillingError(response, `Failed to load subscription: ${response.status}`);
     const dto: BillingSubscriptionDto = await response.json();
     return toBillingSubscription(dto);

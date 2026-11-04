@@ -330,10 +330,8 @@ Use these regression checks to verify portal return refreshes and scheduled-swit
    `MOCK_BILLING_SCENARIO=pro-monthly pnpm dev:mock` in one terminal, run `pnpm build` in another, then start the UI
    with `pnpm --filter=url-shortener-ui start`; sign in and repeat the same steps.
 
-Use a single app tab for these reproductions. The return flag
-`sessionStorage["urlshortener:billing:portal-return"]` is scoped to the tab that opened the portal and consumed by the
-first eligible focus/visibility event. Reading `null` after returning is expected and does not prove the flag was never
-written.
+Use a single app tab for these reproductions. The subscription reloads whenever the app tab becomes visible again, so
+returning from the portal tab is what triggers the request.
 The decisive evidence is the portal POST followed by the subscription GET and its response versus the visible text.
 Set `MOCK_BILLING_TRACE=true` before starting the mock server to also see these API requests in its terminal output;
 the trace excludes query strings, credentials, and hosted session URLs.

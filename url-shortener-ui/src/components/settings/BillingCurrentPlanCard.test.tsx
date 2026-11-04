@@ -14,7 +14,7 @@ function createPortal(overrides: Partial<BillingPortalState> = {}): BillingPorta
 }
 
 function renderCard(subscription: BillingSubscription, portal = createPortal(), isLoading = false): BillingPortalState {
-    render(<BillingCurrentPlanCard subscription={subscription} scheduledSwitch={null} portal={portal} isLoading={isLoading}/>);
+    render(<BillingCurrentPlanCard subscription={subscription} portal={portal} isLoading={isLoading}/>);
     return portal;
 }
 
@@ -52,7 +52,7 @@ describe("BillingCurrentPlanCard", () => {
     });
 
     it("marks a scheduled yearly switch as a pending change and says when it applies", () => {
-        render(<BillingCurrentPlanCard subscription={PRO} scheduledSwitch={{effectiveDate: null}} portal={createPortal()} isLoading={false}/>);
+        render(<BillingCurrentPlanCard subscription={{...PRO, pendingSwitch: {effectiveDate: null}}} portal={createPortal()} isLoading={false}/>);
 
         expect(screen.getByText(BILLING_COPY.STATUS_PENDING_CHANGE)).toBeInTheDocument();
         expect(screen.getByText(BILLING_COPY.SWITCHES_TO_YEARLY_AT_RENEWAL)).toBeInTheDocument();

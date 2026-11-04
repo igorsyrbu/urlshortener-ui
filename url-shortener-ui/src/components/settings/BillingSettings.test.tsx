@@ -1,17 +1,16 @@
-import {createEvent, fireEvent, render, screen, waitFor, within} from "@testing-library/react";
+import {act, createEvent, fireEvent, screen, waitFor, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {BillingSettings} from "@/components/settings/BillingSettings";
-import {BillingSettingsProvider} from "@/components/settings/BillingSettingsProvider";
 import * as billingRedirect from "@/lib/billing-redirect";
 import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS} from "@/lib/constants";
 import {BILLING_COPY, BILLING_PLANS, BILLING_PRICES, RATE_LIMIT_RETRY_AFTER_HEADER, type BillingCycle} from "@/lib/billing-constants";
 import {logger} from "@/lib/logger";
 import {getRequestsTo, parseRequestBody, routeFetchWithAuth} from "@/test/link-form-utils";
-import {markPortalOpened} from "@/lib/billing-portal-return";
 import {stubDesktopViewport, stubMobileViewport} from "@/test/viewport-utils";
 import {createBillingSubscriptionDto, allowTestBillingOrigins} from "@/test/billing-utils";
+import {renderWithQuery} from "@/test/query-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn()}}));
@@ -31,6 +30,13 @@ function mockBillingRedirect(): void {
     vi.spyOn(billingRedirect, "showBillingUrlInTab").mockImplementation(() => undefined);
 }
 
+/** What the browser fires when the user comes back to this tab (from the portal tab, for example). */
+function returnToTab(): void {
+    act(() => {
+        document.dispatchEvent(new Event("visibilitychange", {bubbles: true}));
+    });
+}
+
 function redirectedUrls(): string[] {
     return vi.mocked(billingRedirect.redirectToBillingUrl).mock.calls.map(([url]) => url);
 }
@@ -48,15 +54,20 @@ function mockFreeBilling(): void {
 }
 
 function renderBilling(): ReturnType<typeof userEvent.setup> {
-    render(<BillingSettingsProvider><BillingSettings/></BillingSettingsProvider>);
+    renderWithQuery(<BillingSettings/>);
     return userEvent.setup();
+}
+
+/** The plans render while the subscription loads; actions appear once the loading card is gone. */
+async function waitForSubscription(): Promise<void> {
+    await waitFor(() => expect(screen.queryByRole("status", {name: BILLING_COPY.SUBSCRIPTION_LOADING})).not.toBeInTheDocument());
 }
 
 async function renderFreeBilling(): Promise<ReturnType<typeof userEvent.setup>> {
     mockFreeBilling();
     const user = renderBilling();
 
-    await screen.findByRole("region", {name: "Free plan"});
+    await waitForSubscription();
     return user;
 }
 
@@ -110,7 +121,7 @@ describe("BillingSettings plans", () => {
         });
         renderBilling();
 
-        await screen.findByRole("region", {name: "Pro plan"});
+        await waitForSubscription();
         expect(within(proPlan()).getByRole("button", {name: BILLING_COPY.CURRENT_PLAN})).toBeDisabled();
         expect(screen.getByRole("button", {name: BILLING_COPY.MANAGE_SUBSCRIPTION})).toBeInTheDocument();
     });
@@ -131,7 +142,7 @@ describe("BillingSettings plans", () => {
 
         await user.click(screen.getByRole("button", {name: BILLING_COPY.RETRY}));
 
-        await screen.findByRole("region", {name: "Free plan"});
+        await waitForSubscription();
         expect(logger.error).toHaveBeenCalledWith(BILLING_COPY.SUBSCRIPTION_LOG_ERROR, expect.anything());
     });
 
@@ -181,7 +192,7 @@ describe.each([
             [API_ENDPOINTS.BILLING_CHECKOUT]: () => new Promise<Response>(() => {}),
         });
         const user = renderBilling();
-        await screen.findByRole("region", {name: "Free plan"});
+        await waitForSubscription();
 
         await clickUpgrade(user);
         await user.click(screen.getByRole("button", {name: BILLING_COPY.UPGRADING}));
@@ -201,7 +212,7 @@ describe.each([
             [API_ENDPOINTS.BILLING_CHECKOUT]: () => new Response(null, {status: 409}),
         });
         const user = renderBilling();
-        await screen.findByRole("region", {name: "Free plan"});
+        await waitForSubscription();
 
         await clickUpgrade(user);
 
@@ -219,7 +230,7 @@ describe.each([
             }),
         });
         const user = renderBilling();
-        await screen.findByRole("region", {name: "Free plan"});
+        await waitForSubscription();
 
         await clickUpgrade(user);
 
@@ -234,7 +245,7 @@ describe.each([
             [API_ENDPOINTS.BILLING_CHECKOUT]: () => new Response(null, {status: 429, headers: {[RATE_LIMIT_RETRY_AFTER_HEADER]: "30"}}),
         });
         const user = renderBilling();
-        await screen.findByRole("region", {name: "Free plan"});
+        await waitForSubscription();
 
         await clickUpgrade(user);
         await screen.findByRole("alert");
@@ -261,7 +272,7 @@ describe.each([
             [API_ENDPOINTS.BILLING_CHECKOUT]: () => new Response(null, {status: 400}),
         });
         const user = renderBilling();
-        await screen.findByRole("region", {name: "Free plan"});
+        await waitForSubscription();
 
         await clickUpgrade(user);
 
@@ -275,7 +286,7 @@ describe.each([
             [API_ENDPOINTS.BILLING_CHECKOUT]: () => new Response(null, {status: 500}),
         });
         const user = renderBilling();
-        await screen.findByRole("region", {name: "Free plan"});
+        await waitForSubscription();
 
         await clickUpgrade(user);
 
@@ -293,7 +304,7 @@ describe.each([
             },
         });
         const user = renderBilling();
-        await screen.findByRole("region", {name: "Free plan"});
+        await waitForSubscription();
 
         await clickUpgrade(user);
         expect(await screen.findByRole("alert")).toHaveTextContent(BILLING_COPY.CHECKOUT_FAILED);
@@ -307,7 +318,7 @@ describe.each([
 
 async function renderProWithYearlySelected(): Promise<ReturnType<typeof userEvent.setup>> {
     const user = renderBilling();
-    await screen.findByRole("region", {name: "Pro plan"});
+    await waitForSubscription();
     await user.click(screen.getByRole("button", {name: `${BILLING_COPY.YEARLY} ${BILLING_COPY.SAVINGS}`}));
     return user;
 }
@@ -367,7 +378,7 @@ describe.each([
         mockPortalReturnBilling();
         const user = await scheduleSwitchAndOpenPortal();
 
-        window.dispatchEvent(new FocusEvent("focus"));
+        returnToTab();
 
         await waitFor(() => expect(switchToYearlyButton()).toBeEnabled());
         expect(screen.queryByText((content) => content.startsWith(BILLING_COPY.SWITCHES_TO_YEARLY_ON))).not.toBeInTheDocument();
@@ -386,7 +397,7 @@ describe.each([
         await scheduleSwitchAndOpenPortal();
         responses.handleSubscriptionResponse = () => Response.json({...PRO_SUBSCRIPTION, pendingBillingPeriod: "YEARLY"});
 
-        window.dispatchEvent(new FocusEvent("focus"));
+        returnToTab();
 
         await screen.findByText(BILLING_COPY.SWITCHES_TO_YEARLY_AT_RENEWAL);
         expect(screen.queryByRole("button", {name: BILLING_COPY.SWITCH_TO_YEARLY})).not.toBeInTheDocument();
@@ -399,7 +410,7 @@ describe.each([
         await scheduleSwitchAndOpenPortal();
         responses.handleSubscriptionResponse = () => new Response(null, {status: HTTP_INTERNAL_SERVER_ERROR});
 
-        window.dispatchEvent(new FocusEvent("focus"));
+        returnToTab();
 
         await waitFor(() => expect(logger.error).toHaveBeenCalledWith(BILLING_COPY.SUBSCRIPTION_LOG_ERROR, expect.anything()));
         expect(screen.getByText((content) => content.startsWith(BILLING_COPY.SWITCHES_TO_YEARLY_ON))).toBeInTheDocument();
@@ -412,7 +423,7 @@ describe.each([
         mockPortalReturnBilling(null);
         await scheduleSwitchAndOpenPortal();
 
-        window.dispatchEvent(new FocusEvent("focus"));
+        returnToTab();
 
         await waitFor(() => expect(switchToYearlyButton()).toBeEnabled());
         expect(screen.queryByText(BILLING_COPY.SWITCHES_TO_YEARLY_AT_RENEWAL)).not.toBeInTheDocument();
@@ -630,7 +641,8 @@ describe("BillingSettings period switch", () => {
         expect(screen.getByRole("button", {name: `${BILLING_COPY.YEARLY} ${BILLING_COPY.SAVINGS}`})).toBeDisabled();
     });
 
-    it("refreshes the subscription in the background after scheduling", async () => {        let subscriptionCalls = 0;
+    it("shows the scheduled switch from the server's answer without reloading the subscription", async () => {
+        let subscriptionCalls = 0;
         routeFetchWithAuth({
             [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => {
                 subscriptionCalls += 1;
@@ -643,8 +655,8 @@ describe("BillingSettings period switch", () => {
         await user.click(switchToYearlyButton());
         await confirmPeriodSwitch(user);
 
-        await waitFor(() => expect(subscriptionCalls).toBeGreaterThan(1));
         expect(await screen.findByText((content) => content.startsWith(BILLING_COPY.SWITCHES_TO_YEARLY_ON))).toBeInTheDocument();
+        expect(subscriptionCalls).toBe(1);
     });
 });
 
@@ -689,7 +701,7 @@ describe("BillingSettings server pending switch", () => {
             }),
         });
         const user = renderBilling();
-        await screen.findByRole("region", {name: "Pro plan"});
+        await waitForSubscription();
         await user.click(screen.getByRole("button", {name: `${BILLING_COPY.YEARLY} ${BILLING_COPY.SAVINGS}`}));
 
         expect(screen.getByText(`${BILLING_COPY.SWITCHES_TO_YEARLY_ON} ${expectedPeriodEnd()}`)).toBeInTheDocument();
@@ -702,7 +714,7 @@ describe("BillingSettings server pending switch", () => {
             [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => Response.json({...PRO_SUBSCRIPTION, pendingBillingPeriod: "YEARLY"}),
         });
         renderBilling();
-        await screen.findByRole("region", {name: "Pro plan"});
+        await waitForSubscription();
 
         expect(screen.getByText(BILLING_COPY.SWITCHES_TO_YEARLY_AT_RENEWAL)).toBeInTheDocument();
         expect(screen.queryByRole("button", {name: BILLING_COPY.SWITCH_TO_YEARLY})).not.toBeInTheDocument();
@@ -717,7 +729,7 @@ describe("BillingSettings server pending switch", () => {
             }),
         });
         renderBilling();
-        await screen.findByRole("region", {name: "Pro plan"});
+        await waitForSubscription();
 
         expect(screen.getByText(`${BILLING_COPY.RENEWS_ON} ${expectedPeriodEnd()}`)).toBeInTheDocument();
     });
@@ -731,34 +743,30 @@ describe("BillingSettings server pending switch", () => {
             }),
         });
         renderBilling();
-        await screen.findByRole("region", {name: "Pro plan"});
+        await waitForSubscription();
 
         expect(screen.getByRole("button", {name: BILLING_COPY.MONTHLY})).toBeDisabled();
         expect(screen.getByRole("button", {name: `${BILLING_COPY.YEARLY} ${BILLING_COPY.SAVINGS}`})).toBeDisabled();
     });
 
-    it("refreshes the subscription on return after a portal visit", async () => {
+    it("reloads the subscription whenever the tab becomes visible again", async () => {
         let subscriptionCalls = 0;
         routeFetchWithAuth({
             [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => {
                 subscriptionCalls += 1;
-                return Response.json(PRO_SUBSCRIPTION);
+                return Response.json(subscriptionCalls === 1 ? PRO_SUBSCRIPTION : {...PRO_SUBSCRIPTION, cancelAtPeriodEnd: true});
             },
-            [API_ENDPOINTS.BILLING_PORTAL]: () => Response.json({url: PORTAL_URL, expiresInSeconds: 3600}),
         });
-        const user = renderBilling();
-        await screen.findByRole("button", {name: BILLING_COPY.MANAGE_SUBSCRIPTION});
+        renderBilling();
+        await waitForSubscription();
 
-        await user.click(screen.getByRole("button", {name: BILLING_COPY.MANAGE_SUBSCRIPTION}));
-        await waitFor(() => expect(portalOpenedUrls()).toEqual([PORTAL_URL]));
-        const callsAfterVisit = subscriptionCalls;
+        returnToTab();
 
-        window.dispatchEvent(new FocusEvent("focus"));
-
-        await waitFor(() => expect(subscriptionCalls).toBeGreaterThan(callsAfterVisit));
+        expect(await screen.findByText((content) => content.startsWith(BILLING_COPY.CANCELS_ON))).toBeInTheDocument();
+        expect(subscriptionCalls).toBe(2);
     });
 
-    it("skips the refresh on focus without a portal visit", async () => {
+    it("does not reload on a window focus alone", async () => {
         let subscriptionCalls = 0;
         routeFetchWithAuth({
             [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => {
@@ -767,15 +775,15 @@ describe("BillingSettings server pending switch", () => {
             },
         });
         renderBilling();
-        await screen.findByRole("region", {name: "Pro plan"});
+        await waitForSubscription();
 
         window.dispatchEvent(new FocusEvent("focus"));
-        await screen.findByRole("region", {name: "Pro plan"});
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
         expect(subscriptionCalls).toBe(1);
     });
 
-    it("refreshes again on the next return when the first refresh failed", async () => {
+    it("reloads again on the next return when a reload failed", async () => {
         let subscriptionCalls = 0;
         let failNext = false;
         routeFetchWithAuth({
@@ -783,58 +791,19 @@ describe("BillingSettings server pending switch", () => {
                 subscriptionCalls += 1;
                 return failNext ? new Response(null, {status: HTTP_INTERNAL_SERVER_ERROR}) : Response.json(PRO_SUBSCRIPTION);
             },
-            [API_ENDPOINTS.BILLING_PORTAL]: () => Response.json({url: PORTAL_URL}),
         });
-        const user = renderBilling();
-        await user.click(await screen.findByRole("button", {name: BILLING_COPY.MANAGE_SUBSCRIPTION}));
-        await waitFor(() => expect(portalOpenedUrls()).toEqual([PORTAL_URL]));
+        renderBilling();
+        await waitForSubscription();
         failNext = true;
-        window.dispatchEvent(new FocusEvent("focus"));
+        returnToTab();
         await waitFor(() => expect(subscriptionCalls).toBe(2));
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
         failNext = false;
-        window.dispatchEvent(new FocusEvent("focus"));
+        returnToTab();
+
         await waitFor(() => expect(subscriptionCalls).toBe(3));
-
-        window.dispatchEvent(new FocusEvent("focus"));
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        expect(subscriptionCalls).toBe(3);
-    });
-
-    it("refreshes when the tab becomes visible again, without a focus event", async () => {
-        markPortalOpened();
-        let subscriptionCalls = 0;
-        routeFetchWithAuth({
-            [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => {
-                subscriptionCalls += 1;
-                return Response.json(PRO_SUBSCRIPTION);
-            },
-        });
-        renderBilling();
-        await screen.findByRole("region", {name: "Pro plan"});
-
-        document.dispatchEvent(new Event("visibilitychange"));
-
-        await waitFor(() => expect(subscriptionCalls).toBe(2));
-    });
-
-    it("leaves the refresh to the tab that opened the portal", async () => {
-        localStorage.setItem("urlshortener:billing:portal-return", JSON.stringify({openedAtMs: Date.now()}));
-        let subscriptionCalls = 0;
-        routeFetchWithAuth({
-            [API_ENDPOINTS.BILLING_SUBSCRIPTION]: () => {
-                subscriptionCalls += 1;
-                return Response.json(PRO_SUBSCRIPTION);
-            },
-        });
-        renderBilling();
-        await screen.findByRole("region", {name: "Pro plan"});
-
-        window.dispatchEvent(new FocusEvent("focus"));
-        await new Promise((resolve) => setTimeout(resolve, 50));
-
-        expect(subscriptionCalls).toBe(1);
-        localStorage.clear();
+        expect(screen.getByRole("button", {name: BILLING_COPY.MANAGE_SUBSCRIPTION})).toBeEnabled();
     });
 });
 
