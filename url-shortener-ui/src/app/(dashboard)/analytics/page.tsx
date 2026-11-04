@@ -3,6 +3,7 @@
 import {useEffect} from "react";
 import {useShallow} from "zustand/react/shallow";
 import {useAnalyticsStore} from "@/lib/store/analytics";
+import {useAnalyticsOverview} from "@/lib/hooks/useAnalyticsOverview";
 import {DateRange} from "react-day-picker";
 import {PeriodSelector} from "@/components/analytics/PeriodSelector";
 import {ComparisonBadge} from "@/components/analytics/ComparisonBadge";
@@ -25,35 +26,17 @@ const REFRESHING_DIM_CLASS = "opacity-60 delay-300";
 const REFRESHING_SPINNER_CLASS = "hidden items-center sm:flex motion-safe:animate-in motion-safe:fade-in motion-safe:delay-300 motion-safe:fill-mode-backwards";
 
 export default function AnalyticsPage() {
-    const {
-        period,
-        setPeriod,
-        loadAnalytics,
-        retrySection,
-        customDateRange,
-        setCustomDateRange,
-        totalClicks,
-        previousTotalClicks,
-        timeSeries,
-        status,
-        overviewLoadedAt,
-    } = useAnalyticsStore(useShallow((s) => ({
-        period: s.period, setPeriod: s.setPeriod, loadAnalytics: s.loadAnalytics, retrySection: s.retrySection,
-        customDateRange: s.customDateRange, setCustomDateRange: s.setCustomDateRange, totalClicks: s.totalClicks,
-        previousTotalClicks: s.previousTotalClicks, timeSeries: s.timeSeries, status: s.status,
-        overviewLoadedAt: s.overviewLoadedAt,
+    const {period, range, customDateRange, setPeriod, setCustomDateRange} = useAnalyticsStore(useShallow((s) => ({
+        period: s.period, range: s.range, customDateRange: s.customDateRange, setPeriod: s.setPeriod,
+        setCustomDateRange: s.setCustomDateRange,
     })));
+    const {overview, isRefreshing, hasRefreshFailed, hasLoadFailed, retry} = useAnalyticsOverview(range);
 
     useEffect(() => {
         void loadAnalyticsCharts();
-        loadAnalytics();
-    }, [loadAnalytics]);
+    }, []);
 
-    const hasOverview = overviewLoadedAt !== null;
-    const isRefreshing = hasOverview && status.overview === "loading";
-    const hasOverviewError = status.overview === "error";
-
-    if (!hasOverview && !hasOverviewError) {
+    if (!overview && !hasLoadFailed) {
         return (
             <PageContainer>
                 <AnalyticsPageSkeleton />
@@ -61,11 +44,10 @@ export default function AnalyticsPage() {
         );
     }
 
-    const handleZoom = (range: DateRange) => {
-        setCustomDateRange(range);
+    const handleZoom = (zoomedRange: DateRange) => {
+        setCustomDateRange(zoomedRange);
     };
 
-    const handleRetryOverview = () => retrySection("overview");
     const refreshingClass = cn("transition-opacity", isRefreshing && REFRESHING_DIM_CLASS);
 
     return (
@@ -87,12 +69,12 @@ export default function AnalyticsPage() {
                 />
             </div>
 
-            {!hasOverview ? (
-                <ErrorWithRetry message={ANALYTICS_COPY.LOAD_FAILED} onRetry={handleRetryOverview} className={LIST_LOAD_ERROR_CLASS}/>
+            {!overview ? (
+                <ErrorWithRetry message={ANALYTICS_COPY.LOAD_FAILED} onRetry={retry} className={LIST_LOAD_ERROR_CLASS}/>
             ) : (
                 <>
-                    {hasOverviewError && (
-                        <ErrorWithRetry message={ANALYTICS_COPY.REFRESH_FAILED} onRetry={handleRetryOverview}
+                    {hasRefreshFailed && (
+                        <ErrorWithRetry message={ANALYTICS_COPY.REFRESH_FAILED} onRetry={retry}
                                         className="rounded-xl border-[0.5px] border-border bg-card p-4 sm:flex-row sm:justify-between sm:text-left"/>
                     )}
                     <div aria-busy={isRefreshing}
@@ -100,18 +82,18 @@ export default function AnalyticsPage() {
                         <div>
                             <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Total Clicks</p>
                             <div className="mt-2 flex flex-wrap items-center gap-4">
-                                <h3 className="text-4xl font-extrabold text-foreground">{formatNumber(totalClicks)}</h3>
+                                <h3 className="text-4xl font-extrabold text-foreground">{formatNumber(overview.totalClicks)}</h3>
                                 <ComparisonBadge
                                     period={period}
-                                    totalClicks={totalClicks}
-                                    previousTotalClicks={previousTotalClicks}
+                                    totalClicks={overview.totalClicks}
+                                    previousTotalClicks={overview.previousTotalClicks}
                                 />
                             </div>
                         </div>
-                        <LazyClicksTimeSeriesChart timeSeries={timeSeries} onZoom={handleZoom}/>
+                        <LazyClicksTimeSeriesChart timeSeries={overview.timeSeries} onZoom={handleZoom}/>
                     </div>
 
-                    <AnalyticsBreakdownGrid className={refreshingClass}/>
+                    <AnalyticsBreakdownGrid range={range} totalClicks={overview.totalClicks} className={refreshingClass}/>
                 </>
             )}
         </PageContainer>

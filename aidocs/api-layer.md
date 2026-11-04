@@ -13,7 +13,7 @@ Where fetches live today (use these homes for new code):
 | Home | What goes there | Examples |
 |---|---|---|
 | TanStack Query hook + `lib/*-api.ts` | Server data on dashboard routes, cached and shared (the target for every resource) | `useLinksPage` ([`src/lib/hooks/useLinksPage.ts`](../url-shortener-ui/src/lib/hooks/useLinksPage.ts)) over `fetchLinksPage` ([`src/lib/links-api.ts`](../url-shortener-ui/src/lib/links-api.ts)) |
-| Zustand store action | Resources not yet on queries: lists, loading/error flags | `fetchPreferences` in [`src/lib/store/preferences.ts`](../url-shortener-ui/src/lib/store/preferences.ts), `loadAnalytics` in [`src/lib/store/analytics.ts`](../url-shortener-ui/src/lib/store/analytics.ts) |
+| Zustand store action | Resources not yet on queries: lists, loading/error flags | `fetchPreferences` in [`src/lib/store/preferences.ts`](../url-shortener-ui/src/lib/store/preferences.ts) |
 | `lib/*-api.ts` module | A group of related endpoints with DTO parsing and typed errors | [`src/lib/billing-api.ts`](../url-shortener-ui/src/lib/billing-api.ts), [`src/lib/link-transfer.ts`](../url-shortener-ui/src/lib/link-transfer.ts) (CSV import/export) |
 | Hook in `lib/hooks` | Mutations or loads owned by one feature, with local pending/error state | `useTagMutations`, `useUrlCleaner`, `useBillingSubscription` in `src/lib/hooks/` |
 | Component handler | One-off mutations tied to a single form or dialog | `CreateLinkModal`, `EditLinkModal` |
@@ -62,7 +62,7 @@ All of them use `API_BASE_URL` (same-origin `/api`), so the browser never calls 
 - [`src/lib/api-types.ts`](../url-shortener-ui/src/lib/api-types.ts): wire shapes of backend responses/requests (`ShortLinkDTO`, `PageDTO<T>`, `ShortLinkPreviewDTO`, `LinkImportJobDTO`, `LinkImportProgressDTO`, `UrlCleanerResponse`, `UserPreferences`, ...). Suffix `DTO` marks a wire shape.
 - [`src/lib/types.ts`](../url-shortener-ui/src/lib/types.ts): UI view models (`LinkItem`, `TagItem`). Stores map DTO to view model (for example `mapResponseToLinkItem` in the links store fills the `Untitled Link` default title).
 - [`src/lib/billing-constants.ts`](../url-shortener-ui/src/lib/billing-constants.ts) holds billing DTOs next to their mapper `toBillingSubscription`.
-- Analytics response types are declared in the analytics store file.
+- Analytics response types are declared in [`src/lib/analytics-api.ts`](../url-shortener-ui/src/lib/analytics-api.ts), which also checks that each payload is a number or a list before a query accepts it.
 
 Responses are mostly typed by annotation (`const data: PageDTO<ShortLinkDTO> = await res.json()`), not validated at runtime. Modules that do validate untrusted payloads: `billing-api.ts` (`parseBillingUrlPayload`, `parsePeriodUpgradePayload`), `import-progress.ts` (`parseImportProgress`), the preferences store (`parsePreferences`). Prefer runtime narrowing with `unknown` for new payloads that drive redirects or counters; do not use `any` (see [coding-patterns.md](coding-patterns.md)).
 

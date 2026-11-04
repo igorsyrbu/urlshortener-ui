@@ -1,36 +1,38 @@
 # Analytics
 
-> The `/analytics` page: period selection, comparison badge, time-series chart, breakdown cards and how the analytics store fetches them. Read before changing anything under `components/analytics` or `lib/store/analytics.ts`. Paths are relative to `url-shortener-ui/` unless stated otherwise.
+> The `/analytics` page: period selection, comparison badge, time-series chart, breakdown cards and how the analytics queries load them. Read before changing anything under `components/analytics`, `lib/analytics-api.ts`, `lib/query/analytics-queries.ts`, `lib/hooks/useAnalytics*.ts` or `lib/store/analytics.ts`. Paths are relative to `url-shortener-ui/` unless stated otherwise.
 
 Related: [state-management](../state-management.md) · [api-layer](../api-layer.md) · [styling-and-theming](../styling-and-theming.md) · [coding-patterns](../coding-patterns.md) · [testing](../testing.md) · [mock-server](../mock-server.md) · [routing-and-navigation](../routing-and-navigation.md)
 
 ## Overview
 
 - Route: `/analytics` ([`src/app/(dashboard)/analytics/page.tsx`](../../url-shortener-ui/src/app/(dashboard)/analytics/page.tsx)), a `"use client"` page inside the authenticated dashboard group (auth gate: [architecture](../architecture.md)).
-- All data lives in one Zustand store, `useAnalyticsStore` ([`src/lib/store/analytics.ts`](../../url-shortener-ui/src/lib/store/analytics.ts)). The page and `AnalyticsBreakdownGrid` select their fields with `useShallow` and pass slices to presentational components. The store is the only consumer of the analytics endpoint; the page is the only route that uses the store.
+- The numbers are TanStack Query queries, one per card ([server state](../state-management.md#server-state-tanstack-query)): requests in [`src/lib/analytics-api.ts`](../../url-shortener-ui/src/lib/analytics-api.ts), query options in [`src/lib/query/analytics-queries.ts`](../../url-shortener-ui/src/lib/query/analytics-queries.ts), read through [`useAnalyticsOverview`](../../url-shortener-ui/src/lib/hooks/useAnalyticsOverview.ts) (page) and [`useAnalyticsSections`](../../url-shortener-ui/src/lib/hooks/useAnalyticsSections.ts) (`AnalyticsBreakdownGrid`).
+- What the page shows lives in a small Zustand store, `useAnalyticsStore` ([`src/lib/store/analytics.ts`](../../url-shortener-ui/src/lib/store/analytics.ts)): `period`, `customDateRange`, `range` (what the queries load), `locationTab`, `deviceTab`. It survives navigation, so the page reopens on the last selection.
 - Endpoint: `API_ENDPOINTS.ANALYTICS` (`/analytics`) via `fetchWithAuth` ([api-layer](../api-layer.md)). Top-link enrichment uses `API_ENDPOINTS.SHORTLINKS_BY_IDS` (`/shortlinks/byIds?ids=a,b,c`).
 - Page layout: `PeriodSelector` row, a card with "Total Clicks" + `ComparisonBadge` + `ClicksTimeSeriesChart`, then a 2-column grid of four `AnalyticsCard`s: Top Links, Referrers, Countries/Continents (tabs), Devices/OS (tabs).
 
 ## Data flow
 
-The store loads four **sections**, each with its own status (`status.overview`, `status.topLinks`, `status.location`, `status.device`: `idle` | `loading` | `ready` | `error`):
+Each card is a query keyed by the range (`{period: "P7D"}` or `{start, end}` local days):
 
-| Section | Requests (`/analytics` + ...) | Writes |
+| Query (hook) | Requests (`/analytics` + ...) | Result |
 |---|---|---|
-| `overview` | `?period=P7D` or `?start=YYYY-MM-DD&end=YYYY-MM-DD` (must be a JSON number), the previous-period window (`null` for `custom`, and `null` if that one request fails), `&groupBy=date`, `&groupBy=referrer` | `totalClicks`, `previousTotalClicks`, `timeSeries`, `referrers` and `overviewLoadedAt`, **together** once all have answered |
-| `topLinks` | `&groupBy=top_link`, then `/shortlinks/byIds` | `topLinks`; `details` (a `LinkItem`) attached when the lookup succeeds, otherwise the bars keep the raw id |
-| `location` | `&groupBy=country` or `continent` (active tab only) | `countries` / `continents` |
-| `device` | `&groupBy=device` or `os` (active tab only) | `devices` / `os` |
+| overview (`useAnalyticsOverview`) | `?period=P7D` or `?start=YYYY-MM-DD&end=YYYY-MM-DD` (must be a JSON number), the previous-period window (`null` for a custom range, and `null` if that one request fails), `&groupBy=date` | `{totalClicks, previousTotalClicks, timeSeries}`, together once all have answered |
+| referrers (`useAnalyticsReferrers`) | `&groupBy=referrer` | rows |
+| top links (`useAnalyticsTopLinks`) | `&groupBy=top_link`, then `/shortlinks/byIds` in the same query | rows; `details` (a `LinkItem`) attached when the lookup succeeds, otherwise the bars keep the raw id |
+| breakdown (`useAnalyticsBreakdown`) | `&groupBy=country`, `continent`, `device` or `os` (the selected tab only) | rows |
 
-1. **Mount**: the page calls `loadAnalytics()`. First visit: every section loads visibly. Revisit: data younger than `ANALYTICS_STALE_AFTER_MS` (60 s) is shown with no request; older data is shown at once and refreshed **silently** (status stays `ready`, a failed silent refresh is only logged). A second call while the first load runs is ignored (StrictMode double mount).
-2. **Latest wins**: every section request gets its own `AbortController`; starting a new one aborts the previous request of that section, and only the newest request may write. A slow answer for an earlier period can no longer overwrite a newer one.
-3. **Honest failures**: an HTTP error, a network error or an unexpected payload sets the section to `error` (logged with `logger.error`) instead of writing an empty list; nothing is left in `loading`.
-4. `retrySection(section)` reloads one section visibly; it backs the "Try again" buttons.
+1. **Caching**: `staleTime` 60 s (`ANALYTICS_STALE_TIME_MS`), `gcTime` 30 min. Reopening the page or picking a range seen within the last minute shows it with no request; older data shows at once and refreshes in the background. A failed background refresh keeps the numbers on screen and is only logged.
+2. **Abort**: every request gets the query's `signal`. Picking another range leaves the old range's queries without observers, so TanStack aborts their requests; a slow answer for an earlier range can never overwrite a newer one.
+3. **Honest failures**: an HTTP error (`ApiError`, retried twice for 5xx and network errors by `shouldRetryQuery`), a network error or an unexpected payload fails the query (logged with `logger.error`, not when aborted) instead of returning an empty list.
+4. **Retry**: every "Try again" button refetches its own query only.
+5. The sign-out cache clear in `QueryProvider` drops analytics too.
 
 ## Period selection
 
 - Presets in `PeriodSelector`: `P7D` (default store value), `P30D`, `P90D` (ISO-8601 durations sent as `period`). `Custom` is a fourth option with `period === "custom"`.
-- `setPeriod(period)` stores the value and reloads every section visibly. `setCustomDateRange(range)` stores the range and, only when both `from` and `to` are set, switches `period` to `"custom"` and reloads. Both clear the **hidden** location/device tab arrays, so those tabs reload for the new period when opened instead of showing the previous period's data.
+- `setPeriod(period)` sets the period and `range`. `setCustomDateRange(range)` stores the range and, only when both `from` and `to` are set, switches `period` to `"custom"` and sets `range` to the picked local days; a half-picked range starts no request. The hidden location/device tab is keyed by range too, so it loads for the new range when opened.
 - The previous-period window for the badge is computed client-side: `end = today - N days`, `start = end - N days` where N is the number parsed from the period (`DEFAULT_PERIOD_DAYS` = 30 as fallback). All dates are local calendar days formatted with `formatLocalIsoDate` from [`src/lib/date-utils.ts`](../../url-shortener-ui/src/lib/date-utils.ts) (`YYYY-MM-DD`), never `toISOString()`, which would shift them by a day outside UTC.
 - Custom range query uses `start`/`end` with the same local calendar-day formatting, so the picked days are the days sent.
 
@@ -50,7 +52,7 @@ The store loads four **sections**, each with its own status (`status.overview`, 
 | `ClicksTimeSeriesChart` | Recharts `AreaChart`; API `date` strings are parsed as local days (`parseLocalIsoDate`) for both the axis labels (`formatShortDayLabel`) and the drag-zoom range; empty `timeSeries` shows "No clicks in this period." (the chart only renders after the overview has loaded, so empty always means no data); the area animates in `CHART_ANIMATION_MS` (400 ms instead of recharts' 1500 ms default): a reveal on first draw and a morph from the old curve to the new one on a period change, none with `prefers-reduced-motion`; the chart fades in with a CSS `motion-safe:animate-in` instead of framer-motion's exit/enter sequence; dragging re-renders only when the selection reaches another day; Y axis uses integer ticks `0..max` when max <= 4 (`LOW_CLICKS_THRESHOLD`), compact `k`/`M` formatting otherwise |
 | `AnalyticsCard` | Card frame with either a title or tab buttons (controlled via `isActive`/`onTabChange`) and a "Clicks" column header |
 | Row cap | Top Links, Referrers and Countries/Continents show at most `ANALYTICS_VISIBLE_ROWS` (10) rows, the ones with the most clicks (each tab sorts by clicks, then slices), with no way to expand. Keeps a long breakdown (47 top links for the mock user) from turning a card into a 2,500 px column and loading one favicon per row |
-| `AnalyticsBreakdownGrid` | The four cards; reads the store and swaps a failed section (`topLinks`, `location`, `device`) for `ErrorWithRetry` with its own retry |
+| `AnalyticsBreakdownGrid` | The four cards; takes `range` and `totalClicks` from the page, reads the tabs from the store and swaps a failed card (top links, referrers, location, device) for `ErrorWithRetry` with its own retry |
 | `ErrorWithRetry` | Shared ([`components/layout/ErrorWithRetry.tsx`](../../url-shortener-ui/src/components/layout/ErrorWithRetry.tsx)): message + "Try again" button (`role="alert"`), used for the first-load error, the refresh banner and failed cards |
 | `HorizontalBarChart` | Shared Recharts bar chart for all four breakdowns; bar value = clicks, tooltip shows percentage of `totalClicks`; each tab supplies a `renderLabel`. Bars animate only on first draw (`useFirstDrawAnimation`): recharts hides bar labels while bars animate, so replaying on every period change made every card blink. The label goes to `LabelList` as an element (`<BarLabelContent renderLabel={...}/>`), never as an inline function, because recharts mounts a function as a component type and a new function per render remounted every label and reloaded its icon |
 | `TopLinksTab` | Sorted by clicks desc; label is `details.shortUrl` or the raw `shortLinkId`; favicon via `LinkFavicon` when `details.longUrl` exists, otherwise `FaviconPlaceholder` |
@@ -64,13 +66,13 @@ Bar colours come from `CHART_COLORS` in `lib/constants.ts`; chart/theme details 
 
 ## Tabs and lazy fetching
 
-`setLocationTab` / `setDeviceTab` switch the active tab and fetch that tab's data only if its array is empty. Tab data is not refetched on tab switch otherwise; a period change empties the hidden tab so it is fetched for the new period.
+`setLocationTab` / `setDeviceTab` switch the active tab; the grid then reads that tab's breakdown query, so a tab is requested the first time it is opened for a range and comes from the cache after that. While a newly opened tab loads it shows its spinner, never the other tab's rows (`placeholderData` keeps previous rows only for the same breakdown, so a new period keeps the tab's rows on screen).
 
 ## Loading, empty and error states
 
-- **First load**: `AnalyticsPageSkeleton` until the overview has loaded once (`overviewLoadedAt === null`); if it fails, the period selector plus `ErrorWithRetry` ("Couldn't load analytics for this period." + Try again).
-- **Period change**: the previous numbers stay visible with `aria-busy="true"` on the summary card and grid; if the reload takes longer than 300 ms they dim (`opacity-60 delay-300`) and, from `sm` up, a small spinner fades in next to the selector (on phones the selector fills the row, so a spinner beside it would squeeze it and make the row jump; there the dimming is the only cue). A visually hidden `role="status"` "Updating analytics" is announced at every width; it is `sr-only`, so it takes no room in the row (a fast reload shows neither, so nothing flashes); everything in the overview updates at once. If the reload fails, a banner says the numbers are from the previous selection and offers Try again.
-- **Sections**: tab components show their spinner while their section is `idle` or `loading` and they have no data (never "no data" before the first answer); a failed `topLinks`, `location` or `device` section shows "Couldn't load this section." with its own retry while the other cards keep their data. Referrers belong to the overview.
+- **First load**: `AnalyticsPageSkeleton` until the overview has numbers to show; if it fails, the period selector plus `ErrorWithRetry` ("Couldn't load analytics for this period." + Try again).
+- **Period change**: the previous numbers stay visible with `aria-busy="true"` on the summary card and grid; if the reload takes longer than 300 ms they dim (`opacity-60 delay-300`) and, from `sm` up, a small spinner fades in next to the selector (on phones the selector fills the row, so a spinner beside it would squeeze it and make the row jump; there the dimming is the only cue). A visually hidden `role="status"` "Updating analytics" is announced at every width; it is `sr-only`, so it takes no room in the row (a fast reload shows neither, so nothing flashes); everything in the overview updates at once. If the reload fails, a banner says the numbers are from the previous selection and offers Try again (`useAnalyticsOverview` keeps the last numbers it showed for this).
+- **Cards**: a card shows its spinner until its first answer for the range (never "no data" before it); on a new range it keeps the previous rows until the new ones arrive. A failed card with nothing to show says "Couldn't load this section." with its own retry while the other cards keep their data.
 - Every card placeholder (loading spinner, empty text, section error) uses the same `h-64` body as a five-bar chart, so a card does not change height when a five-row result replaces its spinner.
 - Empty states per card: "No top links data available.", "No referrer data active.", "No location data available for this period.", "No traffic to display." (devices), and "No clicks in this period." for the chart.
 
@@ -79,4 +81,4 @@ Bar colours come from `CHART_COLORS` in `lib/constants.ts`; chart/theme details 
 All are observations; they are not templates and not permission for drive-by changes.
 
 - Observation: the mock server returns fixed prior totals for `start`/`end` requests without `groupBy` (see [mock-server](../mock-server.md)), so the comparison badge values in dev are canned.
-- Tests: see [testing](../testing.md); `src/test/analytics-utils.tsx` holds shared analytics fixtures.
+- Tests: see [testing](../testing.md); `src/test/analytics-utils.tsx` holds shared analytics fixtures and `mockAnalyticsApi(fetchMock, routes)`, which answers each analytics request by route (`total`, `previous`, `date`, `country`, `byIds`, ...) and everything else empty.

@@ -3,7 +3,7 @@
 import React, {useRef, useState} from "react";
 import {Area, AreaChart, CartesianGrid, ReferenceArea, XAxis, YAxis} from "recharts";
 import {ChartContainer, ChartTooltip, ChartTooltipContent} from "@/components/ui/chart";
-import {AnalyticsDailyClick} from "@/lib/store/analytics";
+import type {AnalyticsDailyClick} from "@/lib/analytics-api";
 import {DateRange} from "react-day-picker";
 import {useIsDesktop, usePrefersReducedMotion} from "@/lib/hooks/useMediaQuery";
 import {formatShortDayLabel, parseLocalIsoDate} from "@/lib/date-utils";

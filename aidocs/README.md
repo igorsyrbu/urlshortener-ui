@@ -18,7 +18,7 @@ holds only the project facts, verify commands, required reading and mandatory ru
 | [mock-server.md](mock-server.md) | Mock server layering, middleware, endpoints, sandbox auth, MemoryStore, billing simulation, keeping UI and mock in sync | Adding or changing an endpoint; a flow behaves differently against the mock |
 | [features/auth.md](features/auth.md) | Magic link, OTP, Google OAuth, code exchange, session bootstrap, logout, sessions list | Login, `auth/*`, auth store, session cards |
 | [features/links-and-tags.md](features/links-and-tags.md) | Links list, create/edit form and URL cleaner, archive/delete/QR, CSV import (SSE) and export, tags, `/inspect/[key]`, `/report-abuse` | Anything under `components/links`, `components/tags`, `components/inspect`, `components/abuse` |
-| [features/analytics.md](features/analytics.md) | Analytics page, period and custom ranges, comparison badge, charts, breakdown tabs, analytics store | Anything under `components/analytics` or `lib/store/analytics.ts` |
+| [features/analytics.md](features/analytics.md) | Analytics page, period and custom ranges, comparison badge, charts, breakdown tabs, analytics queries | Anything under `components/analytics`, `lib/analytics-api.ts`, `lib/query/analytics-queries.ts` or `lib/store/analytics.ts` |
 | [features/billing-and-settings.md](features/billing-and-settings.md) | Settings shell and tabs, profile, appearance, theme, preferences, danger zone, billing plans, checkout, portal return, period switch | Anything under `components/settings`, `lib/billing-*`, `lib/hooks/useBilling*` |
 
 Root documents that stay outside this folder: [`README.md`](../README.md) (setup and API reference),

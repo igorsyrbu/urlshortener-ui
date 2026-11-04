@@ -1,20 +1,16 @@
-import {render, screen, within} from "@testing-library/react";
+import {screen, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import {beforeEach, describe, expect, it, vi} from "vitest";
+import {afterEach, describe, expect, it, vi} from "vitest";
 import AnalyticsPage from "@/app/(dashboard)/analytics/page";
-import {ANALYTICS_COPY} from "@/lib/constants";
-import {type AnalyticsSection, type SectionStatus, useAnalyticsStore} from "@/lib/store/analytics";
-import {createGroupedClick} from "@/test/analytics-utils";
+import {fetchWithAuth} from "@/lib/api";
+import {ANALYTICS_COPY, API_ENDPOINTS} from "@/lib/constants";
+import {HTTP_INTERNAL_SERVER_ERROR} from "@/lib/http-status";
+import {useAnalyticsStore} from "@/lib/store/analytics";
+import {mockAnalyticsApi} from "@/test/analytics-utils";
+import {renderWithQuery} from "@/test/query-utils";
 
-const mocks = vi.hoisted(() => ({
-    loadAnalytics: vi.fn(),
-    retrySection: vi.fn(),
-    setPeriod: vi.fn(),
-    setCustomDateRange: vi.fn(),
-    setLocationTab: vi.fn(),
-    setDeviceTab: vi.fn(),
-}));
-
+vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
+vi.mock("@/lib/logger", () => ({logger: {error: vi.fn(), warn: vi.fn(), info: vi.fn()}}));
 vi.mock("@/components/analytics/LazyHorizontalBarChart", async () => ({
     LazyHorizontalBarChart: (await import("@/test/analytics-utils")).MockHorizontalBarChart,
 }));
@@ -26,56 +22,69 @@ const loadAnalyticsCharts = vi.hoisted(() => vi.fn());
 vi.mock("@/components/analytics/load-analytics-charts", () => ({loadAnalyticsCharts}));
 vi.mock("@/components/analytics/LazyClicksTimeSeriesChart", () => ({
     LazyClicksTimeSeriesChart: ({onZoom}: {onZoom: (range: {from: Date; to: Date}) => void}) => (
-        <button onClick={() => onZoom({from: new Date("2026-10-01"), to: new Date("2026-10-03")})}>zoom chart</button>
+        <button onClick={() => onZoom({from: new Date(2026, 9, 1), to: new Date(2026, 9, 3)})}>zoom chart</button>
     ),
 }));
 
-const initialStoreState = useAnalyticsStore.getState();
-const LOADED_AT = Date.UTC(2026, 9, 12);
-const ALL_READY: Record<AnalyticsSection, SectionStatus> = {
-    overview: "ready", topLinks: "ready", location: "ready", device: "ready",
-};
+const initialStoreState = useAnalyticsStore.getInitialState();
+const NEVER_ANSWERED = new Promise<Response>(() => undefined);
+const TOTAL = 1234;
 
-function loadAnalytics(overrides: Partial<ReturnType<typeof useAnalyticsStore.getState>> = {}): void {
-    useAnalyticsStore.setState({
-        ...initialStoreState,
-        ...mocks,
-        status: ALL_READY,
-        overviewLoadedAt: LOADED_AT,
-        totalClicks: 1234,
-        previousTotalClicks: 617,
-        timeSeries: [{date: "2026-10-01", clicks: 5}],
-        ...overrides,
-    }, true);
+function serverError(): Response {
+    return new Response(null, {status: HTTP_INTERNAL_SERVER_ERROR});
 }
 
-function getCard(tabLabel: string): HTMLElement {
-    const card = screen.getByRole("button", {name: tabLabel}).closest<HTMLElement>("div.rounded-xl");
-    if (!card) throw new Error(`Card with tab ${tabLabel} not found`);
+function requestedUrls(): string[] {
+    return vi.mocked(fetchWithAuth).mock.calls.map(([url]) => url);
+}
+
+function getCard(label: string): HTMLElement {
+    const card = screen.getByText(label, {selector: "button, h3, p, span"}).closest<HTMLElement>("div.rounded-xl");
+    if (!card) throw new Error(`Card ${label} not found`);
     return card;
 }
 
+async function findCard(label: string): Promise<HTMLElement> {
+    await screen.findByText(label, {selector: "button, h3, p, span"});
+    return getCard(label);
+}
+
+async function renderLoadedPage(): Promise<void> {
+    mockAnalyticsApi(vi.mocked(fetchWithAuth), {total: Response.json(TOTAL), previous: Response.json(617)});
+    renderWithQuery(<AnalyticsPage/>);
+    await screen.findByRole("heading", {name: TOTAL.toLocaleString()});
+}
+
 describe("AnalyticsPage", () => {
-    beforeEach(() => {
-        loadAnalytics();
+    afterEach(() => {
+        useAnalyticsStore.setState(initialStoreState, true);
     });
 
-    it("requests analytics when it mounts", () => {
-        render(<AnalyticsPage/>);
+    it("requests the selected period when it mounts", async () => {
+        await renderLoadedPage();
 
-        expect(mocks.loadAnalytics).toHaveBeenCalledOnce();
+        expect(requestedUrls()).toEqual(expect.arrayContaining([
+            `${API_ENDPOINTS.ANALYTICS}?period=P7D`,
+            `${API_ENDPOINTS.ANALYTICS}?period=P7D&groupBy=date`,
+            `${API_ENDPOINTS.ANALYTICS}?period=P7D&groupBy=referrer`,
+            `${API_ENDPOINTS.ANALYTICS}?period=P7D&groupBy=top_link`,
+            `${API_ENDPOINTS.ANALYTICS}?period=P7D&groupBy=country`,
+            `${API_ENDPOINTS.ANALYTICS}?period=P7D&groupBy=device`,
+        ]));
     });
 
     it("starts downloading the charts while the data loads", () => {
-        render(<AnalyticsPage/>);
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {total: NEVER_ANSWERED});
+
+        renderWithQuery(<AnalyticsPage/>);
 
         expect(loadAnalyticsCharts).toHaveBeenCalledOnce();
     });
 
     it("shows the skeleton while the first load has no data", () => {
-        loadAnalytics({overviewLoadedAt: null, status: {...ALL_READY, overview: "loading"}});
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {total: NEVER_ANSWERED});
 
-        render(<AnalyticsPage/>);
+        renderWithQuery(<AnalyticsPage/>);
 
         expect(screen.getByTestId("analytics-skeleton")).toBeInTheDocument();
         expect(screen.queryByText("Total Clicks")).not.toBeInTheDocument();
@@ -83,134 +92,152 @@ describe("AnalyticsPage", () => {
 
     it("offers a retry instead of an empty page when the first load fails", async () => {
         const user = userEvent.setup();
-        loadAnalytics({overviewLoadedAt: null, status: {...ALL_READY, overview: "error"}});
-        render(<AnalyticsPage/>);
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {total: serverError()});
+        renderWithQuery(<AnalyticsPage/>);
 
-        expect(screen.getByRole("alert")).toHaveTextContent(ANALYTICS_COPY.LOAD_FAILED);
+        expect(await screen.findByRole("alert")).toHaveTextContent(ANALYTICS_COPY.LOAD_FAILED);
+        expect(screen.queryByText("Total Clicks")).not.toBeInTheDocument();
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {total: Response.json(TOTAL)});
         await user.click(screen.getByRole("button", {name: ANALYTICS_COPY.RETRY}));
 
-        expect(mocks.retrySection).toHaveBeenCalledExactlyOnceWith("overview");
-        expect(screen.queryByText("Total Clicks")).not.toBeInTheDocument();
+        expect(await screen.findByRole("heading", {name: TOTAL.toLocaleString()})).toBeInTheDocument();
     });
 
-    it("keeps the loaded numbers visible and marks them busy while a new period loads", () => {
-        loadAnalytics({status: {...ALL_READY, overview: "loading"}});
-
-        render(<AnalyticsPage/>);
-
-        expect(screen.getByText("Total Clicks").closest("[aria-busy]")).toHaveAttribute("aria-busy", "true");
-        expect(screen.getByRole("status")).toHaveTextContent(ANALYTICS_COPY.UPDATING);
-        expect(screen.queryByTestId("analytics-skeleton")).not.toBeInTheDocument();
-    });
-
-    it("is not marked busy once the data is loaded", () => {
-        render(<AnalyticsPage/>);
+    it("is not marked busy once the data is loaded", async () => {
+        await renderLoadedPage();
 
         expect(screen.getByText("Total Clicks").closest("[aria-busy]")).toHaveAttribute("aria-busy", "false");
         expect(screen.queryByRole("status")).not.toBeInTheDocument();
     });
 
-    it("keeps the last numbers and offers a retry when a refresh fails", async () => {
+    it("keeps the loaded numbers visible and marks them busy while a new period loads", async () => {
         const user = userEvent.setup();
-        loadAnalytics({status: {...ALL_READY, overview: "error"}});
-        render(<AnalyticsPage/>);
+        await renderLoadedPage();
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {total: NEVER_ANSWERED});
 
-        expect(screen.getByRole("alert")).toHaveTextContent(ANALYTICS_COPY.REFRESH_FAILED);
-        expect(screen.getByRole("heading", {name: (1234).toLocaleString()})).toBeInTheDocument();
+        await user.click(screen.getByRole("button", {name: "90d"}));
+
+        expect(screen.getByText("Total Clicks").closest("[aria-busy]")).toHaveAttribute("aria-busy", "true");
+        expect(screen.getByRole("status")).toHaveTextContent(ANALYTICS_COPY.UPDATING);
+        expect(screen.getByRole("heading", {name: TOTAL.toLocaleString()})).toBeInTheDocument();
+        expect(requestedUrls()).toContain(`${API_ENDPOINTS.ANALYTICS}?period=P90D`);
+    });
+
+    it("keeps the last numbers and offers a retry when a new period fails", async () => {
+        const user = userEvent.setup();
+        await renderLoadedPage();
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {total: serverError()});
+
+        await user.click(screen.getByRole("button", {name: "90d"}));
+
+        expect(await screen.findByRole("alert")).toHaveTextContent(ANALYTICS_COPY.REFRESH_FAILED);
+        expect(screen.getByRole("heading", {name: TOTAL.toLocaleString()})).toBeInTheDocument();
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {total: Response.json(99)});
         await user.click(screen.getByRole("button", {name: ANALYTICS_COPY.RETRY}));
 
-        expect(mocks.retrySection).toHaveBeenCalledExactlyOnceWith("overview");
+        expect(await screen.findByRole("heading", {name: "99"})).toBeInTheDocument();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("shows a period viewed moments ago at once, without requesting it again", async () => {
+        const user = userEvent.setup();
+        await renderLoadedPage();
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {total: Response.json(99)});
+        await user.click(screen.getByRole("button", {name: "90d"}));
+        await screen.findByRole("heading", {name: "99"});
+        vi.mocked(fetchWithAuth).mockClear();
+
+        await user.click(screen.getByRole("button", {name: "7d"}));
+
+        expect(screen.getByRole("heading", {name: TOTAL.toLocaleString()})).toBeInTheDocument();
+        expect(fetchWithAuth).not.toHaveBeenCalled();
     });
 
     it("shows a failed card with its own retry while the other cards keep their data", async () => {
         const user = userEvent.setup();
-        loadAnalytics({status: {...ALL_READY, location: "error"}, devices: [createGroupedClick({label: "Desktop"})]});
-        render(<AnalyticsPage/>);
-
-        await user.click(within(getCard("Countries")).getByRole("button", {name: ANALYTICS_COPY.RETRY}));
-
-        expect(mocks.retrySection).toHaveBeenCalledExactlyOnceWith("location");
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {country: serverError(), device: Response.json([{label: "Desktop", clicks: 3}])});
+        renderWithQuery(<AnalyticsPage/>);
+        const retry = await within(await findCard("Countries")).findByRole("button", {name: ANALYTICS_COPY.RETRY});
         expect(within(getCard("Devices")).getByText("Desktop")).toBeInTheDocument();
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {country: Response.json([{label: "CA", clicks: 7}])});
+        vi.mocked(fetchWithAuth).mockClear();
+
+        await user.click(retry);
+
+        expect(await within(getCard("Countries")).findByText("Canada")).toBeInTheDocument();
+        expect(requestedUrls()).toEqual([`${API_ENDPOINTS.ANALYTICS}?period=P7D&groupBy=country`]);
     });
 
-    it("shows the localized total and the comparison with the previous period", () => {
-        loadAnalytics({period: "P30D"});
+    it("shows failed referrers with their own retry", async () => {
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {referrer: serverError()});
 
-        render(<AnalyticsPage/>);
+        renderWithQuery(<AnalyticsPage/>);
 
-        expect(screen.getByRole("heading", {name: (1234).toLocaleString()})).toBeInTheDocument();
+        expect(await within(await findCard("Referrers")).findByRole("button", {name: ANALYTICS_COPY.RETRY})).toBeInTheDocument();
+    });
+
+    it("shows the localized total and the comparison with the previous period", async () => {
+        useAnalyticsStore.getState().setPeriod("P30D");
+
+        await renderLoadedPage();
+
         expect(screen.getByText("+100.0%")).toBeInTheDocument();
         expect(screen.getByText("vs last 30 days")).toBeInTheDocument();
     });
 
-    it("changes the period from the selector", async () => {
+    it("loads the range dragged on the chart as a custom date range", async () => {
         const user = userEvent.setup();
-        render(<AnalyticsPage/>);
-
-        await user.click(screen.getByRole("button", {name: "90d"}));
-
-        expect(mocks.setPeriod).toHaveBeenCalledExactlyOnceWith("P90D");
-    });
-
-    it("applies the range dragged on the chart as a custom date range", async () => {
-        const user = userEvent.setup();
-        render(<AnalyticsPage/>);
+        await renderLoadedPage();
 
         await user.click(screen.getByRole("button", {name: "zoom chart"}));
 
-        expect(mocks.setCustomDateRange).toHaveBeenCalledExactlyOnceWith({from: new Date("2026-10-01"), to: new Date("2026-10-03")});
+        expect(requestedUrls()).toContain(`${API_ENDPOINTS.ANALYTICS}?start=2026-10-01&end=2026-10-03&groupBy=date`);
     });
 
-    it("shows country data on the countries tab and continent data on the continents tab", () => {
-        loadAnalytics({
-            locationTab: "continents",
-            countries: [createGroupedClick({label: "CA"})],
-            continents: [createGroupedClick({label: "Europe"})],
+    it("loads continents only when their tab is opened, and shows them instead of countries", async () => {
+        const user = userEvent.setup();
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {
+            country: Response.json([{label: "CA", clicks: 7}]),
+            continent: Response.json([{label: "Europe", clicks: 2}]),
         });
+        renderWithQuery(<AnalyticsPage/>);
+        await within(await findCard("Countries")).findByText("Canada");
+        expect(requestedUrls().some((url) => url.includes("groupBy=continent"))).toBe(false);
 
-        render(<AnalyticsPage/>);
+        await user.click(screen.getByRole("button", {name: "Continents"}));
 
-        expect(within(getCard("Countries")).getByText("Europe")).toBeInTheDocument();
+        expect(await within(getCard("Countries")).findByText("Europe")).toBeInTheDocument();
         expect(within(getCard("Countries")).queryByText("Canada")).not.toBeInTheDocument();
     });
 
-    it("shows device data on the devices tab and OS data on the OS tab", () => {
-        loadAnalytics({
-            deviceTab: "os",
-            devices: [createGroupedClick({label: "Desktop"})],
-            os: [createGroupedClick({label: "Linux"})],
+    it("loads operating systems when the OS tab is opened, and shows them instead of devices", async () => {
+        const user = userEvent.setup();
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {
+            device: Response.json([{label: "Desktop", clicks: 3}]),
+            os: Response.json([{label: "Linux", clicks: 2}]),
         });
+        renderWithQuery(<AnalyticsPage/>);
+        await within(await findCard("Devices")).findByText("Desktop");
 
-        render(<AnalyticsPage/>);
+        await user.click(screen.getByRole("button", {name: "OS"}));
 
-        expect(within(getCard("Devices")).getByText("Linux")).toBeInTheDocument();
+        expect(await within(getCard("Devices")).findByText("Linux")).toBeInTheDocument();
         expect(within(getCard("Devices")).queryByText("Desktop")).not.toBeInTheDocument();
     });
 
-    it("switches location and device tabs through the store", async () => {
-        const user = userEvent.setup();
-        render(<AnalyticsPage/>);
+    it("shows a section-specific loading state while location data loads", async () => {
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {country: NEVER_ANSWERED});
 
-        await user.click(screen.getByRole("button", {name: "Continents"}));
-        await user.click(screen.getByRole("button", {name: "OS"}));
+        renderWithQuery(<AnalyticsPage/>);
 
-        expect(mocks.setLocationTab).toHaveBeenCalledExactlyOnceWith("continents");
-        expect(mocks.setDeviceTab).toHaveBeenCalledExactlyOnceWith("os");
+        expect(await screen.findByText("Loading countries...")).toBeInTheDocument();
     });
 
-    it("shows a section-specific loading state while location data loads", () => {
-        loadAnalytics({status: {...ALL_READY, location: "loading"}, countries: []});
+    it("shows the top links spinner before their first answer instead of an empty state", async () => {
+        mockAnalyticsApi(vi.mocked(fetchWithAuth), {top_link: NEVER_ANSWERED});
 
-        render(<AnalyticsPage/>);
+        renderWithQuery(<AnalyticsPage/>);
 
-        expect(screen.getByText("Loading countries...")).toBeInTheDocument();
-    });
-
-    it("shows the top links spinner before their first answer instead of an empty state", () => {
-        loadAnalytics({status: {...ALL_READY, topLinks: "idle"}, topLinks: []});
-
-        render(<AnalyticsPage/>);
-
-        expect(screen.getByText("Loading top links...")).toBeInTheDocument();
+        expect(await screen.findByText("Loading top links...")).toBeInTheDocument();
     });
 });

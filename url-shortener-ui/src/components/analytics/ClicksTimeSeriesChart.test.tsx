@@ -2,7 +2,7 @@ import {render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {ClicksTimeSeriesChart} from "@/components/analytics/ClicksTimeSeriesChart";
-import type {AnalyticsDailyClick} from "@/lib/store/analytics";
+import type {AnalyticsDailyClick} from "@/lib/analytics-api";
 import {ANALYTICS_COPY} from "@/lib/constants";
 import {FAR_FROM_UTC_TIME_ZONES} from "@/test/time-zone-utils";
 import {stubDesktopViewport, stubMobileViewport} from "@/test/viewport-utils";

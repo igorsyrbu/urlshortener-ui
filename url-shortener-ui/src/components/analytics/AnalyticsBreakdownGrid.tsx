@@ -11,23 +11,24 @@ import {LocationTab} from "@/components/analytics/LocationTab";
 import {ReferrersTab} from "@/components/analytics/ReferrersTab";
 import {TopLinksTab} from "@/components/analytics/TopLinksTab";
 import {ANALYTICS_COPY} from "@/lib/constants";
+import type {AnalyticsBreakdown, AnalyticsRange} from "@/lib/analytics-api";
+import {useAnalyticsBreakdown, useAnalyticsReferrers, useAnalyticsTopLinks} from "@/lib/hooks/useAnalyticsSections";
 import {
-    type AnalyticsSection,
     type DeviceTab as DeviceTabValue,
     type LocationTab as LocationTabValue,
-    type SectionStatus,
     useAnalyticsStore,
 } from "@/lib/store/analytics";
 import {cn} from "@/lib/utils";
 
 interface AnalyticsBreakdownGridProps {
+    range: AnalyticsRange;
+    /** Each bar's share is measured against the range's total. */
+    totalClicks: number;
     className?: string;
 }
 
-/** Before a section's first answer (`idle`) it shows its spinner, never "no data". */
-function isSectionPending(status: SectionStatus): boolean {
-    return status === "idle" || status === "loading";
-}
+const LOCATION_BREAKDOWNS: Record<LocationTabValue, AnalyticsBreakdown> = {countries: "country", continents: "continent"};
+const DEVICE_BREAKDOWNS: Record<DeviceTabValue, AnalyticsBreakdown> = {devices: "device", os: "os"};
 
 function isLocationTab(value: string): value is LocationTabValue {
     return value === "countries" || value === "continents";
@@ -37,34 +38,35 @@ function isDeviceTab(value: string): value is DeviceTabValue {
     return value === "devices" || value === "os";
 }
 
-export function AnalyticsBreakdownGrid({className}: AnalyticsBreakdownGridProps) {
-    const {
-        totalClicks, topLinks, referrers, countries, continents, devices, os,
-        status, locationTab, deviceTab, setLocationTab, setDeviceTab, retrySection,
-    } = useAnalyticsStore(useShallow((s) => ({
-        totalClicks: s.totalClicks, topLinks: s.topLinks, referrers: s.referrers, countries: s.countries,
-        continents: s.continents, devices: s.devices, os: s.os, status: s.status, locationTab: s.locationTab,
-        deviceTab: s.deviceTab, setLocationTab: s.setLocationTab, setDeviceTab: s.setDeviceTab,
-        retrySection: s.retrySection,
-    })));
+interface SectionFailure {
+    hasFailed: boolean;
+    retry: () => void;
+}
 
-    function renderSection(section: AnalyticsSection, content: React.ReactNode): React.ReactNode {
-        if (status[section] !== "error") return content;
-        return (
-            <ErrorWithRetry message={ANALYTICS_COPY.SECTION_FAILED} onRetry={() => retrySection(section)}
-                            className={ANALYTICS_CARD_BODY_HEIGHT_CLASS}/>
-        );
-    }
+function renderSection({hasFailed, retry}: SectionFailure, content: React.ReactNode): React.ReactNode {
+    if (!hasFailed) return content;
+    return <ErrorWithRetry message={ANALYTICS_COPY.SECTION_FAILED} onRetry={retry} className={ANALYTICS_CARD_BODY_HEIGHT_CLASS}/>;
+}
+
+export function AnalyticsBreakdownGrid({range, totalClicks, className}: AnalyticsBreakdownGridProps) {
+    const {locationTab, deviceTab, setLocationTab, setDeviceTab} = useAnalyticsStore(useShallow((s) => ({
+        locationTab: s.locationTab, deviceTab: s.deviceTab, setLocationTab: s.setLocationTab, setDeviceTab: s.setDeviceTab,
+    })));
+    const topLinks = useAnalyticsTopLinks(range);
+    const referrers = useAnalyticsReferrers(range);
+    const location = useAnalyticsBreakdown(LOCATION_BREAKDOWNS[locationTab], range);
+    const device = useAnalyticsBreakdown(DEVICE_BREAKDOWNS[deviceTab], range);
 
     return (
         <div className={cn(ANALYTICS_GRID_CLASS, className)}>
             <AnalyticsCard title="Top Links">
-                {renderSection("topLinks",
-                    <TopLinksTab topLinks={topLinks} isLoading={isSectionPending(status.topLinks)} totalClicks={totalClicks}/>)}
+                {renderSection(topLinks,
+                    <TopLinksTab topLinks={topLinks.rows} isLoading={topLinks.isLoading} totalClicks={totalClicks}/>)}
             </AnalyticsCard>
 
             <AnalyticsCard title="Referrers">
-                <ReferrersTab referrers={referrers} isLoading={isSectionPending(status.overview)} totalClicks={totalClicks}/>
+                {renderSection(referrers,
+                    <ReferrersTab referrers={referrers.rows} isLoading={referrers.isLoading} totalClicks={totalClicks}/>)}
             </AnalyticsCard>
 
             <AnalyticsCard
@@ -74,10 +76,10 @@ export function AnalyticsBreakdownGrid({className}: AnalyticsBreakdownGridProps)
                 ]}
                 onTabChange={(tab) => isLocationTab(tab) && setLocationTab(tab)}
             >
-                {renderSection("location",
+                {renderSection(location,
                     <TooltipProvider>
-                        <LocationTab locationTab={locationTab} data={locationTab === "countries" ? countries : continents}
-                                     isLoading={isSectionPending(status.location)} totalClicks={totalClicks}/>
+                        <LocationTab locationTab={locationTab} data={location.rows} isLoading={location.isLoading}
+                                     totalClicks={totalClicks}/>
                     </TooltipProvider>)}
             </AnalyticsCard>
 
@@ -88,9 +90,8 @@ export function AnalyticsBreakdownGrid({className}: AnalyticsBreakdownGridProps)
                 ]}
                 onTabChange={(tab) => isDeviceTab(tab) && setDeviceTab(tab)}
             >
-                {renderSection("device",
-                    <DeviceTab deviceTab={deviceTab} data={deviceTab === "devices" ? devices : os}
-                               isLoading={isSectionPending(status.device)} totalClicks={totalClicks}/>)}
+                {renderSection(device,
+                    <DeviceTab deviceTab={deviceTab} data={device.rows} isLoading={device.isLoading} totalClicks={totalClicks}/>)}
             </AnalyticsCard>
         </div>
     );

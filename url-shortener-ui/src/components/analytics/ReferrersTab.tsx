@@ -2,7 +2,7 @@
 
 import {ANALYTICS_CARD_BODY_HEIGHT_CLASS} from "@/components/analytics/analytics-layout";
 import {cn} from "@/lib/utils";
-import {AnalyticsGroupedClick} from "@/lib/store/analytics";
+import type {AnalyticsGroupedClick} from "@/lib/analytics-api";
 import type {BarLabelProps} from "@/components/analytics/HorizontalBarChart";
 import {LazyHorizontalBarChart} from "@/components/analytics/LazyHorizontalBarChart";
 import {LinkFavicon} from "@/components/links/LinkFavicon";

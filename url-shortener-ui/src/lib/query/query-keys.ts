@@ -1,3 +1,4 @@
+import type {AnalyticsBreakdown, AnalyticsRange} from "@/lib/analytics-api";
 import type {LinksPageParams} from "@/lib/links-api";
 import type {TagListParams} from "@/lib/tags-api";
 
@@ -16,7 +17,13 @@ export const queryKeys = {
         /** Every list with link counts, whatever its search: query keys match objects by the fields they name. */
         withLinkCounts: ["tags", "list", {withLinksCount: true}] as const,
     },
-    analytics: {all: ["analytics"] as const},
+    analytics: {
+        all: ["analytics"] as const,
+        overview: (range: AnalyticsRange) => ["analytics", "overview", range] as const,
+        referrers: (range: AnalyticsRange) => ["analytics", "referrers", range] as const,
+        topLinks: (range: AnalyticsRange) => ["analytics", "topLinks", range] as const,
+        breakdown: (breakdown: AnalyticsBreakdown, range: AnalyticsRange) => ["analytics", "breakdown", breakdown, range] as const,
+    },
     user: {all: ["user"] as const},
     preferences: {all: ["preferences"] as const},
     sessions: {all: ["sessions"] as const},
