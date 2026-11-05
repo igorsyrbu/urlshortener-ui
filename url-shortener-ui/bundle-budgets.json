@@ -2,7 +2,7 @@
   "defaultRouteKb": 215,
   "maxSingleChunkKb": 116,
   "routes": {
-    "/": 169,
+    "/": 177,
     "/_not-found": 169,
     "/auth/exchange": 176,
     "/auth/ott": 175,

@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {clearQueryString, extractKeyFromShortUrl, getDomain, getShortKeyValidationError, isValidUrl, normalizeUrl, withShortKey} from "@/lib/url-utils";
+import {clearQueryString, extractKeyFromShortUrl, getDomain, getShortKeyValidationError, isValidUrl, normalizeUrl, readShortKey, withShortKey} from "@/lib/url-utils";
 
 const SHORT_KEY_MAX_LENGTH = 30;
 
@@ -99,6 +99,19 @@ describe("getShortKeyValidationError", () => {
 
     it("reports forbidden characters before the length", () => {
         expect(getShortKeyValidationError("_".repeat(SHORT_KEY_MAX_LENGTH + 1))).toBe("Key can only contain letters, numbers, and hyphens.");
+    });
+});
+
+describe("readShortKey", () => {
+    it.each([
+        ["a bare key", "abc123", "abc123"],
+        ["a full short URL", "https://sho.rt/abc123", "abc123"],
+        ["a short URL without the scheme", "sho.rt/abc123", "abc123"],
+        ["a trailing slash, query and fragment", " https://sho.rt/abc123/?utm=x#top ", "abc123"],
+        ["nothing", "   ", ""],
+        ["only a domain with a slash", "sho.rt/", "sho.rt"],
+    ])("reads the key from %s", (_name, value, key) => {
+        expect(readShortKey(value)).toBe(key);
     });
 });
 

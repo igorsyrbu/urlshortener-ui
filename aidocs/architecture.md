@@ -72,7 +72,8 @@ Server-side code in `src/app` is deliberately small. Sanctioned: `redirect()`-on
 | File | Kind | Why it is server-side |
 |---|---|---|
 | `app/layout.tsx` | server component | Fonts, metadata, providers, palette init script. |
-| `app/page.tsx`, `app/(dashboard)/settings/page.tsx` | server components that only call `redirect()` | `/` -> `/links`, `/settings` -> `/settings/general`. |
+| `app/(dashboard)/settings/page.tsx` | server component that only calls `redirect()` | `/settings` -> `/settings/general`. |
+| `app/page.tsx` | static server component, no data | Development landing page; composes the client `InspectLinkForm` and `ModeToggle`. |
 | `app/(dashboard)/dashboard/page.tsx`, `app/(dashboard)/settings/layout.tsx`, `app/(dashboard)/settings/billing/page.tsx` | server components without logic | Static composition; they only render client components (`SettingsTabs`, `BillingSettings`). |
 | `layout.tsx` in `links`, `tags`, `analytics`, `settings/general`, `login`, `auth` | metadata-only server layouts | Attach a page title to a client page; see [routing-and-navigation](routing-and-navigation.md#page-titles-and-skip-link). |
 | `app/manifest.ts` | metadata route | Web app manifest. |

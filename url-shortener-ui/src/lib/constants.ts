@@ -18,7 +18,10 @@ export const PAGE_TITLES = {
 } as const;
 
 export const ROUTES = {
+    HOME: "/",
     LOGIN: "/login",
+    REPORT_ABUSE: "/report-abuse",
+    INSPECT: (key: string) => `/inspect/${encodeURIComponent(key)}`,
     DASHBOARD: "/dashboard",
     LINKS: "/links",
     ANALYTICS: "/analytics",

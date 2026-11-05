@@ -69,6 +69,15 @@ export function extractKeyFromShortUrl(shortUrl: string): string {
     }
 }
 
+/**
+ * The key a person typed or pasted: a bare key (`abc123`), a full short URL (`https://sho.rt/abc123`) or one without the
+ * scheme (`sho.rt/abc123`). Query and fragment are ignored; an empty result means there was no key.
+ */
+export function readShortKey(value: string): string {
+    const withoutQuery = value.trim().split(/[?#]/)[0];
+    return withoutQuery.split("/").filter(Boolean).pop() ?? "";
+}
+
 /** The short URL with its last path segment replaced by `key`; unchanged when it is not a URL. */
 export function withShortKey(shortUrl: string, key: string): string {
     try {

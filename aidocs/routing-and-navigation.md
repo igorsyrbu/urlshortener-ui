@@ -10,7 +10,7 @@ The UI uses the App Router exclusively (`src/app/`); there is no Pages Router an
 
 | URL | File under `src/app/` | Kind | Renders |
 |---|---|---|---|
-| `/` | `page.tsx` | server, `redirect()` only | Redirects to `/links` (`redirect('/links')`). |
+| `/` | `page.tsx` | server, static | Development landing page (placeholder; the production landing page is a separate project): header with the brand, theme toggle and Sign in; links to `/login`, `/links` and `/report-abuse`; `InspectLinkForm` reads a short URL or bare key (`readShortKey`) and opens `/inspect/<key>`. No session check: "Open the app" goes to `/links`, whose auth gate sends signed-out visitors to sign in. Copy in `components/landing/landing-copy.ts`. |
 | `/login` | `login/page.tsx` | client | Magic-link / OTP / Google login. See [features/auth](features/auth.md). |
 | `/auth/exchange?code=` | `auth/exchange/page.tsx` | client | Exchanges the OAuth code for an access token, then goes to `/links`. |
 | `/auth/ott?token=&email=` | `auth/ott/page.tsx` | client | Auto-submits a hidden form (`OttLoginForm`) with the magic-link token. |
@@ -33,11 +33,11 @@ Why server vs client per file is in [architecture](architecture.md#rendering-mod
 
 ## Redirects
 
-- `/` and `/settings` are `redirect()`-only server pages (`next/navigation`). Keep such pages free of other logic. `/settings` is also redirected over HTTP in `next.config.ts` (`redirects()`, 307), so the server answers before any HTML; links go straight to the destination (`SETTINGS_ROUTES.DEFAULT`) instead of through a redirect.
-- `inspect/[key]` calls `notFound()` when the backend has no preview for the key, so a visitor sees "Link not found" instead of being bounced through `/` -> `/links` -> `/login`. Not-found pages share `components/layout/NotFoundView` (404 mark, heading, text, action buttons as children).
+- `/settings` is a `redirect()`-only server page (`next/navigation`). Keep such pages free of other logic. `/settings` is also redirected over HTTP in `next.config.ts` (`redirects()`, 307), so the server answers before any HTML; links go straight to the destination (`SETTINGS_ROUTES.DEFAULT`) instead of through a redirect.
+- `inspect/[key]` calls `notFound()` when the backend has no preview for the key, so a visitor sees "Link not found" instead of being bounced to `/login`. Not-found pages share `components/layout/NotFoundView` (404 mark, heading, text, action buttons as children).
 - Client redirects use `router.replace` when the previous entry must not stay in history (login after a failed auth check, after logout, `auth/exchange` -> `/links` so Back cannot resend the spent code) and `router.push` otherwise (link creation and import -> `/links`).
 - Hard navigations (`window.location`) exist for things the router cannot do: `fetchWithAuth` goes to `/login` when refresh fails ([api-layer](api-layer.md)), Google sign-in goes to `/api/oauth2/authorization/google` (cross-origin redirect chain through the proxy), billing checkout/portal go to provider URLs (`src/lib/billing-redirect.ts`).
-- Route constants: `ROUTES` (`LOGIN`, `DASHBOARD`, `LINKS`, `ANALYTICS`, `TAGS`, `SETTINGS`) in [`src/lib/constants.ts`](../url-shortener-ui/src/lib/constants.ts) and `SETTINGS_ROUTES` in [`src/lib/settings-constants.ts`](../url-shortener-ui/src/lib/settings-constants.ts). Prefer them over string literals for these paths.
+- Route constants: `ROUTES` (`HOME`, `LOGIN`, `REPORT_ABUSE`, `INSPECT(key)`, `DASHBOARD`, `LINKS`, `ANALYTICS`, `TAGS`, `SETTINGS`) in [`src/lib/constants.ts`](../url-shortener-ui/src/lib/constants.ts) and `SETTINGS_ROUTES` in [`src/lib/settings-constants.ts`](../url-shortener-ui/src/lib/settings-constants.ts). Prefer them over string literals for these paths.
 
 ## Auth guarding
 
@@ -110,7 +110,7 @@ Rules, the focus/hover definition and the settings switch: [features/links-and-t
 
 ## Known limitations and existing exceptions
 
-- Observation: `/dashboard` is a placeholder page, yet it is the target of "Go to Dashboard" in `not-found.tsx` and the first sidebar item, while `/` redirects to `/links`. Existing behaviour - do not change as a drive-by.
+- Observation: `/dashboard` is a placeholder page, yet it is the target of "Go to Dashboard" in `not-found.tsx` and the first sidebar item, while sign-in lands on `/links`. Existing behaviour - do not change as a drive-by.
 - Observation: `ROUTES` has no entries for `/inspect` or `/report-abuse`; the inspect page builds those paths inline. Existing exception - not a template.
 - Observation: `inspect/[key]/page.tsx` (server fetch, `notFound()` on a missing key) and `report-abuse/page.tsx` (async server page) are exceptions to the client-rendered model; see [architecture](architecture.md#known-limitations-and-existing-exceptions).
 - Observation: the auth gate is client-side, so a protected page's JS bundle is delivered before the check completes; nothing user-specific is rendered until it passes.
