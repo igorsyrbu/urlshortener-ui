@@ -1,6 +1,4 @@
-import {fetchWithAuth} from "@/lib/api";
-import type {RandomKeyResponse} from "@/lib/api-types";
-import {API_ENDPOINTS} from "@/lib/constants";
+import {fetchRandomKey} from "@/lib/links-api";
 import {logger} from "@/lib/logger";
 
 /** A prefetched key may have been taken by someone else since; after this it is fetched again. */
@@ -18,13 +16,7 @@ let prefetched: PrefetchedKey | null = null;
 /** The server-generated random key, or `null` (logged) when it could not be fetched. */
 export async function requestRandomKey(): Promise<string | null> {
     try {
-        const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS_RANDOM);
-        if (!res.ok) {
-            logger.error(RANDOM_KEY_LOG_ERROR, new Error(`Failed to fetch random key: ${res.status}`));
-            return null;
-        }
-        const data: RandomKeyResponse = await res.json();
-        return data.key;
+        return await fetchRandomKey();
     } catch (err) {
         logger.error(RANDOM_KEY_LOG_ERROR, err);
         return null;

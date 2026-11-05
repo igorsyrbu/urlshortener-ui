@@ -6,7 +6,7 @@ import {LogOut, Settings, User} from "lucide-react";
 import dynamic from "next/dynamic";
 import {useAuthStore} from "@/lib/store/auth";
 import {useCurrentUser} from "@/lib/hooks/useCurrentUser";
-import {fetchWithAuth} from "@/lib/api";
+import {terminateCurrentSession} from "@/lib/user-api";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -19,7 +19,7 @@ import {logger} from "@/lib/logger";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {cn} from "@/lib/utils";
-import {API_ENDPOINTS, FOCUS_RING_CLASS, ICON_BUTTON_LABELS, ROUTES} from "@/lib/constants";
+import {FOCUS_RING_CLASS, ICON_BUTTON_LABELS, ROUTES} from "@/lib/constants";
 import {SETTINGS_ROUTES} from "@/lib/settings-constants";
 import {attempt} from "@/lib/async-utils";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
@@ -50,7 +50,7 @@ export function SidebarUserMenu({onNavigate}: SidebarUserMenuProps) {
     const hasOpenedConfirm = useHasBeenOpened(isConfirmOpen);
 
     const handleLogout = async () => {
-        const result = await attempt(() => fetchWithAuth(API_ENDPOINTS.USERS_SESSIONS_CURRENT, {method: "DELETE"}));
+        const result = await attempt(terminateCurrentSession);
         if (!result.isSuccess) logger.error("Failed to terminate session on backend", result.error);
         logout();
         router.replace(ROUTES.LOGIN);

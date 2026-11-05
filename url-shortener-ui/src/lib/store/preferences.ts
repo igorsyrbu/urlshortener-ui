@@ -1,8 +1,9 @@
 import { create } from "zustand";
-import { fetchWithAuth } from "@/lib/api";
-import { API_ENDPOINTS, TRACKER_MODE } from "@/lib/constants";
-import type { UrlCleanerMode, UserPreferences } from "@/lib/api-types";
+import { ApiError } from "@/lib/api-request";
+import { TRACKER_MODE } from "@/lib/constants";
+import type { UrlCleanerMode } from "@/lib/api-types";
 import { logger } from "@/lib/logger";
+import { fetchUserPreferences, saveUserPreferences } from "@/lib/user-api";
 
 export type TrackerMode = UrlCleanerMode;
 
@@ -53,19 +54,14 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => ({
         if (get().isLoading) return false;
         set({ isLoading: true });
         try {
-            const res = await fetchWithAuth(API_ENDPOINTS.USERS_ME_PREFERENCES);
-            if (!res.ok) {
-                logger.warn("Failed to load preferences", { status: res.status });
-                return false;
-            }
-            const mode = applyServerMode(await res.json(), "fetch");
+            const mode = applyServerMode(await fetchUserPreferences(), "fetch");
             if (mode === null) {
                 return false;
             }
             set({ trackerMode: mode, hasLoaded: true });
             return true;
         } catch (error) {
-            logger.warn("Failed to load preferences", { error: String(error) });
+            logger.warn("Failed to load preferences", error instanceof ApiError ? { status: error.status } : { error: String(error) });
             return false;
         } finally {
             set({ isLoading: false });
@@ -77,14 +73,7 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => ({
         if (get().isSaving || previous === mode) return;
         set({ trackerMode: mode, isSaving: true });
         try {
-            const res = await fetchWithAuth(API_ENDPOINTS.USERS_ME_PREFERENCES, {
-                method: "PUT",
-                body: JSON.stringify({ urlCleanerMode: mode } satisfies UserPreferences),
-            });
-            if (!res.ok) {
-                throw new Error(`Failed to save preferences: ${res.status}`);
-            }
-            const saved = applyServerMode(await res.json(), "update");
+            const saved = applyServerMode(await saveUserPreferences({ urlCleanerMode: mode }), "update");
             set({ trackerMode: saved ?? mode, hasLoaded: true });
         } catch (error) {
             set({ trackerMode: previous });

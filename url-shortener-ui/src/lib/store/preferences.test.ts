@@ -35,7 +35,7 @@ describe("preferences store loading", () => {
         expect(usePreferencesStore.getState().trackerMode).toBe(TRACKER_MODE.AUTO_CLEAN);
         expect(usePreferencesStore.getState().hasLoaded).toBe(true);
         expect(usePreferencesStore.getState().isLoading).toBe(false);
-        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME_PREFERENCES);
+        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME_PREFERENCES, {signal: undefined});
     });
 
     it("loads only once per session", async () => {
@@ -167,7 +167,7 @@ describe("preferences store updating", () => {
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 500}));
 
         await expect(usePreferencesStore.getState().updatePreferences(TRACKER_MODE.AUTO_CLEAN))
-            .rejects.toThrow("Failed to save preferences: 500");
+            .rejects.toMatchObject({name: "ApiError", status: 500});
 
         expect(usePreferencesStore.getState().trackerMode).toBe(TRACKER_MODE.SUGGEST);
         expect(usePreferencesStore.getState().isSaving).toBe(false);

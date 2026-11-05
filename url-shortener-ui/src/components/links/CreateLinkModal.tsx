@@ -10,12 +10,10 @@ import {refreshAfter} from "@/lib/query/invalidation";
 import {AnimatePresence, MotionConfig, motion} from "framer-motion";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
 import {CreateLinkSuccess} from "@/components/links/CreateLinkSuccess";
-import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS, CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD, ROUTES} from "@/lib/constants";
-import {ShortKeyConflictError, type ShortLinkData} from "@/components/links/create-link-types";
+import {CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD, ROUTES} from "@/lib/constants";
+import {createShortLink, ShortKeyConflictError, type ShortLinkData} from "@/lib/links-api";
 import {logger} from "@/lib/logger";
 import {cn} from "@/lib/utils";
-import {HTTP_CONFLICT} from "@/lib/http-status";
 
 type ViewState = "form" | "success";
 
@@ -47,23 +45,13 @@ async function celebrateCreatedLink(): Promise<void> {
     });
 }
 
-/** Throws `ShortKeyConflictError` for a taken key and a generic error otherwise; `LinkFormFields` shows both. */
-async function createShortLink(longUrl: string, title: string, key: string, tagIds: string[]): Promise<ShortLinkData> {
+/** Rejects with `ShortKeyConflictError` for a taken key and with the failure otherwise; `LinkFormFields` shows both. */
+async function submitNewLink(longUrl: string, title: string, key: string, tagIds: string[]): Promise<ShortLinkData> {
     try {
-        const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS, {
-            method: "POST",
-            body: JSON.stringify({longUrl, title, key, isActive: true, tagIds: tagIds.length > 0 ? [...tagIds] : undefined}),
-        });
-        if (res.ok) return await res.json();
-        if (res.status === HTTP_CONFLICT) {
-            logger.error("Short link key conflict on create", undefined, {status: res.status});
-            throw new ShortKeyConflictError();
-        }
-        logger.error("Failed to create link", undefined, {status: res.status});
-        throw new Error("Failed to create link");
-    } catch (err) {
-        logger.error("Error creating link", err);
-        throw err;
+        return await createShortLink({longUrl, title, key, tagIds});
+    } catch (error) {
+        if (!(error instanceof ShortKeyConflictError)) logger.error("Error creating link", error);
+        throw error;
     }
 }
 
@@ -75,7 +63,7 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
     const queryClient = useQueryClient();
 
     const handleFormSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {
-        const createdLink = await createShortLink(longUrl, title, key, tagIds);
+        const createdLink = await submitNewLink(longUrl, title, key, tagIds);
         setShortLink(createdLink);
         setViewState("success");
         // The confetti chunk downloads on the first link; the list refresh must not wait for it.

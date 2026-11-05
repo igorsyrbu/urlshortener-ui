@@ -38,7 +38,7 @@ All UI code lives in `src/`; the alias `@/` points at it (see [configuration](co
 
 Intended direction: `app` -> `components` -> `lib/hooks` -> `lib/store` -> `lib/api` -> `lib/constants`/`logger`. `lib/` does not depend on `app/`; stores do not import components. Verified in code:
 
-- Stores call `fetchWithAuth` from `@/lib/api`; `@/lib/api` reads the token from `useAuthStore` (a deliberate `api` <-> `store/auth` link).
+- Stores, hooks and components call API functions (`lib/*-api.ts`), which call `fetchWithAuth` from `@/lib/api`; `@/lib/api` reads the token from `useAuthStore` (a deliberate `api` <-> `store/auth` link).
 - `src/lib/store/import.ts` refreshes links and tags when an import finishes, through `refreshServerStateAfter("importCompleted")` ([`lib/query/active-query-client.ts`](../url-shortener-ui/src/lib/query/active-query-client.ts), the client `QueryProvider` registers while the dashboard is mounted).
 - Providers hold React context only; `PaletteProvider` is used by settings components via `usePalette`.
 

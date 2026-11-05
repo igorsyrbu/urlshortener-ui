@@ -3,11 +3,12 @@
 import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import {toast} from "sonner";
-import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
+import {ApiError} from "@/lib/api-request";
+import {ROUTES} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import {UserSession} from "@/lib/session-utils";
 import {useAuthStore} from "@/lib/store/auth";
+import {fetchUserSessions, terminateCurrentSession, terminateOtherSessions, terminateSession} from "@/lib/user-api";
 
 /** `pendingSessionAction` while "log out all other sessions" runs; otherwise it holds the session id. */
 export const OTHER_SESSIONS_ACTION = "other";
@@ -30,21 +31,21 @@ function currentSessionFirst(first: UserSession, second: UserSession): number {
 
 async function loadSessions(): Promise<UserSession[] | null> {
     try {
-        const res = await fetchWithAuth(API_ENDPOINTS.USERS_SESSIONS);
-        if (!res.ok) return null;
-        const sessions: UserSession[] = await res.json();
+        const sessions = await fetchUserSessions();
         return sessions.sort(currentSessionFirst);
     } catch (error) {
-        logger.error("Failed to load sessions", error);
+        if (!(error instanceof ApiError)) logger.error("Failed to load sessions", error);
         return null;
     }
 }
 
-async function deleteSessions(endpoint: string, failureLogMessage: string): Promise<SessionDeleteOutcome> {
+/** `rejected` when the server refused, `failed` (logged) when it could not be reached. */
+async function deleteSessions(terminate: () => Promise<void>, failureLogMessage: string): Promise<SessionDeleteOutcome> {
     try {
-        const res = await fetchWithAuth(endpoint, {method: "DELETE"});
-        return res.ok ? "deleted" : "rejected";
+        await terminate();
+        return "deleted";
     } catch (error) {
+        if (error instanceof ApiError) return "rejected";
         logger.error(failureLogMessage, error);
         return "failed";
     }
@@ -69,8 +70,8 @@ export function useUserSessions(): UseUserSessionsResult {
 
     const logoutSession = async (id: string, isCurrent: boolean): Promise<void> => {
         setPendingSessionAction(id);
-        const endpoint = isCurrent ? API_ENDPOINTS.USERS_SESSIONS_CURRENT : API_ENDPOINTS.USERS_SESSION(id);
-        const outcome = await deleteSessions(endpoint, "Error terminating session");
+        const terminate = isCurrent ? terminateCurrentSession : () => terminateSession(id);
+        const outcome = await deleteSessions(terminate, "Error terminating session");
         setPendingSessionAction(null);
         if (outcome === "rejected") {
             toast.error("Failed to terminate session");
@@ -91,7 +92,7 @@ export function useUserSessions(): UseUserSessionsResult {
 
     const logoutOtherSessions = async (): Promise<void> => {
         setPendingSessionAction(OTHER_SESSIONS_ACTION);
-        const outcome = await deleteSessions(API_ENDPOINTS.USERS_SESSIONS_OTHER, "Error terminating other sessions");
+        const outcome = await deleteSessions(terminateOtherSessions, "Error terminating other sessions");
         setPendingSessionAction(null);
         if (outcome === "rejected") {
             toast.error("Failed to terminate other sessions");

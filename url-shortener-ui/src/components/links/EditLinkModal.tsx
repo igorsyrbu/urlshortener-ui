@@ -1,12 +1,9 @@
 "use client";
 
 import {LinkFormModal} from "@/components/links/LinkFormModal";
-import {fetchWithAuth} from "@/lib/api";
-import {API_ENDPOINTS} from "@/lib/constants";
+import {updateShortLink} from "@/lib/links-api";
 import {LinkItem} from "@/lib/types";
-import {ShortKeyConflictError} from "@/components/links/create-link-types";
 import {extractKeyFromShortUrl, withShortKey} from "@/lib/url-utils";
-import {HTTP_CONFLICT} from "@/lib/http-status";
 
 interface EditLinkModalProps {
     open: boolean;
@@ -20,26 +17,7 @@ export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkMod
     const handleSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {
         if (!link) throw new Error("No link to edit");
 
-        const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS, {
-            method: "PUT",
-            body: JSON.stringify({
-                id: link.id,
-                longUrl,
-                title,
-                key,
-                isActive: link.isActive,
-                tagIds: [...tagIds],
-            }),
-        });
-
-        if (res.status === HTTP_CONFLICT) {
-            throw new ShortKeyConflictError();
-        }
-
-        if (!res.ok) {
-            throw new Error("Failed to update link");
-        }
-
+        await updateShortLink(link, {longUrl, title, key, tagIds});
         onSuccess({...link, longUrl, title, key, shortUrl: withShortKey(link.shortUrl, key), tagIds: [...tagIds]});
     };
 

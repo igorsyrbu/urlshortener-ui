@@ -3,8 +3,19 @@ import {fetchWithAuth} from "@/lib/api";
 import {ApiError} from "@/lib/api-request";
 import type {PageDTO, ShortLinkDTO} from "@/lib/api-types";
 import {API_ENDPOINTS, DEFAULT_LINK_TITLE, DEFAULT_PAGE_SIZE} from "@/lib/constants";
-import {HTTP_CONFLICT, HTTP_INTERNAL_SERVER_ERROR, HTTP_NO_CONTENT} from "@/lib/http-status";
-import {deleteShortLink, fetchLinksPage, saveArchiveStatus, type LinksPageParams} from "@/lib/links-api";
+import {HTTP_CONFLICT, HTTP_INTERNAL_SERVER_ERROR, HTTP_NO_CONTENT, HTTP_NOT_FOUND, HTTP_OK} from "@/lib/http-status";
+import {
+    createShortLink as requestShortLinkCreation,
+    deleteShortLink,
+    fetchLinksPage,
+    fetchLongUrlTitle,
+    fetchRandomKey,
+    isShortKeyTaken,
+    saveArchiveStatus,
+    ShortKeyConflictError,
+    updateShortLink,
+    type LinksPageParams,
+} from "@/lib/links-api";
 import {logger} from "@/lib/logger";
 import {createLinkItem, createPage, createShortLink} from "@/test/link-utils";
 
@@ -153,5 +164,103 @@ describe("deleteShortLink", () => {
         await expect(deleteShortLink("a")).resolves.toBe(false);
 
         expect(logger.error).toHaveBeenCalled();
+    });
+});
+
+const LINK_FIELDS = {longUrl: "https://example.com", title: "Example", key: "ex", tagIds: ["tag-1"]};
+
+describe("createShortLink", () => {
+    it("posts an active link and returns the created one", async () => {
+        const created = {id: "link-1", title: "Example", longUrl: LINK_FIELDS.longUrl, shortUrl: "https://s.io/ex"};
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(created));
+
+        const result = await requestShortLinkCreation(LINK_FIELDS);
+
+        expect(result).toEqual(created);
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.method).toBe("POST");
+        expect(sentBody()).toEqual({...LINK_FIELDS, isActive: true});
+    });
+
+    it("leaves tag ids out when the link has none", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({}));
+
+        await requestShortLinkCreation({...LINK_FIELDS, tagIds: []});
+
+        expect(sentBody()).not.toHaveProperty("tagIds");
+    });
+
+    it("rejects with a key conflict, which is also an ApiError, when the key is taken", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: HTTP_CONFLICT}));
+
+        const error = await requestShortLinkCreation(LINK_FIELDS).catch((rejection: unknown) => rejection);
+
+        expect(error).toBeInstanceOf(ShortKeyConflictError);
+        expect(error).toBeInstanceOf(ApiError);
+        expect(error).toHaveProperty("status", HTTP_CONFLICT);
+    });
+
+    it("rejects with an ApiError for any other failure", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: HTTP_INTERNAL_SERVER_ERROR}));
+
+        const error = await requestShortLinkCreation(LINK_FIELDS).catch((rejection: unknown) => rejection);
+
+        expect(error).not.toBeInstanceOf(ShortKeyConflictError);
+        expect(error).toHaveProperty("status", HTTP_INTERNAL_SERVER_ERROR);
+    });
+});
+
+describe("updateShortLink", () => {
+    it("puts the edited fields with the link's id and archive state", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({}));
+        const link = createLinkItem({id: "link-1", isActive: false});
+
+        await updateShortLink(link, LINK_FIELDS);
+
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.method).toBe("PUT");
+        expect(sentBody()).toEqual({id: "link-1", ...LINK_FIELDS, isActive: false});
+    });
+
+    it("rejects with a key conflict when the new key is taken", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: HTTP_CONFLICT}));
+
+        await expect(updateShortLink(createLinkItem(), LINK_FIELDS)).rejects.toBeInstanceOf(ShortKeyConflictError);
+    });
+});
+
+describe("fetchLongUrlTitle", () => {
+    it("asks for the page title of the encoded URL and trims it", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({title: "  Example Domain  "}));
+
+        const title = await fetchLongUrlTitle("https://example.com/?q=a b");
+
+        expect(title).toBe("Example Domain");
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][0]).toBe(`${API_ENDPOINTS.LONG_URL_TITLE}?url=${encodeURIComponent("https://example.com/?q=a b")}`);
+    });
+
+    it("returns null when the page has no title", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({title: "   "}));
+
+        expect(await fetchLongUrlTitle("https://example.com")).toBeNull();
+    });
+});
+
+describe("isShortKeyTaken", () => {
+    it.each([
+        [HTTP_OK, true],
+        [HTTP_NOT_FOUND, false],
+        [HTTP_INTERNAL_SERVER_ERROR, null],
+    ])("reads status %i as %s", async (status, expected) => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status}));
+
+        expect(await isShortKeyTaken("ex")).toBe(expected);
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][0]).toBe(API_ENDPOINTS.SHORTLINKS_EXISTS("ex"));
+    });
+});
+
+describe("fetchRandomKey", () => {
+    it("returns the generated key", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({key: "aB3dE"}));
+
+        expect(await fetchRandomKey()).toBe("aB3dE");
     });
 });

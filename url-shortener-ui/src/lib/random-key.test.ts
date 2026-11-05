@@ -51,7 +51,7 @@ describe("random key prefetch", () => {
         await settle();
         prefetchRandomKey();
 
-        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.SHORTLINKS_RANDOM);
+        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.SHORTLINKS_RANDOM, {signal: undefined});
     });
 
     it("hands over a prefetch that is still in flight instead of requesting again", async () => {

@@ -1,4 +1,5 @@
 import {fetchWithAuth} from "@/lib/api";
+import {ApiError} from "@/lib/api-request";
 import {
     API_ENDPOINTS,
     EXPORT_FILENAME_PREFIX,
@@ -21,13 +22,11 @@ export type CsvPrecheckResult =
     | { readonly status: "empty" }
     | { readonly status: "too-many-rows"; readonly rowCount: number };
 
-export class TransferError extends Error {
-    readonly status: number;
-
+/** A CSV import, export or progress-stream failure; an `ApiError`, so status handling is the same as everywhere else. */
+export class TransferError extends ApiError {
     constructor(message: string, status: number) {
-        super(message);
+        super(status, message);
         this.name = "TransferError";
-        this.status = status;
     }
 }
 

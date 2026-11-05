@@ -81,7 +81,7 @@ describe("GeneralSettingsPage sessions", () => {
     it("loads sessions and shows the current device apart from the other ones", async () => {
         await renderPageWith([PHONE, CURRENT]);
 
-        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_SESSIONS);
+        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_SESSIONS, {signal: undefined});
         expect(within(rowOf("MacBook (macOS)")).getByText("This device")).toBeInTheDocument();
         expect(screen.getByText("Active sessions")).toBeInTheDocument();
         expect(screen.getByText("iPhone (iOS)")).toBeInTheDocument();

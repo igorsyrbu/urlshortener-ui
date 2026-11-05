@@ -171,7 +171,7 @@ These are observations of how the code differs from the rules above. They are no
 
 - Observation: shadcn primitives in `components/ui` type props inline (`React.ComponentProps<"div">`, `{checked: boolean ...}` in `Switch`) and `PaletteProvider`, `TagCardSkeletonList`, `LinkCardSkeletonList` use inline prop types. Existing exception; feature components use `Props` interfaces.
 - Observation: several files export more than one component (`DeleteLinkModal.tsx` exports `LinkPreviewCard`; `*Skeleton.tsx` files export a card and a `...List`; `AnalyticsSkeleton.tsx` exports three). Existing exception.
-- Observation: files over the size guidance: `LinkFormFields.tsx` (~600 lines, ~20 `useState`, a ~50-line `handleSubmit`, direct `fetchWithAuth` calls in effects), `QrCodeModal.tsx`, `links/page.tsx`, `LinkCard.tsx`, `DateRangeDrawer.tsx`.
+- Observation: files over the size guidance: `LinkFormFields.tsx` (~600 lines, ~20 `useState`, a ~50-line `handleSubmit`, requests started from effects), `QrCodeModal.tsx`, `links/page.tsx`, `LinkCard.tsx`, `DateRangeDrawer.tsx`.
 - Observation: `app/login/page.tsx` and `ReportAbuseForm` call `fetch` directly because the endpoints are unauthenticated ([api-layer.md](api-layer.md)).
 - Observation: about 45 raw `<button>` elements (e.g. `AppearanceCard`, `CustomThemeBuilder`, `TagSelect`, `LinkCard`, `PageToolbar`) and raw `<label>` elements exist outside `components/ui` instead of `Button` / `Label`. New buttons must use `Button`; the existing raw ones render bespoke chrome.
 - Observation: the vendored shadcn files keep their own assertions without a comment (`theme as ToasterProps["theme"]` in `sonner.tsx`, `as React.CSSProperties` in `chart.tsx` and `glowing-effect.tsx`); they are not edited as a drive-by.

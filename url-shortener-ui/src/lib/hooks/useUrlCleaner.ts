@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { fetchWithAuth } from "@/lib/api";
+import { ApiError } from "@/lib/api-request";
 import { HTTP_BAD_REQUEST, HTTP_FORBIDDEN, HTTP_UNAUTHORIZED } from "@/lib/http-status";
-import { API_ENDPOINTS, URL_CLEANER_DEBOUNCE_MS } from "@/lib/constants";
+import { URL_CLEANER_DEBOUNCE_MS } from "@/lib/constants";
 import type { UrlCleanerResponse } from "@/lib/api-types";
 import { isValidUrl, normalizeUrl } from "@/lib/url-utils";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useOnValueChange } from "@/lib/hooks/useOnValueChange";
+import { requestUrlCleanup } from "@/lib/url-cleaner-api";
 import { logger } from "@/lib/logger";
 
 interface UseUrlCleanerOptions {
@@ -28,23 +29,22 @@ function isAbortError(error: unknown): boolean {
 /** The cleaned URL when the backend removed trackers from `url`, otherwise `null` (also on any failure). */
 async function requestTrackerCleanup(url: string, signal: AbortSignal): Promise<UrlCleanerResponse | null> {
     try {
-        const res = await fetchWithAuth(API_ENDPOINTS.URL_CLEANER, {
-            method: "POST",
-            body: JSON.stringify({ url }),
-            signal,
-        });
-        if (signal.aborted || QUIETLY_IGNORED_STATUSES.includes(res.status)) return null;
-        if (!res.ok) {
-            logger.warn("URL cleaner check failed", { status: res.status });
-            return null;
-        }
-        const data: UrlCleanerResponse = await res.json();
+        const data = await requestUrlCleanup(url, signal);
         const hasTrackers = data.removedParams.length > 0 && !data.completeProviderSkipped;
         return hasTrackers && data.url !== url ? data : null;
     } catch (err) {
-        if (!signal.aborted && !isAbortError(err)) logger.warn("URL cleaner request error", { error: String(err) });
+        reportCleanupFailure(err, signal);
         return null;
     }
+}
+
+function reportCleanupFailure(err: unknown, signal: AbortSignal): void {
+    if (signal.aborted || isAbortError(err)) return;
+    if (!(err instanceof ApiError)) {
+        logger.warn("URL cleaner request error", { error: String(err) });
+        return;
+    }
+    if (!QUIETLY_IGNORED_STATUSES.includes(err.status)) logger.warn("URL cleaner check failed", { status: err.status });
 }
 
 function shouldSkipCleaner(url: string): boolean {

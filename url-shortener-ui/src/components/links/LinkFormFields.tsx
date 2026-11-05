@@ -2,11 +2,9 @@
 
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {AnimatePresence, MotionConfig, motion} from "framer-motion";
-import {fetchWithAuth} from "@/lib/api";
 import {generateTitleFromHostname, focusElementById} from "@/lib/utils";
 import {getDomain, getShortKeyValidationError, isValidUrl, normalizeUrl} from "@/lib/url-utils";
 import {
-    API_ENDPOINTS,
     DEFAULT_LINK_TITLE,
     GLOW_FADE_DELAY_MS,
     KEY_AVAILABILITY_CHECK_DEBOUNCE_MS,
@@ -14,7 +12,6 @@ import {
     TRACKER_MODE,
     URL_CLEANER_SUCCESS_DURATION_MS,
 } from "@/lib/constants";
-import type {LongUrlTitleResponse} from "@/lib/api-types";
 import {consumePrefetchedRandomKey, peekPrefetchedRandomKey, takeRandomKey} from "@/lib/random-key";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {useDebounce} from "@/lib/hooks/useDebounce";
@@ -23,7 +20,8 @@ import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 import {useAllTags} from "@/lib/hooks/useAllTags";
 import {usePreferencesStore} from "@/lib/store/preferences";
 import {useCreateTagFromSearch} from "@/lib/hooks/useCreateTagFromSearch";
-import {type GlowState, ShortKeyConflictError} from "@/components/links/create-link-types";
+import type {GlowState} from "@/components/links/create-link-types";
+import {fetchLongUrlTitle, isShortKeyTaken, ShortKeyConflictError} from "@/lib/links-api";
 import {FormScreenContent} from "@/components/links/LinkFormMainScreen";
 import {TagsScreenContent} from "@/components/links/LinkFormTagsScreen";
 import {TrackerReviewScreen} from "@/components/links/TrackerReviewScreen";
@@ -32,7 +30,6 @@ import {logger} from "@/lib/logger";
 import {withPending} from "@/lib/async-utils";
 import {buildFinalUrl, buildTrackerEntries} from "@/lib/url-cleaner-utils";
 import {LINK_FORM_FIELD_IDS} from "@/components/links/link-form-constants";
-import {HTTP_NOT_FOUND, HTTP_OK} from "@/lib/http-status";
 
 interface LinkFormFieldsProps {
     title: string;
@@ -59,11 +56,18 @@ function resolveLinkTitle(value: string): string {
 /** The page title of `longUrl` reported by the backend, or `null` when there is none. */
 async function requestLongUrlTitle(longUrl: string): Promise<string | null> {
     try {
-        const res = await fetchWithAuth(`${API_ENDPOINTS.LONG_URL_TITLE}?url=${encodeURIComponent(longUrl)}`);
-        if (!res.ok) return null;
-        const data: LongUrlTitleResponse = await res.json();
-        return data.title?.trim() || null;
+        return await fetchLongUrlTitle(longUrl);
     } catch {
+        return null;
+    }
+}
+
+/** Whether the key is taken, or `null` (a failure is logged) when the server gave no usable answer. */
+async function checkShortKeyTaken(key: string): Promise<boolean | null> {
+    try {
+        return await isShortKeyTaken(key);
+    } catch (err) {
+        logger.error("Error checking short link key availability", err);
         return null;
     }
 }
@@ -223,18 +227,9 @@ export function LinkFormFields({
         let cancelled = false;
 
         const checkAvailability = async () => {
-            try {
-                const res = await fetchWithAuth(API_ENDPOINTS.SHORTLINKS_EXISTS(trimmedKey));
-                if (cancelled) return;
-
-                if (res.status === HTTP_OK) {
-                    setKeyError(SHORT_KEY_TAKEN_MESSAGE);
-                } else if (res.status === HTTP_NOT_FOUND) {
-                    setKeyError(null);
-                }
-            } catch (err) {
-                logger.error("Error checking short link key availability", err);
-            }
+            const isTaken = await checkShortKeyTaken(trimmedKey);
+            if (cancelled || isTaken === null) return;
+            setKeyError(isTaken ? SHORT_KEY_TAKEN_MESSAGE : null);
         };
 
         void checkAvailability();

@@ -34,7 +34,7 @@ describe("PreferencesCard", () => {
         await waitFor(() => expect(modeOption(TRACKER_MODE.SUGGEST)).toBeChecked());
         expect(modeOption(TRACKER_MODE.DISABLED)).not.toBeChecked();
         expect(modeOption(TRACKER_MODE.AUTO_CLEAN)).not.toBeChecked();
-        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME_PREFERENCES);
+        expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith(API_ENDPOINTS.USERS_ME_PREFERENCES, {signal: undefined});
     });
 
     it("shows every option disabled and none selected while loading", () => {

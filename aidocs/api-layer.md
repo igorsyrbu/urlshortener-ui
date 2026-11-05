@@ -13,12 +13,13 @@ Where fetches live today (use these homes for new code):
 | Home | What goes there | Examples |
 |---|---|---|
 | TanStack Query hook + `lib/*-api.ts` | Server data on dashboard routes, cached and shared (the target for every resource) | `useLinksPage` ([`src/lib/hooks/useLinksPage.ts`](../url-shortener-ui/src/lib/hooks/useLinksPage.ts)) over `fetchLinksPage` ([`src/lib/links-api.ts`](../url-shortener-ui/src/lib/links-api.ts)) |
-| Zustand store action | Resources not yet on queries: lists, loading/error flags | `fetchPreferences` in [`src/lib/store/preferences.ts`](../url-shortener-ui/src/lib/store/preferences.ts) |
-| `lib/*-api.ts` module | A group of related endpoints with DTO parsing and typed errors | [`src/lib/billing-api.ts`](../url-shortener-ui/src/lib/billing-api.ts), [`src/lib/link-transfer.ts`](../url-shortener-ui/src/lib/link-transfer.ts) (CSV import/export) |
-| Hook in `lib/hooks` | Mutations or loads owned by one feature, with local pending/error state | `useTagMutations`, `useUrlCleaner`, `useBillingCheckout` in `src/lib/hooks/` |
-| Component handler | One-off mutations tied to a single form or dialog | `CreateLinkModal`, `EditLinkModal` |
+| Zustand store action | Resources not yet on queries: loading/error flags around an API function | `fetchPreferences` in [`src/lib/store/preferences.ts`](../url-shortener-ui/src/lib/store/preferences.ts) over `fetchUserPreferences` |
+| Hook in `lib/hooks` | Mutations or loads owned by one feature, with local pending/error state, over an API function | `useTagMutations`, `useUrlCleaner`, `useUserSessions`, `useBillingCheckout` in `src/lib/hooks/` |
+| Component handler | One-off mutations tied to a single form or dialog, over an API function | `CreateLinkModal` (`createShortLink`), `EditLinkModal` (`updateShortLink`) |
 
-Pages trigger loads from `useEffect` by calling a store action; the fetch itself stays in the store. Store design is in [state-management.md](state-management.md). Never import `fetchWithAuth` into a Server Component.
+**Every request lives in an API module** ([`lib/links-api.ts`](../url-shortener-ui/src/lib/links-api.ts), [`tags-api.ts`](../url-shortener-ui/src/lib/tags-api.ts), [`user-api.ts`](../url-shortener-ui/src/lib/user-api.ts) (profile, sessions, preferences), [`analytics-api.ts`](../url-shortener-ui/src/lib/analytics-api.ts), [`billing-api.ts`](../url-shortener-ui/src/lib/billing-api.ts), [`url-cleaner-api.ts`](../url-shortener-ui/src/lib/url-cleaner-api.ts), plus the streaming and file modules [`link-transfer.ts`](../url-shortener-ui/src/lib/link-transfer.ts) and [`import-progress.ts`](../url-shortener-ui/src/lib/import-progress.ts)). Components, hooks and stores call those functions and never `fetchWithAuth`. An API function goes through `requestJson` / `requestNoContent`, so a failure rejects with an `ApiError` (`status` plus a user-safe message) and callers branch on `error.status`, not on a `Response`; a function calls `fetchWithAuth` itself only when the status is the answer (`isShortKeyTaken`: 200 taken, 404 free) or the body is a stream or a file. A domain error is an `ApiError` subclass (`ShortKeyConflictError` for a taken key, `BillingApiError` with `retryAfterSeconds`).
+
+Pages trigger loads from `useEffect` by calling a store action; the fetch itself stays in the API module. Store design is in [state-management.md](state-management.md). Never import `fetchWithAuth` into a Server Component.
 
 ## `fetchWithAuth`
 
@@ -68,20 +69,21 @@ Responses are mostly typed by annotation (`const data: PageDTO<ShortLinkDTO> = a
 
 ## Error handling conventions
 
-There is no single error type; conventions by area:
+Every failed request rejects with an `ApiError` ([`src/lib/api-request.ts`](../url-shortener-ui/src/lib/api-request.ts): `status` plus a user-safe `message` from the problem detail) or a subclass; a network failure rejects with the `fetch` error itself (a `TypeError`). Conventions by area:
 
 | Area | Convention |
 |---|---|
-| Stores | Set `error: string` in state (`"Failed to fetch links: <status>"` or the thrown message), log with `logger.error` for thrown errors; components render the message. Details in [state-management.md](state-management.md) |
-| Billing | `BillingApiError(status, message, retryAfterSeconds)` thrown by `billing-api.ts`; each billing hook maps `status` to a message from `BILLING_COPY` (400, 404, 409, 422, 429) |
-| CSV import/export | `TransferError(message, status)` from `link-transfer.ts`; message extracted by `parseProblemDetail` (`problem-details.ts`) |
-| Tag mutations | `useTagMutations` rejects with a readable message; `TagFormModal` shows it inline, the tags page toasts delete failures. The list stores' `error` is never written by a mutation |
-| Forms (create/edit link) | Component handler throws a typed error (`ShortKeyConflictError` on 409) or generic `Error`; the form shows it |
-| Login / report abuse | Inline `if (response.status === 429)` branches in the component |
+| Queries | `isError` / `error` from the query; components show copy for the case (see each feature guide). Retries follow `shouldRetryQuery` (5xx, 408 and network failures twice) |
+| Billing | `BillingApiError` (adds `retryAfterSeconds`) thrown by `billing-api.ts`; each billing hook maps `status` to a message from `BILLING_COPY` (400, 404, 409, 422, 429) |
+| CSV import/export, import progress | `TransferError` from `link-transfer.ts`; message extracted by `parseProblemDetail` (`problem-details.ts`) |
+| Tag mutations | `useTagMutations` rejects with the `ApiError`, whose message is readable; `TagFormModal` shows it inline, the tags page toasts delete failures |
+| Forms (create/edit link) | `ShortKeyConflictError` on 409 (the form shows it under the key), otherwise the `ApiError` or network error |
+| Sessions, preferences, URL cleaner | The hook or store branches on `error instanceof ApiError` (the server answered) versus a network failure, and on `error.status` |
+| Login / report abuse | Inline `if (response.status === 429)` branches in the component (public routes, plain `fetch`) |
 
 Rules for new code:
 
-- Check `res.ok` before parsing the body; do not assume JSON on errors.
+- Add the request as a function in the resource's `lib/*-api.ts` module, built on `requestJson` / `requestNoContent`; call it from the component, hook or store. Inside an API module that must read a raw `Response`, check `res.ok` before parsing the body; do not assume JSON on errors.
 - Log through `logger` from `@/lib/logger`, never `console.*`. Failures usually pass `{status}` as context.
 - Status codes come from [`src/lib/http-status.ts`](../url-shortener-ui/src/lib/http-status.ts) (`HTTP_OK`, `HTTP_CONFLICT`, `HTTP_TOO_MANY_REQUESTS`, ...): never an inline literal and never a file-local copy. Add a missing code there. Endpoints come from `API_ENDPOINTS`, including the ones with a parameter (`USERS_SESSION(id)`, `SHORTLINKS_EXISTS(key)`).
 - Queries and mutations use `requestJson(endpoint, options)` ([`src/lib/api-request.ts`](../url-shortener-ui/src/lib/api-request.ts)): the parsed body, or an `ApiError` whose `status` drives retries and per-status handling and whose `message` is the problem detail (or `describeHttpFailure` wording), safe to show.

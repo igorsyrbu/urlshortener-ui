@@ -80,7 +80,7 @@ Edit closes the modal on success (`LinkFormModal.handleSubmit`) and reports the 
 - **Availability**: after `KEY_AVAILABILITY_CHECK_DEBOUNCE_MS` (600 ms) a user-edited, valid key that differs from the initial key triggers `GET /shortlinks/{key}/exists` (`200` is taken, `404` is free, cancelled on change). A taken key sets `SHORT_KEY_TAKEN_MESSAGE` and disables submit.
 - **Title**: empty title falls back to `DEFAULT_LINK_TITLE` on submit. Create enables "suggest title" (`GET /longurl/title?url=`); on empty or failed response it derives a title from the hostname with a short glow animation.
 - **Tags**: see [Tag selection](#tag-selection).
-- **Conflict handling**: a `409` from `POST`/`PUT /shortlinks` throws `ShortKeyConflictError`; the form sets the key error and returns to the `form` screen. Any other failure is logged and rethrown, leaving the submit button re-enabled.
+- **Conflict handling**: a `409` from `POST`/`PUT /shortlinks` rejects with `ShortKeyConflictError` (`createShortLink` / `updateShortLink` in `lib/links-api.ts`, an `ApiError` subclass); the form sets the key error and returns to the `form` screen. Any other failure (an `ApiError` or a network error) is logged by the create modal and rethrown, leaving the submit button re-enabled.
 - Form state is reset when the `initialLongUrl`, `initialTitle` or `initialTagIds` props change (switching which link is edited).
 
 ### URL cleaner and tracker review

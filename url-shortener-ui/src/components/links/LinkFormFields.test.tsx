@@ -2,7 +2,7 @@ import {screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
-import {ShortKeyConflictError} from "@/components/links/create-link-types";
+import {ShortKeyConflictError} from "@/lib/links-api";
 import {fetchWithAuth} from "@/lib/api";
 import {
     API_ENDPOINTS,
