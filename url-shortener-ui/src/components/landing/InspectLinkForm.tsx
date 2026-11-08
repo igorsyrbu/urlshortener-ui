@@ -48,14 +48,16 @@ export function InspectLinkForm() {
                     spellCheck={false}
                     aria-invalid={error !== null}
                     aria-describedby={error ? errorId : undefined}
-                    className="min-w-0 flex-1"
+                    className="h-10 min-w-0 flex-1"
                 />
-                <Button type="submit" variant="outline">
+                <Button type="submit" size="lg">
                     <ScanSearch className="size-4"/>
                     {INSPECT_FORM_COPY.SUBMIT}
                 </Button>
             </div>
-            {error && <FieldError id={errorId}>{error}</FieldError>}
+            {error
+                ? <FieldError id={errorId}>{error}</FieldError>
+                : <p className="text-xs text-muted-foreground">{INSPECT_FORM_COPY.HINT}</p>}
         </form>
     );
 }
