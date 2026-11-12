@@ -17,7 +17,8 @@ vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 
 const CHECKOUT_URL = "https://buy.polar.sh/checkout/abc";
 const PORTAL_URL = "https://billing.polar.sh/portal/abc";
-const FUTURE_PERIOD_END = "2026-11-08T22:24:30Z";
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+const FUTURE_PERIOD_END = new Date(Date.now() + ONE_YEAR_MS).toISOString();
 const PORTAL_TTL_SECONDS = 60 * 60;
 
 function rateLimitedResponse(retryAfterSeconds: string | null): Response {
