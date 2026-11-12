@@ -1,7 +1,7 @@
 "use client";
 
 import {useState, type ReactNode} from "react";
-import dynamic from "next/dynamic";
+import {lazyDialog} from "@/lib/lazy-dialog";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 import {FOCUS_RING_CLASS, ICON_BUTTON_LABELS} from "@/lib/constants";
 import {AnimatePresence, LazyMotion, m, useReducedMotion, type Transition} from "framer-motion";
@@ -47,11 +47,11 @@ function loadPageOptionsDrawer() {
     return import("@/components/layout/PageOptionsDrawer").then((drawerModule) => drawerModule.PageOptionsDrawer);
 }
 
-function preloadPageOptionsDrawer(): void {
-    void loadPageOptionsDrawer();
-}
+const PageOptionsDrawer = lazyDialog(loadPageOptionsDrawer);
 
-const PageOptionsDrawer = dynamic(loadPageOptionsDrawer, {ssr: false});
+function preloadPageOptionsDrawer(): void {
+    void PageOptionsDrawer.preload();
+}
 
 function loadMotionFeatures() {
     return import("@/lib/motion-features").then((featuresModule) => featuresModule.default);

@@ -1,7 +1,7 @@
 "use client";
 
 import {useId, useState} from "react";
-import dynamic from "next/dynamic";
+import {lazyDialog} from "@/lib/lazy-dialog";
 import {Button} from "@/components/ui/button";
 import {BillingCurrentPlanCard} from "@/components/settings/BillingCurrentPlanCard";
 import {SettingsCallout} from "@/components/settings/SettingsCallout";
@@ -13,10 +13,7 @@ import {BILLING_COPY, BILLING_PLANS, isProSubscription} from "@/lib/billing-cons
 import {useBillingSettings} from "@/lib/hooks/useBillingSettings";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 
-const PeriodSwitchConfirmModal = dynamic(
-    () => import("@/components/settings/PeriodSwitchConfirmModal").then((modalModule) => modalModule.PeriodSwitchConfirmModal),
-    {ssr: false},
-);
+const PeriodSwitchConfirmModal = lazyDialog(() => import("@/components/settings/PeriodSwitchConfirmModal").then((modalModule) => modalModule.PeriodSwitchConfirmModal));
 
 export function BillingSettings() {
     const {cycle, handleCycleChange, subscription, checkout, periodUpgrade, portal, isActionPending} = useBillingSettings();

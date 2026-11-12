@@ -3,7 +3,6 @@
 import {Suspense, useCallback, useEffect, useEffectEvent, useState} from "react";
 import {useShallow} from "zustand/react/shallow";
 import {useRouter, useSearchParams} from "next/navigation";
-import dynamic from "next/dynamic";
 import {LinkCard} from "@/components/links/LinkCard";
 import {LinkCardSkeletonList} from "@/components/links/LinkCardSkeleton";
 import {LinksPagination} from "@/components/links/LinksPagination";
@@ -27,6 +26,7 @@ import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 import {LazyQrCodeModal} from "@/components/links/lazy-qr-code-modal";
 import {preloadOnIdle} from "@/lib/preload-on-idle";
 import {canRunShortcut, isShortcutKey, SHORTCUTS} from "@/lib/keyboard-shortcuts";
+import {lazyDialog} from "@/lib/lazy-dialog";
 
 const LINKS_LIST_TOP_ID = "links-list-top";
 const ARCHIVED_FILTER_TOAST_ID = "archived-filter";
@@ -44,11 +44,11 @@ function loadArchiveLinkModal() {
     return import("@/components/links/ArchiveLinkModal").then((modalModule) => modalModule.ArchiveLinkModal);
 }
 
-const EditLinkModal = dynamic(loadEditLinkModal, {ssr: false});
-const DeleteLinkModal = dynamic(loadDeleteLinkModal, {ssr: false});
-const ArchiveLinkModal = dynamic(loadArchiveLinkModal, {ssr: false});
-const ImportCsvModal = dynamic(() => import("@/components/links/ImportCsvModal").then((modalModule) => modalModule.ImportCsvModal), {ssr: false});
-const ExportCsvModal = dynamic(() => import("@/components/links/ExportCsvModal").then((modalModule) => modalModule.ExportCsvModal), {ssr: false});
+const EditLinkModal = lazyDialog(loadEditLinkModal);
+const DeleteLinkModal = lazyDialog(loadDeleteLinkModal);
+const ArchiveLinkModal = lazyDialog(loadArchiveLinkModal);
+const ImportCsvModal = lazyDialog(() => import("@/components/links/ImportCsvModal").then((modalModule) => modalModule.ImportCsvModal));
+const ExportCsvModal = lazyDialog(() => import("@/components/links/ExportCsvModal").then((modalModule) => modalModule.ExportCsvModal));
 
 function scrollLinksToTop(): void {
     const scroller = document.querySelector("main");
@@ -98,7 +98,7 @@ function LinksPageContent() {
     }, [hydrateShowArchived]);
 
     useEffect(() => {
-        preloadOnIdle([loadEditLinkModal, loadDeleteLinkModal, loadArchiveLinkModal]);
+        preloadOnIdle([EditLinkModal.preload, DeleteLinkModal.preload, ArchiveLinkModal.preload]);
     }, []);
 
     useEffect(() => {

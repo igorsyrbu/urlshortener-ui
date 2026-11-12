@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import dynamic from "next/dynamic";
+import {lazyDialog} from "@/lib/lazy-dialog";
 import {useAuthStore} from "@/lib/store/auth";
 import {getJwtTTL} from "@/lib/utils";
 import {OTHER_SESSIONS_ACTION, useUserSessions} from "@/lib/hooks/useUserSessions";
@@ -12,10 +12,7 @@ import {CurrentSessionCard} from "@/components/settings/CurrentSessionCard";
 import {OtherSessionsList} from "@/components/settings/OtherSessionsList";
 import type {LogoutTarget} from "@/components/settings/SessionLogoutDialog";
 
-const SessionLogoutDialog = dynamic(
-    () => import("@/components/settings/SessionLogoutDialog").then((dialogModule) => dialogModule.SessionLogoutDialog),
-    {ssr: false},
-);
+const SessionLogoutDialog = lazyDialog(() => import("@/components/settings/SessionLogoutDialog").then((dialogModule) => dialogModule.SessionLogoutDialog));
 
 /** The current device, the other signed-in devices, and the confirmation before logging any of them out. */
 export function SessionsSection() {

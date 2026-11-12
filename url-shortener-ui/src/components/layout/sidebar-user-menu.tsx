@@ -3,7 +3,7 @@
 import {useState, type ComponentProps} from "react";
 import {useRouter} from "next/navigation";
 import {LogOut, Settings, User} from "lucide-react";
-import dynamic from "next/dynamic";
+import {lazyDialog} from "@/lib/lazy-dialog";
 import {useAuthStore} from "@/lib/store/auth";
 import {useCurrentUser} from "@/lib/hooks/useCurrentUser";
 import {terminateCurrentSession} from "@/lib/user-api";
@@ -25,14 +25,8 @@ import {attempt} from "@/lib/async-utils";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 import {Skeleton} from "@/components/ui/skeleton";
 
-const AccountMenuDrawer = dynamic(
-    () => import("@/components/layout/AccountMenuDrawer").then((drawerModule) => drawerModule.AccountMenuDrawer),
-    {ssr: false},
-);
-const LogoutConfirmDialog = dynamic(
-    () => import("@/components/layout/LogoutConfirmDialog").then((dialogModule) => dialogModule.LogoutConfirmDialog),
-    {ssr: false},
-);
+const AccountMenuDrawer = lazyDialog(() => import("@/components/layout/AccountMenuDrawer").then((drawerModule) => drawerModule.AccountMenuDrawer));
+const LogoutConfirmDialog = lazyDialog(() => import("@/components/layout/LogoutConfirmDialog").then((dialogModule) => dialogModule.LogoutConfirmDialog));
 
 interface SidebarUserMenuProps {
     onNavigate?: () => void;

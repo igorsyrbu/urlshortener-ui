@@ -1,7 +1,6 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import dynamic from "next/dynamic";
 import {TagCard} from "@/components/tags/TagCard";
 import {EmptyTagsState} from "@/components/tags/EmptyTagsState";
 import {NoTagsFoundState} from "@/components/tags/NoTagsFoundState";
@@ -21,6 +20,7 @@ import {TAG_DELETE_FAILED_MESSAGE} from "@/lib/tag-constants";
 import {toast} from "sonner";
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
 import {CARD_LIST_CLASS, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, SEARCH_DEBOUNCE_MS, TAGS_LOAD_COPY} from "@/lib/constants";
+import {lazyDialog} from "@/lib/lazy-dialog";
 
 function loadEditTagModal() {
     return import("@/components/tags/EditTagModal").then((modalModule) => modalModule.EditTagModal);
@@ -30,8 +30,8 @@ function loadDeleteTagModal() {
     return import("@/components/tags/DeleteTagModal").then((modalModule) => modalModule.DeleteTagModal);
 }
 
-const EditTagModal = dynamic(loadEditTagModal, {ssr: false});
-const DeleteTagModal = dynamic(loadDeleteTagModal, {ssr: false});
+const EditTagModal = lazyDialog(loadEditTagModal);
+const DeleteTagModal = lazyDialog(loadDeleteTagModal);
 
 const NO_TAGS: TagItem[] = [];
 
@@ -55,7 +55,7 @@ export default function TagsPage() {
     const hasOpenedDelete = useHasBeenOpened(deleteModalOpen);
 
     useEffect(() => {
-        preloadOnIdle([loadEditTagModal, loadDeleteTagModal]);
+        preloadOnIdle([EditTagModal.preload, DeleteTagModal.preload]);
     }, []);
 
 

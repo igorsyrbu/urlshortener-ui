@@ -1,14 +1,11 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import {lazyDialog} from "@/lib/lazy-dialog";
 import {Card, CardContent} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 
-const DeleteAccountDialog = dynamic(
-    () => import("@/components/settings/DeleteAccountDialog").then((dialogModule) => dialogModule.DeleteAccountDialog),
-    {ssr: false},
-);
+const DeleteAccountDialog = lazyDialog(() => import("@/components/settings/DeleteAccountDialog").then((dialogModule) => dialogModule.DeleteAccountDialog));
 
 interface DangerZoneCardProps {
     isDeleteDialogOpen: boolean;

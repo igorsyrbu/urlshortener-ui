@@ -3,7 +3,6 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { SessionCheckScreen } from "@/components/layout/SessionCheckScreen";
-import dynamic from "next/dynamic";
 import React, { useEffect, useState, useRef } from "react";
 import { useUIStore } from "@/lib/store/ui";
 import {useShallow} from "zustand/react/shallow";
@@ -27,6 +26,7 @@ import {useShortcutsStore} from "@/lib/store/shortcuts";
 import {ROUTES} from "@/lib/constants";
 import {isPathWithin} from "@/lib/route-match";
 import {QueryProvider} from "@/providers/query-provider";
+import {lazyDialog} from "@/lib/lazy-dialog";
 
 function loadCreateLinkModal() {
     return import("@/components/links/CreateLinkModal").then((modalModule) => modalModule.CreateLinkModal);
@@ -40,13 +40,10 @@ function loadMobileSidebarDrawer() {
     return import("@/components/layout/mobile-sidebar-drawer").then((drawerModule) => drawerModule.MobileSidebarDrawer);
 }
 
-const CreateLinkModal = dynamic(loadCreateLinkModal, {ssr: false});
-const CreateTagModal = dynamic(loadCreateTagModal, {ssr: false});
-const MobileSidebarDrawer = dynamic(loadMobileSidebarDrawer, {ssr: false});
-const KeyboardShortcutsDialog = dynamic(
-    () => import("@/components/layout/KeyboardShortcutsDialog").then((dialogModule) => dialogModule.KeyboardShortcutsDialog),
-    {ssr: false},
-);
+const CreateLinkModal = lazyDialog(loadCreateLinkModal);
+const CreateTagModal = lazyDialog(loadCreateTagModal);
+const MobileSidebarDrawer = lazyDialog(loadMobileSidebarDrawer);
+const KeyboardShortcutsDialog = lazyDialog(() => import("@/components/layout/KeyboardShortcutsDialog").then((dialogModule) => dialogModule.KeyboardShortcutsDialog));
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -99,8 +96,8 @@ function DashboardShell({ children }: DashboardLayoutProps) {
     useEffect(() => {
         if (!isReady) return;
         preloadOnIdle(isMobile
-            ? [loadCreateLinkModal, loadCreateTagModal, loadMobileSidebarDrawer]
-            : [loadCreateLinkModal, loadCreateTagModal]);
+            ? [CreateLinkModal.preload, CreateTagModal.preload, KeyboardShortcutsDialog.preload, MobileSidebarDrawer.preload]
+            : [CreateLinkModal.preload, CreateTagModal.preload, KeyboardShortcutsDialog.preload]);
     }, [isReady, isMobile]);
 
     const isTagsPage = isPathWithin(pathname, ROUTES.TAGS);

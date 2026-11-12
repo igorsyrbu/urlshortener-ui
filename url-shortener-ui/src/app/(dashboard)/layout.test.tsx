@@ -6,8 +6,6 @@ import {fetchWithAuth} from "@/lib/api";
 import {API_ENDPOINTS, MAIN_CONTENT_ID, ROUTES, SESSION_CHECK_COPY, SKIP_TO_CONTENT_LABEL} from "@/lib/constants";
 import {clearSessionHint, hasSessionHint, setSessionHint} from "@/lib/session-hint";
 import {preloadOnIdle} from "@/lib/preload-on-idle";
-import {CreateLinkModal} from "@/components/links/CreateLinkModal";
-import {CreateTagModal} from "@/components/tags/CreateTagModal";
 import {useAuthStore} from "@/lib/store/auth";
 import type {UserProfile} from "@/lib/types";
 import {useUIStore} from "@/lib/store/ui";
@@ -229,13 +227,15 @@ describe("DashboardLayout create action", () => {
         expect(screen.getByTestId(CREATE_LINK_DIALOG)).toHaveAttribute("data-open", "false");
     });
 
-    it("preloads the create dialogs on idle once the session is ready", async () => {
+    it("opens a create dialog in the same render once the idle preload has finished", async () => {
         renderLayout();
-
         await waitFor(() => expect(preloadOnIdle).toHaveBeenCalled());
         const [loaders] = vi.mocked(preloadOnIdle).mock.calls[0];
+        await Promise.all(loaders.map((load) => load()));
 
-        expect(await Promise.all(loaders.map((load) => load()))).toEqual([CreateLinkModal, CreateTagModal]);
+        act(() => useUIStore.getState().setCreateTagModalOpen(true));
+
+        expect(screen.getByTestId(CREATE_TAG_DIALOG)).toHaveAttribute("data-open", "true");
     });
 
     it("does not preload anything while the session is still being checked", async () => {
