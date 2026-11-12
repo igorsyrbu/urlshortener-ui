@@ -1,11 +1,11 @@
 "use client";
 
 import {useState} from "react";
-import Link from "next/link";
-import {LinkIcon, Lock} from "lucide-react";
+import {Lock} from "lucide-react";
+import {PublicPageFooter} from "@/components/layout/PublicPageFooter";
 import {UnlockLinkForm} from "@/components/unlock/UnlockLinkForm";
 import {UnlockNotFound} from "@/components/unlock/UnlockNotFound";
-import {APP_NAME, ROUTES, UNLOCK_COPY} from "@/lib/constants";
+import {PUBLIC_PAGE_SHELL_CLASS, UNLOCK_COPY} from "@/lib/constants";
 
 interface UnlockLinkViewProps {
     linkKey: string;
@@ -19,7 +19,7 @@ export function UnlockLinkView({linkKey, turnstileEnabled, turnstileSiteKey}: Un
     if (isNotFound) return <UnlockNotFound/>;
 
     return (
-        <div className="flex min-h-dvh w-full flex-col items-center justify-between bg-background px-4 py-10">
+        <div className={PUBLIC_PAGE_SHELL_CLASS}>
             <span aria-hidden="true"/>
             <main className="flex w-full max-w-lg flex-col items-center gap-6 text-center">
                 <div className="flex size-20 items-center justify-center rounded-full border-[0.5px] border-border bg-muted text-foreground">
@@ -38,10 +38,7 @@ export function UnlockLinkView({linkKey, turnstileEnabled, turnstileSiteKey}: Un
                     />
                 </div>
             </main>
-            <Link href={ROUTES.HOME} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
-                <LinkIcon className="size-3.5"/>
-                {APP_NAME}
-            </Link>
+            <PublicPageFooter/>
         </div>
     );
 }

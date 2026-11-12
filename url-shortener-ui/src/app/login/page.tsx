@@ -5,7 +5,8 @@ import dynamic from "next/dynamic";
 import {Card, CardContent, CardDescription, CardHeader} from "@/components/ui/card";
 import {Link as LinkIcon} from "lucide-react";
 import {API_BASE_URL} from "@/lib/api";
-import {API_ENDPOINTS} from "@/lib/constants";
+import {API_ENDPOINTS, PUBLIC_PAGE_SHELL_CLASS} from "@/lib/constants";
+import {PublicPageFooter} from "@/components/layout/PublicPageFooter";
 import {LoginMagicLinkForm} from "@/components/auth/LoginMagicLinkForm";
 import {OttLoginForm} from "@/components/auth/OttLoginForm";
 import {TurnstileWidget} from "@/components/auth/TurnstileWidget";
@@ -174,8 +175,9 @@ export default function LoginPage() {
             {submittedCode && (
                 <OttLoginForm loginType="otp" email={email} code={submittedCode}/>
             )}
-            <div className="flex min-h-screen w-full items-center justify-center bg-muted/30 p-4">
-                <div className="w-full max-w-md">
+            <div className={PUBLIC_PAGE_SHELL_CLASS}>
+                <span aria-hidden="true"/>
+                <main className="w-full max-w-md">
                     <Card className="border-border shadow-lg">
                         <CardHeader className="space-y-2 pb-1 text-center">
                             <div className="flex justify-center">
@@ -233,7 +235,8 @@ export default function LoginPage() {
                             />
                         </div>
                     )}
-                </div>
+                </main>
+                <PublicPageFooter/>
             </div>
         </>
     );

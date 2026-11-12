@@ -1,9 +1,9 @@
-import {act, render, screen, waitFor} from "@testing-library/react";
+import {act, render, screen, waitFor, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {afterAll, afterEach, beforeEach, describe, expect, it, vi, type Mock} from "vitest";
 import LoginPage from "./page";
 import {API_BASE_URL} from "@/lib/api";
-import {API_ENDPOINTS, MAGIC_LINK_COOLDOWN_STORAGE_KEY} from "@/lib/constants";
+import {API_ENDPOINTS, APP_NAME, MAGIC_LINK_COOLDOWN_STORAGE_KEY, ROUTES} from "@/lib/constants";
 import {ERROR_COPY} from "@/lib/errors";
 import {getTurnstileProps, resetTurnstileMock} from "@/test/turnstile-utils";
 import {waitForInputOtpTimers} from "@/test/input-otp-utils";
@@ -43,6 +43,14 @@ function sentBody(fetchMock: Mock): URLSearchParams {
 
 
 afterAll(waitForInputOtpTimers);
+describe("login page layout", () => {
+    it("links back to the home page from its footer", () => {
+        render(<LoginPage/>);
+
+        expect(within(screen.getByRole("contentinfo")).getByRole("link", {name: APP_NAME})).toHaveAttribute("href", ROUTES.HOME);
+    });
+});
+
 describe("login page magic link request", () => {
     it("asks for an email before sending anything", async () => {
         const user = userEvent.setup();

@@ -305,6 +305,9 @@ export const CHART_ANIMATION_MS = 400;
 export const TRY_AGAIN_LABEL = "Try again";
 
 /** Shared look of a load error that replaces a whole list (links, tags, analytics). */
+/** Full-height public screen (login, unlock): content centred, `PublicPageFooter` at the bottom. */
+export const PUBLIC_PAGE_SHELL_CLASS = "flex min-h-dvh w-full flex-col items-center justify-between bg-background px-4 py-10";
+
 /** The dark bubble of an info tooltip next to a form option. */
 export const INFO_TOOLTIP_CONTENT_CLASS = "max-w-64 rounded-xl bg-foreground px-4 py-3 text-sm font-normal leading-5 text-background shadow-lg border-foreground text-pretty text-left";
 export const LIST_LOAD_ERROR_CLASS = "rounded-xl border-[0.5px] border-border bg-card p-10";

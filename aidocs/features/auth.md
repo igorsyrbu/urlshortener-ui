@@ -24,7 +24,7 @@ The auth store holds only `accessToken: string | null` and `user: UserProfile | 
 
 ## Login page flows
 
-`LoginPage` is a single client component that owns all form state (`email`, `code`, `submittedCode`, `showOtpForm`, `loading`, `message`, `manuallyLocked`, `turnstileToken`). The card shows one of two forms plus a status line and the Google button.
+`LoginPage` is a single client component that owns all form state (`email`, `code`, `submittedCode`, `showOtpForm`, `loading`, `message`, `manuallyLocked`, `turnstileToken`). The card shows one of two forms plus a status line and the Google button; it sits on the shared public-page shell (`PUBLIC_PAGE_SHELL_CLASS`, plain `bg-background`) with `PublicPageFooter` below, like the unlock page.
 
 ```
 magic-link form --POST /api/ott/generate (200)--> OTP form --6 chars--> hidden native POST /api/ott/login

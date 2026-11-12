@@ -1,9 +1,9 @@
-import {act, render, screen, waitFor} from "@testing-library/react";
+import {act, render, screen, waitFor, within} from "@testing-library/react";
 import userEvent, {type UserEvent} from "@testing-library/user-event";
 import {afterEach, describe, expect, it, vi, type Mock} from "vitest";
 import {UnlockLinkView} from "@/components/unlock/UnlockLinkView";
 import {API_BASE_URL} from "@/lib/api";
-import {API_ENDPOINTS, CAPTCHA_VERIFYING_LABEL, LINK_PASSWORD_COPY, UNLOCK_COPY} from "@/lib/constants";
+import {API_ENDPOINTS, APP_NAME, CAPTCHA_VERIFYING_LABEL, LINK_PASSWORD_COPY, ROUTES, UNLOCK_COPY} from "@/lib/constants";
 import {
     HTTP_FORBIDDEN,
     HTTP_NOT_FOUND,
@@ -62,6 +62,12 @@ describe("UnlockLinkView", () => {
         expect(getPasswordInput()).toHaveAttribute("type", "password");
         expect(screen.queryByText(/example\.com/)).not.toBeInTheDocument();
         expect(screen.queryByRole("button", {name: LINK_PASSWORD_COPY.GENERATE})).not.toBeInTheDocument();
+    });
+
+    it("links back to the home page from its footer", () => {
+        renderView();
+
+        expect(within(screen.getByRole("contentinfo")).getByRole("link", {name: APP_NAME})).toHaveAttribute("href", ROUTES.HOME);
     });
 
     it("posts the password with the visitor's query string and goes to the destination", async () => {

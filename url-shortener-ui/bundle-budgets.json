@@ -7,7 +7,7 @@
     "/auth/exchange": 176,
     "/auth/ott": 175,
     "/inspect/[key]": 186,
-    "/login": 182,
+    "/login": 184,
     "/report-abuse": 211,
     "/unlock/[key]": 187,
     "/dashboard": 229,
