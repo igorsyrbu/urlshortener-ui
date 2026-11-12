@@ -2,7 +2,7 @@ import Link from "next/link";
 import {LinkIcon} from "lucide-react";
 import {APP_NAME, ROUTES} from "@/lib/constants";
 
-/** The quiet "Short Links" link home at the bottom of the full-page public screens (login, unlock). */
+/** The quiet "Short Links" link home at the bottom of the full-page public screens (login, unlock, report abuse, auth callbacks, 404 and page-level error screens). */
 export function PublicPageFooter() {
     return (
         <footer>

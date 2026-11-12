@@ -1,8 +1,9 @@
-import {render, screen} from "@testing-library/react";
+import {render, screen, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {describe, expect, it, vi} from "vitest";
 import RootError from "./error";
 import {logger} from "@/lib/logger";
+import {APP_NAME, ROUTES} from "@/lib/constants";
 
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn()}}));
 
@@ -11,6 +12,12 @@ describe("root error boundary", () => {
         render(<RootError error={new Error("boom")} reset={vi.fn()}/>);
 
         expect(screen.getByRole("heading", {name: "Something went wrong!"})).toBeInTheDocument();
+    });
+
+    it("links back to the home page from its footer", () => {
+        render(<RootError error={new Error("boom")} reset={vi.fn()}/>);
+
+        expect(within(screen.getByRole("contentinfo")).getByRole("link", {name: APP_NAME})).toHaveAttribute("href", ROUTES.HOME);
     });
 
     it("does not expose the error message to the user", () => {

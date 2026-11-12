@@ -1,7 +1,8 @@
-import {render, screen} from "@testing-library/react";
+import {render, screen, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {describe, expect, it, vi} from "vitest";
 import NotFoundPage from "./not-found";
+import {APP_NAME, ROUTES} from "@/lib/constants";
 
 const navigation = vi.hoisted(() => {
     const router = {push: vi.fn(), back: vi.fn()};
@@ -16,6 +17,12 @@ describe("not found page", () => {
 
         expect(screen.getByText("404")).toBeInTheDocument();
         expect(screen.getByText("Page not found")).toBeInTheDocument();
+    });
+
+    it("links back to the home page from its footer", () => {
+        render(<NotFoundPage/>);
+
+        expect(within(screen.getByRole("contentinfo")).getByRole("link", {name: APP_NAME})).toHaveAttribute("href", ROUTES.HOME);
     });
 
     it("goes back to the previous page", async () => {

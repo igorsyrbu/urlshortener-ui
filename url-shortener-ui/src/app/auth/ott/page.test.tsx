@@ -1,7 +1,8 @@
-import {render, screen} from "@testing-library/react";
+import {render, screen, within} from "@testing-library/react";
 import {afterEach, describe, expect, it, vi} from "vitest";
 import OttPage from "./page";
 import {API_BASE_URL} from "@/lib/api";
+import {APP_NAME, ROUTES} from "@/lib/constants";
 
 const navigation = vi.hoisted(() => ({searchParams: new URLSearchParams()}));
 
@@ -16,6 +17,12 @@ function renderWithQuery(query: string): HTMLElement {
 describe("OTT page", () => {
     afterEach(() => {
         window.history.replaceState(null, "", "/");
+    });
+
+    it("links back to the home page from its footer", () => {
+        renderWithQuery("token=abc&email=user%40example.com");
+
+        expect(within(screen.getByRole("contentinfo")).getByRole("link", {name: APP_NAME})).toHaveAttribute("href", ROUTES.HOME);
     });
 
     it("posts the token and email from the magic link to the OTT login endpoint", () => {

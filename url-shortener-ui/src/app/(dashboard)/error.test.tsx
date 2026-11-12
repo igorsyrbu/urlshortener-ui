@@ -7,6 +7,12 @@ import {logger} from "@/lib/logger";
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn()}}));
 
 describe("dashboard error boundary", () => {
+    it("stays inside the dashboard without the public-page footer", () => {
+        render(<DashboardError error={new Error("boom")} reset={vi.fn()}/>);
+
+        expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
+    });
+
     it("tells the user the section failed to load", () => {
         render(<DashboardError error={new Error("boom")} reset={vi.fn()}/>);
 

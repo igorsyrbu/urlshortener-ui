@@ -1,9 +1,9 @@
 import {StrictMode} from "react";
-import {act, render, screen, waitFor} from "@testing-library/react";
+import {act, render, screen, waitFor, within} from "@testing-library/react";
 import {afterEach, describe, expect, it, vi} from "vitest";
 import ExchangePage, {REJECTED_CODE_MESSAGE} from "./page";
 import {API_BASE_URL} from "@/lib/api";
-import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
+import {API_ENDPOINTS, APP_NAME, ROUTES} from "@/lib/constants";
 import {ERROR_COPY} from "@/lib/errors";
 import {hasSessionHint} from "@/lib/session-hint";
 import {useAuthStore} from "@/lib/store/auth";
@@ -31,6 +31,14 @@ describe("auth code exchange page", () => {
     afterEach(() => {
         useAuthStore.setState({accessToken: null});
         window.history.replaceState(null, "", "/");
+    });
+
+    it("links back to the home page from its footer", async () => {
+        vi.stubGlobal("fetch", vi.fn());
+
+        await openWithQuery("");
+
+        expect(within(screen.getByRole("contentinfo")).getByRole("link", {name: APP_NAME})).toHaveAttribute("href", ROUTES.HOME);
     });
 
     it("shows an error and calls nothing when the code is missing", async () => {

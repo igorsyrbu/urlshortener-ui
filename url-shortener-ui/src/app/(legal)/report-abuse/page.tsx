@@ -2,7 +2,8 @@ import type {Metadata} from "next";
 import {Flag} from "lucide-react";
 import {Card, CardContent, CardDescription, CardHeader} from "@/components/ui/card";
 import {ReportAbuseForm} from "@/components/abuse/ReportAbuseForm";
-import {PAGE_TITLES} from "@/lib/constants";
+import {PublicPageFooter} from "@/components/layout/PublicPageFooter";
+import {PAGE_TITLES, PUBLIC_PAGE_SHELL_CLASS} from "@/lib/constants";
 
 export const metadata: Metadata = {title: PAGE_TITLES.REPORT_ABUSE};
 
@@ -20,8 +21,9 @@ export default async function ReportAbusePage({searchParams}: ReportAbusePagePro
     }
 
     return (
-        <div className="flex min-h-screen w-full items-center justify-center bg-muted/30 p-4">
-            <div className="w-full max-w-md">
+        <div className={PUBLIC_PAGE_SHELL_CLASS}>
+            <span aria-hidden="true"/>
+            <main className="w-full max-w-md">
                 <Card className="border-border shadow-lg">
                     <CardHeader className="space-y-2 pb-1 text-center">
                         <div className="flex justify-center">
@@ -43,7 +45,8 @@ export default async function ReportAbusePage({searchParams}: ReportAbusePagePro
                         />
                     </CardContent>
                 </Card>
-            </div>
+            </main>
+            <PublicPageFooter/>
         </div>
     );
 }

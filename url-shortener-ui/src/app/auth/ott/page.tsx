@@ -5,6 +5,8 @@ import {useSearchParams} from "next/navigation"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
 import {OttLoginForm} from "@/components/auth/OttLoginForm"
 import {clearQueryString} from "@/lib/url-utils"
+import {PublicPageFooter} from "@/components/layout/PublicPageFooter"
+import {PUBLIC_PAGE_SHELL_CLASS} from "@/lib/constants"
 
 function OttProcessor() {
     const searchParams = useSearchParams()
@@ -49,10 +51,14 @@ function OttProcessor() {
 
 export default function OttPage() {
     return (
-        <div className="flex min-h-screen w-full items-center justify-center bg-muted/30 p-4">
-            <Suspense fallback={<div>Loading authentication...</div>}>
-                <OttProcessor/>
-            </Suspense>
+        <div className={PUBLIC_PAGE_SHELL_CLASS}>
+            <span aria-hidden="true"/>
+            <main className="flex w-full justify-center">
+                <Suspense fallback={<div>Loading authentication...</div>}>
+                    <OttProcessor/>
+                </Suspense>
+            </main>
+            <PublicPageFooter/>
         </div>
     )
 }

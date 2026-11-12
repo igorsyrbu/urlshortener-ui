@@ -6,7 +6,8 @@ import {Card, CardContent, CardHeader, CardTitle, CardDescription} from "@/compo
 import {Suspense} from "react";
 import {API_BASE_URL} from "@/lib/api";
 import {useAuthStore} from "@/lib/store/auth";
-import {API_ENDPOINTS, ROUTES} from "@/lib/constants";
+import {API_ENDPOINTS, PUBLIC_PAGE_SHELL_CLASS, ROUTES} from "@/lib/constants";
+import {PublicPageFooter} from "@/components/layout/PublicPageFooter";
 import {setSessionHint} from "@/lib/session-hint";
 import {clearQueryString} from "@/lib/url-utils";
 import {describeHttpFailure, describeRequestError} from "@/lib/errors";
@@ -114,19 +115,23 @@ function ExchangeProcessor() {
 
 export default function ExchangePage() {
     return (
-        <div className="flex min-h-screen w-full items-center justify-center bg-muted/30 p-4">
-            <Suspense fallback={
-                <Card className="w-full max-w-2xl shadow-lg border-border">
-                    <CardContent className="p-8">
-                        <div className="flex items-center justify-center">
-                            <div
-                                className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                        </div>
-                    </CardContent>
-                </Card>
-            }>
-                <ExchangeProcessor/>
-            </Suspense>
+        <div className={PUBLIC_PAGE_SHELL_CLASS}>
+            <span aria-hidden="true"/>
+            <main className="flex w-full justify-center">
+                <Suspense fallback={
+                    <Card className="w-full max-w-2xl shadow-lg border-border">
+                        <CardContent className="p-8">
+                            <div className="flex items-center justify-center">
+                                <div
+                                    className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                }>
+                    <ExchangeProcessor/>
+                </Suspense>
+            </main>
+            <PublicPageFooter/>
         </div>
     )
 }

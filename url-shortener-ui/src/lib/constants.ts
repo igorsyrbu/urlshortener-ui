@@ -305,7 +305,7 @@ export const CHART_ANIMATION_MS = 400;
 export const TRY_AGAIN_LABEL = "Try again";
 
 /** Shared look of a load error that replaces a whole list (links, tags, analytics). */
-/** Full-height public screen (login, unlock): content centred, `PublicPageFooter` at the bottom. */
+/** Full-height public screen (login, unlock, report abuse, auth callbacks, 404 and page-level error screens): content centred, `PublicPageFooter` at the bottom. */
 export const PUBLIC_PAGE_SHELL_CLASS = "flex min-h-dvh w-full flex-col items-center justify-between bg-background px-4 py-10";
 
 /** The dark bubble of an info tooltip next to a form option. */

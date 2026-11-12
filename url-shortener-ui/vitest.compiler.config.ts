@@ -12,13 +12,13 @@ const babel = appRequire("@babel/core");
 const reactCompiler = appRequire("babel-plugin-react-compiler");
 const COMPILED_SOURCE_PATTERN = /\/src\/(?!test\/|.*\.(test|perf\.test)\.).*\.(ts|tsx)$/;
 // Server components are called as plain functions in their tests; the compiler's memo cache needs a React render.
-const SERVER_COMPONENT_PATH = "/src/app/inspect/";
+const SERVER_COMPONENT_PATHS = ["/src/app/inspect/", "/src/app/(legal)/report-abuse/page.tsx"];
 
 const reactCompilerPlugin = {
     name: "react-compiler-for-vitest",
     enforce: "pre" as const,
     transform(code: string, id: string) {
-        if (!COMPILED_SOURCE_PATTERN.test(id) || id.includes(SERVER_COMPONENT_PATH)) return null;
+        if (!COMPILED_SOURCE_PATTERN.test(id) || SERVER_COMPONENT_PATHS.some((serverPath) => id.includes(serverPath))) return null;
         const result = babel.transformSync(code, {
             filename: id,
             babelrc: false,
