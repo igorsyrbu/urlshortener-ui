@@ -12,6 +12,7 @@ import {LinkFormFields} from "@/components/links/LinkFormFields";
 import {CreateLinkSuccess} from "@/components/links/CreateLinkSuccess";
 import {CONFETTI_PARTICLE_COUNT, CONFETTI_SPREAD, ROUTES} from "@/lib/constants";
 import {createShortLink, ShortKeyConflictError, type ShortLinkData} from "@/lib/links-api";
+import type {LinkFormSubmit} from "@/components/links/create-link-types";
 import {logger} from "@/lib/logger";
 import {cn} from "@/lib/utils";
 
@@ -46,9 +47,9 @@ async function celebrateCreatedLink(): Promise<void> {
 }
 
 /** Rejects with `ShortKeyConflictError` for a taken key and with the failure otherwise; `LinkFormFields` shows both. */
-async function submitNewLink(longUrl: string, title: string, key: string, tagIds: string[]): Promise<ShortLinkData> {
+async function submitNewLink(longUrl: string, title: string, key: string, tagIds: string[], password: string | null): Promise<ShortLinkData> {
     try {
-        return await createShortLink({longUrl, title, key, tagIds});
+        return await createShortLink({longUrl, title, key, tagIds, password});
     } catch (error) {
         if (!(error instanceof ShortKeyConflictError)) logger.error("Error creating link", error);
         throw error;
@@ -62,8 +63,8 @@ function CreateLinkModalBody({onOpenChange}: CreateLinkModalBodyProps) {
     const [shortLink, setShortLink] = useState<ShortLinkData | null>(null);
     const queryClient = useQueryClient();
 
-    const handleFormSubmit = async (longUrl: string, title: string, key: string, tagIds: string[]) => {
-        const createdLink = await submitNewLink(longUrl, title, key, tagIds);
+    const handleFormSubmit: LinkFormSubmit = async (longUrl, title, key, tagIds, password) => {
+        const createdLink = await submitNewLink(longUrl, title, key, tagIds, password);
         setShortLink(createdLink);
         setViewState("success");
         // The confetti chunk downloads on the first link; the list refresh must not wait for it.

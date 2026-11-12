@@ -4,7 +4,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {useShortcutsStore} from "@/lib/store/shortcuts";
 import {LinkCard} from "@/components/links/LinkCard";
 import {toast} from "sonner";
-import {COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS} from "@/lib/constants";
+import {COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS, LINK_PASSWORD_COPY} from "@/lib/constants";
 import {allTagsQueryOptions} from "@/lib/query/tag-queries";
 import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 import type {TagItem} from "@/lib/types";
@@ -94,6 +94,19 @@ describe("LinkCard", () => {
             expect(screen.getByRole("heading", {name: "My article"})).toBeInTheDocument();
             expect(screen.getByText("https://sho.rt/abc")).toBeInTheDocument();
             expect(screen.getByText("www.example.com")).toBeInTheDocument();
+        });
+
+        it("marks a password-protected link and still shows its destination to the owner", () => {
+            renderCard(createLinkItem({isPasswordProtected: true, longUrl: "https://www.example.com/a"}));
+
+            expect(screen.getByRole("img", {name: LINK_PASSWORD_COPY.PROTECTED_BADGE})).toBeInTheDocument();
+            expect(screen.getByText("www.example.com")).toBeInTheDocument();
+        });
+
+        it("shows no lock for an unprotected link", () => {
+            renderCard(createLinkItem());
+
+            expect(screen.queryByRole("img", {name: LINK_PASSWORD_COPY.PROTECTED_BADGE})).not.toBeInTheDocument();
         });
 
         it("reveals the full destination URL on hover", async () => {

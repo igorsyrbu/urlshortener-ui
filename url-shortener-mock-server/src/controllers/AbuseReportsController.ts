@@ -1,6 +1,16 @@
 import { Request, Response } from "express";
 import { randomUUID } from "crypto";
 import { sendProblem } from "../problem";
+import { shortLinksService } from "../services/ShortLinksService";
+
+/** The destination of the reported link, unless it is unknown or password protected. */
+function readReportableLongUrl(shortUrl: unknown): string | undefined {
+    if (typeof shortUrl !== "string") return undefined;
+    const key = shortUrl.split(/[?#]/)[0].split("/").filter(Boolean).pop() ?? "";
+    const link = key ? shortLinksService.findByShortKey(key) : null;
+    if (!link || link.password) return undefined;
+    return link.longUrl;
+}
 
 const ALLOWED_REASONS = [
     "SPAM_OR_MISLEADING",
@@ -34,6 +44,7 @@ export class AbuseReportsController {
         res.status(201).json({
             id: randomUUID(),
             shortUrl,
+            longUrl: readReportableLongUrl(shortUrl),
             reason,
             reporterEmail: reporterEmail || undefined,
             description: description || undefined,

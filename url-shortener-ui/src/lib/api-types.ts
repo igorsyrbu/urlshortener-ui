@@ -20,6 +20,9 @@ export interface ShortLinkDTO {
   shortUrl: string;
   longUrl: string;
   isActive: boolean;
+  isPasswordProtected: boolean;
+  /** Only in the answer of `GET /shortlinks/{id}`, and only for a protected link. */
+  password?: string | null;
   tagIds?: string[];
   createdAt?: string;
   updatedAt?: string;
@@ -29,11 +32,13 @@ export interface RandomKeyResponse {
   key: string;
 }
 
+/** A protected link's preview holds only `key`, `shortUrl` and `isPasswordProtected`. */
 export interface ShortLinkPreviewDTO {
     key: string;
     shortUrl: string;
-    longUrl: string;
-    title: string;
+    isPasswordProtected: boolean;
+    longUrl?: string;
+    title?: string;
     description?: string;
     ogImageUrl?: string;
     faviconDomain?: string;

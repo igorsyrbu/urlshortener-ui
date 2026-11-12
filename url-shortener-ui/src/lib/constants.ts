@@ -15,6 +15,7 @@ export const PAGE_TITLES = {
     SIGNING_IN: "Signing in",
     REPORT_ABUSE: "Report a link",
     LINK_PREVIEW: "Link preview",
+    UNLOCK_LINK: "Protected link",
 } as const;
 
 export const ROUTES = {
@@ -22,6 +23,7 @@ export const ROUTES = {
     LOGIN: "/login",
     REPORT_ABUSE: "/report-abuse",
     INSPECT: (key: string) => `/inspect/${encodeURIComponent(key)}`,
+    UNLOCK: (key: string) => `/unlock/${encodeURIComponent(key)}`,
     DASHBOARD: "/dashboard",
     LINKS: "/links",
     ANALYTICS: "/analytics",
@@ -40,6 +42,8 @@ export const API_ENDPOINTS = {
     SHORTLINKS_IMPORT: "/shortlinks/import",
     SHORTLINKS_IMPORT_UPDATES: "/shortlinks/import/updates",
     SHORTLINKS_EXISTS: (key: string) => `/shortlinks/${key}/exists`,
+    SHORTLINK_BY_ID: (id: string) => `/shortlinks/${encodeURIComponent(id)}`,
+    SHORTLINK_UNLOCK: (key: string) => `/public/shortlinks/${encodeURIComponent(key)}/unlock`,
     SHORTLINKS_BY_IDS: "/shortlinks/byIds",
     SHORTLINKS_PREVIEW: (key: string) => `/public/preview/${key}`,
     TAGS: "/tags",
@@ -79,6 +83,55 @@ export const LINKS_LOAD_COPY = {
 export const TAGS_LOAD_COPY = {
     LOAD_FAILED: "Couldn't load your tags.",
     REFRESH_FAILED: "Couldn't refresh your tags. The list below may be out of date.",
+} as const;
+
+/** Longer than the dialog and drawer close animations. */
+export const EDIT_FORM_FORGET_DELAY_MS = 500;
+export const LINK_PASSWORD_MIN_LENGTH = 5;
+export const GENERATED_LINK_PASSWORD_LENGTH = 24;
+export const LINK_PASSWORD_MAX_LENGTH = 50;
+
+export const LINK_PASSWORD_COPY = {
+    FIELD_LABEL: "Password",
+    /** The switch's accessible name; it starts with the visible `FIELD_LABEL` (WCAG 2.5.3). */
+    TOGGLE_LABEL: "Password protection",
+    TOGGLE_HINT: "Visitors must enter a password before they are redirected.",
+    HINT_BUTTON: "About password protection",
+    INPUT_LABEL: "Link password",
+    INPUT_PLACEHOLDER: "Enter a password",
+    SHOW: "Show password",
+    HIDE: "Hide password",
+    GENERATE: "Generate a random password",
+    LENGTH_ERROR: `Password must be ${LINK_PASSWORD_MIN_LENGTH} to ${LINK_PASSWORD_MAX_LENGTH} characters.`,
+    PROTECTED_BADGE: "Password protected",
+    LOADING: "Loading link…",
+    LOAD_FAILED: "Couldn't load this link.",
+} as const;
+
+/** The lockout 429 carries no retry header; the submit button rests this long before the next try. */
+export const UNLOCK_RATE_LIMIT_FALLBACK_SECONDS = 60;
+
+export const UNLOCK_COPY = {
+    TITLE: "This link is password protected",
+    DESCRIPTION: "Enter the password to continue to the destination.",
+    PASSWORD_LABEL: "Password",
+    SUBMIT: "Continue",
+    SUBMITTING: "Checking…",
+    PASSWORD_REQUIRED: "Enter the password.",
+    INCORRECT_PASSWORD: "Incorrect password",
+    TOO_MANY_ATTEMPTS: "Too many attempts, try again later",
+    CAPTCHA_FAILED: "Captcha verification failed. Please try again.",
+    UNSAFE_DESTINATION: "This link's destination can't be opened.",
+    NOT_FOUND_TITLE: "Link not found",
+    NOT_FOUND_DESCRIPTION: "This short link doesn't exist, has been removed or is not password protected.",
+    NOT_FOUND_ACTION: "Go to Short Links",
+    REDIRECTING: "Redirecting…",
+} as const;
+
+export const INSPECT_PROTECTED_COPY = {
+    TITLE: "Password protected",
+    DESCRIPTION: "The owner protected this link with a password, so its destination is hidden. Open the link and enter the password to continue.",
+    OPEN_LINK: "Open short link",
 } as const;
 
 export const LINK_ACTION_COPY = {
@@ -252,6 +305,8 @@ export const CHART_ANIMATION_MS = 400;
 export const TRY_AGAIN_LABEL = "Try again";
 
 /** Shared look of a load error that replaces a whole list (links, tags, analytics). */
+/** The dark bubble of an info tooltip next to a form option. */
+export const INFO_TOOLTIP_CONTENT_CLASS = "max-w-64 rounded-xl bg-foreground px-4 py-3 text-sm font-normal leading-5 text-background shadow-lg border-foreground text-pretty text-left";
 export const LIST_LOAD_ERROR_CLASS = "rounded-xl border-[0.5px] border-border bg-card p-10";
 
 /** Link and tag lists and their skeletons share it, so the gap cannot drift between the two (DESIGN.md: `gap-3`). */

@@ -189,8 +189,9 @@ per sandbox user and endpoint; the real backend uses IP-based buckets with conti
 |--------|---------------------|-----------------------------------------------------------|--------------------------------------------|
 | GET    | `/shortlinks`       | Query: `page`, `size`, `showArchived` (boolean), `search` | Paginated & filterable list of short links |
 | GET    | `/shortlinks/byIds` | Query: `ids` (comma-separated, required)                  | Bulk lookup short links by IDs             |
-| POST   | `/shortlinks`       | Body: `{ longUrl, title, tagIds, isActive }`              | Create a new short link                    |
-| PUT    | `/shortlinks`       | Body: `{ id, longUrl, title, tagIds, isActive }`          | Update an existing short link              |
+| GET    | `/shortlinks/:id`   | Path variable: `id` (UUID)                                | One link with its `password` when protected (`Cache-Control: no-store`) |
+| POST   | `/shortlinks`       | Body: `{ longUrl, title, tagIds, isActive, password? }`   | Create a new short link (`password` 5-50 chars) |
+| PUT    | `/shortlinks`       | Body: `{ id, longUrl, title, tagIds, isActive, password }` | Replace a link; a missing or null `password` removes the protection |
 | DELETE | `/shortlinks/:id`   | Path variable: `id`                                       | Delete a short link                        |
 | GET    | `/shortlinks/random` | -                                                        | Generate an available short key            |
 | GET    | `/shortlinks/export` | Query: `showArchived`, `search`                          | Export links as CSV                        |
@@ -199,13 +200,21 @@ per sandbox user and endpoint; the real backend uses IP-based buckets with conti
 | GET    | `/shortlinks/:key/exists` | Path variable: `key`                                 | Check whether a short key is taken (200/404) |
 | POST   | `/urlcleaner`       | Body: `{ url }`                                           | Detect and remove tracking parameters      |
 | GET    | `/longurl/title`    | Query: `url` (required)                                   | Extract page title from target URL         |
-| GET    | `/public/preview/:key` | Path variable: `key`                                   | Public Open Graph preview (no auth)        |
+| GET    | `/public/preview/:key` | Path variable: `key`                                   | Public Open Graph preview (no auth); only `{ key, shortUrl, isPasswordProtected }` for a protected link |
+
+Every link response carries `isPasswordProtected`; only `GET /shortlinks/:id` returns `password`.
 
 **Public**
 
 | Method | Path | Query / Body Params | Description |
 |---|---|---|---|
-| POST | `/public/abuse/report` | Form: `shortUrl`, `reason`, `reporterEmail`, optional `description`, optional `cf-turnstile-response` | Submit an abuse report |
+| POST | `/public/abuse/report` | Form: `shortUrl`, `reason`, `reporterEmail`, optional `description`, optional `cf-turnstile-response` | Submit an abuse report (the answer has no `longUrl` for a protected link) |
+| POST | `/public/shortlinks/:key/unlock` | Form: `password`, optional `cf-turnstile-response`; query: the visitor's query string | Exchange a protected link's password for `{ longUrl }` (401 wrong password, 429 after 5 failures in 15 min, 404 not protected) |
+
+Password-protected links in the mock differ from Spring on purpose: the mock stores the password in plain text and keeps the
+wrong-password lockout (per link and client IP) in memory, while Spring encrypts it with AES-GCM and keeps the lockout in Redis.
+The mock has no `GET /redirects/shortlinks/:key`, no CAPTCHA check and no endpoint-wide unlock rate limit; seed link `Secret1`
+(password `secret-pass`) is protected, and `/unlock/Secret1` on the UI exercises the unlock page.
 
 **Tags**
 

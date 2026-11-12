@@ -3,4 +3,5 @@ export const LINK_FORM_FIELD_IDS = {
     LONG_URL: "longUrl",
     TITLE: "title",
     SHORT_LINK_KEY: "shortLinkKey",
+    PASSWORD: "linkPassword",
 } as const;

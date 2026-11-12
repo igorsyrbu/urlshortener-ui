@@ -5,6 +5,26 @@ import { cleanUrl } from "../services/UrlCleanerService";
 import { requireUserUuid } from "../middleware/authentication";
 import { importJobsService } from "../services/ImportJobsService";
 import { sendProblem } from "../problem";
+import { getAppContext } from "../app-context";
+
+const CACHE_CONTROL_HEADER = "Cache-Control";
+const NO_STORE = "no-store";
+const LINK_NOT_FOUND_DETAIL = "Link not found";
+const UNKNOWN_CLIENT_ADDRESS = "unknown";
+
+/** The visitor's query goes after the destination's own query and before its fragment. */
+function appendQueryString(longUrl: string, queryString: string): string {
+  if (!queryString) return longUrl;
+  const fragmentStart = longUrl.indexOf("#");
+  const base = fragmentStart === -1 ? longUrl : longUrl.slice(0, fragmentStart);
+  const fragment = fragmentStart === -1 ? "" : longUrl.slice(fragmentStart);
+  return `${base}${base.includes("?") ? "&" : "?"}${queryString}${fragment}`;
+}
+
+function readQueryString(req: Request): string {
+  const queryStart = req.originalUrl.indexOf("?");
+  return queryStart === -1 ? "" : req.originalUrl.slice(queryStart + 1);
+}
 
 /** CSV import accepts any URL with a host, and older data may hold anything, so a stored URL can fail to parse. */
 function readHostname(url: string): string | null {
@@ -32,6 +52,40 @@ export class ShortLinksController {
       .map((id) => id.trim())
       .filter(Boolean);
     res.json(shortLinksService.getLinksByIds(uuid, ids));
+  }
+
+  static getShortLinkById(req: Request, res: Response): void {
+    const link = shortLinksService.getLinkById(requireUserUuid(req), req.params.id);
+    if (!link) {
+      sendProblem(res, 404, LINK_NOT_FOUND_DETAIL);
+      return;
+    }
+    res.set(CACHE_CONTROL_HEADER, NO_STORE).json(link);
+  }
+
+  static unlockPublicLink(req: Request, res: Response): void {
+    const link = shortLinksService.findByShortKey(req.params.key);
+    if (!link || !link.password) {
+      sendProblem(res, 404, `No protected short link has the key '${req.params.key}'.`);
+      return;
+    }
+    const password: unknown = req.body?.password;
+    if (typeof password !== "string" || !password.trim()) {
+      sendProblem(res, 400, "password must not be blank");
+      return;
+    }
+    const limiter = getAppContext(req).unlockAttemptLimiter;
+    const clientAddress = req.ip ?? UNKNOWN_CLIENT_ADDRESS;
+    if (limiter.isLocked(link.id, clientAddress)) {
+      sendProblem(res, 429, "Too many failed attempts. Try again later.");
+      return;
+    }
+    if (password !== link.password) {
+      limiter.recordFailure(link.id, clientAddress);
+      sendProblem(res, 401, "Incorrect password.");
+      return;
+    }
+    res.set(CACHE_CONTROL_HEADER, NO_STORE).json({ longUrl: appendQueryString(link.longUrl, readQueryString(req)) });
   }
 
   static createShortLink(req: Request, res: Response): void {
@@ -121,7 +175,7 @@ export class ShortLinksController {
     const { id } = req.params;
 
     if (!shortLinksService.deleteLink(uuid, id)) {
-      sendProblem(res, 404, "Link not found");
+      sendProblem(res, 404, LINK_NOT_FOUND_DETAIL);
       return;
     }
 
@@ -137,6 +191,11 @@ export class ShortLinksController {
       return;
     }
 
+    if (link.password) {
+      res.json({ key, shortUrl: link.shortUrl, isPasswordProtected: true });
+      return;
+    }
+
     const domain = readHostname(link.longUrl);
     const og = domain ? await fetchOpenGraph(link.longUrl) : {};
 
@@ -148,6 +207,7 @@ export class ShortLinksController {
       description: og.description || null,
       ogImageUrl: og.ogImageUrl || null,
       faviconDomain: domain,
+      isPasswordProtected: false,
     });
   }
 

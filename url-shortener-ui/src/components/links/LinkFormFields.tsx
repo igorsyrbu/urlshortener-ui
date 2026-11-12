@@ -20,7 +20,8 @@ import {useOnValueChange} from "@/lib/hooks/useOnValueChange";
 import {useAllTags} from "@/lib/hooks/useAllTags";
 import {usePreferencesStore} from "@/lib/store/preferences";
 import {useCreateTagFromSearch} from "@/lib/hooks/useCreateTagFromSearch";
-import type {GlowState} from "@/components/links/create-link-types";
+import type {GlowState, LinkFormSubmit} from "@/components/links/create-link-types";
+import {getLinkPasswordError} from "@/lib/link-password";
 import {fetchLongUrlTitle, isShortKeyTaken, ShortKeyConflictError} from "@/lib/links-api";
 import {FormScreenContent} from "@/components/links/LinkFormMainScreen";
 import {TagsScreenContent} from "@/components/links/LinkFormTagsScreen";
@@ -37,8 +38,10 @@ interface LinkFormFieldsProps {
     initialTitle?: string;
     initialTagIds?: string[];
     initialKey?: string;
+    /** The link's current password; `null` or absent for an unprotected link. */
+    initialPassword?: string | null;
     autoGenerateKey?: boolean;
-    onSubmit: (longUrl: string, title: string, key: string, tagIds: string[]) => Promise<void>;
+    onSubmit: LinkFormSubmit;
     submitLabel: string;
     submittingLabel: string;
     onCancel: () => void;
@@ -93,6 +96,7 @@ export function LinkFormFields({
                                    initialTitle = "",
                                    initialTagIds = EMPTY_TAG_IDS,
                                    initialKey = "",
+                                   initialPassword = null,
                                    autoGenerateKey = false,
                                    onSubmit,
                                    submitLabel,
@@ -113,6 +117,9 @@ export function LinkFormFields({
     const [keyError, setKeyError] = useState<string | null>(null);
     const [isKeyLoading, setIsKeyLoading] = useState(false);
     const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialTagIds);
+    const [isPasswordEnabled, setIsPasswordEnabled] = useState(initialPassword !== null);
+    const [password, setPassword] = useState(initialPassword ?? "");
+    const [passwordError, setPasswordError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingTitle, setIsLoadingTitle] = useState(false);
     const [glowState, setGlowState] = useState<GlowState>("idle");
@@ -427,10 +434,21 @@ export function LinkFormFields({
             return;
         }
 
+        const passwordValidationError = isPasswordEnabled ? getLinkPasswordError(password) : null;
+        if (passwordValidationError) {
+            setPasswordError(passwordValidationError);
+            setIsSubmitting(false);
+            setSlideDirection(-1);
+            setActiveScreen("form");
+            focusElementById(LINK_FORM_FIELD_IDS.PASSWORD);
+            return;
+        }
+
+        const submittedPassword = isPasswordEnabled ? password : null;
         setIsSubmitting(true);
         try {
             const resolvedTitle = resolveLinkTitle(titleText);
-            await onSubmit(normalized, resolvedTitle, resolvedKey, selectedTagIds);
+            await onSubmit(normalized, resolvedTitle, resolvedKey, selectedTagIds, submittedPassword);
         } catch (err) {
             if (err instanceof ShortKeyConflictError) {
                 setKeyError(err.message);
@@ -440,6 +458,17 @@ export function LinkFormFields({
             }
             setIsSubmitting(false);
         }
+    };
+
+    const handlePasswordEnabledChange = (isEnabled: boolean) => {
+        setIsPasswordEnabled(isEnabled);
+        setPasswordError(null);
+        if (isEnabled) focusElementById(LINK_FORM_FIELD_IDS.PASSWORD);
+    };
+
+    const handlePasswordChange = (value: string) => {
+        setPassword(value);
+        if (passwordError) setPasswordError(null);
     };
 
     const handleCreateTag = async () => {
@@ -490,6 +519,11 @@ export function LinkFormFields({
                             isKeyUnavailable={keyError === SHORT_KEY_TAKEN_MESSAGE}
                             selectedTagIds={selectedTagIds}
                             tags={tags}
+                            isPasswordEnabled={isPasswordEnabled}
+                            password={password}
+                            passwordError={passwordError}
+                            onPasswordEnabledChange={handlePasswordEnabledChange}
+                            onPasswordChange={handlePasswordChange}
                             isSubmitting={isSubmitting}
                             submitLabel={submitLabel}
                             submittingLabel={submittingLabel}

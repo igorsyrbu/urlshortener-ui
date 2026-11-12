@@ -10,6 +10,7 @@ import {Input} from "@/components/ui/input";
 import {CreateLinkUrlField} from "@/components/links/CreateLinkUrlField";
 import {CreateLinkTitleField} from "@/components/links/CreateLinkTitleField";
 import {ShortLinkKeyField} from "@/components/links/ShortLinkKeyField";
+import {LinkPasswordField} from "@/components/links/LinkPasswordField";
 import {TagSelect} from "@/components/links/TagSelect";
 import {TagBadge} from "@/components/tags/TagBadge";
 import {TagItem} from "@/lib/types";
@@ -18,7 +19,12 @@ import type {GlowState} from "@/components/links/create-link-types";
 import {cn} from "@/lib/utils";
 import {LINK_FORM_FIELD_IDS} from "@/components/links/link-form-constants";
 
-const {LONG_URL: LONG_URL_FIELD_ID, TITLE: TITLE_FIELD_ID, SHORT_LINK_KEY: SHORT_LINK_KEY_FIELD_ID} = LINK_FORM_FIELD_IDS;
+const {
+    LONG_URL: LONG_URL_FIELD_ID,
+    TITLE: TITLE_FIELD_ID,
+    SHORT_LINK_KEY: SHORT_LINK_KEY_FIELD_ID,
+    PASSWORD: PASSWORD_FIELD_ID,
+} = LINK_FORM_FIELD_IDS;
 
 interface FormScreenContentProps {
     title: string;
@@ -38,6 +44,11 @@ interface FormScreenContentProps {
     isKeyUnavailable: boolean;
     selectedTagIds: string[];
     tags: TagItem[];
+    isPasswordEnabled: boolean;
+    password: string;
+    passwordError: string | null;
+    onPasswordEnabledChange: (isEnabled: boolean) => void;
+    onPasswordChange: (password: string) => void;
     isSubmitting: boolean;
     submitLabel: string;
     submittingLabel: string;
@@ -74,6 +85,11 @@ export function FormScreenContent({
                                       isKeyUnavailable,
                                       selectedTagIds,
                                       tags,
+                                      isPasswordEnabled,
+                                      password,
+                                      passwordError,
+                                      onPasswordEnabledChange,
+                                      onPasswordChange,
                                       isSubmitting,
                                       submitLabel,
                                       submittingLabel,
@@ -178,6 +194,15 @@ export function FormScreenContent({
                         </button>
                     )}
                 </div>
+                <LinkPasswordField
+                    inputId={PASSWORD_FIELD_ID}
+                    isEnabled={isPasswordEnabled}
+                    password={password}
+                    error={passwordError}
+                    onEnabledChange={onPasswordEnabledChange}
+                    onPasswordChange={onPasswordChange}
+                    isCompact={isDesktop}
+                />
                 <DialogFooter className="pt-2 gap-2 sm:gap-2">
                     <Button
                         type="button"

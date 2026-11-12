@@ -2,7 +2,7 @@ import {render, screen} from "@testing-library/react";
 import {describe, expect, it, vi} from "vitest";
 import InspectPage from "./page";
 import {getBackendApiBaseUrl} from "@/lib/backend-url";
-import {API_ENDPOINTS} from "@/lib/constants";
+import {API_ENDPOINTS, INSPECT_PROTECTED_COPY} from "@/lib/constants";
 import {logger} from "@/lib/logger";
 import type {ShortLinkPreviewDTO} from "@/lib/api-types";
 
@@ -18,13 +18,14 @@ const navigation = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({notFound: navigation.notFound, redirect: navigation.redirect}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn()}}));
 
-const PREVIEW: ShortLinkPreviewDTO = {
+const PREVIEW = {
     key: "abc123",
     shortUrl: "https://sho.rt/abc123",
+    isPasswordProtected: false,
     longUrl: "https://example.com/article?x=1&y=2",
     title: "Example article",
     description: "What the article is about",
-};
+} satisfies ShortLinkPreviewDTO;
 
 async function renderInspectPage(key = "abc123"): Promise<void> {
     const page = await InspectPage({params: Promise.resolve({key})});
@@ -86,5 +87,29 @@ describe("inspect page", () => {
         await expect(renderInspectPage()).rejects.toThrow("offline");
 
         expect(logger.error).toHaveBeenCalledOnce();
+    });
+
+    describe("for a password-protected link", () => {
+        const PROTECTED_PREVIEW: ShortLinkPreviewDTO = {key: "Secret1", shortUrl: "https://sho.rt/Secret1", isPasswordProtected: true};
+
+        it("hides the destination and offers to open the short link", async () => {
+            vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(PROTECTED_PREVIEW)));
+
+            await renderInspectPage("Secret1");
+
+            expect(screen.getByRole("heading", {name: INSPECT_PROTECTED_COPY.TITLE})).toBeInTheDocument();
+            expect(screen.getByRole("link", {name: INSPECT_PROTECTED_COPY.OPEN_LINK})).toHaveAttribute("href", PROTECTED_PREVIEW.shortUrl);
+            expect(screen.queryByText("Destination URL")).not.toBeInTheDocument();
+        });
+
+        it("keeps the abuse report link", async () => {
+            vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(PROTECTED_PREVIEW)));
+
+            await renderInspectPage("Secret1");
+
+            expect(screen.getByRole("link", {name: "Report this link"})).toHaveAttribute(
+                "href", `/report-abuse?shortUrl=${encodeURIComponent(PROTECTED_PREVIEW.shortUrl)}`,
+            );
+        });
     });
 });

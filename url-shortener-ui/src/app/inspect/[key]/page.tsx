@@ -7,8 +7,8 @@ import {logger} from "@/lib/logger";
 import Link from "next/link";
 import {LinkIcon, Flag} from "lucide-react";
 import {Button} from "@/components/ui/button";
-import {Card, CardContent} from "@/components/ui/card";
-import {InspectLinkPreviewCard} from "@/components/inspect/InspectLinkPreviewCard";
+import {InspectDestination} from "@/components/inspect/InspectDestination";
+import {InspectProtectedNotice} from "@/components/inspect/InspectProtectedNotice";
 import {HTTP_NOT_FOUND} from "@/lib/http-status";
 
 export const metadata: Metadata = {title: PAGE_TITLES.LINK_PREVIEW};
@@ -71,26 +71,16 @@ export default async function InspectPage({params}: InspectPageProps) {
                             malicious, please report it.
                         </p>
                     </div>
-                    <InspectLinkPreviewCard
-                        title={preview.title}
-                        description={preview.description}
-                        ogImageUrl={preview.ogImageUrl}
-                        longUrl={preview.longUrl}
-                    />
-
-                    <Card>
-                        <CardContent className="flex flex-col gap-4">
-                            <div className="flex flex-col gap-1.5">
-                                <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                                    Destination URL
-                                </span>
-                                <div
-                                    className="w-full overflow-y-auto rounded-md bg-transparent py-2 text-sm text-muted-foreground break-all cursor-text max-h-[4.75rem]">
-                                    {preview.longUrl}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    {preview.isPasswordProtected || !preview.longUrl ? (
+                        <InspectProtectedNotice shortUrl={preview.shortUrl}/>
+                    ) : (
+                        <InspectDestination
+                            title={preview.title ?? preview.shortUrl}
+                            description={preview.description}
+                            ogImageUrl={preview.ogImageUrl}
+                            longUrl={preview.longUrl}
+                        />
+                    )}
                 </main>
             </div>
         </div>

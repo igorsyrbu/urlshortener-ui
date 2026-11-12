@@ -2,12 +2,16 @@ import {screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
+import type {LinkFormSubmit} from "@/components/links/create-link-types";
 import {ShortKeyConflictError} from "@/lib/links-api";
 import {fetchWithAuth} from "@/lib/api";
 import {
     API_ENDPOINTS,
     DEFAULT_LINK_TITLE,
     KEY_AVAILABILITY_CHECK_DEBOUNCE_MS,
+    LINK_PASSWORD_COPY,
+    LINK_PASSWORD_MAX_LENGTH,
+    LINK_PASSWORD_MIN_LENGTH,
     SHORT_KEY_TAKEN_MESSAGE,
     TRACKER_MODE,
     URL_CLEANER_DEBOUNCE_MS,
@@ -30,7 +34,7 @@ vi.mock("@/lib/hooks/useMediaQuery", () => ({
 }));
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 
-type SubmitHandler = (longUrl: string, title: string, key: string, tagIds: string[]) => Promise<void>;
+type SubmitHandler = LinkFormSubmit;
 
 const SUBMIT_LABEL = "Create";
 const SUBMITTING_LABEL = "Creating...";
@@ -50,6 +54,7 @@ interface RenderOptions {
     initialTitle?: string;
     initialKey?: string;
     initialTagIds?: string[];
+    initialPassword?: string | null;
     tags?: TagItem[];
 }
 
@@ -72,6 +77,7 @@ function renderForm(options: RenderOptions = {}): {onSubmit: ReturnType<typeof v
             initialTitle={options.initialTitle}
             initialKey={options.initialKey}
             initialTagIds={options.initialTagIds}
+            initialPassword={options.initialPassword}
         />,
         queryClient,
     );
@@ -278,7 +284,7 @@ describe("LinkFormFields", () => {
             await fillUrlAndKey(user, "example.com", "my-key");
             await user.click(getSubmitButton());
 
-            expect(onSubmit).toHaveBeenCalledExactlyOnceWith("https://example.com", DEFAULT_LINK_TITLE, "my-key", ["tag-1"]);
+            expect(onSubmit).toHaveBeenCalledExactlyOnceWith("https://example.com", DEFAULT_LINK_TITLE, "my-key", ["tag-1"], null);
         });
 
         it("submits a trimmed custom title", async () => {
@@ -288,7 +294,7 @@ describe("LinkFormFields", () => {
             await user.type(screen.getByLabelText("Title"), "  My title  ");
             await user.click(getSubmitButton());
 
-            expect(onSubmit).toHaveBeenCalledWith("https://example.com", "My title", "k", []);
+            expect(onSubmit).toHaveBeenCalledWith("https://example.com", "My title", "k", [], null);
         });
 
         it("does not submit and reports an invalid URL", async () => {
@@ -346,7 +352,7 @@ describe("LinkFormFields", () => {
             await user.click(getSubmitButton());
             resolveKey(Response.json({key: GENERATED_KEY}));
 
-            await waitFor(() => expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, GENERATED_KEY, []));
+            await waitFor(() => expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, GENERATED_KEY, [], null));
         });
 
         it("shows the submitting label and disables both buttons while the request is pending", async () => {
@@ -442,6 +448,89 @@ describe("LinkFormFields", () => {
         });
     });
 
+    describe("password protection", () => {
+        const PASSWORD = "secret-pass";
+
+        function getPasswordSwitch(): HTMLElement {
+            return screen.getByRole("switch", {name: LINK_PASSWORD_COPY.TOGGLE_LABEL});
+        }
+
+        it("starts without protection for a new link", () => {
+            renderForm({initialLongUrl: "https://example.com", initialKey: "k"});
+
+            expect(getPasswordSwitch()).toHaveAttribute("aria-checked", "false");
+        });
+
+        it("submits the typed password when protection is on", async () => {
+            const user = userEvent.setup();
+            const {onSubmit} = renderForm({initialLongUrl: "https://example.com", initialKey: "k"});
+
+            await user.click(getPasswordSwitch());
+            await user.type(screen.getByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL), PASSWORD);
+            await user.click(getSubmitButton());
+
+            expect(onSubmit).toHaveBeenCalledExactlyOnceWith("https://example.com", DEFAULT_LINK_TITLE, "k", [], PASSWORD);
+        });
+
+        it("keeps surrounding spaces, as the password is not trimmed", async () => {
+            const user = userEvent.setup();
+            const {onSubmit} = renderForm({initialLongUrl: "https://example.com", initialKey: "k", initialPassword: " abcde "});
+
+            await user.click(getSubmitButton());
+
+            expect(onSubmit.mock.calls[0][4]).toBe(" abcde ");
+        });
+
+        it("submits no password once protection is turned off", async () => {
+            const user = userEvent.setup();
+            const {onSubmit} = renderForm({initialLongUrl: "https://example.com", initialKey: "k", initialPassword: PASSWORD});
+
+            await user.click(getPasswordSwitch());
+            await user.click(getSubmitButton());
+
+            expect(onSubmit.mock.calls[0][4]).toBeNull();
+        });
+
+        it.each([
+            ["shorter than the minimum", "a".repeat(LINK_PASSWORD_MIN_LENGTH - 1)],
+            ["empty", ""],
+        ])("refuses a password that is %s and focuses the field", async (_case, password) => {
+            const user = userEvent.setup();
+            const {onSubmit} = renderForm({initialLongUrl: "https://example.com", initialKey: "k"});
+
+            await user.click(getPasswordSwitch());
+            if (password) await user.type(screen.getByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL), password);
+            await user.click(getSubmitButton());
+
+            expect(await screen.findByText(LINK_PASSWORD_COPY.LENGTH_ERROR)).toBeInTheDocument();
+            await waitFor(() => expect(screen.getByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL)).toHaveFocus());
+            expect(onSubmit).not.toHaveBeenCalled();
+        });
+
+        it("accepts a password of the maximum length and stops typing beyond it", async () => {
+            const user = userEvent.setup();
+            const {onSubmit} = renderForm({initialLongUrl: "https://example.com", initialKey: "k"});
+
+            await user.click(getPasswordSwitch());
+            await user.type(screen.getByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL), "x".repeat(LINK_PASSWORD_MAX_LENGTH + 1));
+            await user.click(getSubmitButton());
+
+            expect(onSubmit.mock.calls[0][4]).toBe("x".repeat(LINK_PASSWORD_MAX_LENGTH));
+        });
+
+        it("hides the password until the eye button reveals it", async () => {
+            const user = userEvent.setup();
+            renderForm({initialLongUrl: "https://example.com", initialKey: "k", initialPassword: PASSWORD});
+            const input = screen.getByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL);
+
+            expect(input).toHaveAttribute("type", "password");
+            await user.click(screen.getByRole("button", {name: LINK_PASSWORD_COPY.SHOW}));
+
+            expect(input).toHaveAttribute("type", "text");
+            expect(screen.getByRole("button", {name: LINK_PASSWORD_COPY.HIDE})).toBeInTheDocument();
+        });
+    });
+
     describe("tag selection", () => {
         it("lists selected tags on the form and submits their ids on desktop", async () => {
             const user = userEvent.setup();
@@ -451,7 +540,7 @@ describe("LinkFormFields", () => {
             expect(screen.getByText(tag.name)).toBeInTheDocument();
             await user.click(getSubmitButton());
 
-            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [tag.id]);
+            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [tag.id], null);
         });
 
         it("selects tags on a dedicated screen and returns to the form on mobile", async () => {
@@ -465,7 +554,7 @@ describe("LinkFormFields", () => {
             await user.click(screen.getByRole("button", {name: "Back to form"}));
             await user.click(await screen.findByRole("button", {name: SUBMIT_LABEL}));
 
-            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [tag.id]);
+            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [tag.id], null);
         });
 
         it("creates a tag from the search text and selects it on mobile", async () => {
@@ -480,7 +569,7 @@ describe("LinkFormFields", () => {
             await user.click(screen.getByRole("button", {name: /Create tag/}));
             await user.click(await screen.findByRole("button", {name: "Create"}));
 
-            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [createdTag.id]);
+            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [createdTag.id], null);
         });
 
         it("reports a failed tag creation on mobile", async () => {

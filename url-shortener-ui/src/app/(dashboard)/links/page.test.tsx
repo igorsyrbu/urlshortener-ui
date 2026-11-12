@@ -74,8 +74,10 @@ function mockApi({links, totalElements = links.length, linksStatus, deleteStatus
         [API_ENDPOINTS.TAGS]: () => Response.json([]),
         [API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES]: () => new Response("", {headers: {"Content-Type": "text/event-stream"}}),
         ...Object.fromEntries(links.map((link) => [
-            `${API_ENDPOINTS.SHORTLINKS}/${link.id}`,
-            () => deleteResponse ?? new Response(null, {status: deleteStatus ?? 204}),
+            API_ENDPOINTS.SHORTLINK_BY_ID(link.id),
+            (init: RequestInit | undefined) => init?.method === "DELETE"
+                ? deleteResponse ?? new Response(null, {status: deleteStatus ?? 204})
+                : Response.json(link),
         ])),
     };
     routeFetchWithAuth(routes);
@@ -405,6 +407,18 @@ describe("links page", () => {
             expect(parseRequestBody(getRequestsTo(API_ENDPOINTS.SHORTLINKS, "PUT")[0])).toMatchObject({id: "link-0", isActive: false});
         });
 
+        it("keeps a protected link's password when archiving it", async () => {
+            const user = userEvent.setup();
+            const [link] = createLinks(1);
+            mockApi({links: [{...link, isPasswordProtected: true, password: "secret-pass"}]});
+            renderWithQuery(<LinksPage/>);
+
+            await confirmArchive(user, 0);
+
+            await waitFor(() => expect(getRequestsTo(API_ENDPOINTS.SHORTLINKS, "PUT")).toHaveLength(1));
+            expect(parseRequestBody(getRequestsTo(API_ENDPOINTS.SHORTLINKS, "PUT")[0])).toMatchObject({isActive: false, password: "secret-pass"});
+        });
+
         it("puts the link back and offers a retry when the server refuses to archive", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(1), putStatus: HTTP_SERVER_ERROR});
@@ -440,6 +454,7 @@ describe("links page", () => {
                     }
                     return hasSaved ? new Promise<Response>(() => undefined) : Response.json(createPage([link]));
                 },
+                [API_ENDPOINTS.SHORTLINK_BY_ID(link.id)]: () => Response.json(link),
                 [API_ENDPOINTS.TAGS]: () => Response.json([]),
                 [API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES]: () => new Response("", {headers: {"Content-Type": "text/event-stream"}}),
             });

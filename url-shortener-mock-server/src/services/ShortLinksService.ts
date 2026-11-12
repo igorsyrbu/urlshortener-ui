@@ -10,7 +10,16 @@ export interface ShortLink {
   shortUrl: string;
   longUrl: string;
   isActive: boolean;
+  /** Plain text in the mock; absent or null means the link is not protected. Never part of a list response. */
+  password?: string | null;
   tagIds?: string[];
+}
+
+/** A link as the API answers it: `password` only from `GET /shortlinks/:id`, and only for a protected link. */
+export interface ShortLinkDto extends Omit<ShortLink, "password"> {
+  isPasswordProtected: boolean;
+  password?: string;
+  tagIds: string[];
 }
 
 export interface CreateShortLinkDto {
@@ -18,6 +27,7 @@ export interface CreateShortLinkDto {
   title?: string;
   key: string;
   isActive?: boolean;
+  password?: string | null;
   tagIds?: string[];
 }
 
@@ -26,11 +36,12 @@ export interface UpdateShortLinkDto {
   title?: string;
   key: string;
   isActive?: boolean;
+  password?: string | null;
   tagIds?: string[];
 }
 
 export type ShortLinkMutationResult =
-  | { ok: true; link: ShortLink }
+  | { ok: true; link: ShortLinkDto }
   | { ok: false; status: 400 | 404 | 409; error: string };
 
 export interface CsvImportFailure {
@@ -60,6 +71,9 @@ export type PrepareCsvImportResult =
   | {ok: false; error: string};
 
 const CONFLICT_MESSAGE = "This short link is already taken.";
+const PASSWORD_MIN_LENGTH = 5;
+const PASSWORD_MAX_LENGTH = 50;
+const PASSWORD_LENGTH_MESSAGE = `password must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters`;
 
 export class ShortLinksService {
   private static readonly CONSTANTS = {
@@ -103,15 +117,15 @@ export class ShortLinksService {
       "settings",
       "api",
       "public",
+      "unlock",
     ],
   };
 
-  /**
-   * Enrich a link with its associated tag IDs.
-   */
-  private enrichLinkWithTags(uuid: string, link: ShortLink): ShortLink {
+  private toDto(uuid: string, link: ShortLink): ShortLinkDto {
+    const { password, ...publicFields } = link;
     return {
-      ...link,
+      ...publicFields,
+      isPasswordProtected: Boolean(password),
       tagIds: tagsService.getTagIdsForLink(uuid, link.id),
     };
   }
@@ -163,9 +177,9 @@ export class ShortLinksService {
   /**
    * Retrieves all active short links for a user.
    */
-  public getAllLinks(uuid: string): ShortLink[] {
+  public getAllLinks(uuid: string): ShortLinkDto[] {
     const userState = memoryStore.getUserState(uuid);
-    return userState.links.map((link) => this.enrichLinkWithTags(uuid, link));
+    return userState.links.map((link) => this.toDto(uuid, link));
   }
 
   /**
@@ -176,7 +190,7 @@ export class ShortLinksService {
    * @param size - The number of items per page
    * @returns A Page object containing the content and metadata
    */
-  public getPaginatedLinks(uuid: string, page: number, size: number, showArchived: boolean = false, search?: string): PagedModel<ShortLink> {
+  public getPaginatedLinks(uuid: string, page: number, size: number, showArchived: boolean = false, search?: string): PagedModel<ShortLinkDto> {
     const userState = memoryStore.getUserState(uuid);
     let links = showArchived ? userState.links : userState.links.filter((l) => l.isActive);
 
@@ -196,7 +210,7 @@ export class ShortLinksService {
     const totalElements = links.length;
 
     return {
-      content: content.map((link) => this.enrichLinkWithTags(uuid, link)),
+      content: content.map((link) => this.toDto(uuid, link)),
       page: {
         size,
         number: page,
@@ -213,12 +227,20 @@ export class ShortLinksService {
    * @param ids - Array of ID strings
    * @returns An array of matched ShortLinks
    */
-  public getLinksByIds(uuid: string, ids: string[]): ShortLink[] {
+  public getLinksByIds(uuid: string, ids: string[]): ShortLinkDto[] {
     const idSet = new Set(ids);
     const userState = memoryStore.getUserState(uuid);
     return userState.links
       .filter((link) => idSet.has(link.id))
-      .map((link) => this.enrichLinkWithTags(uuid, link));
+      .map((link) => this.toDto(uuid, link));
+  }
+
+  /** The only read that includes the password, for the owner's edit form. Null when the user has no such link. */
+  public getLinkById(uuid: string, id: string): ShortLinkDto | null {
+    const link = memoryStore.getUserState(uuid).links.find((candidate) => candidate.id === id);
+    if (!link) return null;
+    const dto = this.toDto(uuid, link);
+    return link.password ? { ...dto, password: link.password } : dto;
   }
 
   /**
@@ -235,6 +257,8 @@ export class ShortLinksService {
     if (keyError) return { ok: false, status: 400, error: keyError };
     const longUrl = validateLongUrl(dto.longUrl);
     if (!longUrl.ok) return { ok: false, status: 400, error: longUrl.error };
+    const password = validatePassword(dto.password);
+    if (!password.ok) return { ok: false, status: 400, error: password.error };
     if (this.isReservedKey(key)) {
       return { ok: false, status: 409, error: `Key '${key}' is already taken.` };
     }
@@ -249,6 +273,7 @@ export class ShortLinksService {
       shortUrl: `${ShortLinksService.CONSTANTS.BASE_DOMAIN}/${key}`,
       longUrl: longUrl.value,
       isActive: typeof dto.isActive === "boolean" ? dto.isActive : true,
+      password: password.value,
     };
 
     const tagIds = readTagIds(dto.tagIds);
@@ -261,14 +286,15 @@ export class ShortLinksService {
 
     const userState = memoryStore.getUserState(uuid);
     userState.links.unshift(newLink);
-    return { ok: true, link: this.enrichLinkWithTags(uuid, newLink) };
+    return { ok: true, link: this.toDto(uuid, newLink) };
   }
 
   /**
    * Updates an existing short link in memory by its ID.
    * Mirrors the real backend: PUT is a full update — `key` and `longUrl`
    * are required on every call. Partial payloads (e.g. `{id, isActive}`)
-   * are rejected with a 400, just like production.
+   * are rejected with a 400, just like production. A missing or null
+   * `password` removes the protection for the same reason.
    * `key` is editable; re-casing the existing key is always accepted, while
    * switching to another taken key is rejected with a 409 conflict.
    *
@@ -282,6 +308,8 @@ export class ShortLinksService {
     if (keyError) return { ok: false, status: 400, error: keyError };
     const longUrl = validateLongUrl(dto.longUrl);
     if (!longUrl.ok) return { ok: false, status: 400, error: longUrl.error };
+    const password = validatePassword(dto.password);
+    if (!password.ok) return { ok: false, status: 400, error: password.error };
     if (this.isReservedKey(key)) {
       return { ok: false, status: 409, error: `Key '${key}' is already taken.` };
     }
@@ -307,6 +335,7 @@ export class ShortLinksService {
       longUrl: longUrl.value,
       title: typeof dto.title === "string" ? dto.title : existingLink.title,
       isActive: typeof dto.isActive === "boolean" ? dto.isActive : existingLink.isActive,
+      password: password.value,
     };
 
     const tagIds = readTagIds(dto.tagIds);
@@ -316,7 +345,7 @@ export class ShortLinksService {
     }
 
     links[index] = updatedLink;
-    return { ok: true, link: this.enrichLinkWithTags(uuid, updatedLink) };
+    return { ok: true, link: this.toDto(uuid, updatedLink) };
   }
 
   /**
@@ -631,6 +660,18 @@ function validateLongUrl(value: unknown): LongUrlValidation {
   if (!longUrl) return { ok: false, error: "longUrl must not be blank" };
   if (!isSafeHttpUrl(longUrl)) return { ok: false, error: "longUrl must be a valid URL" };
   return { ok: true, value: longUrl };
+}
+
+type PasswordValidation = { ok: true; value: string | null } | { ok: false; error: string };
+
+/** Absent or null means "no protection". The value is case-sensitive and never trimmed, as on the backend. */
+function validatePassword(value: unknown): PasswordValidation {
+  if (value === undefined || value === null) return { ok: true, value: null };
+  if (typeof value !== "string") return { ok: false, error: PASSWORD_LENGTH_MESSAGE };
+  if (value.length < PASSWORD_MIN_LENGTH || value.length > PASSWORD_MAX_LENGTH) {
+    return { ok: false, error: PASSWORD_LENGTH_MESSAGE };
+  }
+  return { ok: true, value };
 }
 
 /** Request bodies are untyped JSON: a field declared as a string can arrive as a number, an array or null. */

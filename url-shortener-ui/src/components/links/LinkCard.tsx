@@ -7,6 +7,7 @@ import {
     Check,
     Copy,
     CornerDownRight,
+    Lock,
     MoreVertical,
     PencilLine,
     QrCode,
@@ -30,6 +31,7 @@ import {cn} from "@/lib/utils";
 import {getDomain} from "@/lib/url-utils";
 import {
     FOCUS_RING_CLASS,
+    LINK_PASSWORD_COPY,
     MORE_ACTIONS_BUTTON_CLASS,
     SHORTCUT_KEY_CLASS
 } from "@/lib/constants";
@@ -199,6 +201,16 @@ export function LinkCard({
                                 <Copy className="size-3"/>
                             )}
                         </button>
+                        {link.isPasswordProtected ? (
+                            <span
+                                role="img"
+                                aria-label={LINK_PASSWORD_COPY.PROTECTED_BADGE}
+                                title={LINK_PASSWORD_COPY.PROTECTED_BADGE}
+                                className="flex items-center justify-center size-5 shrink-0 text-muted-foreground"
+                            >
+                                <Lock className="size-3"/>
+                            </span>
+                        ) : null}
                     </div>
                     <span className="hidden sm:inline-block text-muted-foreground/30 shrink-0">•</span>
                     <div className="flex items-center gap-1 min-w-0 shrink">

@@ -3,7 +3,6 @@
 import {useQueryClient} from "@tanstack/react-query";
 import {DEFAULT_LINK_TITLE} from "@/lib/constants";
 import {deleteShortLink, saveArchiveStatus, type LinksPage, type LinksPageParams} from "@/lib/links-api";
-import {logger} from "@/lib/logger";
 import {queryKeys} from "@/lib/query/query-keys";
 import {refreshAfter, type ServerStateChange} from "@/lib/query/invalidation";
 import type {LinkItem} from "@/lib/types";
@@ -44,14 +43,10 @@ export function useLinkListActions(params: LinksPageParams): LinkListActions {
     };
 
     const setLinkArchived = async (link: LinkItem, archived: boolean): Promise<boolean> => {
-        if (!link.key) {
-            logger.error("Cannot update archive status of an unknown link", undefined, {linkId: link.id});
-            return false;
-        }
         // Without "show archived" an archived link leaves the list; with it the link stays and changes state.
         const leavesList = archived && !params.showArchived;
         const previousPage = await editPage((page) => (leavesList ? withoutLink(page, link.id) : withLinkChanged(page, link.id, {isActive: !archived})));
-        const isSaved = await saveArchiveStatus(link, archived);
+        const isSaved = await saveArchiveStatus(link.id, archived);
         finishEdit("linkArchived", isSaved, previousPage);
         return isSaved;
     };

@@ -79,13 +79,13 @@ describe("useLinkListActions", () => {
         expect(STALE_AFTER.linkDeleted).toContainEqual(queryKeys.tags.withLinkCounts);
     });
 
-    it("refuses without calling the API when the link has no key", async () => {
+    it("saves by link id, so the stored link (with its password) is the base of the update", async () => {
+        vi.mocked(saveArchiveStatus).mockResolvedValueOnce(true);
         const actions = renderActions(HIDING_ARCHIVED);
 
-        await expect(act(() => actions.current.setLinkArchived({...LINK_A, key: undefined}, true))).resolves.toBe(false);
+        await act(() => actions.current.setLinkArchived({...LINK_A, key: undefined}, true));
 
-        expect(saveArchiveStatus).not.toHaveBeenCalled();
-        expect(cachedPage(HIDING_ARCHIVED)).toEqual(PAGE);
+        expect(saveArchiveStatus).toHaveBeenCalledExactlyOnceWith(LINK_A.id, true);
     });
 
     it("restores the page and resolves false when archiving fails", async () => {

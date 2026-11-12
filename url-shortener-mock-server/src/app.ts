@@ -15,6 +15,7 @@ import shortLinksRoutes from "./routes/shortlinks";
 import tagsRoutes from "./routes/tags";
 import usersRoutes from "./routes/users";
 import { BillingService } from "./services/BillingService";
+import { UnlockAttemptLimiter } from "./services/UnlockAttemptLimiter";
 import { sendProblem } from "./problem";
 
 const CSV_BODY_LIMIT = "100kb";
@@ -26,6 +27,8 @@ export interface AppOptions {
   billing?: BillingService;
   /** Tests pass a limiter with a fake clock to cross window boundaries. */
   billingRateLimiter?: BillingRateLimiter;
+  /** Tests pass a limiter with a fake clock to cross the lockout window. */
+  unlockAttemptLimiter?: UnlockAttemptLimiter;
 }
 
 /** The one place that wires middleware and routes; `index.ts` and the tests both build the app here. */
@@ -33,9 +36,12 @@ export function createApp({
   config,
   billing = new BillingService(Date.now, config.billing),
   billingRateLimiter = new BillingRateLimiter(),
+  unlockAttemptLimiter = new UnlockAttemptLimiter(),
 }: AppOptions): express.Express {
   const app = express();
-  const context: AppContext = { config, billing, billingRateLimiter, magicLinkCooldowns: new Map() };
+  const context: AppContext = {
+    config, billing, billingRateLimiter, unlockAttemptLimiter, magicLinkCooldowns: new Map(),
+  };
   app.locals.context = context;
 
   app.use(cors);

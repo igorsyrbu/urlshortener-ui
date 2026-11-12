@@ -9,6 +9,7 @@
     "/inspect/[key]": 186,
     "/login": 182,
     "/report-abuse": 211,
+    "/unlock/[key]": 187,
     "/dashboard": 229,
     "/settings": 230,
     "/settings/billing": 244,

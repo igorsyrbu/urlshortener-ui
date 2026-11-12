@@ -167,6 +167,18 @@ describe("ReportAbuseForm submission", () => {
         });
     });
 
+    it("confirms a report of a protected link, whose answer has no destination", async () => {
+        const user = userEvent.setup();
+        mockFetch(Response.json({id: "report-2", shortUrl: VALID_URL, reason: "OTHER", status: "RECEIVED"}, {status: 201}));
+        renderForm();
+
+        await fillValidForm(user);
+        await submit(user);
+
+        expect(await screen.findByText("Report received")).toBeInTheDocument();
+        expect(screen.getByText("report-2")).toBeInTheDocument();
+    });
+
     it("omits the description when it is empty", async () => {
         const user = userEvent.setup();
         const fetchMock = mockFetch(Response.json({id: "report-1"}, {status: 201}));

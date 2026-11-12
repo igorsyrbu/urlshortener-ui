@@ -17,7 +17,7 @@ Where fetches live today (use these homes for new code):
 | Hook in `lib/hooks` | Mutations or loads owned by one feature, with local pending/error state, over an API function | `useTagMutations`, `useUrlCleaner`, `useUserSessions`, `useBillingCheckout` in `src/lib/hooks/` |
 | Component handler | One-off mutations tied to a single form or dialog, over an API function | `CreateLinkModal` (`createShortLink`), `EditLinkModal` (`updateShortLink`) |
 
-**Every request lives in an API module** ([`lib/links-api.ts`](../url-shortener-ui/src/lib/links-api.ts), [`tags-api.ts`](../url-shortener-ui/src/lib/tags-api.ts), [`user-api.ts`](../url-shortener-ui/src/lib/user-api.ts) (profile, sessions, preferences), [`analytics-api.ts`](../url-shortener-ui/src/lib/analytics-api.ts), [`billing-api.ts`](../url-shortener-ui/src/lib/billing-api.ts), [`url-cleaner-api.ts`](../url-shortener-ui/src/lib/url-cleaner-api.ts), plus the streaming and file modules [`link-transfer.ts`](../url-shortener-ui/src/lib/link-transfer.ts) and [`import-progress.ts`](../url-shortener-ui/src/lib/import-progress.ts)). Components, hooks and stores call those functions and never `fetchWithAuth`. An API function goes through `requestJson` / `requestNoContent`, so a failure rejects with an `ApiError` (`status` plus a user-safe message) and callers branch on `error.status`, not on a `Response`; a function calls `fetchWithAuth` itself only when the status is the answer (`isShortKeyTaken`: 200 taken, 404 free) or the body is a stream or a file. A domain error is an `ApiError` subclass (`ShortKeyConflictError` for a taken key, `BillingApiError` with `retryAfterSeconds`).
+**Every request lives in an API module** ([`lib/links-api.ts`](../url-shortener-ui/src/lib/links-api.ts), [`tags-api.ts`](../url-shortener-ui/src/lib/tags-api.ts), [`user-api.ts`](../url-shortener-ui/src/lib/user-api.ts) (profile, sessions, preferences), [`analytics-api.ts`](../url-shortener-ui/src/lib/analytics-api.ts), [`billing-api.ts`](../url-shortener-ui/src/lib/billing-api.ts), [`url-cleaner-api.ts`](../url-shortener-ui/src/lib/url-cleaner-api.ts), [`link-unlock-api.ts`](../url-shortener-ui/src/lib/link-unlock-api.ts) (public, plain `fetch`), plus the streaming and file modules [`link-transfer.ts`](../url-shortener-ui/src/lib/link-transfer.ts) and [`import-progress.ts`](../url-shortener-ui/src/lib/import-progress.ts)). Components, hooks and stores call those functions and never `fetchWithAuth`. An API function goes through `requestJson` / `requestNoContent`, so a failure rejects with an `ApiError` (`status` plus a user-safe message) and callers branch on `error.status`, not on a `Response`; a function calls `fetchWithAuth` itself only when the status is the answer (`isShortKeyTaken`: 200 taken, 404 free) or the body is a stream or a file. A domain error is an `ApiError` subclass (`ShortKeyConflictError` for a taken key, `BillingApiError` with `retryAfterSeconds`).
 
 Pages trigger loads from `useEffect` by calling a store action; the fetch itself stays in the API module. Store design is in [state-management.md](state-management.md). Never import `fetchWithAuth` into a Server Component.
 
@@ -55,6 +55,7 @@ Requests that must not carry or refresh a token use plain `fetch`:
 | [`src/app/auth/exchange/page.tsx`](../url-shortener-ui/src/app/auth/exchange/page.tsx) | OAuth code exchange before any token exists |
 | [`src/app/login/page.tsx`](../url-shortener-ui/src/app/login/page.tsx) | `POST /ott/generate` (magic link), pre-login |
 | [`src/components/abuse/ReportAbuseForm.tsx`](../url-shortener-ui/src/components/abuse/ReportAbuseForm.tsx) | Public endpoint, anonymous |
+| `unlockLink` in [`src/lib/link-unlock-api.ts`](../url-shortener-ui/src/lib/link-unlock-api.ts) | Public unlock of a password-protected link, anonymous; rejects with `UnlockLinkError` (`status`, problem detail, `retryAfterSeconds` from `X-Rate-Limit-Retry-After-Seconds`) |
 
 All of them use `API_BASE_URL` (same-origin `/api`), so the browser never calls the backend origin directly (the CSP's `connect-src 'self'` relies on this). `OttLoginForm` and the Google login button use `API_BASE_URL` for a form `action` / redirect, not `fetch`.
 
@@ -80,6 +81,7 @@ Every failed request rejects with an `ApiError` ([`src/lib/api-request.ts`](../u
 | Forms (create/edit link) | `ShortKeyConflictError` on 409 (the form shows it under the key), otherwise the `ApiError` or network error |
 | Sessions, preferences, URL cleaner | The hook or store branches on `error instanceof ApiError` (the server answered) versus a network failure, and on `error.status` |
 | Login / report abuse | Inline `if (response.status === 429)` branches in the component (public routes, plain `fetch`) |
+| Unlock page | `attemptUnlock` ([`src/lib/unlock-outcome.ts`](../url-shortener-ui/src/lib/unlock-outcome.ts)) maps `UnlockLinkError.status` to an outcome: 401 wrong password, 403 captcha, 404 not found, 429 rate limit (cooldown from the header, else `UNLOCK_RATE_LIMIT_FALLBACK_SECONDS`), 400 blank password |
 
 Rules for new code:
 
@@ -100,6 +102,7 @@ All retry headers are read by `parseRetryAfterSeconds(headers, headerName = "Ret
 
 
 - Billing endpoints: header `X-Rate-Limit-Retry-After-Seconds` (`RATE_LIMIT_RETRY_AFTER_HEADER`), parsed by `parseRetryAfterSeconds(headers, RATE_LIMIT_RETRY_AFTER_HEADER)`, falling back to the standard `Retry-After`, into `BillingApiError.retryAfterSeconds`; `buildRateLimitedMessage` appends `Try again in <n>s.` `readRateLimitDelay(error)` returns the delay of a 429 (null otherwise); the billing hooks start a [`useCooldown`](../url-shortener-ui/src/lib/hooks/useCooldown.ts) with it, so the button (or the subscription Retry) stays disabled for the delay.
+- Link unlock: `X-Rate-Limit-Retry-After-Seconds` on the endpoint bucket's 429; the wrong-password lockout's 429 has no header, so the page pauses for `UNLOCK_RATE_LIMIT_FALLBACK_SECONDS` (60 s) through `useCooldown`.
 - Magic link login and abuse reports: standard `Retry-After`, parsed with `parseRetryAfterSeconds`; login feeds it to `useMagicLinkCooldown` (see [features/auth.md](features/auth.md)).
 - CSV export: one automatic retry after `EXPORT_RATE_LIMIT_RETRY_DELAY_MS` when the first response is 429 (`fetchExportWithRetry`). Import uploads are not retried.
 - SSE reconnect treats 429 and 5xx as retryable (see below).

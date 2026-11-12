@@ -2,6 +2,7 @@ import type { Request } from "express";
 import type { MockConfig } from "./config";
 import type { BillingRateLimiter } from "./middleware/billingRateLimit";
 import type { BillingService } from "./services/BillingService";
+import type { UnlockAttemptLimiter } from "./services/UnlockAttemptLimiter";
 
 /** Per-app state and settings, so every `createApp()` (one per test file, one in `index.ts`) starts clean. */
 export interface AppContext {
@@ -10,6 +11,7 @@ export interface AppContext {
   billingRateLimiter: BillingRateLimiter;
   /** Email to the time (ms) when the next magic link may be requested. */
   magicLinkCooldowns: Map<string, number>;
+  unlockAttemptLimiter: UnlockAttemptLimiter;
 }
 
 declare global {

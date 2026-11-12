@@ -10,6 +10,7 @@ import {
     fetchLinksPage,
     fetchLongUrlTitle,
     fetchRandomKey,
+    getLinkById,
     isShortKeyTaken,
     saveArchiveStatus,
     ShortKeyConflictError,
@@ -17,7 +18,7 @@ import {
     type LinksPageParams,
 } from "@/lib/links-api";
 import {logger} from "@/lib/logger";
-import {createLinkItem, createPage, createShortLink} from "@/test/link-utils";
+import {createLinkItem, createPage, createProtectedShortLink, createShortLink} from "@/test/link-utils";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn(), warn: vi.fn(), info: vi.fn()}}));
@@ -33,8 +34,12 @@ function mockLinksPage(content: ShortLinkDTO[], overrides: Partial<PageDTO<Short
     vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(createPage(content, overrides)));
 }
 
-function sentBody(): Record<string, unknown> {
-    return JSON.parse(String(vi.mocked(fetchWithAuth).mock.calls[0][1]?.body));
+function sentBody(callIndex = 0): Record<string, unknown> {
+    return JSON.parse(String(vi.mocked(fetchWithAuth).mock.calls[callIndex][1]?.body));
+}
+
+function mockStoredLink(link: ShortLinkDTO): void {
+    vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(link));
 }
 
 describe("fetchLinksPage", () => {
@@ -107,40 +112,64 @@ describe("fetchLinksPage", () => {
 });
 
 describe("saveArchiveStatus", () => {
-    it("sends the full link with inverted activity", async () => {
-        const link = createLinkItem({id: "a", tagIds: ["t1"]});
+    it("loads the stored link and sends it back whole with inverted activity", async () => {
+        const link = createShortLink({id: "a", tagIds: ["t1"]});
+        mockStoredLink(link);
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null));
 
-        await expect(saveArchiveStatus(link, true)).resolves.toBe(true);
+        await expect(saveArchiveStatus("a", true)).resolves.toBe(true);
 
-        expect(vi.mocked(fetchWithAuth).mock.calls[0][0]).toBe(API_ENDPOINTS.SHORTLINKS);
-        expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.method).toBe("PUT");
-        expect(sentBody()).toEqual({id: "a", title: link.title, longUrl: link.longUrl, key: link.key, isActive: false, tagIds: ["t1"]});
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][0]).toBe(API_ENDPOINTS.SHORTLINK_BY_ID("a"));
+        expect(vi.mocked(fetchWithAuth).mock.calls[1][0]).toBe(API_ENDPOINTS.SHORTLINKS);
+        expect(vi.mocked(fetchWithAuth).mock.calls[1][1]?.method).toBe("PUT");
+        expect(sentBody(1)).toEqual({
+            id: "a", title: link.title, longUrl: link.longUrl, key: link.key, isActive: false, password: null, tagIds: ["t1"],
+        });
+    });
+
+    it("keeps the password of a protected link", async () => {
+        mockStoredLink(createProtectedShortLink("secret-pass"));
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null));
+
+        await saveArchiveStatus("link-1", true);
+
+        expect(sentBody(1).password).toBe("secret-pass");
     });
 
     it("reactivates a link when unarchiving", async () => {
+        mockStoredLink(createShortLink({isActive: false}));
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null));
 
-        await saveArchiveStatus(createLinkItem({isActive: false}), false);
+        await saveArchiveStatus("link-1", false);
 
-        expect(sentBody().isActive).toBe(true);
+        expect(sentBody(1).isActive).toBe(true);
     });
 
     it("sends an empty tag list for a link without tags", async () => {
+        mockStoredLink(createShortLink({tagIds: undefined}));
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null));
 
-        await saveArchiveStatus(createLinkItem({tagIds: undefined}), true);
+        await saveArchiveStatus("link-1", true);
 
-        expect(sentBody().tagIds).toEqual([]);
+        expect(sentBody(1).tagIds).toEqual([]);
+    });
+
+    it("does not save when the stored link cannot be loaded", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: HTTP_NOT_FOUND}));
+
+        await expect(saveArchiveStatus("link-1", true)).resolves.toBe(false);
+
+        expect(fetchWithAuth).toHaveBeenCalledOnce();
     });
 
     it.each([
         ["refuses", () => vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: HTTP_CONFLICT}))],
         ["cannot be reached", () => vi.mocked(fetchWithAuth).mockRejectedValueOnce(new Error("offline"))],
     ])("resolves false and logs when the server %s", async (_name, arrangeFailure) => {
+        mockStoredLink(createShortLink());
         arrangeFailure();
 
-        await expect(saveArchiveStatus(createLinkItem(), true)).resolves.toBe(false);
+        await expect(saveArchiveStatus("link-1", true)).resolves.toBe(false);
 
         expect(logger.error).toHaveBeenCalled();
     });
@@ -167,7 +196,8 @@ describe("deleteShortLink", () => {
     });
 });
 
-const LINK_FIELDS = {longUrl: "https://example.com", title: "Example", key: "ex", tagIds: ["tag-1"]};
+const LINK_PASSWORD = "secret-pass";
+const LINK_FIELDS = {longUrl: "https://example.com", title: "Example", key: "ex", tagIds: ["tag-1"], password: null};
 
 describe("createShortLink", () => {
     it("posts an active link and returns the created one", async () => {
@@ -178,7 +208,15 @@ describe("createShortLink", () => {
 
         expect(result).toEqual(created);
         expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.method).toBe("POST");
-        expect(sentBody()).toEqual({...LINK_FIELDS, isActive: true});
+        expect(sentBody()).toEqual({longUrl: LINK_FIELDS.longUrl, title: "Example", key: "ex", tagIds: ["tag-1"], isActive: true});
+    });
+
+    it("sends the password of a protected link", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({}));
+
+        await requestShortLinkCreation({...LINK_FIELDS, password: LINK_PASSWORD});
+
+        expect(sentBody().password).toBe(LINK_PASSWORD);
     });
 
     it("leaves tag ids out when the link has none", async () => {
@@ -220,10 +258,44 @@ describe("updateShortLink", () => {
         expect(sentBody()).toEqual({id: "link-1", ...LINK_FIELDS, isActive: false});
     });
 
+    it("always sends the password, since a missing one removes the protection", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValue(Response.json({}));
+
+        await updateShortLink(createLinkItem(), {...LINK_FIELDS, password: LINK_PASSWORD});
+        await updateShortLink(createLinkItem(), LINK_FIELDS);
+
+        expect(sentBody(0).password).toBe(LINK_PASSWORD);
+        expect(sentBody(1)).toHaveProperty("password", null);
+    });
+
     it("rejects with a key conflict when the new key is taken", async () => {
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: HTTP_CONFLICT}));
 
         await expect(updateShortLink(createLinkItem(), LINK_FIELDS)).rejects.toBeInstanceOf(ShortKeyConflictError);
+    });
+});
+
+describe("getLinkById", () => {
+    it("asks for the link without caching and returns it with its password", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(createProtectedShortLink(LINK_PASSWORD, {id: "a b"})));
+
+        const link = await getLinkById("a b");
+
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][0]).toBe(API_ENDPOINTS.SHORTLINK_BY_ID("a b"));
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.cache).toBe("no-store");
+        expect(link).toMatchObject({id: "a b", isPasswordProtected: true, password: LINK_PASSWORD});
+    });
+
+    it("reports no password for an unprotected link", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(createShortLink()));
+
+        await expect(getLinkById("link-1")).resolves.toMatchObject({isPasswordProtected: false, password: null});
+    });
+
+    it("rejects with the ApiError of a missing link", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: HTTP_NOT_FOUND}));
+
+        await expect(getLinkById("link-1")).rejects.toHaveProperty("status", HTTP_NOT_FOUND);
     });
 });
 

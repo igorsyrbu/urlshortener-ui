@@ -14,7 +14,14 @@ export interface LinkItem {
     shortUrl: string;
     longUrl: string;
     isActive: boolean;
+    isPasswordProtected: boolean;
     tagIds?: string[];
+}
+
+/** A link loaded for the edit form: the only shape that carries the password (`null` when unprotected). */
+export interface EditableLink extends LinkItem {
+    key: string;
+    password: string | null;
 }
 
 export interface UserProfile {

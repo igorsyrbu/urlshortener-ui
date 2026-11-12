@@ -59,7 +59,7 @@ Development builds also install the local React Scan observer before React loads
    - `unavailable` when the profile request fails with anything but 401/403 (offline, 5xx, the 503 from an unreachable refresh) and there is no hint: "Can't reach the server" with a retry button, instead of signing the user out. With a hint the shell stays and the pages show their own errors.
    - Profile loaded: it stays in the query cache (read with `useCurrentUser`) and the hint is set. 401/403: the hint is cleared and the layout calls `router.replace(ROUTES.LOGIN)`.
    - The server cannot read `localStorage`, so the prerendered HTML is always the spinner; the hint is read with `useSyncExternalStore` and the shell appears on hydration without a hydration mismatch.
-3. Pages outside the group (`/login`, `/auth/*`, `/inspect/[key]`, `/report-abuse`) have no gate. See [routing-and-navigation](routing-and-navigation.md#auth-guarding).
+3. Pages outside the group (`/login`, `/auth/*`, `/inspect/[key]`, `/report-abuse`, `/unlock/[key]`) have no gate. See [routing-and-navigation](routing-and-navigation.md#auth-guarding).
 
 The access token lives only in memory (`useAuthStore`); a full reload therefore always goes through the refresh path above. Details: [features/auth](features/auth.md) and [state-management](state-management.md).
 

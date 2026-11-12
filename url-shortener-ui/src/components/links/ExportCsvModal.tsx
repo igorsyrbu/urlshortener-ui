@@ -2,7 +2,7 @@
 
 import {useId, useState} from "react";
 import {useShallow} from "zustand/react/shallow";
-import {FOCUS_RING_CLASS} from "@/lib/constants";
+import {FOCUS_RING_CLASS, INFO_TOOLTIP_CONTENT_CLASS} from "@/lib/constants";
 import {Download, Info} from "lucide-react";
 import {toast} from "sonner";
 import {Tooltip as TooltipPrimitive} from "radix-ui";
@@ -104,7 +104,7 @@ export function ExportCsvModal({open, onOpenChange}: ExportCsvModalProps) {
                             <TooltipContent
                                 side="top"
                                 sideOffset={8}
-                                className="max-w-64 rounded-xl bg-foreground px-4 py-3 text-sm font-normal leading-5 text-background shadow-lg border-foreground text-pretty text-left"
+                                className={INFO_TOOLTIP_CONTENT_CLASS}
                                 onPointerDownOutside={() => setIsTooltipOpen(false)}
                             >
                                 {APPLY_FILTERS_TOOLTIP}

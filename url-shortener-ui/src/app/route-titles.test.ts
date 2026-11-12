@@ -10,6 +10,7 @@ import {metadata as loginMetadata} from "@/app/login/layout";
 import {metadata as authMetadata} from "@/app/auth/layout";
 import {metadata as reportAbuseMetadata} from "@/app/(legal)/report-abuse/page";
 import {metadata as inspectMetadata} from "@/app/inspect/[key]/page";
+import {metadata as unlockMetadata} from "@/app/unlock/[key]/layout";
 import {PAGE_TITLES} from "@/lib/constants";
 import {SETTINGS_LABELS} from "@/lib/settings-constants";
 
@@ -25,13 +26,14 @@ describe("route titles", () => {
         ["sign-in callbacks", authMetadata, PAGE_TITLES.SIGNING_IN],
         ["report abuse", reportAbuseMetadata, PAGE_TITLES.REPORT_ABUSE],
         ["link preview", inspectMetadata, PAGE_TITLES.LINK_PREVIEW],
+        ["protected link", unlockMetadata, PAGE_TITLES.UNLOCK_LINK],
     ])("gives the %s page its own title", (_route, metadata, expected) => {
         expect(metadata.title).toBe(expected);
     });
 
     it("gives every route a different title", () => {
         const titles = [linksMetadata, tagsMetadata, analyticsMetadata, dashboardMetadata, generalSettingsMetadata,
-            billingSettingsMetadata, loginMetadata, authMetadata, reportAbuseMetadata, inspectMetadata].map((m) => m.title);
+            billingSettingsMetadata, loginMetadata, authMetadata, reportAbuseMetadata, inspectMetadata, unlockMetadata].map((m) => m.title);
 
         expect(new Set(titles).size).toBe(titles.length);
     });

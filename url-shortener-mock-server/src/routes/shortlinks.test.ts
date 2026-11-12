@@ -297,6 +297,7 @@ describe("GET /public/preview/:key", () => {
       description: null,
       ogImageUrl: null,
       faviconDomain: "example.com",
+      isPasswordProtected: false,
     });
   });
 

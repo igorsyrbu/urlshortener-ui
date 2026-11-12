@@ -104,7 +104,7 @@ Add new global polyfills here, never inside individual tests.
 | File | Main exports | Use for |
 |---|---|---|
 | [`setup.ts`](../url-shortener-ui/src/test/setup.ts) | (side effects only) | Global setup described above |
-| [`link-utils.ts`](../url-shortener-ui/src/test/link-utils.ts) | `createShortLink`, `createLinkItem`, `createPage<T>` | Link DTO / UI item / paged response fixtures |
+| [`link-utils.ts`](../url-shortener-ui/src/test/link-utils.ts) | `createShortLink`, `createProtectedShortLink`, `createLinkItem`, `createPage<T>` | Link DTO (also as `GET /shortlinks/{id}` answers a protected link) / UI item / paged response fixtures |
 | [`tag-utils.ts`](../url-shortener-ui/src/test/tag-utils.ts) | `createTag` | Tag fixtures |
 | [`import-utils.ts`](../url-shortener-ui/src/test/import-utils.ts) | `createImportJob` | CSV import job DTO fixture |
 | [`csv-utils.ts`](../url-shortener-ui/src/test/csv-utils.ts) | `createCsvFile` | `File` objects for dropzone/import tests |
