@@ -6,7 +6,6 @@ import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
 import {LinkFormFields} from "@/components/links/LinkFormFields";
 import type {LinkFormSubmit} from "@/components/links/create-link-types";
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
-import {Spinner} from "@/components/ui/spinner";
 import {LINK_PASSWORD_COPY} from "@/lib/constants";
 
 interface LinkFormModalProps {
@@ -23,29 +22,22 @@ interface LinkFormModalProps {
     onSubmit: LinkFormSubmit;
     enableUrlCleaner?: boolean;
     enableTitleSuggestion?: boolean;
-    /** The initial values are still loading: shows a spinner instead of the form. */
+    /** The link is still loading: the form shows its initial values at once, but saving waits. */
     isLoading?: boolean;
-    /** Loading the initial values failed; `onRetry` loads them again. */
+    /** The password is among what is still loading: its box shows a placeholder until it arrives. */
+    isPasswordLoading?: boolean;
+    /** Loading the link failed: the form gives way to an error; `onRetry` loads it again. */
     hasLoadFailed?: boolean;
     onRetry?: () => void;
 }
 
-interface LinkFormLoadStateProps {
-    hasLoadFailed: boolean;
+interface LinkFormLoadFailedProps {
     onRetry?: () => void;
 }
 
-/** Holds the form's place while the link loads, so the dialog keeps a steady size. */
-function LinkFormLoadState({hasLoadFailed, onRetry}: LinkFormLoadStateProps) {
-    if (hasLoadFailed) {
-        return <ErrorWithRetry message={LINK_PASSWORD_COPY.LOAD_FAILED} onRetry={() => onRetry?.()} className="min-h-80"/>;
-    }
-    return (
-        <div role="status" className="flex min-h-80 flex-col items-center justify-center gap-3">
-            <Spinner/>
-            <span className="text-sm text-muted-foreground">{LINK_PASSWORD_COPY.LOADING}</span>
-        </div>
-    );
+/** Holds the form's place when the link could not be loaded, so the dialog keeps a steady size. */
+function LinkFormLoadFailed({onRetry}: LinkFormLoadFailedProps) {
+    return <ErrorWithRetry message={LINK_PASSWORD_COPY.LOAD_FAILED} onRetry={() => onRetry?.()} className="min-h-80"/>;
 }
 
 export function LinkFormModal({
@@ -63,17 +55,39 @@ export function LinkFormModal({
                                   enableUrlCleaner = false,
                                   enableTitleSuggestion = false,
                                   isLoading = false,
+                                  isPasswordLoading = false,
                                   hasLoadFailed = false,
                                   onRetry,
                               }: LinkFormModalProps) {
     const isDesktop = useIsDesktop();
-    // New initial values remount the form, which resets every field, error and screen at once.
-    const formKey = JSON.stringify([initialLongUrl, initialTitle, initialKey, initialTagIds, initialPassword]);
+    // New initial values remount the form, which resets every field, error and screen at once. The password is left
+    // out: it arrives later than the rest and the form takes it in place, so nothing typed meanwhile is lost.
+    const formKey = JSON.stringify([initialLongUrl, initialTitle, initialKey, initialTagIds]);
     const handleSubmit: LinkFormSubmit = async (longUrl, title, key, tagIds, password) => {
         await onSubmit(longUrl, title, key, tagIds, password);
         onOpenChange(false);
     };
-    const isFormReady = !isLoading && !hasLoadFailed;
+    const formBody = hasLoadFailed ? (
+        <LinkFormLoadFailed onRetry={onRetry}/>
+    ) : (
+        <LinkFormFields
+            key={formKey}
+            title={title}
+            initialLongUrl={initialLongUrl}
+            initialTitle={initialTitle}
+            initialTagIds={initialTagIds}
+            initialKey={initialKey}
+            initialPassword={initialPassword}
+            isPasswordLoading={isPasswordLoading}
+            isSubmitBlocked={isLoading}
+            onSubmit={handleSubmit}
+            submitLabel={submitLabel}
+            submittingLabel={submittingLabel}
+            onCancel={() => onOpenChange(false)}
+            enableUrlCleaner={enableUrlCleaner}
+            enableTitleSuggestion={enableTitleSuggestion}
+        />
+    );
 
     if (isDesktop) {
         return (
@@ -87,27 +101,7 @@ export function LinkFormModal({
                     <DialogHeader className="p-6 pb-4">
                         <h2 className="text-lg font-semibold leading-none">{title}</h2>
                     </DialogHeader>
-                    <div className="px-6 pb-6">
-                        {isFormReady ? (
-                            <LinkFormFields
-                                key={formKey}
-                                title={title}
-                                initialLongUrl={initialLongUrl}
-                                initialTitle={initialTitle}
-                                initialTagIds={initialTagIds}
-                                initialKey={initialKey}
-                                initialPassword={initialPassword}
-                                onSubmit={handleSubmit}
-                                submitLabel={submitLabel}
-                                submittingLabel={submittingLabel}
-                                onCancel={() => onOpenChange(false)}
-                                enableUrlCleaner={enableUrlCleaner}
-                                enableTitleSuggestion={enableTitleSuggestion}
-                            />
-                        ) : (
-                            <LinkFormLoadState hasLoadFailed={hasLoadFailed} onRetry={onRetry}/>
-                        )}
-                    </div>
+                    <div className="px-6 pb-6">{formBody}</div>
                 </DialogContent>
             </Dialog>
         );
@@ -118,27 +112,7 @@ export function LinkFormModal({
             <DrawerContent className="p-0 outline-hidden">
                 <DrawerTitle className="sr-only">{title}</DrawerTitle>
                 <DrawerDescription className="sr-only">Form to edit or create short link</DrawerDescription>
-                <div className="px-6 pt-6">
-                    {isFormReady ? (
-                        <LinkFormFields
-                            key={formKey}
-                            title={title}
-                            initialLongUrl={initialLongUrl}
-                            initialTitle={initialTitle}
-                            initialTagIds={initialTagIds}
-                            initialKey={initialKey}
-                            initialPassword={initialPassword}
-                            onSubmit={handleSubmit}
-                            submitLabel={submitLabel}
-                            submittingLabel={submittingLabel}
-                            onCancel={() => onOpenChange(false)}
-                            enableUrlCleaner={enableUrlCleaner}
-                            enableTitleSuggestion={enableTitleSuggestion}
-                        />
-                    ) : (
-                        <LinkFormLoadState hasLoadFailed={hasLoadFailed} onRetry={onRetry}/>
-                    )}
-                </div>
+                <div className="px-6 pt-6">{formBody}</div>
             </DrawerContent>
         </Drawer>
     );

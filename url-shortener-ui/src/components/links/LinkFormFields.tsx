@@ -40,6 +40,10 @@ interface LinkFormFieldsProps {
     initialKey?: string;
     /** The link's current password; `null` or absent for an unprotected link. */
     initialPassword?: string | null;
+    /** The password has not arrived yet: the switch starts on with a placeholder box when the link is protected. */
+    isPasswordLoading?: boolean;
+    /** Saving waits (the rest of the link is still loading). */
+    isSubmitBlocked?: boolean;
     autoGenerateKey?: boolean;
     onSubmit: LinkFormSubmit;
     submitLabel: string;
@@ -97,6 +101,8 @@ export function LinkFormFields({
                                    initialTagIds = EMPTY_TAG_IDS,
                                    initialKey = "",
                                    initialPassword = null,
+                                   isPasswordLoading = false,
+                                   isSubmitBlocked = false,
                                    autoGenerateKey = false,
                                    onSubmit,
                                    submitLabel,
@@ -117,7 +123,7 @@ export function LinkFormFields({
     const [keyError, setKeyError] = useState<string | null>(null);
     const [isKeyLoading, setIsKeyLoading] = useState(false);
     const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialTagIds);
-    const [isPasswordEnabled, setIsPasswordEnabled] = useState(initialPassword !== null);
+    const [isPasswordEnabled, setIsPasswordEnabled] = useState(initialPassword !== null || isPasswordLoading);
     const [password, setPassword] = useState(initialPassword ?? "");
     const [passwordError, setPasswordError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -401,6 +407,7 @@ export function LinkFormFields({
 
     const handleSubmit = async (e?: React.SyntheticEvent) => {
         if (e) e.preventDefault();
+        if (isSubmitBlocked) return;
         const normalized = normalizeUrl(longUrl);
         if (normalized !== longUrl) {
             setLongUrl(normalized);
@@ -459,6 +466,17 @@ export function LinkFormFields({
             setIsSubmitting(false);
         }
     };
+
+    const takeInitialPassword = () => {
+        setIsPasswordEnabled(initialPassword !== null);
+        setPassword(initialPassword ?? "");
+        setPasswordError(null);
+    };
+    // The password arrives after the form is up: take it in place, so nothing else the user typed is reset.
+    useOnValueChange(initialPassword, takeInitialPassword);
+    useOnValueChange(isPasswordLoading, (isStillLoading) => {
+        if (!isStillLoading) takeInitialPassword();
+    });
 
     const handlePasswordEnabledChange = (isEnabled: boolean) => {
         setIsPasswordEnabled(isEnabled);
@@ -520,6 +538,8 @@ export function LinkFormFields({
                             selectedTagIds={selectedTagIds}
                             tags={tags}
                             isPasswordEnabled={isPasswordEnabled}
+                            isPasswordLoading={isPasswordLoading}
+                            isSubmitBlocked={isSubmitBlocked}
                             password={password}
                             passwordError={passwordError}
                             onPasswordEnabledChange={handlePasswordEnabledChange}

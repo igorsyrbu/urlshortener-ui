@@ -1,4 +1,4 @@
-import {render, screen} from "@testing-library/react";
+import {fireEvent, render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {useState} from "react";
 import {describe, expect, it, vi} from "vitest";
@@ -114,5 +114,47 @@ describe("LinkPasswordField", () => {
         expect(firstPassword).toMatch(GENERATED_PASSWORD_PATTERN);
         expect(input.value).toMatch(GENERATED_PASSWORD_PATTERN);
         expect(input.value).not.toBe(firstPassword);
+    });
+
+    it("replaces the box with a placeholder and holds the switch while the password loads", () => {
+        render(
+            <LinkPasswordField
+                inputId={INPUT_ID}
+                isEnabled
+                password=""
+                error={null}
+                onEnabledChange={vi.fn()}
+                onPasswordChange={vi.fn()}
+                isCompact
+                isLoading
+            />,
+        );
+
+        expect(screen.getByRole("status")).toHaveTextContent(LINK_PASSWORD_COPY.LOADING);
+        expect(screen.getByRole("switch", {name: LINK_PASSWORD_COPY.TOGGLE_LABEL})).toBeDisabled();
+        expect(screen.queryByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL)).not.toBeInTheDocument();
+    });
+
+    it("keeps the box while it closes and removes it when the closing transition ends", () => {
+        const props = {inputId: INPUT_ID, password: "abcde", error: null, onEnabledChange: vi.fn(), onPasswordChange: vi.fn(), isCompact: true};
+        const {rerender} = render(<LinkPasswordField {...props} isEnabled/>);
+        const input = screen.getByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL);
+
+        rerender(<LinkPasswordField {...props} isEnabled={false}/>);
+        expect(screen.getByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL)).toBe(input);
+
+        const slot = input.closest(".grid");
+        if (slot === null) throw new Error("The password box has no slot");
+        fireEvent.transitionEnd(slot);
+        expect(screen.queryByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL)).not.toBeInTheDocument();
+    });
+
+    it("puts the box back when protection is turned on again", () => {
+        const props = {inputId: INPUT_ID, password: "", error: null, onEnabledChange: vi.fn(), onPasswordChange: vi.fn(), isCompact: true};
+        const {rerender} = render(<LinkPasswordField {...props} isEnabled={false}/>);
+
+        rerender(<LinkPasswordField {...props} isEnabled/>);
+
+        expect(screen.getByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL)).toBeInTheDocument();
     });
 });

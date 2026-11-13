@@ -45,6 +45,8 @@ interface FormScreenContentProps {
     selectedTagIds: string[];
     tags: TagItem[];
     isPasswordEnabled: boolean;
+    isPasswordLoading: boolean;
+    isSubmitBlocked: boolean;
     password: string;
     passwordError: string | null;
     onPasswordEnabledChange: (isEnabled: boolean) => void;
@@ -86,6 +88,8 @@ export function FormScreenContent({
                                       selectedTagIds,
                                       tags,
                                       isPasswordEnabled,
+                                      isPasswordLoading,
+                                      isSubmitBlocked,
                                       password,
                                       passwordError,
                                       onPasswordEnabledChange,
@@ -202,6 +206,7 @@ export function FormScreenContent({
                     onEnabledChange={onPasswordEnabledChange}
                     onPasswordChange={onPasswordChange}
                     isCompact={isDesktop}
+                    isLoading={isPasswordLoading}
                 />
                 <DialogFooter className="pt-2 gap-2 sm:gap-2">
                     <Button
@@ -215,7 +220,7 @@ export function FormScreenContent({
                     </Button>
                     <Button
                         type="submit"
-                        disabled={isSubmitting || !longUrl.trim() || isKeyUnavailable}
+                        disabled={isSubmitting || isSubmitBlocked || !longUrl.trim() || isKeyUnavailable}
                         className={cn(
                             "bg-primary text-primary-foreground hover:bg-primary/90",
                             !isDesktop && "w-full"

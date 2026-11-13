@@ -15,7 +15,11 @@ interface EditLinkModalProps {
     onSuccess: (savedLink: LinkItem) => void;
 }
 
-/** Edits the link as the server has it now: a list item lacks the password, and the update replaces the whole link. */
+/**
+ * The form opens at once from the list item, which has everything but the password. The password and the link as the
+ * server has it now load meanwhile: the password box shows a placeholder (when the list says the link is protected)
+ * and saving waits, because the update replaces the whole link.
+ */
 export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkModalProps) {
     const {link: editableLink, isLoading, hasFailed, retry} = useEditableLink(link?.id ?? null, open);
 
@@ -42,13 +46,14 @@ export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkMod
             title="Edit Link"
             submitLabel="Save"
             submittingLabel="Saving..."
-            initialLongUrl={editableLink?.longUrl}
-            initialTitle={editableLink?.title}
-            initialKey={editableLink?.key}
-            initialTagIds={editableLink?.tagIds ? [...editableLink.tagIds] : undefined}
+            initialLongUrl={link?.longUrl}
+            initialTitle={link?.title}
+            initialKey={link?.key}
+            initialTagIds={link?.tagIds ? [...link.tagIds] : undefined}
             initialPassword={editableLink?.password ?? null}
             onSubmit={handleSubmit}
             isLoading={isLoading}
+            isPasswordLoading={isLoading && link?.isPasswordProtected === true}
             hasLoadFailed={hasFailed}
             onRetry={retry}
             enableUrlCleaner

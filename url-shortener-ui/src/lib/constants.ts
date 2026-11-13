@@ -104,7 +104,7 @@ export const LINK_PASSWORD_COPY = {
     GENERATE: "Generate a random password",
     LENGTH_ERROR: `Password must be ${LINK_PASSWORD_MIN_LENGTH} to ${LINK_PASSWORD_MAX_LENGTH} characters.`,
     PROTECTED_BADGE: "Password protected",
-    LOADING: "Loading link…",
+    LOADING: "Loading password…",
     LOAD_FAILED: "Couldn't load this link.",
 } as const;
 

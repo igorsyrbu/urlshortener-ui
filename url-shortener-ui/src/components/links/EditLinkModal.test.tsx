@@ -23,6 +23,7 @@ vi.mock("@/lib/logger", () => ({logger: {error: vi.fn(), warn: vi.fn(), info: vi
 
 const PASSWORD = "secret-pass";
 const LIST_ITEM = createLinkItem({title: "My article", tagIds: ["tag-1"]});
+const PROTECTED_LIST_ITEM = createLinkItem({id: "link-protected", title: "Handbook", isPasswordProtected: true});
 
 interface RenderedModal {
     onOpenChange: ReturnType<typeof vi.fn<(open: boolean) => void>>;
@@ -45,6 +46,22 @@ function mockServer(storedLink: ShortLinkDTO, respondToUpdate: RouteHandler = ()
     });
 }
 
+/** A server whose answer to loading the link waits for `release()`. */
+function deferServer(storedLink: ShortLinkDTO): {release: () => void} {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+    routeFetchWithAuth({
+        [API_ENDPOINTS.SHORTLINK_BY_ID(storedLink.id)]: async () => {
+            await gate;
+            return Response.json(storedLink);
+        },
+        [API_ENDPOINTS.SHORTLINKS]: () => Response.json({}),
+    });
+    return {release};
+}
+
 function sentUpdate(): Record<string, unknown> {
     return parseRequestBody(getRequestsTo(API_ENDPOINTS.SHORTLINKS, "PUT")[0]);
 }
@@ -54,26 +71,83 @@ describe("EditLinkModal", () => {
         media.isDesktop = true;
     });
 
-    it.each([true, false])("prefills the form with the link as the server has it (desktop=%s)", async (isDesktop) => {
+    it.each([true, false])("opens the form at once, prefilled from the list item (desktop=%s)", (isDesktop) => {
         media.isDesktop = isDesktop;
-        const stored = createShortLink({title: "Stored title", key: "stored", longUrl: "https://example.com/stored"});
-        mockServer(stored);
-
-        renderModal(createLinkItem({title: "Stale title"}));
-
-        expect(await screen.findByLabelText("Destination URL")).toHaveValue(stored.longUrl);
-        expect(screen.getByLabelText("Short Link")).toHaveValue("stored");
-        expect(screen.getByLabelText("Title")).toHaveValue("Stored title");
-        expect(screen.getByRole("dialog", {name: "Edit Link"})).toBeInTheDocument();
-    });
-
-    it("shows a loading state until the link arrives", async () => {
         routeFetchWithAuth({[API_ENDPOINTS.SHORTLINK_BY_ID(LIST_ITEM.id)]: () => new Promise<Response>(() => undefined)});
 
         renderModal();
 
-        expect(await screen.findByText(LINK_PASSWORD_COPY.LOADING)).toBeInTheDocument();
-        expect(screen.queryByLabelText("Destination URL")).not.toBeInTheDocument();
+        expect(screen.getByLabelText("Destination URL")).toHaveValue(LIST_ITEM.longUrl);
+        expect(screen.getByLabelText("Short Link")).toHaveValue(LIST_ITEM.key);
+        expect(screen.getByLabelText("Title")).toHaveValue("My article");
+        expect(screen.getByRole("dialog", {name: "Edit Link"})).toBeInTheDocument();
+    });
+
+    it("keeps Save disabled until the link has loaded", async () => {
+        const stored = createShortLink({id: LIST_ITEM.id});
+        const server = deferServer(stored);
+        renderModal();
+
+        expect(screen.getByRole("button", {name: "Save"})).toBeDisabled();
+        server.release();
+
+        await waitFor(() => expect(screen.getByRole("button", {name: "Save"})).toBeEnabled());
+    });
+
+    it("holds the password box's place with a placeholder while the password of a protected link loads", async () => {
+        const server = deferServer(createProtectedShortLink(PASSWORD, {id: PROTECTED_LIST_ITEM.id}));
+        renderModal(PROTECTED_LIST_ITEM);
+
+        expect(screen.getByRole("status")).toHaveTextContent(LINK_PASSWORD_COPY.LOADING);
+        expect(screen.getByRole("switch", {name: LINK_PASSWORD_COPY.TOGGLE_LABEL})).toBeChecked();
+        expect(screen.getByRole("switch", {name: LINK_PASSWORD_COPY.TOGGLE_LABEL})).toBeDisabled();
+        expect(screen.queryByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL)).not.toBeInTheDocument();
+        server.release();
+
+        expect(await screen.findByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL)).toHaveValue(PASSWORD);
+        expect(screen.queryByRole("status")).not.toBeInTheDocument();
+        expect(screen.getByRole("switch", {name: LINK_PASSWORD_COPY.TOGGLE_LABEL})).toBeEnabled();
+    });
+
+    it("shows no placeholder for a link the list says is not protected", () => {
+        deferServer(createShortLink({id: LIST_ITEM.id}));
+
+        renderModal();
+
+        expect(screen.queryByRole("status")).not.toBeInTheDocument();
+        expect(screen.getByRole("switch", {name: LINK_PASSWORD_COPY.TOGGLE_LABEL})).not.toBeChecked();
+    });
+
+    it("keeps what was typed while the password loads", async () => {
+        const user = userEvent.setup();
+        const server = deferServer(createProtectedShortLink(PASSWORD, {id: PROTECTED_LIST_ITEM.id}));
+        renderModal(PROTECTED_LIST_ITEM);
+
+        await user.type(screen.getByLabelText("Title"), " (edited)");
+        server.release();
+
+        expect(await screen.findByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL)).toHaveValue(PASSWORD);
+        expect(screen.getByLabelText("Title")).toHaveValue(`${PROTECTED_LIST_ITEM.title} (edited)`);
+    });
+
+    it("turns protection off when the server says the link is not protected after all", async () => {
+        const server = deferServer(createShortLink({id: PROTECTED_LIST_ITEM.id}));
+        renderModal(PROTECTED_LIST_ITEM);
+
+        server.release();
+
+        await waitFor(() => expect(screen.getByRole("switch", {name: LINK_PASSWORD_COPY.TOGGLE_LABEL})).not.toBeChecked());
+        expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
+
+    it("turns protection on when the server says the link is protected though the list did not", async () => {
+        const server = deferServer(createProtectedShortLink(PASSWORD, {id: LIST_ITEM.id}));
+        renderModal();
+
+        server.release();
+
+        expect(await screen.findByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL)).toHaveValue(PASSWORD);
+        expect(screen.getByRole("switch", {name: LINK_PASSWORD_COPY.TOGGLE_LABEL})).toBeChecked();
     });
 
     it("offers a retry when the link cannot be loaded, and shows the form once it loads", async () => {
@@ -147,7 +221,7 @@ describe("EditLinkModal", () => {
         const user = userEvent.setup();
         const stored = createShortLink({id: "link-42", isActive: false, title: "Old", tagIds: ["tag-1"]});
         mockServer(stored);
-        const {onSuccess, onOpenChange} = renderModal(createLinkItem({id: "link-42"}));
+        const {onSuccess, onOpenChange} = renderModal(createLinkItem({id: "link-42", isActive: false, tagIds: ["tag-1"], key: stored.key, shortUrl: stored.shortUrl, longUrl: stored.longUrl}));
 
         await user.clear(await screen.findByLabelText("Title"));
         await user.type(screen.getByLabelText("Title"), "New title");
