@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {QrCodeModal} from "@/components/links/QrCodeModal";
 import {logger} from "@/lib/logger";
+import {QR_CODE_COPY} from "@/lib/constants";
+import {Toaster} from "sonner";
 import type {LinkItem} from "@/lib/types";
 import {createLinkItem} from "@/test/link-utils";
 
@@ -43,7 +45,7 @@ const PREVIEW_SIZE = 500;
 const EXPORT_SIZE = 2048;
 
 function renderModal(link: LinkItem | null = createLinkItem({title: "Launch page", shortUrl: "https://sho.rt/abc123"})): void {
-    render(<QrCodeModal open onOpenChange={vi.fn()} link={link}/>);
+    render(<><QrCodeModal open onOpenChange={vi.fn()} link={link}/><Toaster/></>);
 }
 
 function getConstructedOptions(): QrOptions[] {
@@ -98,6 +100,19 @@ describe("QrCodeModal", () => {
             await waitFor(() => expect(qr.download).toHaveBeenCalledExactlyOnceWith({extension: format.toLowerCase(), name: "abc123-qrcode"}));
             expect(getConstructedOptions().at(-1)).toMatchObject({width: EXPORT_SIZE, height: EXPORT_SIZE});
         });
+
+        it("logs a failure and tells the user when the download fails", async () => {
+            const user = userEvent.setup();
+            qr.download.mockRejectedValue(new Error("canvas tainted"));
+            const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined);
+            renderModal();
+
+            await user.click(getDesktopToolbarButtons().downloadTrigger);
+            await user.click(await screen.findByRole("menuitem", {name: "Download PNG"}));
+
+            expect(await screen.findByText(QR_CODE_COPY.DOWNLOAD_FAILED)).toBeInTheDocument();
+            expect(logError).toHaveBeenCalledWith("Failed to download png", expect.any(Error));
+        });
     });
 
     describe("copying on desktop", () => {
@@ -112,7 +127,7 @@ describe("QrCodeModal", () => {
             expect(qr.getRawData).toHaveBeenCalledWith("svg");
         });
 
-        it("logs a failure when the QR data cannot be produced", async () => {
+        it("logs a failure and tells the user when the QR data cannot be produced", async () => {
             const user = userEvent.setup();
             qr.getRawData.mockResolvedValue(null);
             const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined);
@@ -122,6 +137,7 @@ describe("QrCodeModal", () => {
             await user.click(await screen.findByRole("menuitem", {name: "Copy SVG"}));
 
             await waitFor(() => expect(logError).toHaveBeenCalledWith("Failed to copy svg (fallback)", expect.any(Error)));
+            expect(await screen.findByText(QR_CODE_COPY.COPY_FAILED)).toBeInTheDocument();
         });
     });
 

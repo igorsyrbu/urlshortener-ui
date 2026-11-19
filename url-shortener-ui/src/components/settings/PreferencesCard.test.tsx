@@ -78,6 +78,7 @@ describe("PreferencesCard", () => {
             method: "PUT",
             body: JSON.stringify({urlCleanerMode: TRACKER_MODE.AUTO_CLEAN}),
         });
+        await waitFor(() => expect(toast.success).toHaveBeenCalledExactlyOnceWith("Preference saved"));
     });
 
     it("does not send a request when the active mode is clicked again", async () => {
@@ -102,6 +103,7 @@ describe("PreferencesCard", () => {
         await user.click(modeOption(TRACKER_MODE.SUGGEST));
 
         await waitFor(() => expect(toast.error).toHaveBeenCalledExactlyOnceWith("Couldn't save preference. Please try again."));
+        expect(toast.success).not.toHaveBeenCalled();
         expect(modeOption(TRACKER_MODE.DISABLED)).toBeChecked();
         expect(modeOption(TRACKER_MODE.SUGGEST)).not.toBeChecked();
     });

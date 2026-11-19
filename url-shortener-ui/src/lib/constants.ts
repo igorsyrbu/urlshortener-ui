@@ -138,6 +138,10 @@ export const LINK_ACTION_COPY = {
     ARCHIVE_FAILED: "Couldn't archive the link. It's back in the list.",
     UNARCHIVE_FAILED: "Couldn't restore the link from the archive.",
     DELETE_FAILED: "Couldn't delete the link. It's back in the list.",
+    ARCHIVED: "Link archived",
+    UNARCHIVED: "Link restored",
+    DELETED: "Link deleted",
+    SAVED: "Link updated",
     RETRY: "Retry",
 } as const;
 
@@ -155,6 +159,11 @@ export const SESSION_CHECK_COPY = {
 
 /** Visible keyboard-focus ring for custom focusable elements; same tokens as `Button` and `Input`. */
 export const FOCUS_RING_CLASS = "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";
+
+export const QR_CODE_COPY = {
+    COPY_FAILED: "Couldn't copy the QR code. Try downloading it instead.",
+    DOWNLOAD_FAILED: "Couldn't download the QR code. Please try again.",
+} as const;
 
 /** Accessible names of icon-only controls. */
 export const ICON_BUTTON_LABELS = {

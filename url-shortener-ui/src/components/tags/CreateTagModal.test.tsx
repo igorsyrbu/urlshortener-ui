@@ -7,13 +7,15 @@ import {API_ENDPOINTS} from "@/lib/constants";
 import {allTagsQueryOptions, tagsWithCountQueryOptions} from "@/lib/query/tag-queries";
 import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 import {createTag} from "@/test/tag-utils";
+import {TAG_CREATED_MESSAGE} from "@/lib/tag-constants";
+import {Toaster} from "sonner";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("@/lib/hooks/useMediaQuery", () => ({useIsDesktop: () => true, useIsMobile: () => false}));
 
 function renderCreateModal(queryClient = createTestQueryClient()): Mock {
     const onOpenChange = vi.fn();
-    renderWithQuery(<CreateTagModal open onOpenChange={onOpenChange}/>, queryClient);
+    renderWithQuery(<><CreateTagModal open onOpenChange={onOpenChange}/><Toaster/></>, queryClient);
     return onOpenChange;
 }
 
@@ -45,6 +47,7 @@ describe("CreateTagModal", () => {
         expect(queryClient.getQueryData(allTagsQueryOptions.queryKey)).toEqual([createdTag]);
         expect(queryClient.getQueryData(tagsWithCountQueryOptions("").queryKey)).toEqual([createdTag]);
         expect(onOpenChange).toHaveBeenCalledWith(false);
+        expect(await screen.findByText(TAG_CREATED_MESSAGE)).toBeInTheDocument();
     });
 
     it("stays open and surfaces the server message when creation fails", async () => {
@@ -58,6 +61,7 @@ describe("CreateTagModal", () => {
         await user.click(screen.getByRole("button", {name: /^Create/}));
 
         expect(await screen.findByRole("alert")).toHaveTextContent("Tag already exists");
+        expect(screen.queryByText(TAG_CREATED_MESSAGE)).not.toBeInTheDocument();
         expect(screen.getByRole("button", {name: /^Create/})).toBeEnabled();
         expect(onOpenChange).not.toHaveBeenCalled();
         expect(queryClient.getQueryData(allTagsQueryOptions.queryKey)).toEqual([]);

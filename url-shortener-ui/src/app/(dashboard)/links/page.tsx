@@ -178,14 +178,16 @@ function LinksPageContent() {
     };
 
     const archiveLink = async (link: LinkItem): Promise<void> => {
-        const isSaved = await setLinkArchived(link, link.isActive);
-        if (isSaved) {
-            syncPageAfterRemoval();
+        const isArchiving = link.isActive;
+        const isSaved = await setLinkArchived(link, isArchiving);
+        if (!isSaved) {
+            toast.error(isArchiving ? LINK_ACTION_COPY.ARCHIVE_FAILED : LINK_ACTION_COPY.UNARCHIVE_FAILED, {
+                action: {label: LINK_ACTION_COPY.RETRY, onClick: () => void archiveLink(link)},
+            });
             return;
         }
-        toast.error(link.isActive ? LINK_ACTION_COPY.ARCHIVE_FAILED : LINK_ACTION_COPY.UNARCHIVE_FAILED, {
-            action: {label: LINK_ACTION_COPY.RETRY, onClick: () => void archiveLink(link)},
-        });
+        syncPageAfterRemoval();
+        toast.success(isArchiving ? LINK_ACTION_COPY.ARCHIVED : LINK_ACTION_COPY.UNARCHIVED);
     };
 
     const handleArchiveConfirm = () => {
@@ -203,6 +205,7 @@ function LinksPageContent() {
     const removeLink = async (link: LinkItem): Promise<void> => {
         if (await deleteLink(link.id)) {
             syncPageAfterRemoval();
+            toast.success(LINK_ACTION_COPY.DELETED);
             return;
         }
         toast.error(LINK_ACTION_COPY.DELETE_FAILED, {
@@ -221,6 +224,11 @@ function LinksPageContent() {
     const handleEdit = (link: LinkItem) => {
         setEditingLink(link);
         setIsEditModalOpen(true);
+    };
+
+    const handleLinkSaved = (savedLink: LinkItem) => {
+        applySavedLink(savedLink);
+        toast.success(LINK_ACTION_COPY.SAVED);
     };
 
     const handleQrCode = (link: LinkItem) => {
@@ -326,7 +334,7 @@ function LinksPageContent() {
                         open={isEditModalOpen}
                         onOpenChange={setIsEditModalOpen}
                         link={editingLink}
-                        onSuccess={applySavedLink}
+                        onSuccess={handleLinkSaved}
                     />
                 )}
 

@@ -21,11 +21,12 @@ import {Button} from "@/components/ui/button";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Check, Copy, Download, FileImage, FileType, Loader2} from "lucide-react";
 import {LinkItem} from "@/lib/types";
-import {COPY_FEEDBACK_DURATION_MS, ICON_BUTTON_LABELS} from "@/lib/constants";
+import {COPY_FEEDBACK_DURATION_MS, ICON_BUTTON_LABELS, QR_CODE_COPY} from "@/lib/constants";
 import type QRCodeStylingType from "qr-code-styling";
 import {logger} from "@/lib/logger";
 import {ActionDrawer} from "@/components/ui/action-drawer";
-import {withPending} from "@/lib/async-utils";
+import {attempt, withPending} from "@/lib/async-utils";
+import {toast} from "sonner";
 
 // ---------------------------------------------------------------------------
 // Module-level import cache — the dynamic import promise is resolved only once
@@ -133,11 +134,24 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
         return highResQrInstance.current;
     }, [link, buildQrCode]);
 
-    const handleDownload = async (ext: QrFileExtension): Promise<void> => {
+    const downloadQr = async (ext: QrFileExtension): Promise<void> => {
         const qr = await getOrBuildHighResQr();
         if (!qr || !link) return;
         await qr.download({extension: ext, name: `${extractShortKey(link.shortUrl)}-qrcode`});
         setIsDownloadOpen(false);
+    };
+
+    const handleDownload = async (ext: QrFileExtension): Promise<void> => {
+        const result = await attempt(() => downloadQr(ext));
+        if (result.isSuccess) return;
+        logger.error(`Failed to download ${ext}`, result.error);
+        toast.error(QR_CODE_COPY.DOWNLOAD_FAILED);
+    };
+
+    // A successful copy shows the inline "copied" state; only a failure needs a toast.
+    const reportCopyFailure = (logMessage: string, error: unknown): void => {
+        logger.error(logMessage, error);
+        toast.error(QR_CODE_COPY.COPY_FAILED);
     };
 
     // iOS Safari revokes user-activation after any `await` that precedes a
@@ -174,7 +188,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
                     setCopied(ext);
                     setTimeout(() => setCopied(null), COPY_FEEDBACK_DURATION_MS);
                 })
-                .catch((e) => logger.error(`Failed to copy ${ext} (fallback)`, e))
+                .catch((e) => reportCopyFailure(`Failed to copy ${ext} (fallback)`, e))
                 .finally(() => setIsCopyOpen(false));
             return;
         }
@@ -197,9 +211,9 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
                             setCopied(ext);
                             setTimeout(() => setCopied(null), COPY_FEEDBACK_DURATION_MS);
                         })
-                        .catch((inner) => logger.error(`Failed to copy ${ext} (writeText fallback)`, inner));
+                        .catch((inner) => reportCopyFailure(`Failed to copy ${ext} (writeText fallback)`, inner));
                 } else {
-                    logger.error(`Failed to copy ${ext}`, e);
+                    reportCopyFailure(`Failed to copy ${ext}`, e);
                 }
             })
             .finally(() => setIsCopyOpen(false));

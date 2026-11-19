@@ -7,13 +7,15 @@ import {API_ENDPOINTS} from "@/lib/constants";
 import {allTagsQueryOptions} from "@/lib/query/tag-queries";
 import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 import {createTag} from "@/test/tag-utils";
+import {TAG_SAVED_MESSAGE} from "@/lib/tag-constants";
+import {Toaster} from "sonner";
 
 vi.mock("@/lib/api", () => ({fetchWithAuth: vi.fn()}));
 vi.mock("@/lib/hooks/useMediaQuery", () => ({useIsDesktop: () => true, useIsMobile: () => false}));
 
 function renderEditModal(tag = createTag({name: "Marketing", color: "blue"}), queryClient = createTestQueryClient()): Mock {
     const onOpenChange = vi.fn();
-    renderWithQuery(<EditTagModal open onOpenChange={onOpenChange} tag={tag}/>, queryClient);
+    renderWithQuery(<><EditTagModal open onOpenChange={onOpenChange} tag={tag}/><Toaster/></>, queryClient);
     return onOpenChange;
 }
 
@@ -45,6 +47,7 @@ describe("EditTagModal", () => {
         });
         expect(onOpenChange).toHaveBeenCalledWith(false);
         expect(queryClient.getQueryData(allTagsQueryOptions.queryKey)).toEqual([updatedTag]);
+        expect(await screen.findByText(TAG_SAVED_MESSAGE)).toBeInTheDocument();
     });
 
     it("stays open and keeps the form editable when the API rejects the update", async () => {

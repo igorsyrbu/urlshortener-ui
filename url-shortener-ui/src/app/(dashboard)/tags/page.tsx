@@ -16,7 +16,7 @@ import {useHasBeenOpened} from "@/lib/hooks/useHasBeenOpened";
 import {preloadOnIdle} from "@/lib/preload-on-idle";
 import {logger} from "@/lib/logger";
 import {attempt} from "@/lib/async-utils";
-import {TAG_DELETE_FAILED_MESSAGE} from "@/lib/tag-constants";
+import {TAG_DELETE_FAILED_MESSAGE, TAG_DELETED_MESSAGE} from "@/lib/tag-constants";
 import {toast} from "sonner";
 import {ErrorWithRetry} from "@/components/layout/ErrorWithRetry";
 import {CARD_LIST_CLASS, LINK_ACTION_COPY, LINKS_LOAD_COPY, LIST_LOAD_ERROR_CLASS, SEARCH_DEBOUNCE_MS, TAGS_LOAD_COPY} from "@/lib/constants";
@@ -67,7 +67,10 @@ export default function TagsPage() {
     // The tag leaves the list at once (useTagMutations); a refused delete puts it back and offers a retry.
     const removeTag = async (tagId: string): Promise<void> => {
         const result = await attempt(() => deleteTag(tagId));
-        if (result.isSuccess) return;
+        if (result.isSuccess) {
+            toast.success(TAG_DELETED_MESSAGE);
+            return;
+        }
         logger.error("Failed to delete tag", result.error, {tagId});
         toast.error(TAG_DELETE_FAILED_MESSAGE, {
             action: {label: LINK_ACTION_COPY.RETRY, onClick: () => void removeTag(tagId)},

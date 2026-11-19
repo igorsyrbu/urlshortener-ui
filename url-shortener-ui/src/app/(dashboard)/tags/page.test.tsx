@@ -9,7 +9,7 @@ import {HTTP_INTERNAL_SERVER_ERROR} from "@/lib/http-status";
 import {logger} from "@/lib/logger";
 import {queryKeys} from "@/lib/query/query-keys";
 import {useUIStore} from "@/lib/store/ui";
-import {TAG_DELETE_FAILED_MESSAGE} from "@/lib/tag-constants";
+import {TAG_DELETE_FAILED_MESSAGE, TAG_DELETED_MESSAGE} from "@/lib/tag-constants";
 import {createPage} from "@/test/link-utils";
 import {renderWithQuery} from "@/test/query-utils";
 import {createTag} from "@/test/tag-utils";
@@ -210,6 +210,7 @@ describe("tags page", () => {
 
     it("deletes a tag after the user confirms its name", async () => {
         const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+        const showSuccess = vi.spyOn(toast, "success");
         mockTagsResponse([createTag({id: "tag-1", name: "Marketing"}), createTag({id: "tag-2", name: "Sales"})]);
         renderWithQuery(<TagsPage/>);
         await screen.findByText("Marketing");
@@ -223,6 +224,7 @@ describe("tags page", () => {
         await waitFor(() => expect(screen.queryByText("Marketing")).not.toBeInTheDocument());
         expect(fetchWithAuth).toHaveBeenCalledWith(`${API_ENDPOINTS.TAGS}/tag-1`, {method: "DELETE"});
         expect(screen.getByText("Sales")).toBeInTheDocument();
+        await waitFor(() => expect(showSuccess).toHaveBeenCalledExactlyOnceWith(TAG_DELETED_MESSAGE));
     });
 
     it("removes the tag and closes the dialog before the server answers", async () => {

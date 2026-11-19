@@ -14,6 +14,9 @@ export const ALLOWED_TAG_COLORS: BadgeVariant[] = [
 export const TAG_CREATE_FAILED_MESSAGE = "Failed to create tag";
 export const TAG_DELETE_FAILED_MESSAGE = "Couldn't delete the tag. Please try again.";
 export const TAG_SAVE_FAILED_MESSAGE = "Couldn't save the tag. Please try again.";
+export const TAG_CREATED_MESSAGE = "Tag created";
+export const TAG_SAVED_MESSAGE = "Tag updated";
+export const TAG_DELETED_MESSAGE = "Tag deleted";
 
 export function pickRandomTagColor(): BadgeVariant {
     return ALLOWED_TAG_COLORS[Math.floor(Math.random() * ALLOWED_TAG_COLORS.length)];

@@ -4,6 +4,8 @@ import {TagFormModal} from "@/components/tags/TagFormModal";
 import {useTagMutations} from "@/lib/hooks/useTagMutations";
 import {TagItem} from "@/lib/types";
 import {BadgeVariant} from "@/components/ui/badge";
+import {TAG_SAVED_MESSAGE} from "@/lib/tag-constants";
+import {toast} from "sonner";
 
 interface EditTagModalProps {
     open: boolean;
@@ -17,6 +19,7 @@ export function EditTagModal({open, onOpenChange, tag}: EditTagModalProps) {
     const handleUpdate = async (name: string, color: BadgeVariant) => {
         if (!tag?.id) return;
         await updateTag(tag.id, name, color);
+        toast.success(TAG_SAVED_MESSAGE);
     };
 
     return (

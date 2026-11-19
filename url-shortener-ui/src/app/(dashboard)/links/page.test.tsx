@@ -369,6 +369,17 @@ describe("links page", () => {
             expect(screen.queryByText("Delete this link?")).not.toBeInTheDocument();
         });
 
+        it("confirms a deletion the server accepted with a success toast", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(1)});
+            renderWithQuery(<LinksPage/>);
+
+            await confirmDelete(user, 0);
+
+            await waitFor(() => expect(toast.success).toHaveBeenCalledExactlyOnceWith(LINK_ACTION_COPY.DELETED));
+            expect(toast.error).not.toHaveBeenCalled();
+        });
+
         it("closes the dialog and removes the link before the server answers", async () => {
             const user = userEvent.setup();
             const deletion = Promise.withResolvers<Response>();
@@ -405,6 +416,17 @@ describe("links page", () => {
 
             await waitFor(() => expect(getRequestsTo(API_ENDPOINTS.SHORTLINKS, "PUT")).toHaveLength(1));
             expect(parseRequestBody(getRequestsTo(API_ENDPOINTS.SHORTLINKS, "PUT")[0])).toMatchObject({id: "link-0", isActive: false});
+        });
+
+        it("confirms an archive the server accepted with a success toast", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(1)});
+            renderWithQuery(<LinksPage/>);
+
+            await confirmArchive(user, 0);
+
+            await waitFor(() => expect(toast.success).toHaveBeenCalledExactlyOnceWith(LINK_ACTION_COPY.ARCHIVED));
+            expect(toast.error).not.toHaveBeenCalled();
         });
 
         it("keeps a protected link's password when archiving it", async () => {
@@ -468,6 +490,7 @@ describe("links page", () => {
 
             expect(await screen.findByRole("heading", {name: "Renamed link"})).toBeInTheDocument();
             expect(screen.queryByRole("heading", {name: "Link 0"})).not.toBeInTheDocument();
+            expect(toast.success).toHaveBeenCalledExactlyOnceWith(LINK_ACTION_COPY.SAVED);
         });
 
         it("opens the QR code dialog for the link", async () => {

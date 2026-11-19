@@ -12,6 +12,9 @@ import { TRACKER_MODE, TRACKER_MODE_DESCRIPTIONS, TRACKER_MODE_LABELS } from "@/
 import { Check, ShieldAlert, ShieldCheck, ShieldOff, type LucideIcon } from "lucide-react";
 import { logger } from "@/lib/logger";
 
+const PREFERENCE_SAVED_MESSAGE = "Preference saved";
+const PREFERENCE_SAVE_FAILED_MESSAGE = "Couldn't save preference. Please try again.";
+
 interface TrackerOption {
     value: TrackerMode;
     label: string;
@@ -100,8 +103,10 @@ export function PreferencesCard() {
             await usePreferencesStore.getState().updatePreferences(mode);
         } catch (error) {
             logger.error("Failed to save tracker preference", error);
-            toast.error("Couldn't save preference. Please try again.");
+            toast.error(PREFERENCE_SAVE_FAILED_MESSAGE);
+            return;
         }
+        toast.success(PREFERENCE_SAVED_MESSAGE);
     };
 
     const handleRetry = () => {
