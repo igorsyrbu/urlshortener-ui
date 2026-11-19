@@ -7,6 +7,7 @@ import {Link as LogoIcon} from "lucide-react";
 import {FOCUS_RING_CLASS} from "@/lib/constants";
 import {LinkPendingIndicator} from "@/components/ui/link-pending-indicator";
 import {findActiveNavItem, NAV_ITEMS} from "@/components/layout/navigation-items";
+import {ICON_ANIMATION_TRIGGER_PROPS} from "@/lib/icon-animation";
 
 interface SidebarNavProps {
     onNavigate?: () => void;
@@ -35,6 +36,7 @@ export function SidebarNav({onNavigate}: SidebarNavProps) {
                             href={item.href}
                             aria-current={isActive ? "page" : undefined}
                             onClick={() => onNavigate?.()}
+                            {...ICON_ANIMATION_TRIGGER_PROPS}
                             className={cn(
                                 "group flex items-center gap-3 rounded-lg px-4 py-1.5 transition-all outline-none",
                                 FOCUS_RING_CLASS,
@@ -43,7 +45,7 @@ export function SidebarNav({onNavigate}: SidebarNavProps) {
                                     : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                             )}
                         >
-                            <Icon className="size-5"/>
+                            <Icon className={cn("size-5", item.iconAnimationClass)}/>
                             <span className={cn("text-sm", isActive ? "font-bold" : "font-medium")}>{item.title}</span>
                             <LinkPendingIndicator className="ml-auto"/>
                         </Link>

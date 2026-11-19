@@ -21,7 +21,8 @@ import {Button} from "@/components/ui/button";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Check, Copy, Download, FileImage, FileType, Loader2} from "lucide-react";
 import {LinkItem} from "@/lib/types";
-import {COPY_FEEDBACK_DURATION_MS, ICON_BUTTON_LABELS, QR_CODE_COPY} from "@/lib/constants";
+import {COPIED_ICON_ENTER_CLASS, COPY_FEEDBACK_DURATION_MS, ICON_BUTTON_LABELS, QR_CODE_COPY} from "@/lib/constants";
+import {cn} from "@/lib/utils";
 import type QRCodeStylingType from "qr-code-styling";
 import {logger} from "@/lib/logger";
 import {ActionDrawer} from "@/components/ui/action-drawer";
@@ -283,7 +284,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" size="icon" aria-label={ICON_BUTTON_LABELS.COPY_QR}
                                                 className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                            {copied ? <Check className="h-4 w-4 text-success"/> :
+                                            {copied ? <Check className={cn("h-4 w-4 text-success", COPIED_ICON_ENTER_CLASS)}/> :
                                                 <Copy className="h-4 w-4"/>}
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -344,7 +345,7 @@ export function QrCodeModal({open, onOpenChange, link}: QrCodeModalProps) {
                                     onClick={() => setIsCopyOpen(true)}
                                     aria-label={ICON_BUTTON_LABELS.COPY_QR}
                                 >
-                                    {copied ? <Check className="h-4 w-4 text-success"/> : <Copy className="h-4 w-4"/>}
+                                    {copied ? <Check className={cn("h-4 w-4 text-success", COPIED_ICON_ENTER_CLASS)}/> : <Copy className="h-4 w-4"/>}
                                 </Button>
                             </div>
                         </div>

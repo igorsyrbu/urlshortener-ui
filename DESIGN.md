@@ -141,6 +141,7 @@ The `QrCodeModal` generation settings in [`url-shortener-ui/src/components/links
 * **`0.15–0.2s` — micro feedback:** fades, form field reveals, success states, switch toggles (`duration-200 ease-in-out`).
 * **`0.3s` — layout motion:** height-auto reveals (`CreateLinkModal`), chart layout shifts.
 * **`0.4s` — data entrances:** chart initial renders.
+* **`0.5–0.6s` — icon hover animations:** the sidebar icons play one short CSS animation when their control is hovered or focused, always to the end even if the pointer leaves (`icon-hover-*` in `globals.css`, started by `lib/icon-animation.ts`); never on list rows, menus, data or destructive surfaces, never looping.
 * **Springs for physical motion:** stiff `stiffness: 400, damping: 25` (dropzone lift) vs. laggy `stiffness: 300, damping: 20` (cursor magnetism that trails behind). Ease `easeInOut` for reveals.
 
 ### What May Animate

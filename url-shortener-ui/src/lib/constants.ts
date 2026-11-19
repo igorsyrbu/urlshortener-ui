@@ -190,6 +190,9 @@ export const COPIED_ANNOUNCEMENT = "Copied to clipboard";
 // ---------------------------------------------------------------------------
 
 export const COPY_FEEDBACK_DURATION_MS = 2000;
+
+/** The check that replaces a copy icon pops in, so a successful copy is noticed. `transition-none` keeps `duration-*` from also animating other properties. */
+export const COPIED_ICON_ENTER_CLASS = "animate-in fade-in zoom-in-50 duration-200 transition-none";
 export const GLOW_FADE_DELAY_MS = 1000;
 export const KEY_AVAILABILITY_CHECK_DEBOUNCE_MS = 600;
 export const URL_CLEANER_DEBOUNCE_MS = 500;

@@ -5,7 +5,8 @@ import {Input} from "@/components/ui/input";
 import {Check, Copy} from "lucide-react";
 import {motion} from "framer-motion";
 import {useCopyToClipboard} from "@/lib/hooks/useCopyToClipboard";
-import {ICON_BUTTON_LABELS} from "@/lib/constants";
+import {COPIED_ICON_ENTER_CLASS, ICON_BUTTON_LABELS} from "@/lib/constants";
+import {cn} from "@/lib/utils";
 
 interface CreateLinkSuccessProps {
     shortUrl: string;
@@ -47,7 +48,7 @@ export function CreateLinkSuccess({shortUrl, onClose}: CreateLinkSuccessProps) {
                     aria-label={ICON_BUTTON_LABELS.COPY_SHORT_LINK}
                     title={ICON_BUTTON_LABELS.COPY_SHORT_LINK}
                 >
-                    {isCopied ? <Check className="h-4 w-4 text-success"/> : <Copy className="h-4 w-4"/>}
+                    {isCopied ? <Check className={cn("h-4 w-4 text-success", COPIED_ICON_ENTER_CLASS)}/> : <Copy className="h-4 w-4"/>}
                 </Button>
             </div>
 

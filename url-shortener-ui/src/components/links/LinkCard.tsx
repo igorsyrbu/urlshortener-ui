@@ -30,6 +30,7 @@ import {LinkItem, TagItem} from "@/lib/types";
 import {cn} from "@/lib/utils";
 import {getDomain} from "@/lib/url-utils";
 import {
+    COPIED_ICON_ENTER_CLASS,
     FOCUS_RING_CLASS,
     LINK_PASSWORD_COPY,
     MORE_ACTIONS_BUTTON_CLASS,
@@ -196,7 +197,7 @@ export function LinkCard({
                             aria-label={isCopied ? "Link copied" : "Copy link to clipboard"}
                         >
                             {isCopied ? (
-                                <Check className="size-3 text-success"/>
+                                <Check className={cn("size-3 text-success", COPIED_ICON_ENTER_CLASS)}/>
                             ) : (
                                 <Copy className="size-3"/>
                             )}

@@ -1,6 +1,8 @@
 import {readFileSync} from "node:fs";
 import {join} from "node:path";
 import {describe, expect, it} from "vitest";
+import {NAV_ITEMS} from "@/components/layout/navigation-items";
+import {ICON_ANIMATING_ATTRIBUTE} from "@/lib/icon-animation";
 
 const APP_DIR = join(process.cwd(), "src/app");
 const globalsCss = readFileSync(join(APP_DIR, "globals.css"), "utf8");
@@ -44,5 +46,20 @@ describe("globals.css reduced motion", () => {
 
     it("keeps spinners turning, because they are the only sign of work in progress", () => {
         expect(reducedMotionBlock).toContain("*:not(.animate-spin)");
+    });
+});
+
+describe("globals.css icon hover animations", () => {
+    it("defines the animation of every sidebar icon, so a typo or a new section does not end up still", () => {
+        const missing = NAV_ITEMS.map((item) => item.iconAnimationClass).filter((className) => !globalsCss.includes(`.${className}`));
+
+        expect(missing).toEqual([]);
+    });
+
+    it("plays them only while the control is marked as animating, never on their own", () => {
+        const iconRuleSelectors = [...globalsCss.matchAll(/^\s*([^\n{]*\.icon-hover-[^\n{]*)\{/gm)].map((match) => match[1].trim());
+
+        expect(iconRuleSelectors.length).toBeGreaterThan(0);
+        iconRuleSelectors.forEach((selector) => expect(selector).toMatch(new RegExp(`^\\[${ICON_ANIMATING_ATTRIBUTE}\\] `)));
     });
 });

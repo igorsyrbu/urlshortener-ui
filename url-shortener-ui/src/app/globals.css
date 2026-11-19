@@ -744,6 +744,116 @@
     .hairline-divider {
         border-bottom: 0.5px solid var(--border);
     }
+
+    /*
+     * Icon micro-animations, ported from animate-ui's lucide icons to plain CSS so the dashboard layout stays free of
+     * an animation library. Put the class on a lucide icon inside a control that spreads ICON_ANIMATION_TRIGGER_PROPS
+     * (`lib/icon-animation.ts`): hover or keyboard focus sets `data-icon-animating` on the control, and it is removed
+     * only when the animation has finished, so leaving early never cuts it off. The rules animate the icon's own SVG
+     * children, so they depend on lucide's markup for that icon. Transforms only; the reduced-motion rule below ends
+     * them (and `animationend` still fires, so the attribute is cleared).
+     */
+    [data-icon-animating] :is(.icon-hover-dashboard, .icon-hover-link, .icon-hover-chart) > * {
+        transform-box: fill-box;
+        animation-duration: 0.5s;
+        animation-timing-function: ease-out;
+        /* Backwards only: a staggered part waits in its start state, and a finished run leaves nothing applied. */
+        animation-fill-mode: backwards;
+    }
+
+    [data-icon-animating] .icon-hover-dashboard > * {
+        animation-name: icon-panel-pulse;
+        transform-origin: center;
+    }
+
+    [data-icon-animating] .icon-hover-dashboard > :nth-child(2) {
+        animation-delay: 60ms;
+    }
+
+    [data-icon-animating] .icon-hover-dashboard > :nth-child(3) {
+        animation-delay: 120ms;
+    }
+
+    [data-icon-animating] .icon-hover-dashboard > :nth-child(4) {
+        animation-delay: 180ms;
+    }
+
+    [data-icon-animating] .icon-hover-link > :nth-child(1) {
+        animation-name: icon-link-apart-up;
+    }
+
+    [data-icon-animating] .icon-hover-link > :nth-child(2) {
+        animation-name: icon-link-apart-down;
+    }
+
+    /* The first path is the axis; the three bars grow from it one after another. */
+    [data-icon-animating] .icon-hover-chart > :nth-child(n + 2) {
+        animation-name: icon-bar-grow;
+        transform-origin: left center;
+    }
+
+    [data-icon-animating] .icon-hover-chart > :nth-child(3) {
+        animation-delay: 80ms;
+    }
+
+    [data-icon-animating] .icon-hover-chart > :nth-child(4) {
+        animation-delay: 160ms;
+    }
+
+    /* Swings from its hole, which sits near the top-left corner of the icon. */
+    [data-icon-animating] .icon-hover-tag {
+        animation: icon-tag-swing 0.6s ease-out;
+        transform-origin: 30% 30%;
+    }
+
+    /* Lucide's gear has six teeth, so turning one tooth (60deg) ends exactly where it started. */
+    [data-icon-animating] .icon-hover-settings {
+        animation: icon-gear-turn 0.5s ease-in-out;
+    }
+
+    @keyframes icon-panel-pulse {
+        50% {
+            scale: 0.8;
+        }
+    }
+
+    @keyframes icon-link-apart-up {
+        40% {
+            translate: 1px -1px;
+        }
+    }
+
+    @keyframes icon-link-apart-down {
+        40% {
+            translate: -1px 1px;
+        }
+    }
+
+    @keyframes icon-bar-grow {
+        from {
+            scale: 0 1;
+        }
+    }
+
+    @keyframes icon-tag-swing {
+        30% {
+            rotate: -15deg;
+        }
+
+        60% {
+            rotate: 10deg;
+        }
+
+        80% {
+            rotate: -4deg;
+        }
+    }
+
+    @keyframes icon-gear-turn {
+        to {
+            rotate: 60deg;
+        }
+    }
 }
 
 /* 
