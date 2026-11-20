@@ -118,7 +118,7 @@ Observations, not templates: do not copy them and do not change them as a drive-
 
 DESIGN.md versus code:
 
-- Observation: DESIGN.md's drawer rule forbids manual bottom padding (`px-6 pb-6`), yet the mobile (Drawer) branch of `TagFormModal` uses `px-6 pb-6` on its form. `LinksPagination` positions itself with `env(safe-area-inset-bottom)` directly.
+- Observation: DESIGN.md's drawer rule forbids manual bottom padding (`px-6 pb-6`), yet the mobile (Drawer) branch of `TagFormModal` uses `px-6 pb-6` on its form. `FloatingBottomBar` (the links page's pagination and selection bar) positions itself with `env(safe-area-inset-bottom)` directly: on phones it sits 1.5rem above the home indicator, and the links page's end spacer adds the same inset.
 - Observation: DESIGN.md says all buttons must use `Button`; many raw `<button>` elements with bespoke classes exist ([coding-patterns.md](coding-patterns.md) lists them).
 
 Hardcoded values (outside the documented exceptions):

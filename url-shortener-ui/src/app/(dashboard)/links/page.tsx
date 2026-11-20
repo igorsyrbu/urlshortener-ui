@@ -400,7 +400,7 @@ function LinksPageContent() {
                                 onNext={handleNextPage}
                             />
                         )}
-                        <div aria-hidden="true" className="-mt-4 h-14 md:h-10 lg:h-8"/>
+                        <div aria-hidden="true" className="-mt-4 h-[calc(env(safe-area-inset-bottom,0px)+5rem)] sm:h-14 md:h-10 lg:h-8"/>
                     </>
                 )}
             </>
