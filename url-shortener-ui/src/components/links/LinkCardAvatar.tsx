@@ -22,7 +22,8 @@ function LinkAvatarIcon({link}: {link: LinkItem}) {
 
 /**
  * The favicon (or archive icon) that turns into an empty selection circle while the card (a `group`) is under the
- * pointer or the circle has keyboard focus. Only a click on the circle selects the link.
+ * pointer or the circle has keyboard focus. Only a click on the circle selects the link. The favicon stays mounted
+ * while the link is selected, so deselecting shows it again without reloading the image.
  */
 export function LinkCardAvatar({link, isSelected, onSelectToggle}: LinkCardAvatarProps) {
     if (!onSelectToggle) {
@@ -40,20 +41,20 @@ export function LinkCardAvatar({link, isSelected, onSelectToggle}: LinkCardAvata
             aria-checked={isSelected}
             aria-label={LINK_SELECTION_COPY.SELECT(link.shortUrl)}
             onClick={() => onSelectToggle(link)}
-            className={cn(AVATAR_CLASS, "group/select cursor-pointer outline-none", FOCUS_RING_CLASS)}
+            className={cn(AVATAR_CLASS, "group/select cursor-pointer outline-none", FOCUS_RING_CLASS,
+                isSelected && "border-transparent bg-transparent")}
         >
+            <span className={cn("flex size-full items-center justify-center group-hover:hidden group-focus-visible/select:hidden",
+                isSelected && "hidden")}>
+                <LinkAvatarIcon link={link}/>
+            </span>
             {isSelected ? (
-                <span className="flex size-5 items-center justify-center rounded-full bg-foreground text-background">
-                    <Check className="size-3"/>
+                <span className="check-ring-in flex size-full items-center justify-center rounded-full border-3 border-card-foreground text-card-foreground">
+                    <Check className="check-draw size-4.5" strokeWidth={3.5}/>
                 </span>
             ) : (
-                <>
-                    <span className="flex size-full items-center justify-center group-hover:hidden group-focus-visible/select:hidden">
-                        <LinkAvatarIcon link={link}/>
-                    </span>
-                    <span aria-hidden="true"
-                          className="hidden size-5 rounded-full border border-muted-foreground group-hover:block group-focus-visible/select:block"/>
-                </>
+                <span aria-hidden="true"
+                      className="hidden size-full rounded-full border-3 border-muted-foreground group-hover:block group-focus-visible/select:block"/>
             )}
         </button>
     );

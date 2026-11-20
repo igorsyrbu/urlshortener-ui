@@ -854,6 +854,30 @@
             rotate: 60deg;
         }
     }
+
+    /* The selected link's check: the ring settles in, then lucide's Check path (about 23 units long) draws itself. */
+    .check-ring-in {
+        animation: check-ring-in 0.1s ease-out;
+    }
+
+    .check-draw path {
+        stroke-dasharray: 24;
+        stroke-dashoffset: 24;
+        animation: check-draw 0.13s ease-out forwards;
+    }
+
+    @keyframes check-ring-in {
+        from {
+            transform: scale(0.85);
+            opacity: 0.4;
+        }
+    }
+
+    @keyframes check-draw {
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
 }
 
 /* 
