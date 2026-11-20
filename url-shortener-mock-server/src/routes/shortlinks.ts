@@ -21,6 +21,7 @@ router.get(`/shortlinks/:id(${UUID_PATH_PATTERN})`, authentication, ShortLinksCo
 router.get("/shortlinks/:key/exists", authentication, ShortLinksController.keyExists);
 router.post("/shortlinks", authentication, ShortLinksController.createShortLink);
 router.put("/shortlinks", authentication, ShortLinksController.updateShortLink);
+router.post("/shortlinks/bulk/:action", authentication, ShortLinksController.applyBulkAction);
 router.delete("/shortlinks/:id", authentication, ShortLinksController.deleteShortLink);
 router.get("/longurl/title", authentication, asyncHandler(ShortLinksController.getLongUrlTitle));
 router.post("/urlcleaner", authentication, ShortLinksController.cleanUrl);

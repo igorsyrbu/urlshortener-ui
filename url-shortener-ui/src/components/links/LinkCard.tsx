@@ -27,7 +27,7 @@ import {
 import {Kbd} from "@/components/ui/kbd";
 import {Badge} from "@/components/ui/badge";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
-import {LinkFavicon} from "@/components/links/LinkFavicon";
+import {LinkCardAvatar} from "@/components/links/LinkCardAvatar";
 import {TagBadge} from "@/components/tags/TagBadge";
 import {LinkItem, TagItem} from "@/lib/types";
 import {cn} from "@/lib/utils";
@@ -55,6 +55,10 @@ interface LinkCardProps {
     onQrCode: (link: LinkItem) => void;
     onArchiveRequest?: (link: LinkItem) => void;
     onSuspendRequest?: (link: LinkItem) => void;
+    isSelected?: boolean;
+    onSelectToggle?: (link: LinkItem) => void;
+    /** Off while links are selected: then the selection bar owns the action keys. */
+    areShortcutsEnabled?: boolean;
 }
 
 type LinkShortcutHandlers = Pick<LinkCardProps, "onEdit" | "onQrCode" | "onDelete" | "onArchiveRequest" | "onSuspendRequest">;
@@ -127,6 +131,9 @@ export function LinkCard({
                              onQrCode,
                              onArchiveRequest,
                              onSuspendRequest,
+                             isSelected = false,
+                             onSelectToggle,
+                             areShortcutsEnabled = true,
                          }: LinkCardProps) {
     const {isCopied, copy} = useCopyToClipboard();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -153,7 +160,7 @@ export function LinkCard({
     // An effect event always sees the latest menu state and link, so the document listener is added once per card
     // instead of being re-registered whenever the card re-renders.
     const handleShortcut = useEffectEvent((event: KeyboardEvent) => {
-        if (!canRunShortcut(event) || !isCardShortcutTarget(cardRef.current, isMenuOpen)) return;
+        if (!areShortcutsEnabled || !canRunShortcut(event) || !isCardShortcutTarget(cardRef.current, isMenuOpen)) return;
         const action = getLinkShortcutAction(event, {onEdit, onQrCode, onDelete, onArchiveRequest, onSuspendRequest});
         if (action === null) return;
         event.preventDefault();
@@ -176,19 +183,7 @@ export function LinkCard({
                 "group flex items-center p-4 md:p-5 rounded-xl bg-card border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-4 outline-none",
                 FOCUS_RING_CLASS,
             )}>
-            {link.isActive ? (
-                <div
-                    className="relative shrink-0 size-9 rounded-full flex items-center justify-center border-[0.5px] border-border overflow-hidden bg-muted text-foreground">
-                    <div className="size-full flex items-center justify-center">
-                        <LinkFavicon longUrl={link.longUrl}/>
-                    </div>
-                </div>
-            ) : (
-                <div
-                    className="relative shrink-0 size-9 rounded-full flex items-center justify-center border-[0.5px] border-border overflow-hidden bg-muted text-foreground transition-all duration-200">
-                    <Archive className="size-5"/>
-                </div>
-            )}
+            <LinkCardAvatar link={link} isSelected={isSelected} onSelectToggle={onSelectToggle}/>
 
             <div className="flex-1 min-w-0 flex flex-col gap-1">
                 <h3 className="text-sm font-bold text-card-foreground leading-tight pt-0.5 truncate" title={link.title}>{link.title}</h3>

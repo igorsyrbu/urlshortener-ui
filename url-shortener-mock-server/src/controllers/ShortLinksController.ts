@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
-import { shortLinksService } from "../services/ShortLinksService";
+import { BULK_ACTIONS, BULK_MAX_IDS, shortLinksService, type BulkAction } from "../services/ShortLinksService";
 import { fetchOpenGraph } from "../services/OpenGraphService";
 import { cleanUrl } from "../services/UrlCleanerService";
 import { requireUserUuid } from "../middleware/authentication";
 import { importJobsService } from "../services/ImportJobsService";
 import { sendProblem } from "../problem";
 import { getAppContext } from "../app-context";
+import { isUuid } from "../utils/uuid";
 
 const CACHE_CONTROL_HEADER = "Cache-Control";
 const NO_STORE = "no-store";
@@ -33,6 +34,17 @@ function readHostname(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** The ids of a bulk request, or `null` when the body is not a list of 1 to `BULK_MAX_IDS` UUIDs. */
+function readBulkIds(body: unknown): string[] | null {
+  const ids: unknown = typeof body === "object" && body !== null ? (body as { ids?: unknown }).ids : undefined;
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > BULK_MAX_IDS) return null;
+  return ids.every((id): id is string => typeof id === "string" && isUuid(id)) ? ids : null;
+}
+
+function isBulkAction(value: string): value is BulkAction {
+  return (BULK_ACTIONS as readonly string[]).includes(value);
 }
 
 export class ShortLinksController {
@@ -168,6 +180,23 @@ export class ShortLinksController {
     }
 
     res.status(404).json({ exists: false });
+  }
+
+  static applyBulkAction(req: Request, res: Response): void {
+    const uuid = requireUserUuid(req);
+    const { action } = req.params;
+    if (!isBulkAction(action)) {
+      sendProblem(res, 404, `No mock route for POST ${req.path}`);
+      return;
+    }
+
+    const ids = readBulkIds(req.body);
+    if (!ids) {
+      sendProblem(res, 400, `ids must hold 1 to ${BULK_MAX_IDS} link ids`);
+      return;
+    }
+
+    res.json(shortLinksService.applyBulkAction(uuid, action, ids));
   }
 
   static deleteShortLink(req: Request, res: Response): void {

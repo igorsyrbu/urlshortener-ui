@@ -46,6 +46,7 @@ export const API_ENDPOINTS = {
     SHORTLINK_BY_ID: (id: string) => `/shortlinks/${encodeURIComponent(id)}`,
     SHORTLINK_UNLOCK: (key: string) => `/public/shortlinks/${encodeURIComponent(key)}/unlock`,
     SHORTLINKS_BY_IDS: "/shortlinks/byIds",
+    SHORTLINKS_BULK: (action: BulkLinkAction) => `/shortlinks/bulk/${action}`,
     SHORTLINKS_PREVIEW: (key: string) => `/public/preview/${key}`,
     TAGS: "/tags",
     ANALYTICS: "/analytics",
@@ -107,6 +108,66 @@ export const LINK_PASSWORD_COPY = {
     PROTECTED_BADGE: "Password protected",
     LOADING: "Loading password…",
     LOAD_FAILED: "Couldn't load this link.",
+} as const;
+
+/** Actions of `POST /shortlinks/bulk/{action}`; one request holds at most one page (`DEFAULT_PAGE_SIZE`) of links. */
+export const BULK_LINK_ACTIONS = ["archive", "unarchive", "suspend", "resume", "delete"] as const;
+export type BulkLinkAction = (typeof BULK_LINK_ACTIONS)[number];
+
+interface BulkLinkActionCopy {
+    VERB: string;
+    PROGRESS: string;
+    DONE: string;
+    FAILED: string;
+    DESCRIPTION: string;
+}
+
+export const BULK_LINK_ACTION_COPY = {
+    archive: {
+        VERB: "Archive",
+        PROGRESS: "Archiving...",
+        DONE: "archived",
+        FAILED: "Couldn't archive the links. They're back in the list.",
+        DESCRIPTION: "Archived links are hidden from your list but keep redirecting visitors and counting clicks.",
+    },
+    unarchive: {
+        VERB: "Unarchive",
+        PROGRESS: "Unarchiving...",
+        DONE: "restored",
+        FAILED: "Couldn't restore the links from the archive.",
+        DESCRIPTION: "Unarchived links show up in your list again.",
+    },
+    suspend: {
+        VERB: "Suspend",
+        PROGRESS: "Suspending...",
+        DONE: "suspended",
+        FAILED: "Couldn't suspend the links.",
+        DESCRIPTION: "Suspended links show visitors a suspended page instead of the original URL and don't count clicks.",
+    },
+    resume: {
+        VERB: "Resume",
+        PROGRESS: "Resuming...",
+        DONE: "resumed",
+        FAILED: "Couldn't resume the links.",
+        DESCRIPTION: "Resumed links redirect visitors to the original URL again.",
+    },
+    delete: {
+        VERB: "Delete",
+        PROGRESS: "Deleting...",
+        DONE: "deleted",
+        FAILED: "Couldn't delete the links. They're back in the list.",
+        DESCRIPTION: "Deleting these links will remove all of their analytics. This action cannot be undone.",
+    },
+} as const satisfies Record<BulkLinkAction, BulkLinkActionCopy>;
+
+export const LINK_SELECTION_COPY = {
+    BAR_LABEL: "Selected links",
+    CLEAR: "Clear selection",
+    SELECTED: (count: number) => `${count} selected`,
+    SELECT: (shortUrl: string) => `Select ${shortUrl}`,
+    LINK_LIST: "Links in this action",
+    CONFIRMATION_TYPE: "phrase",
+    ALREADY_GONE: (count: number) => `${count === 1 ? "1 link was" : `${count} links were`} already deleted.`,
 } as const;
 
 export const LINK_SUSPENDED_COPY = {

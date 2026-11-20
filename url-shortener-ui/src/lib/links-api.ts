@@ -1,7 +1,7 @@
 import {fetchWithAuth} from "@/lib/api";
 import {ApiError, requestJson, requestNoContent} from "@/lib/api-request";
-import type {LongUrlTitleResponse, PageDTO, RandomKeyResponse, ShortLinkDTO} from "@/lib/api-types";
-import {API_ENDPOINTS, DEFAULT_LINK_TITLE, DEFAULT_PAGE_SIZE, SHORT_KEY_TAKEN_MESSAGE} from "@/lib/constants";
+import type {BulkActionResultDTO, LongUrlTitleResponse, PageDTO, RandomKeyResponse, ShortLinkDTO} from "@/lib/api-types";
+import {API_ENDPOINTS, DEFAULT_LINK_TITLE, DEFAULT_PAGE_SIZE, SHORT_KEY_TAKEN_MESSAGE, type BulkLinkAction} from "@/lib/constants";
 import {HTTP_CONFLICT, HTTP_NOT_FOUND, HTTP_OK} from "@/lib/http-status";
 import {logger} from "@/lib/logger";
 import type {EditableLink, LinkItem} from "@/lib/types";
@@ -100,6 +100,19 @@ export async function saveSuspensionStatus(linkId: string, suspended: boolean): 
     } catch (error) {
         logger.error("Failed to update link suspension status", error, {linkId});
         return false;
+    }
+}
+
+/** Applies `action` to the links; resolves `null` when the request fails, so the caller can restore the list. */
+export async function saveBulkAction(action: BulkLinkAction, linkIds: readonly string[]): Promise<BulkActionResultDTO | null> {
+    try {
+        return await requestJson<BulkActionResultDTO>(API_ENDPOINTS.SHORTLINKS_BULK(action), {
+            method: "POST",
+            body: JSON.stringify({ids: [...linkIds]}),
+        });
+    } catch (error) {
+        logger.error("Failed to apply a bulk link action", error, {action, count: linkIds.length});
+        return null;
     }
 }
 

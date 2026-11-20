@@ -43,6 +43,17 @@ export interface UpdateShortLinkDto {
   tagIds?: string[];
 }
 
+export const BULK_ACTIONS = ["archive", "unarchive", "suspend", "resume", "delete"] as const;
+export type BulkAction = (typeof BULK_ACTIONS)[number];
+
+/** Like `spring.data.web.pageable.default-page-size`, which the backend's `bulk.max-ids` follows. */
+export const BULK_MAX_IDS = 20;
+
+export interface BulkActionResult {
+  processedIds: string[];
+  notFoundIds: string[];
+}
+
 export type ShortLinkMutationResult =
   | { ok: true; link: ShortLinkDto }
   | { ok: false; status: 400 | 404 | 409; error: string };
@@ -417,6 +428,27 @@ export class ShortLinksService {
   }
 
   /**
+   * Applies one action to the caller's links among `ids`, like `POST /shortlinks/bulk/{action}`: duplicates are
+   * dropped, unknown and foreign ids are reported as not found, and repeating a call is harmless.
+   */
+  public applyBulkAction(uuid: string, action: BulkAction, ids: string[]): BulkActionResult {
+    const requestedIds = [...new Set(ids)];
+    const userState = memoryStore.getUserState(uuid);
+    const ownedIds = new Set(userState.links.map((link) => link.id));
+    const processedIds = requestedIds.filter((id) => ownedIds.has(id));
+    const notFoundIds = requestedIds.filter((id) => !ownedIds.has(id));
+
+    if (action === "delete") {
+      processedIds.forEach((id) => this.deleteLink(uuid, id));
+      return { processedIds, notFoundIds };
+    }
+
+    const processed = new Set(processedIds);
+    userState.links = userState.links.map((link) => (processed.has(link.id) ? applyFlagAction(link, action) : link));
+    return { processedIds, notFoundIds };
+  }
+
+  /**
    * Builds a CSV export of the user's links, honoring the same
    * showArchived/search filters as the paginated list endpoint.
    * Cells starting with formula characters are prefixed against
@@ -585,6 +617,19 @@ export class ShortLinksService {
 }
 
 export const shortLinksService = new ShortLinksService();
+
+function applyFlagAction(link: ShortLink, action: Exclude<BulkAction, "delete">): ShortLink {
+  switch (action) {
+    case "archive":
+      return { ...link, isActive: false };
+    case "unarchive":
+      return { ...link, isActive: true };
+    case "suspend":
+      return { ...link, isSuspended: true };
+    case "resume":
+      return { ...link, isSuspended: false };
+  }
+}
 
 /**
  * Splits one CSV line into fields, honoring double-quoted sections

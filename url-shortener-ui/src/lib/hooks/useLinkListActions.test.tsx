@@ -4,13 +4,13 @@ import {QueryClientProvider, type QueryClient} from "@tanstack/react-query";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {DEFAULT_LINK_TITLE} from "@/lib/constants";
 import {useLinkListActions} from "@/lib/hooks/useLinkListActions";
-import {deleteShortLink, saveArchiveStatus, saveSuspensionStatus, type LinksPage, type LinksPageParams} from "@/lib/links-api";
+import {deleteShortLink, saveArchiveStatus, saveBulkAction, saveSuspensionStatus, type LinksPage, type LinksPageParams} from "@/lib/links-api";
 import {queryKeys} from "@/lib/query/query-keys";
 import {STALE_AFTER} from "@/lib/query/invalidation";
 import {createLinkItem} from "@/test/link-utils";
 import {createTestQueryClient} from "@/test/query-utils";
 
-vi.mock("@/lib/links-api", () => ({saveArchiveStatus: vi.fn(), saveSuspensionStatus: vi.fn(), deleteShortLink: vi.fn()}));
+vi.mock("@/lib/links-api", () => ({saveArchiveStatus: vi.fn(), saveSuspensionStatus: vi.fn(), saveBulkAction: vi.fn(), deleteShortLink: vi.fn()}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn(), warn: vi.fn(), info: vi.fn()}}));
 
 const HIDING_ARCHIVED: LinksPageParams = {page: 0, showArchived: false, search: ""};
@@ -112,6 +112,42 @@ describe("useLinkListActions", () => {
         const actions = renderActions(HIDING_ARCHIVED);
 
         await expect(act(() => actions.current.setLinkSuspended(LINK_A, true))).resolves.toBe(false);
+
+        expect(cachedPage(HIDING_ARCHIVED)).toEqual(PAGE);
+    });
+
+    it.each([
+        ["delete", HIDING_ARCHIVED, ["b"]],
+        ["archive", HIDING_ARCHIVED, ["b"]],
+        ["archive", SHOWING_ARCHIVED, ["a", "b"]],
+        ["suspend", HIDING_ARCHIVED, ["a", "b"]],
+    ] as const)("applies a bulk %s to the page before the server answers", async (action, params, remainingIds) => {
+        vi.mocked(saveBulkAction).mockResolvedValueOnce({processedIds: ["a"], notFoundIds: []});
+        const actions = renderActions(params);
+
+        await act(() => actions.current.applyBulkAction(action, ["a"]));
+
+        expect(cachedPage(params)?.links.map((link) => link.id)).toEqual(remainingIds);
+        expect(cachedPage(params)?.totalElements).toBe(remainingIds.length);
+        expect(saveBulkAction).toHaveBeenCalledExactlyOnceWith(action, ["a"]);
+    });
+
+    it("marks bulk-suspended links and refreshes what the change makes stale", async () => {
+        vi.mocked(saveBulkAction).mockResolvedValueOnce({processedIds: ["a", "b"], notFoundIds: []});
+        const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+        const actions = renderActions(HIDING_ARCHIVED);
+
+        await act(() => actions.current.applyBulkAction("suspend", ["a", "b"]));
+
+        expect(cachedPage(HIDING_ARCHIVED)?.links.map((link) => link.isSuspended)).toEqual([true, true]);
+        expect(invalidate.mock.calls).toEqual(STALE_AFTER.linkSuspended.map((queryKey) => [{queryKey}]));
+    });
+
+    it("restores the page and resolves null when a bulk action fails", async () => {
+        vi.mocked(saveBulkAction).mockResolvedValueOnce(null);
+        const actions = renderActions(HIDING_ARCHIVED);
+
+        await expect(act(() => actions.current.applyBulkAction("delete", ["a", "b"]))).resolves.toBeNull();
 
         expect(cachedPage(HIDING_ARCHIVED)).toEqual(PAGE);
     });

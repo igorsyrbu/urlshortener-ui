@@ -1,4 +1,4 @@
-import {act, screen, waitFor} from "@testing-library/react";
+import {act, screen, waitFor, within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {fetchWithAuth} from "@/lib/api";
@@ -9,7 +9,7 @@ import {
     IMPORT_FROM_CSV_LABEL,
     IMPORT_PROCESSED_TITLE,
 } from "@/components/links/import-export-constants";
-import {API_ENDPOINTS, ARCHIVED_FILTER_COPY, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINKS_LOAD_COPY, ROUTES, SEARCH_DEBOUNCE_MS, SHOW_ARCHIVED_STORAGE_KEY, TRY_AGAIN_LABEL} from "@/lib/constants";
+import {API_ENDPOINTS, ARCHIVED_FILTER_COPY, BULK_LINK_ACTION_COPY, BULK_LINK_ACTIONS, DEFAULT_PAGE_SIZE, LINK_ACTION_COPY, LINK_SELECTION_COPY, LINKS_LOAD_COPY, ROUTES, SEARCH_DEBOUNCE_MS, SHOW_ARCHIVED_STORAGE_KEY, TRY_AGAIN_LABEL} from "@/lib/constants";
 import {toast} from "sonner";
 import {useLinkStore} from "@/lib/store/links";
 import {queryKeys} from "@/lib/query/query-keys";
@@ -56,6 +56,7 @@ interface ApiScenario {
     deleteStatus?: number;
     putStatus?: number;
     deleteResponse?: Promise<Response>;
+    bulkStatus?: number;
 }
 
 function createLinks(count: number): ShortLinkDTO[] {
@@ -64,7 +65,7 @@ function createLinks(count: number): ShortLinkDTO[] {
     }));
 }
 
-function mockApi({links, totalElements = links.length, linksStatus, deleteStatus, putStatus, deleteResponse}: ApiScenario): void {
+function mockApi({links, totalElements = links.length, linksStatus, deleteStatus, putStatus, deleteResponse, bulkStatus}: ApiScenario): void {
     const routes = {
         [API_ENDPOINTS.SHORTLINKS]: (init: RequestInit | undefined) => {
             if (init?.method === "PUT") return putStatus ? new Response(null, {status: putStatus}) : Response.json({});
@@ -73,6 +74,12 @@ function mockApi({links, totalElements = links.length, linksStatus, deleteStatus
         },
         [API_ENDPOINTS.TAGS]: () => Response.json([]),
         [API_ENDPOINTS.SHORTLINKS_IMPORT_UPDATES]: () => new Response("", {headers: {"Content-Type": "text/event-stream"}}),
+        ...Object.fromEntries(BULK_LINK_ACTIONS.map((action) => [
+            API_ENDPOINTS.SHORTLINKS_BULK(action),
+            (init: RequestInit | undefined) => bulkStatus
+                ? new Response(null, {status: bulkStatus})
+                : Response.json({processedIds: JSON.parse(String(init?.body)).ids, notFoundIds: []}),
+        ])),
         ...Object.fromEntries(links.map((link) => [
             API_ENDPOINTS.SHORTLINK_BY_ID(link.id),
             (init: RequestInit | undefined) => init?.method === "DELETE"
@@ -97,6 +104,17 @@ async function confirmDelete(user: ReturnType<typeof userEvent.setup>, linkIndex
     await user.click(await screen.findByRole("menuitem", {name: /Delete/}));
     await user.type(await screen.findByPlaceholderText("Type the short link handle here"), `key${linkIndex}`);
     await user.click(screen.getByRole("button", {name: "Delete link"}));
+}
+
+async function selectLinks(user: ReturnType<typeof userEvent.setup>, ...linkIndexes: number[]): Promise<void> {
+    await screen.findByRole("heading", {name: "Link 0"});
+    for (const index of linkIndexes) {
+        await user.click(screen.getByRole("checkbox", {name: LINK_SELECTION_COPY.SELECT(`https://sho.rt/key${index}`)}));
+    }
+}
+
+function getSelectionBar(): HTMLElement {
+    return screen.getByRole("navigation", {name: LINK_SELECTION_COPY.BAR_LABEL});
 }
 
 async function confirmArchive(user: ReturnType<typeof userEvent.setup>, linkIndex: number): Promise<void> {
@@ -530,6 +548,105 @@ describe("links page", () => {
             await user.click(await screen.findByRole("menuitem", {name: /QR Code/}));
 
             expect(await screen.findByRole("dialog", {name: "QR Code"})).toBeInTheDocument();
+        });
+    });
+
+    describe("selection", () => {
+        it("shows the selection bar instead of the pagination while links are selected", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(3)});
+            renderWithQuery(<LinksPage/>);
+
+            await selectLinks(user, 0, 2);
+
+            expect(getSelectionBar()).toHaveTextContent(LINK_SELECTION_COPY.SELECTED(2));
+            expect(screen.queryByRole("navigation", {name: "Links pagination"})).not.toBeInTheDocument();
+            expect(screen.getByRole("checkbox", {name: LINK_SELECTION_COPY.SELECT("https://sho.rt/key0")})).toBeChecked();
+        });
+
+        it("clears the selection from the bar and with Escape", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(2)});
+            renderWithQuery(<LinksPage/>);
+            await selectLinks(user, 0);
+
+            await user.click(screen.getByRole("button", {name: LINK_SELECTION_COPY.CLEAR}));
+            await selectLinks(user, 1);
+            await user.keyboard("{Escape}");
+
+            expect(screen.queryByRole("navigation", {name: LINK_SELECTION_COPY.BAR_LABEL})).not.toBeInTheDocument();
+            expect(screen.getByRole("navigation", {name: "Links pagination"})).toBeInTheDocument();
+        });
+
+        it("archives the selected links after confirmation and clears the selection", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(3)});
+            renderWithQuery(<LinksPage/>);
+            await selectLinks(user, 0, 2);
+
+            await user.click(within(getSelectionBar()).getByRole("button", {name: /Archive/}));
+            const dialog = await screen.findByRole("dialog");
+            expect(within(dialog).getByRole("list", {name: LINK_SELECTION_COPY.LINK_LIST})).toHaveTextContent("https://sho.rt/key2");
+            await user.click(within(dialog).getByRole("button", {name: "Archive links"}));
+
+            await waitFor(() => expect(toast.success).toHaveBeenCalledExactlyOnceWith("2 links archived", undefined));
+            expect(parseRequestBody(getRequestsTo(API_ENDPOINTS.SHORTLINKS_BULK("archive"), "POST")[0])).toEqual({ids: ["link-0", "link-2"]});
+            expect(screen.queryByRole("navigation", {name: LINK_SELECTION_COPY.BAR_LABEL})).not.toBeInTheDocument();
+        });
+
+        it("deletes the selected links only after the phrase is typed", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(2)});
+            renderWithQuery(<LinksPage/>);
+            await selectLinks(user, 0, 1);
+
+            await user.keyboard("d");
+            const dialog = await screen.findByRole("dialog");
+            expect(within(dialog).getByRole("button", {name: "Delete links"})).toBeDisabled();
+            await user.type(within(dialog).getByRole("textbox"), "delete 2 links");
+            await user.click(within(dialog).getByRole("button", {name: "Delete links"}));
+
+            await waitFor(() => expect(toast.success).toHaveBeenCalledExactlyOnceWith("2 links deleted", undefined));
+            expect(parseRequestBody(getRequestsTo(API_ENDPOINTS.SHORTLINKS_BULK("delete"), "POST")[0])).toEqual({ids: ["link-0", "link-1"]});
+        });
+
+        it("suspends the selected links with the s key instead of the hovered card's action", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(2)});
+            renderWithQuery(<LinksPage/>);
+            await selectLinks(user, 0);
+
+            await user.hover(screen.getByRole("heading", {name: "Link 1"}));
+            await user.keyboard("s");
+
+            expect(await screen.findByRole("dialog")).toHaveTextContent("Suspend 1 link?");
+        });
+
+        it("does not switch the archived filter with a while links are selected", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(2)});
+            renderWithQuery(<LinksPage/>);
+            await selectLinks(user, 0);
+
+            await user.keyboard("a");
+
+            expect(await screen.findByRole("dialog")).toHaveTextContent("Archive 1 link?");
+            expect(useLinkStore.getState().showArchived).toBe(false);
+        });
+
+        it("puts the links back and offers a retry when the server refuses the bulk action", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(2), bulkStatus: 500});
+            renderWithQuery(<LinksPage/>);
+            await selectLinks(user, 0);
+
+            await user.click(within(getSelectionBar()).getByRole("button", {name: /Delete/}));
+            const dialog = await screen.findByRole("dialog");
+            await user.type(within(dialog).getByRole("textbox"), "delete 1 link");
+            await user.click(within(dialog).getByRole("button", {name: "Delete link"}));
+
+            await waitFor(() => expect(toast.error).toHaveBeenCalledWith(BULK_LINK_ACTION_COPY.delete.FAILED, expect.anything()));
+            expect(screen.getByRole("heading", {name: "Link 0"})).toBeInTheDocument();
         });
     });
 

@@ -4,7 +4,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {useShortcutsStore} from "@/lib/store/shortcuts";
 import {LinkCard} from "@/components/links/LinkCard";
 import {toast} from "sonner";
-import {COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS, LINK_PASSWORD_COPY, LINK_SUSPENDED_COPY} from "@/lib/constants";
+import {COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS, LINK_PASSWORD_COPY, LINK_SELECTION_COPY, LINK_SUSPENDED_COPY} from "@/lib/constants";
 import {allTagsQueryOptions} from "@/lib/query/tag-queries";
 import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 import type {TagItem} from "@/lib/types";
@@ -194,6 +194,45 @@ describe("LinkCard", () => {
 
             expect(showError).toHaveBeenCalledExactlyOnceWith(COPY_FAILED_MESSAGE);
             expect(screen.queryByRole("button", {name: "Link copied"})).not.toBeInTheDocument();
+        });
+    });
+
+    describe("selection", () => {
+        it("selects the link from its avatar", async () => {
+            const user = userEvent.setup();
+            const link = createLinkItem({shortUrl: "https://sho.rt/abc"});
+            const onSelectToggle = vi.fn();
+            renderWithQuery(<LinkCard link={link} onEdit={vi.fn()} onDelete={vi.fn()} onQrCode={vi.fn()} onSelectToggle={onSelectToggle}/>,
+                createTestQueryClient());
+
+            await user.click(screen.getByRole("checkbox", {name: LINK_SELECTION_COPY.SELECT("https://sho.rt/abc")}));
+
+            expect(onSelectToggle).toHaveBeenCalledExactlyOnceWith(link);
+        });
+
+        it("shows a selected link as checked", () => {
+            renderWithQuery(<LinkCard link={createLinkItem()} isSelected onEdit={vi.fn()} onDelete={vi.fn()} onQrCode={vi.fn()}
+                                      onSelectToggle={vi.fn()}/>, createTestQueryClient());
+
+            expect(screen.getByRole("checkbox")).toBeChecked();
+        });
+
+        it("has no checkbox when the parent does not support selection", () => {
+            renderCard(createLinkItem());
+
+            expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+        });
+
+        it("ignores its shortcuts while they are turned off for a selection", async () => {
+            const user = userEvent.setup();
+            const onDelete = vi.fn();
+            renderWithQuery(<LinkCard link={createLinkItem()} areShortcutsEnabled={false} onEdit={vi.fn()} onDelete={onDelete}
+                                      onQrCode={vi.fn()}/>, createTestQueryClient());
+
+            await user.tab();
+            await user.keyboard("d");
+
+            expect(onDelete).not.toHaveBeenCalled();
         });
     });
 

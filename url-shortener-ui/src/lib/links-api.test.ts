@@ -13,6 +13,7 @@ import {
     getLinkById,
     isShortKeyTaken,
     saveArchiveStatus,
+    saveBulkAction,
     saveSuspensionStatus,
     ShortKeyConflictError,
     updateShortLink,
@@ -109,6 +110,27 @@ describe("fetchLinksPage", () => {
 
         expect(error).toBeInstanceOf(ApiError);
         expect(error).toMatchObject({status: HTTP_INTERNAL_SERVER_ERROR});
+    });
+});
+
+describe("saveBulkAction", () => {
+    it("posts the link ids to the action's endpoint and returns the result", async () => {
+        const result = {processedIds: ["a"], notFoundIds: ["b"]};
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json(result));
+
+        await expect(saveBulkAction("suspend", ["a", "b"])).resolves.toEqual(result);
+
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][0]).toBe(API_ENDPOINTS.SHORTLINKS_BULK("suspend"));
+        expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.method).toBe("POST");
+        expect(sentBody()).toEqual({ids: ["a", "b"]});
+    });
+
+    it("resolves null and logs when the server refuses", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 400}));
+
+        await expect(saveBulkAction("delete", ["a"])).resolves.toBeNull();
+
+        expect(logger.error).toHaveBeenCalled();
     });
 });
 

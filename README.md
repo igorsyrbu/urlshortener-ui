@@ -192,6 +192,7 @@ per sandbox user and endpoint; the real backend uses IP-based buckets with conti
 | GET    | `/shortlinks/:id`   | Path variable: `id` (UUID)                                | One link with its `password` when protected (`Cache-Control: no-store`) |
 | POST   | `/shortlinks`       | Body: `{ longUrl, title, tagIds, isActive, password? }`   | Create a new short link (`password` 5-50 chars) |
 | PUT    | `/shortlinks`       | Body: `{ id, longUrl, title, tagIds, isActive, password }` | Replace a link; a missing or null `password` removes the protection |
+| POST   | `/shortlinks/bulk/:action` | `action`: `archive`, `unarchive`, `suspend`, `resume`, `delete`; body: `{ ids }` (1–20 UUIDs) | Apply one action to many of the caller's links; answers `{ processedIds, notFoundIds }` |
 | DELETE | `/shortlinks/:id`   | Path variable: `id`                                       | Delete a short link                        |
 | GET    | `/shortlinks/random` | -                                                        | Generate an available short key            |
 | GET    | `/shortlinks/export` | Query: `showArchived`, `search`                          | Export links as CSV                        |

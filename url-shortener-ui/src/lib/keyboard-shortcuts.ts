@@ -10,12 +10,12 @@ export interface ShortcutDescription {
 /** Every single-key shortcut, in the order the help dialog lists them; the handlers use the same keys. */
 export const SHORTCUTS = {
     CREATE: {key: "c", action: "Create a link, or a tag on the Tags page", where: "Any page"},
-    TOGGLE_ARCHIVED: {key: "a", action: "Show or hide archived links", where: "Links, with no card active"},
+    TOGGLE_ARCHIVED: {key: "a", action: "Show or hide archived links", where: "Links, with no card active and no link selected"},
     EDIT: {key: "e", action: "Edit", where: "The focused, hovered or open link or tag"},
     QR_CODE: {key: "q", action: "QR code", where: "The focused, hovered or open link"},
-    ARCHIVE: {key: "a", action: "Archive or unarchive", where: "The focused, hovered or open link"},
-    SUSPEND: {key: "s", action: "Suspend or resume", where: "The focused, hovered or open link"},
-    DELETE: {key: "d", action: "Delete", where: "The focused, hovered or open link or tag"},
+    ARCHIVE: {key: "a", action: "Archive or unarchive", where: "The focused, hovered or open link, or the selected links"},
+    SUSPEND: {key: "s", action: "Suspend or resume", where: "The focused, hovered or open link, or the selected links"},
+    DELETE: {key: "d", action: "Delete", where: "The focused, hovered or open link or tag, or the selected links"},
     HELP: {key: "?", action: "Show these shortcuts", where: "Any page"},
 } as const satisfies Record<string, ShortcutDescription>;
 

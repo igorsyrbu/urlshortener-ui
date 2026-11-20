@@ -29,6 +29,12 @@ export interface ShortLinkDTO {
   updatedAt?: string;
 }
 
+/** The answer of `POST /shortlinks/bulk/{action}`: both lists keep the request order, without duplicates. */
+export interface BulkActionResultDTO {
+  processedIds: string[];
+  notFoundIds: string[];
+}
+
 export interface RandomKeyResponse {
   key: string;
 }

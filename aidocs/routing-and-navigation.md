@@ -104,7 +104,8 @@ No shortcut navigates between routes. The single-key shortcuts live in [`src/lib
 | `C` | `Header.tsx` (all dashboard pages) | Opens "Create link", or "Create tag" on `/tags`. |
 | `?` | `(dashboard)/layout.tsx` | Opens `KeyboardShortcutsDialog`. |
 | `Cmd/Ctrl+K` | `SearchBar.tsx` | Focuses the search input; `Esc` clears or blurs it. Not a single-key shortcut: it skips only while a dialog is open and ignores the Settings switch. |
-| `A` | `links/page.tsx` | Toggles "show archived" when no link card is active and says so in an info toast. |
+| `A` | `links/page.tsx` | Toggles "show archived" when no link card is active and no link is selected, and says so in an info toast. |
+| `A`, `S`, `D`, `Escape` | `links/page.tsx` (links selected) | Bulk archive or unarchive, suspend or resume, delete the selected links; `Escape` clears the selection. Card shortcuts are off while links are selected. |
 | `E`, `Q`, `A`, `S`, `D` | `LinkCard.tsx` (card focused, hovered or menu open) | Edit, QR code, archive or unarchive, suspend or resume, delete. |
 | `E`, `D` | `TagCard.tsx` (card focused, hovered or menu open) | Edit, delete. |
 

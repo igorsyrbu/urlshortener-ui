@@ -211,6 +211,59 @@ describe("DELETE /shortlinks/:id", () => {
   });
 });
 
+describe("POST /shortlinks/bulk/:action", () => {
+  async function bulk(action: string, ids: unknown): Promise<JsonResponse> {
+    return request("POST", `/shortlinks/bulk/${action}`, { ids });
+  }
+
+  async function storedLink(id: string): Promise<ShortLink | undefined> {
+    const page = (await request("GET", "/shortlinks?showArchived=true")).body as PagedModel<ShortLink>;
+    return page.content.find((link) => link.id === id);
+  }
+
+  it("archives, unarchives, suspends and resumes the caller's links", async () => {
+    const link = await createLink("bulkflags");
+    const steps: [string, Partial<ShortLink>][] = [
+      ["archive", { isActive: false, isSuspended: false }],
+      ["suspend", { isActive: false, isSuspended: true }],
+      ["unarchive", { isActive: true, isSuspended: true }],
+      ["resume", { isActive: true, isSuspended: false }],
+    ];
+    for (const [action, expected] of steps) {
+      const response = await bulk(action, [link.id]);
+      const stored = await storedLink(link.id);
+      assert.deepEqual(response, { status: HTTP_OK, body: { processedIds: [link.id], notFoundIds: [] } });
+      assert.deepEqual({ isActive: stored?.isActive, isSuspended: stored?.isSuspended }, expected);
+    }
+  });
+
+  it("deletes the caller's links and reports unknown and foreign ids, without duplicates", async () => {
+    const own = await createLink("bulkdelete");
+    const foreignUser = createTestUserWithoutLinks();
+    const foreign = (await requestJson(server, "POST", "/shortlinks", {
+      authorization: foreignUser.authorization, body: { key: "foreignbulk", longUrl: LONG_URL },
+    })).body as ShortLink;
+
+    const response = await bulk("delete", [foreign.id, own.id, UNKNOWN_ID, own.id]);
+
+    assert.deepEqual(response.body, { processedIds: [own.id], notFoundIds: [foreign.id, UNKNOWN_ID] });
+    assert.equal(await storedLink(own.id), undefined);
+    assert.equal((await requestJson(server, "GET", `/shortlinks/${foreign.id}`, { authorization: foreignUser.authorization })).status, HTTP_OK);
+  });
+
+  it("answers 400 for missing, empty, too many or malformed ids", async () => {
+    const tooMany = Array.from({ length: DEFAULT_PAGE_SIZE + 1 }, () => UNKNOWN_ID);
+    const statuses = await Promise.all(
+      [undefined, [], tooMany, ["not-a-uuid"], [null]].map(async (ids) => (await bulk("archive", ids)).status),
+    );
+    assert.deepEqual(statuses, Array(statuses.length).fill(HTTP_BAD_REQUEST));
+  });
+
+  it("answers 404 for an unknown action", async () => {
+    assert.equal((await bulk("publish", [UNKNOWN_ID])).status, HTTP_NOT_FOUND);
+  });
+});
+
 describe("CSV endpoints", () => {
   it("exports links as csv", async () => {
     await createLink("exported");
