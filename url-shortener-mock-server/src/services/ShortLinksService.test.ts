@@ -203,9 +203,20 @@ describe("ShortLinksService keys", () => {
     assert.equal(service.findByShortKey("LOOKUP")?.id, link.id);
   });
 
-  it("does not find archived links by key", () => {
-    createLink("hidden", { isActive: false });
+  it("finds archived links by key", () => {
+    const link = createLink("shelved", { isActive: false });
+    assert.equal(service.findByShortKey("shelved")?.id, link.id);
+  });
+
+  it("does not find suspended links by key", () => {
+    createLink("hidden", { isSuspended: true });
     assert.equal(service.findByShortKey("hidden"), null);
+  });
+
+  it("finds a link again once its suspension is lifted", () => {
+    const link = createLink("lifted", { isSuspended: true });
+    assert.ok(service.updateLink(user.uuid, link.id, { key: "lifted", longUrl: LONG_URL, isSuspended: false }).ok);
+    assert.equal(service.findByShortKey("lifted")?.id, link.id);
   });
 });
 

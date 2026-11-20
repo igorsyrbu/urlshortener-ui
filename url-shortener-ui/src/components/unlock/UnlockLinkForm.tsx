@@ -20,7 +20,7 @@ interface UnlockLinkFormProps {
     linkKey: string;
     turnstileEnabled: boolean;
     turnstileSiteKey: string;
-    /** The link turned out to be missing, archived or not protected. */
+    /** The link turned out to be missing, suspended or not protected. */
     onNotFound: () => void;
 }
 

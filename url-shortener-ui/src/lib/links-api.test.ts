@@ -13,6 +13,7 @@ import {
     getLinkById,
     isShortKeyTaken,
     saveArchiveStatus,
+    saveSuspensionStatus,
     ShortKeyConflictError,
     updateShortLink,
     type LinksPageParams,
@@ -111,6 +112,36 @@ describe("fetchLinksPage", () => {
     });
 });
 
+describe("saveSuspensionStatus", () => {
+    it("loads the stored link and sends it back whole, suspended, keeping its password and archive state", async () => {
+        mockStoredLink(createProtectedShortLink("secret-pass", {id: "a", isActive: false}));
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null));
+
+        await expect(saveSuspensionStatus("a", true)).resolves.toBe(true);
+
+        expect(vi.mocked(fetchWithAuth).mock.calls[1][1]?.method).toBe("PUT");
+        expect(sentBody(1)).toMatchObject({id: "a", isActive: false, isSuspended: true, password: "secret-pass"});
+    });
+
+    it("resumes a suspended link", async () => {
+        mockStoredLink(createShortLink({isSuspended: true}));
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null));
+
+        await saveSuspensionStatus("link-1", false);
+
+        expect(sentBody(1).isSuspended).toBe(false);
+    });
+
+    it("resolves false and logs when the server refuses", async () => {
+        mockStoredLink(createShortLink());
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null, {status: 500}));
+
+        await expect(saveSuspensionStatus("link-1", true)).resolves.toBe(false);
+
+        expect(logger.error).toHaveBeenCalled();
+    });
+});
+
 describe("saveArchiveStatus", () => {
     it("loads the stored link and sends it back whole with inverted activity", async () => {
         const link = createShortLink({id: "a", tagIds: ["t1"]});
@@ -123,7 +154,7 @@ describe("saveArchiveStatus", () => {
         expect(vi.mocked(fetchWithAuth).mock.calls[1][0]).toBe(API_ENDPOINTS.SHORTLINKS);
         expect(vi.mocked(fetchWithAuth).mock.calls[1][1]?.method).toBe("PUT");
         expect(sentBody(1)).toEqual({
-            id: "a", title: link.title, longUrl: link.longUrl, key: link.key, isActive: false, password: null, tagIds: ["t1"],
+            id: "a", title: link.title, longUrl: link.longUrl, key: link.key, isActive: false, isSuspended: false, password: null, tagIds: ["t1"],
         });
     });
 
@@ -248,14 +279,14 @@ describe("createShortLink", () => {
 });
 
 describe("updateShortLink", () => {
-    it("puts the edited fields with the link's id and archive state", async () => {
+    it("puts the edited fields with the link's id, archive and suspension state", async () => {
         vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({}));
-        const link = createLinkItem({id: "link-1", isActive: false});
+        const link = createLinkItem({id: "link-1", isActive: false, isSuspended: true});
 
         await updateShortLink(link, LINK_FIELDS);
 
         expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.method).toBe("PUT");
-        expect(sentBody()).toEqual({id: "link-1", ...LINK_FIELDS, isActive: false});
+        expect(sentBody()).toEqual({id: "link-1", ...LINK_FIELDS, isActive: false, isSuspended: true});
     });
 
     it("always sends the password, since a missing one removes the protection", async () => {

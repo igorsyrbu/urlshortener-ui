@@ -24,6 +24,7 @@ The UI uses the App Router exclusively (`src/app/`); there is no Pages Router an
 | `/inspect/[key]` | `inspect/[key]/page.tsx` | server, async | Public link inspector (preview card, destination URL, report link). Answers HTTP 404 with its own `not-found.tsx` ("Link not found") when the preview returns 404. |
 | `/report-abuse?shortUrl=` | `(legal)/report-abuse/page.tsx` | server, async | Public abuse report form; `shortUrl` prefills the field. |
 | `/unlock/[key]?<visitor query>` | `unlock/[key]/page.tsx` | client | Password page for a protected short link; the backend redirects here (`urlshortener.frontend.unlock-path`) and keeps the visitor's query string, which the page forwards to the unlock call. See [features/links-and-tags](features/links-and-tags.md#unlock-page-unlockkey). |
+| `/link-suspended` | `link-suspended/page.tsx` | server, static | Public page for a suspended short link; the backend redirects here (`urlshortener.frontend.link-suspended-path`) instead of to the destination. |
 | `/api/shortlinks/import/updates` | `api/shortlinks/import/updates/route.ts` | route handler | SSE pass-through, not a page. See [architecture](architecture.md#sse-pass-through-route-handler). |
 | `/manifest.webmanifest` | `manifest.ts` | metadata route | PWA manifest with `start_url: "/links"`. |
 | any unknown URL | `not-found.tsx` | client | 404 page. |
@@ -47,7 +48,7 @@ Guarding is client-side only; there is no server-side check.
 - Everything inside the `(dashboard)` group goes through the session bootstrap in [`src/app/(dashboard)/layout.tsx`](../url-shortener-ui/src/app/(dashboard)/layout.tsx): without a cached user it loads `/users/me` (`currentUserQueryOptions`); 401/403 -> `router.replace("/login")`. A browser with the session hint gets the shell and page while that runs; without it "Securing session..." is shown and the page is not rendered. Full description: [architecture](architecture.md#app-bootstrapping).
 - Any later 401 that cannot be recovered by a token refresh makes `fetchWithAuth` hard-redirect to `/login` once ([api-layer](api-layer.md#token-refresh)); a refresh that cannot reach the server (offline, 5xx) does not redirect.
 - Logout (sidebar user menu and the current-session card in settings) calls `DELETE /users/sessions/current`, clears `useAuthStore` and `router.replace`s to `/login` ([features/auth](features/auth.md)).
-- Public pages (no gate): `/login`, `/auth/exchange`, `/auth/ott`, `/inspect/[key]`, `/report-abuse`, `/unlock/[key]`, `not-found`. There is no middleware, so nothing intercepts `/unlock`; the backend reserves the `unlock` key so no short link can collide with it. The login page does not redirect an already signed-in user away.
+- Public pages (no gate): `/login`, `/auth/exchange`, `/auth/ott`, `/inspect/[key]`, `/report-abuse`, `/unlock/[key]`, `/link-suspended`, `not-found`. There is no middleware, so nothing intercepts `/unlock`; the backend reserves the `unlock` key so no short link can collide with it. The login page does not redirect an already signed-in user away.
 
 ## Page titles and skip link
 
@@ -104,7 +105,7 @@ No shortcut navigates between routes. The single-key shortcuts live in [`src/lib
 | `?` | `(dashboard)/layout.tsx` | Opens `KeyboardShortcutsDialog`. |
 | `Cmd/Ctrl+K` | `SearchBar.tsx` | Focuses the search input; `Esc` clears or blurs it. Not a single-key shortcut: it skips only while a dialog is open and ignores the Settings switch. |
 | `A` | `links/page.tsx` | Toggles "show archived" when no link card is active and says so in an info toast. |
-| `E`, `Q`, `A`, `D` | `LinkCard.tsx` (card focused, hovered or menu open) | Edit, QR code, archive or unarchive, delete. |
+| `E`, `Q`, `A`, `S`, `D` | `LinkCard.tsx` (card focused, hovered or menu open) | Edit, QR code, archive or unarchive, suspend or resume, delete. |
 | `E`, `D` | `TagCard.tsx` (card focused, hovered or menu open) | Edit, delete. |
 
 Rules, the focus/hover definition and the settings switch: [features/links-and-tags](features/links-and-tags.md) and [state-management](state-management.md).

@@ -14,6 +14,7 @@ export const SHORTCUTS = {
     EDIT: {key: "e", action: "Edit", where: "The focused, hovered or open link or tag"},
     QR_CODE: {key: "q", action: "QR code", where: "The focused, hovered or open link"},
     ARCHIVE: {key: "a", action: "Archive or unarchive", where: "The focused, hovered or open link"},
+    SUSPEND: {key: "s", action: "Suspend or resume", where: "The focused, hovered or open link"},
     DELETE: {key: "d", action: "Delete", where: "The focused, hovered or open link or tag"},
     HELP: {key: "?", action: "Show these shortcuts", where: "Any page"},
 } as const satisfies Record<string, ShortcutDescription>;

@@ -29,6 +29,7 @@ export function mapResponseToLinkItem(item: ShortLinkDTO): LinkItem {
         longUrl: item.longUrl,
         isActive: item.isActive,
         isPasswordProtected: item.isPasswordProtected,
+        isSuspended: item.isSuspended,
         tagIds: item.tagIds,
     };
 }
@@ -64,24 +65,40 @@ export async function fetchLinksPage(params: LinksPageParams, signal?: AbortSign
  * `PUT /shortlinks` replaces the whole link, and a body without the password removes the protection. A list item never
  * holds the password, so the body is built from the link as the server has it now.
  */
+async function saveStoredLinkWith(linkId: string, change: Pick<Partial<LinkItem>, "isActive" | "isSuspended">): Promise<void> {
+    const link = await getLinkById(linkId);
+    await requestNoContent(API_ENDPOINTS.SHORTLINKS, {
+        method: "PUT",
+        body: JSON.stringify({
+            id: link.id,
+            title: link.title,
+            longUrl: link.longUrl,
+            key: link.key,
+            isActive: link.isActive,
+            isSuspended: link.isSuspended,
+            password: link.password,
+            tagIds: [...(link.tagIds ?? [])],
+            ...change,
+        }),
+    });
+}
+
 export async function saveArchiveStatus(linkId: string, archived: boolean): Promise<boolean> {
     try {
-        const link = await getLinkById(linkId);
-        await requestNoContent(API_ENDPOINTS.SHORTLINKS, {
-            method: "PUT",
-            body: JSON.stringify({
-                id: link.id,
-                title: link.title,
-                longUrl: link.longUrl,
-                key: link.key,
-                isActive: !archived,
-                password: link.password,
-                tagIds: [...(link.tagIds ?? [])],
-            }),
-        });
+        await saveStoredLinkWith(linkId, {isActive: !archived});
         return true;
     } catch (error) {
         logger.error("Failed to update link archive status", error, {linkId});
+        return false;
+    }
+}
+
+export async function saveSuspensionStatus(linkId: string, suspended: boolean): Promise<boolean> {
+    try {
+        await saveStoredLinkWith(linkId, {isSuspended: suspended});
+        return true;
+    } catch (error) {
+        logger.error("Failed to update link suspension status", error, {linkId});
         return false;
     }
 }
@@ -142,7 +159,7 @@ export function createShortLink({longUrl, title, key, tagIds, password}: ShortLi
 export function updateShortLink(link: LinkItem, {longUrl, title, key, tagIds, password}: ShortLinkFields): Promise<void> {
     return requestNoContent(API_ENDPOINTS.SHORTLINKS, {
         method: "PUT",
-        body: JSON.stringify({id: link.id, longUrl, title, key, isActive: link.isActive, password, tagIds: [...tagIds]}),
+        body: JSON.stringify({id: link.id, longUrl, title, key, isActive: link.isActive, isSuspended: link.isSuspended, password, tagIds: [...tagIds]}),
     }).catch(throwKeyConflictOrRethrow);
 }
 

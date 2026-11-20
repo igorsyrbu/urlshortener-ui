@@ -71,6 +71,7 @@ export class MemoryStore {
         shortUrl,
         longUrl: rest.longUrl,
         isActive: link.isActive ?? true,
+        isSuspended: "isSuspended" in link && link.isSuspended === true,
         password: "password" in link && typeof link.password === "string" ? link.password : null,
       };
     });

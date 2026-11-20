@@ -217,9 +217,9 @@ describe("EditLinkModal", () => {
         expect(onSuccess.mock.calls[0][0]).toMatchObject({id: "link-42", key: "new-key", shortUrl: "https://sho.rt/new-key"});
     });
 
-    it("saves the edited link keeping its id and archived state, then closes", async () => {
+    it("saves the edited link keeping its id, archived and suspended state, then closes", async () => {
         const user = userEvent.setup();
-        const stored = createShortLink({id: "link-42", isActive: false, title: "Old", tagIds: ["tag-1"]});
+        const stored = createShortLink({id: "link-42", isActive: false, isSuspended: true, title: "Old", tagIds: ["tag-1"]});
         mockServer(stored);
         const {onSuccess, onOpenChange} = renderModal(createLinkItem({id: "link-42", isActive: false, tagIds: ["tag-1"], key: stored.key, shortUrl: stored.shortUrl, longUrl: stored.longUrl}));
 
@@ -229,11 +229,11 @@ describe("EditLinkModal", () => {
 
         await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
         expect(onSuccess).toHaveBeenCalledExactlyOnceWith({
-            id: "link-42", isActive: false, isPasswordProtected: false, title: "New title", key: stored.key,
+            id: "link-42", isActive: false, isPasswordProtected: false, isSuspended: true, title: "New title", key: stored.key,
             shortUrl: stored.shortUrl, longUrl: stored.longUrl, tagIds: ["tag-1"],
         });
         expect(sentUpdate()).toEqual({
-            id: "link-42", longUrl: stored.longUrl, title: "New title", key: stored.key, isActive: false, password: null, tagIds: ["tag-1"],
+            id: "link-42", longUrl: stored.longUrl, title: "New title", key: stored.key, isActive: false, isSuspended: true, password: null, tagIds: ["tag-1"],
         });
     });
 

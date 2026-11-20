@@ -35,6 +35,7 @@ export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkMod
             key,
             shortUrl: withShortKey(editableLink.shortUrl, key),
             isPasswordProtected: password !== null,
+            isSuspended: editableLink.isSuspended,
             tagIds: [...tagIds],
         });
     };

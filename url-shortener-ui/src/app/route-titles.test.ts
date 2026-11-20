@@ -11,6 +11,7 @@ import {metadata as authMetadata} from "@/app/auth/layout";
 import {metadata as reportAbuseMetadata} from "@/app/(legal)/report-abuse/page";
 import {metadata as inspectMetadata} from "@/app/inspect/[key]/page";
 import {metadata as unlockMetadata} from "@/app/unlock/[key]/layout";
+import {metadata as linkSuspendedMetadata} from "@/app/link-suspended/page";
 import {PAGE_TITLES} from "@/lib/constants";
 import {SETTINGS_LABELS} from "@/lib/settings-constants";
 
@@ -27,13 +28,14 @@ describe("route titles", () => {
         ["report abuse", reportAbuseMetadata, PAGE_TITLES.REPORT_ABUSE],
         ["link preview", inspectMetadata, PAGE_TITLES.LINK_PREVIEW],
         ["protected link", unlockMetadata, PAGE_TITLES.UNLOCK_LINK],
+        ["suspended link", linkSuspendedMetadata, PAGE_TITLES.LINK_SUSPENDED],
     ])("gives the %s page its own title", (_route, metadata, expected) => {
         expect(metadata.title).toBe(expected);
     });
 
     it("gives every route a different title", () => {
         const titles = [linksMetadata, tagsMetadata, analyticsMetadata, dashboardMetadata, generalSettingsMetadata,
-            billingSettingsMetadata, loginMetadata, authMetadata, reportAbuseMetadata, inspectMetadata, unlockMetadata].map((m) => m.title);
+            billingSettingsMetadata, loginMetadata, authMetadata, reportAbuseMetadata, inspectMetadata, unlockMetadata, linkSuspendedMetadata].map((m) => m.title);
 
         expect(new Set(titles).size).toBe(titles.length);
     });

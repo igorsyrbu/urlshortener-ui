@@ -226,11 +226,17 @@ describe("POST /public/shortlinks/:key/unlock", () => {
     assert.equal(response.status, HTTP_BAD_REQUEST);
   });
 
-  it("answers 404 for an unknown, an archived and an unprotected link", async () => {
+  it("unlocks an archived link", async () => {
     await createLink("archivedlock", { password: PASSWORD, isActive: false });
+    const response = await unlock("archivedlock", PASSWORD);
+    assert.equal(response.status, HTTP_OK);
+  });
+
+  it("answers 404 for an unknown, a suspended and an unprotected link", async () => {
+    await createLink("suspendedlock", { password: PASSWORD, isSuspended: true });
     await createLink("unprotected");
     const statuses = await Promise.all(
-      ["no-such-key", "archivedlock", "unprotected"].map(async (key) => (await unlock(key, PASSWORD)).status),
+      ["no-such-key", "suspendedlock", "unprotected"].map(async (key) => (await unlock(key, PASSWORD)).status),
     );
     assert.deepEqual(statuses, [HTTP_NOT_FOUND, HTTP_NOT_FOUND, HTTP_NOT_FOUND]);
   });

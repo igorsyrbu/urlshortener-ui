@@ -27,7 +27,7 @@ describe.each([
         await user.click(screen.getByRole("button", {name: "Archive link"}));
 
         expect(screen.getByText("Archive this link?")).toBeInTheDocument();
-        expect(screen.getByText(/redirect visitors to the not-found page/)).toBeInTheDocument();
+        expect(screen.getByText(/keep redirecting visitors and counting clicks/)).toBeInTheDocument();
         expect(screen.getByText(SHORT_URL)).toBeInTheDocument();
         expect(onConfirm).toHaveBeenCalledOnce();
     });

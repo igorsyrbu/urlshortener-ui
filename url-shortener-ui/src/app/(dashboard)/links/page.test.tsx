@@ -105,6 +105,12 @@ async function confirmArchive(user: ReturnType<typeof userEvent.setup>, linkInde
     await user.click(await screen.findByRole("button", {name: "Archive link"}));
 }
 
+async function confirmSuspend(user: ReturnType<typeof userEvent.setup>, linkIndex: number): Promise<void> {
+    await openLinkActions(user, linkIndex);
+    await user.click(await screen.findByRole("menuitem", {name: /Suspend/}));
+    await user.click(await screen.findByRole("button", {name: "Suspend link"}));
+}
+
 async function openLinkActions(user: ReturnType<typeof userEvent.setup>, linkIndex: number): Promise<void> {
     await screen.findByRole("heading", {name: `Link ${linkIndex}`});
     await user.click(screen.getAllByRole("button", {name: "More actions for link"})[linkIndex]);
@@ -450,6 +456,28 @@ describe("links page", () => {
 
             await waitFor(() => expect(toast.error).toHaveBeenCalledWith(LINK_ACTION_COPY.ARCHIVE_FAILED, expect.anything()));
             expect(screen.getByRole("heading", {name: "Link 0"})).toBeInTheDocument();
+        });
+
+        it("suspends a link after confirmation, keeping it in the list", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(1)});
+            renderWithQuery(<LinksPage/>);
+
+            await confirmSuspend(user, 0);
+
+            await waitFor(() => expect(toast.success).toHaveBeenCalledExactlyOnceWith(LINK_ACTION_COPY.SUSPENDED));
+            expect(parseRequestBody(getRequestsTo(API_ENDPOINTS.SHORTLINKS, "PUT")[0])).toMatchObject({id: "link-0", isActive: true, isSuspended: true});
+            expect(screen.getByRole("heading", {name: "Link 0"})).toBeInTheDocument();
+        });
+
+        it("offers a retry when the server refuses to suspend", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(1), putStatus: HTTP_SERVER_ERROR});
+            renderWithQuery(<LinksPage/>);
+
+            await confirmSuspend(user, 0);
+
+            await waitFor(() => expect(toast.error).toHaveBeenCalledWith(LINK_ACTION_COPY.SUSPEND_FAILED, expect.anything()));
         });
 
         it("opens the edit form prefilled with the link", async () => {

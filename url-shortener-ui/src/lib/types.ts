@@ -15,6 +15,7 @@ export interface LinkItem {
     longUrl: string;
     isActive: boolean;
     isPasswordProtected: boolean;
+    isSuspended: boolean;
     tagIds?: string[];
 }
 

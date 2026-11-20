@@ -187,7 +187,7 @@ export class ShortLinksController {
 
     const link = shortLinksService.findByShortKey(key);
     if (!link) {
-      sendProblem(res, 404, `No active short link has the key '${key}'.`);
+      sendProblem(res, 404, `No short link has the key '${key}'.`);
       return;
     }
 

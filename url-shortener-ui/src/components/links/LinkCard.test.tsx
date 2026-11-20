@@ -4,7 +4,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {useShortcutsStore} from "@/lib/store/shortcuts";
 import {LinkCard} from "@/components/links/LinkCard";
 import {toast} from "sonner";
-import {COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS, LINK_PASSWORD_COPY} from "@/lib/constants";
+import {COPY_FAILED_MESSAGE, COPY_FEEDBACK_DURATION_MS, LINK_PASSWORD_COPY, LINK_SUSPENDED_COPY} from "@/lib/constants";
 import {allTagsQueryOptions} from "@/lib/query/tag-queries";
 import {createTestQueryClient, renderWithQuery} from "@/test/query-utils";
 import type {TagItem} from "@/lib/types";
@@ -27,10 +27,11 @@ interface CardHandlers {
     onDelete: ReturnType<typeof vi.fn<(link: LinkItem) => void>>;
     onQrCode: ReturnType<typeof vi.fn<(link: LinkItem) => void>>;
     onArchiveRequest: ReturnType<typeof vi.fn<(link: LinkItem) => void>>;
+    onSuspendRequest: ReturnType<typeof vi.fn<(link: LinkItem) => void>>;
 }
 
 function renderCard(link: LinkItem, withArchive = true, tags: TagItem[] = []): CardHandlers {
-    const handlers: CardHandlers = {onEdit: vi.fn(), onDelete: vi.fn(), onQrCode: vi.fn(), onArchiveRequest: vi.fn()};
+    const handlers: CardHandlers = {onEdit: vi.fn(), onDelete: vi.fn(), onQrCode: vi.fn(), onArchiveRequest: vi.fn(), onSuspendRequest: vi.fn()};
     const queryClient = createTestQueryClient();
     queryClient.setQueryData(allTagsQueryOptions.queryKey, tags);
     renderWithQuery(
@@ -40,6 +41,7 @@ function renderCard(link: LinkItem, withArchive = true, tags: TagItem[] = []): C
             onDelete={handlers.onDelete}
             onQrCode={handlers.onQrCode}
             onArchiveRequest={withArchive ? handlers.onArchiveRequest : undefined}
+            onSuspendRequest={handlers.onSuspendRequest}
         />,
         queryClient,
     );
@@ -107,6 +109,18 @@ describe("LinkCard", () => {
             renderCard(createLinkItem());
 
             expect(screen.queryByRole("img", {name: LINK_PASSWORD_COPY.PROTECTED_BADGE})).not.toBeInTheDocument();
+        });
+
+        it("marks a suspended link", () => {
+            renderCard(createLinkItem({isSuspended: true}));
+
+            expect(screen.getByRole("img", {name: LINK_SUSPENDED_COPY.BADGE})).toBeInTheDocument();
+        });
+
+        it("shows no suspension mark for a link that is not suspended", () => {
+            renderCard(createLinkItem());
+
+            expect(screen.queryByRole("img", {name: LINK_SUSPENDED_COPY.BADGE})).not.toBeInTheDocument();
         });
 
         it("reveals the full destination URL on hover", async () => {
@@ -188,6 +202,7 @@ describe("LinkCard", () => {
             ["Edit", "onEdit"],
             ["QR Code", "onQrCode"],
             ["Archive", "onArchiveRequest"],
+            ["Suspend", "onSuspendRequest"],
             ["Delete", "onDelete"],
         ] as const)("runs %s for the link", async (label, handlerName) => {
             const user = userEvent.setup();
@@ -209,6 +224,15 @@ describe("LinkCard", () => {
             expect(await screen.findByRole("menuitem", {name: /Unarchive/})).toBeInTheDocument();
         });
 
+        it("offers to resume a suspended link", async () => {
+            const user = userEvent.setup();
+            renderCard(createLinkItem({isSuspended: true}));
+
+            await openActions(user);
+
+            expect(await screen.findByRole("menuitem", {name: /Resume/})).toHaveAttribute("aria-keyshortcuts", "S");
+        });
+
         it("hides the archive action when archiving is not supported by the parent", async () => {
             const user = userEvent.setup();
             renderCard(createLinkItem(), false);
@@ -225,6 +249,7 @@ describe("LinkCard", () => {
             ["Edit", "onEdit"],
             ["QR Code", "onQrCode"],
             ["Archive", "onArchiveRequest"],
+            ["Suspend", "onSuspendRequest"],
             ["Delete", "onDelete"],
         ] as const)("runs %s from the action drawer", async (label, handlerName) => {
             media.isDesktop = false;
@@ -245,6 +270,7 @@ describe("LinkCard", () => {
             ["q", "onQrCode"],
             ["d", "onDelete"],
             ["a", "onArchiveRequest"],
+            ["s", "onSuspendRequest"],
         ] as const)("runs the action bound to %s", async (key, handlerName) => {
             const user = userEvent.setup();
             const link = createLinkItem();

@@ -10,6 +10,7 @@ export interface ShortLink {
   shortUrl: string;
   longUrl: string;
   isActive: boolean;
+  isSuspended: boolean;
   /** Plain text in the mock; absent or null means the link is not protected. Never part of a list response. */
   password?: string | null;
   tagIds?: string[];
@@ -27,6 +28,7 @@ export interface CreateShortLinkDto {
   title?: string;
   key: string;
   isActive?: boolean;
+  isSuspended?: boolean;
   password?: string | null;
   tagIds?: string[];
 }
@@ -36,6 +38,7 @@ export interface UpdateShortLinkDto {
   title?: string;
   key: string;
   isActive?: boolean;
+  isSuspended?: boolean;
   password?: string | null;
   tagIds?: string[];
 }
@@ -273,6 +276,7 @@ export class ShortLinksService {
       shortUrl: `${ShortLinksService.CONSTANTS.BASE_DOMAIN}/${key}`,
       longUrl: longUrl.value,
       isActive: typeof dto.isActive === "boolean" ? dto.isActive : true,
+      isSuspended: typeof dto.isSuspended === "boolean" ? dto.isSuspended : false,
       password: password.value,
     };
 
@@ -335,6 +339,7 @@ export class ShortLinksService {
       longUrl: longUrl.value,
       title: typeof dto.title === "string" ? dto.title : existingLink.title,
       isActive: typeof dto.isActive === "boolean" ? dto.isActive : existingLink.isActive,
+      isSuspended: typeof dto.isSuspended === "boolean" ? dto.isSuspended : existingLink.isSuspended,
       password: password.value,
     };
 
@@ -375,14 +380,14 @@ export class ShortLinksService {
   }
 
   /**
-   * Finds an active short link by its short key, case-insensitively.
-   * Searches all user states. Returns null if not found or inactive.
+   * Finds a short link that is not suspended by its short key, case-insensitively, across all users.
+   * Archived links are included: archiving only hides a link from its owner's list.
    */
   public findByShortKey(key: string): ShortLink | null {
     const normalized = key.toLowerCase();
     for (const state of memoryStore.getAllUserStates()) {
       const link = state.links.find(
-        (l) => l.isActive && l.key.toLowerCase() === normalized,
+        (l) => !l.isSuspended && l.key.toLowerCase() === normalized,
       );
       if (link) return link;
     }
@@ -571,6 +576,7 @@ export class ShortLinksService {
       shortUrl: `${ShortLinksService.CONSTANTS.BASE_DOMAIN}/${key}`,
       longUrl: rawDestination,
       isActive: true,
+      isSuspended: false,
     };
     memoryStore.getUserState(uuid).links.unshift(newLink);
     tagsService.associateTagsWithLink(uuid, newLink.id, tagIds);

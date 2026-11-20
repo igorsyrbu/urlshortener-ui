@@ -16,6 +16,7 @@ export const PAGE_TITLES = {
     REPORT_ABUSE: "Report a link",
     LINK_PREVIEW: "Link preview",
     UNLOCK_LINK: "Protected link",
+    LINK_SUSPENDED: "Link suspended",
 } as const;
 
 export const ROUTES = {
@@ -108,6 +109,13 @@ export const LINK_PASSWORD_COPY = {
     LOAD_FAILED: "Couldn't load this link.",
 } as const;
 
+export const LINK_SUSPENDED_COPY = {
+    BADGE: "Suspended: visitors see a suspended page instead of the destination",
+    PAGE_HEADING: "This link is suspended",
+    PAGE_DESCRIPTION: "Its owner has suspended this link for now. Try again later.",
+    HOME: "Go to homepage",
+} as const;
+
 /** The lockout 429 carries no retry header; the submit button rests this long before the next try. */
 export const UNLOCK_RATE_LIMIT_FALLBACK_SECONDS = 60;
 
@@ -138,8 +146,12 @@ export const LINK_ACTION_COPY = {
     ARCHIVE_FAILED: "Couldn't archive the link. It's back in the list.",
     UNARCHIVE_FAILED: "Couldn't restore the link from the archive.",
     DELETE_FAILED: "Couldn't delete the link. It's back in the list.",
+    SUSPEND_FAILED: "Couldn't suspend the link.",
+    RESUME_FAILED: "Couldn't resume the link.",
     ARCHIVED: "Link archived",
     UNARCHIVED: "Link restored",
+    SUSPENDED: "Link suspended",
+    RESUMED: "Link resumed",
     DELETED: "Link deleted",
     SAVED: "Link updated",
     RETRY: "Retry",

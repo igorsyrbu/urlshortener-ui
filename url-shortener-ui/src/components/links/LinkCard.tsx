@@ -5,11 +5,14 @@ import {
     Archive,
     ArchiveRestore,
     Check,
+    CirclePause,
     Copy,
     CornerDownRight,
     Lock,
     MoreVertical,
+    Pause,
     PencilLine,
+    Play,
     QrCode,
     Tag,
     Trash2
@@ -33,6 +36,7 @@ import {
     COPIED_ICON_ENTER_CLASS,
     FOCUS_RING_CLASS,
     LINK_PASSWORD_COPY,
+    LINK_SUSPENDED_COPY,
     MORE_ACTIONS_BUTTON_CLASS,
     SHORTCUT_KEY_CLASS
 } from "@/lib/constants";
@@ -50,15 +54,17 @@ interface LinkCardProps {
     onDelete: (link: LinkItem) => void;
     onQrCode: (link: LinkItem) => void;
     onArchiveRequest?: (link: LinkItem) => void;
+    onSuspendRequest?: (link: LinkItem) => void;
 }
 
-type LinkShortcutHandlers = Pick<LinkCardProps, "onEdit" | "onQrCode" | "onDelete" | "onArchiveRequest">;
+type LinkShortcutHandlers = Pick<LinkCardProps, "onEdit" | "onQrCode" | "onDelete" | "onArchiveRequest" | "onSuspendRequest">;
 
 function getLinkShortcutAction(event: KeyboardEvent, handlers: LinkShortcutHandlers): ((link: LinkItem) => void) | null {
     if (isShortcutKey(event, SHORTCUTS.EDIT)) return handlers.onEdit;
     if (isShortcutKey(event, SHORTCUTS.QR_CODE)) return handlers.onQrCode;
     if (isShortcutKey(event, SHORTCUTS.DELETE)) return handlers.onDelete;
     if (isShortcutKey(event, SHORTCUTS.ARCHIVE)) return handlers.onArchiveRequest ?? null;
+    if (isShortcutKey(event, SHORTCUTS.SUSPEND)) return handlers.onSuspendRequest ?? null;
     return null;
 }
 
@@ -120,6 +126,7 @@ export function LinkCard({
                              onDelete,
                              onQrCode,
                              onArchiveRequest,
+                             onSuspendRequest,
                          }: LinkCardProps) {
     const {isCopied, copy} = useCopyToClipboard();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -147,7 +154,7 @@ export function LinkCard({
     // instead of being re-registered whenever the card re-renders.
     const handleShortcut = useEffectEvent((event: KeyboardEvent) => {
         if (!canRunShortcut(event) || !isCardShortcutTarget(cardRef.current, isMenuOpen)) return;
-        const action = getLinkShortcutAction(event, {onEdit, onQrCode, onDelete, onArchiveRequest});
+        const action = getLinkShortcutAction(event, {onEdit, onQrCode, onDelete, onArchiveRequest, onSuspendRequest});
         if (action === null) return;
         event.preventDefault();
         setIsMenuOpen(false);
@@ -212,6 +219,16 @@ export function LinkCard({
                                 <Lock className="size-3"/>
                             </span>
                         ) : null}
+                        {link.isSuspended ? (
+                            <span
+                                role="img"
+                                aria-label={LINK_SUSPENDED_COPY.BADGE}
+                                title={LINK_SUSPENDED_COPY.BADGE}
+                                className="flex items-center justify-center size-5 shrink-0 text-muted-foreground"
+                            >
+                                <CirclePause className="size-3"/>
+                            </span>
+                        ) : null}
                     </div>
                     <span className="hidden sm:inline-block text-muted-foreground/30 shrink-0">•</span>
                     <div className="flex items-center gap-1 min-w-0 shrink">
@@ -265,6 +282,17 @@ export function LinkCard({
                                     <Kbd className={SHORTCUT_KEY_CLASS}>A</Kbd>
                                 </DropdownMenuItem>
                             )}
+                            {onSuspendRequest && (
+                                <DropdownMenuItem onClick={() => onSuspendRequest(link)} aria-keyshortcuts="S">
+                                    {link.isSuspended ? (
+                                        <Play className="size-4 mr-2"/>
+                                    ) : (
+                                        <Pause className="size-4 mr-2"/>
+                                    )}
+                                    <span className="flex-1">{link.isSuspended ? "Resume" : "Suspend"}</span>
+                                    <Kbd className={SHORTCUT_KEY_CLASS}>S</Kbd>
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator/>
                             <DropdownMenuItem
                                 onClick={() => onDelete(link)}
@@ -306,6 +334,13 @@ export function LinkCard({
                                             label: link.isActive ? "Archive" : "Unarchive",
                                             icon: link.isActive ? Archive : ArchiveRestore,
                                             onClick: () => onArchiveRequest(link),
+                                        },
+                                    ] : []),
+                                    ...((onSuspendRequest) ? [
+                                        {
+                                            label: link.isSuspended ? "Resume" : "Suspend",
+                                            icon: link.isSuspended ? Play : Pause,
+                                            onClick: () => onSuspendRequest(link),
                                         },
                                     ] : []),
                                     {

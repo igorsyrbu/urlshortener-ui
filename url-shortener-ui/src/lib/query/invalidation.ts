@@ -11,6 +11,7 @@ export const STALE_AFTER = {
     linkSaved: [queryKeys.links.all, queryKeys.tags.withLinkCounts],
     linkDeleted: [queryKeys.links.all, queryKeys.tags.withLinkCounts],
     linkArchived: [queryKeys.links.all],
+    linkSuspended: [queryKeys.links.all],
     /** The tag lists are edited in place; links that carried the tag change on the server. */
     tagDeleted: [queryKeys.links.all],
     importCompleted: [queryKeys.links.all, queryKeys.tags.all],

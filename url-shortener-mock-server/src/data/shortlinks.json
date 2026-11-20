@@ -21,6 +21,15 @@
       "tagIds": []
     },
     {
+      "id": "5059e4de-0000-4000-8000-000000000001",
+      "title": "Giveaway (suspended)",
+      "shortUrl": "https://sho.rt/Suspended1",
+      "longUrl": "https://example.com/giveaway",
+      "isActive": true,
+      "isSuspended": true,
+      "tagIds": []
+    },
+    {
       "id": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80",
       "title": "Claude by Anthropic",
       "shortUrl": "https://sho.rt/claude",

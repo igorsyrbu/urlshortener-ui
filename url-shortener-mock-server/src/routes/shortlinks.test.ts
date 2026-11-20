@@ -130,6 +130,17 @@ describe("PUT /shortlinks", () => {
     assert.equal((response.body as ShortLink).isActive, false);
   });
 
+  it("suspends and resumes a link, and keeps the state when isSuspended is omitted", async () => {
+    const created = await createLink("suspended");
+    const suspended = await request("PUT", "/shortlinks", { id: created.id, key: "suspended", longUrl: LONG_URL, isSuspended: true });
+    const kept = await request("PUT", "/shortlinks", { id: created.id, key: "suspended", longUrl: LONG_URL });
+    const resumed = await request("PUT", "/shortlinks", { id: created.id, key: "suspended", longUrl: LONG_URL, isSuspended: false });
+    assert.equal(created.isSuspended, false);
+    assert.equal((suspended.body as ShortLink).isSuspended, true);
+    assert.equal((kept.body as ShortLink).isSuspended, true);
+    assert.equal((resumed.body as ShortLink).isSuspended, false);
+  });
+
   it("answers 400 without an id", async () => {
     const response = await request("PUT", "/shortlinks", { key: "any", longUrl: LONG_URL });
     assert.equal(response.status, HTTP_BAD_REQUEST);
@@ -320,11 +331,19 @@ describe("GET /public/preview/:key", () => {
     assert.equal(externalCalls.length, 0);
   });
 
-  it("answers a problem-detail 404 for an unknown or archived key", async () => {
+  it("previews an archived link", async () => {
+    stubExternalPage("<html><head><title>Archived page</title></head></html>");
     await createLink("archivedkey", { isActive: false });
-    const archived = await requestJson(server, "GET", "/public/preview/archivedkey");
+    const response = await requestJson(server, "GET", "/public/preview/archivedkey");
+    assert.equal(response.status, HTTP_OK);
+    assert.equal((response.body as { longUrl: string }).longUrl, LONG_URL);
+  });
+
+  it("answers a problem-detail 404 for an unknown or suspended key", async () => {
+    await createLink("suspendedkey", { isSuspended: true });
+    const suspended = await requestJson(server, "GET", "/public/preview/suspendedkey");
     const unknown = await requestJson(server, "GET", "/public/preview/nope-nope");
-    assert.deepEqual(archived, { status: HTTP_NOT_FOUND, body: createProblem(HTTP_NOT_FOUND, "No active short link has the key 'archivedkey'.") });
-    assert.deepEqual(unknown, { status: HTTP_NOT_FOUND, body: createProblem(HTTP_NOT_FOUND, "No active short link has the key 'nope-nope'.") });
+    assert.deepEqual(suspended, { status: HTTP_NOT_FOUND, body: createProblem(HTTP_NOT_FOUND, "No short link has the key 'suspendedkey'.") });
+    assert.deepEqual(unknown, { status: HTTP_NOT_FOUND, body: createProblem(HTTP_NOT_FOUND, "No short link has the key 'nope-nope'.") });
   });
 });

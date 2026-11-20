@@ -18,8 +18,8 @@ export function ArchiveLinkModal({link, open, onOpenChange, onConfirm, loading =
     const isActive = link.isActive;
     const title = isActive ? "Archive this link?" : "Unarchive this link?";
     const description = isActive
-        ? "Archived links will redirect visitors to the not-found page instead of the original URL"
-        : "Unarchived links will work normally and redirect visitors to the original URL";
+        ? "Archived links are hidden from your list but keep redirecting visitors and counting clicks"
+        : "Unarchived links show up in your list again";
     const confirmLabel = isActive ? "Archive link" : "Unarchive link";
     const confirmLoadingLabel = isActive ? "Archiving..." : "Unarchiving...";
 

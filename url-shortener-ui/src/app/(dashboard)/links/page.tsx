@@ -47,6 +47,7 @@ function loadArchiveLinkModal() {
 const EditLinkModal = lazyDialog(loadEditLinkModal);
 const DeleteLinkModal = lazyDialog(loadDeleteLinkModal);
 const ArchiveLinkModal = lazyDialog(loadArchiveLinkModal);
+const SuspendLinkModal = lazyDialog(() => import("@/components/links/SuspendLinkModal").then((modalModule) => modalModule.SuspendLinkModal));
 const ImportCsvModal = lazyDialog(() => import("@/components/links/ImportCsvModal").then((modalModule) => modalModule.ImportCsvModal));
 const ExportCsvModal = lazyDialog(() => import("@/components/links/ExportCsvModal").then((modalModule) => modalModule.ExportCsvModal));
 
@@ -71,7 +72,7 @@ function LinksPageContent() {
     // Destructured so render closures depend on these values, not on the query result object, which is new on every
     // render: otherwise the compiler rebuilds every card on each keystroke in the search box.
     const {data: linksPage, isPending, isFetching, isError, isPlaceholderData, errorUpdatedAt, refetch} = useLinksPage(pageParams, isShowArchivedHydrated);
-    const {setLinkArchived, deleteLink, applySavedLink} = useLinkListActions(pageParams);
+    const {setLinkArchived, setLinkSuspended, deleteLink, applySavedLink} = useLinkListActions(pageParams);
     const links = linksPage?.links ?? NO_LINKS;
     const totalElements = linksPage?.totalElements ?? 0;
     const [dismissedErrorAt, setDismissedErrorAt] = useState(0);
@@ -84,12 +85,14 @@ function LinksPageContent() {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [archiveModalLink, setArchiveModalLink] = useState<LinkItem | null>(null);
+    const [suspendModalLink, setSuspendModalLink] = useState<LinkItem | null>(null);
     const [searchInput, setSearchInput] = useState("");
     const debouncedSearch = useDebounce(searchInput, SEARCH_DEBOUNCE_MS);
     const hasOpenedEdit = useHasBeenOpened(isEditModalOpen);
     const hasOpenedDelete = useHasBeenOpened(deleteModalOpen);
     const hasOpenedQrCode = useHasBeenOpened(isQrCodeModalOpen);
     const hasOpenedArchive = useHasBeenOpened(archiveModalLink !== null);
+    const hasOpenedSuspend = useHasBeenOpened(suspendModalLink !== null);
     const hasOpenedImport = useHasBeenOpened(isImportModalOpen);
     const hasOpenedExport = useHasBeenOpened(isExportModalOpen);
 
@@ -197,6 +200,25 @@ function LinksPageContent() {
         void archiveLink(link);
     };
 
+    const suspendLink = async (link: LinkItem): Promise<void> => {
+        const isSuspending = !link.isSuspended;
+        const isSaved = await setLinkSuspended(link, isSuspending);
+        if (!isSaved) {
+            toast.error(isSuspending ? LINK_ACTION_COPY.SUSPEND_FAILED : LINK_ACTION_COPY.RESUME_FAILED, {
+                action: {label: LINK_ACTION_COPY.RETRY, onClick: () => void suspendLink(link)},
+            });
+            return;
+        }
+        toast.success(isSuspending ? LINK_ACTION_COPY.SUSPENDED : LINK_ACTION_COPY.RESUMED);
+    };
+
+    const handleSuspendConfirm = () => {
+        if (!suspendModalLink) return;
+        const link = suspendModalLink;
+        setSuspendModalLink(null);
+        void suspendLink(link);
+    };
+
     const handleDeleteClick = (link: LinkItem) => {
         setLinkToDelete(link);
         setDeleteModalOpen(true);
@@ -286,6 +308,7 @@ function LinksPageContent() {
                             onDelete={handleDeleteClick}
                             onQrCode={handleQrCode}
                             onArchiveRequest={(link) => setArchiveModalLink(link)}
+                            onSuspendRequest={(link) => setSuspendModalLink(link)}
                         />
                     ))}
                 </div>
@@ -362,6 +385,15 @@ function LinksPageContent() {
                         onOpenChange={(open) => !open && setArchiveModalLink(null)}
                         link={archiveModalLink}
                         onConfirm={handleArchiveConfirm}
+                    />
+                )}
+
+                {hasOpenedSuspend && (
+                    <SuspendLinkModal
+                        open={!!suspendModalLink}
+                        onOpenChange={(open) => !open && setSuspendModalLink(null)}
+                        link={suspendModalLink}
+                        onConfirm={handleSuspendConfirm}
                     />
                 )}
 

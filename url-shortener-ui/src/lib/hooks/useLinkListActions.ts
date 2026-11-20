@@ -2,7 +2,7 @@
 
 import {useQueryClient} from "@tanstack/react-query";
 import {DEFAULT_LINK_TITLE} from "@/lib/constants";
-import {deleteShortLink, saveArchiveStatus, type LinksPage, type LinksPageParams} from "@/lib/links-api";
+import {deleteShortLink, saveArchiveStatus, saveSuspensionStatus, type LinksPage, type LinksPageParams} from "@/lib/links-api";
 import {queryKeys} from "@/lib/query/query-keys";
 import {refreshAfter, type ServerStateChange} from "@/lib/query/invalidation";
 import type {LinkItem} from "@/lib/types";
@@ -10,6 +10,8 @@ import type {LinkItem} from "@/lib/types";
 interface LinkListActions {
     /** Updates the page at once, then saves; restores the page and resolves `false` when the server refuses. */
     setLinkArchived: (link: LinkItem, archived: boolean) => Promise<boolean>;
+    /** Like `setLinkArchived`; a suspended link always stays in the list. */
+    setLinkSuspended: (link: LinkItem, suspended: boolean) => Promise<boolean>;
     /** Removes the link from the page at once, then deletes it; restores the page and resolves `false` on failure. */
     deleteLink: (linkId: string) => Promise<boolean>;
     /** Shows a link the server has just saved, then refetches to pick up any server-side changes. */
@@ -51,6 +53,13 @@ export function useLinkListActions(params: LinksPageParams): LinkListActions {
         return isSaved;
     };
 
+    const setLinkSuspended = async (link: LinkItem, suspended: boolean): Promise<boolean> => {
+        const previousPage = await editPage((page) => withLinkChanged(page, link.id, {isSuspended: suspended}));
+        const isSaved = await saveSuspensionStatus(link.id, suspended);
+        finishEdit("linkSuspended", isSaved, previousPage);
+        return isSaved;
+    };
+
     const deleteLink = async (linkId: string): Promise<boolean> => {
         const previousPage = await editPage((page) => withoutLink(page, linkId));
         const isDeleted = await deleteShortLink(linkId);
@@ -65,5 +74,5 @@ export function useLinkListActions(params: LinksPageParams): LinkListActions {
         void refreshAfter(queryClient, "linkSaved");
     };
 
-    return {setLinkArchived, deleteLink, applySavedLink};
+    return {setLinkArchived, setLinkSuspended, deleteLink, applySavedLink};
 }

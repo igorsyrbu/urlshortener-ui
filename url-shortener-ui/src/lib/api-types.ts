@@ -21,6 +21,7 @@ export interface ShortLinkDTO {
   longUrl: string;
   isActive: boolean;
   isPasswordProtected: boolean;
+  isSuspended: boolean;
   /** Only in the answer of `GET /shortlinks/{id}`, and only for a protected link. */
   password?: string | null;
   tagIds?: string[];

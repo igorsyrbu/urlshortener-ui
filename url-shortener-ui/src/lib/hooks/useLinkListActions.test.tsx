@@ -4,13 +4,13 @@ import {QueryClientProvider, type QueryClient} from "@tanstack/react-query";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {DEFAULT_LINK_TITLE} from "@/lib/constants";
 import {useLinkListActions} from "@/lib/hooks/useLinkListActions";
-import {deleteShortLink, saveArchiveStatus, type LinksPage, type LinksPageParams} from "@/lib/links-api";
+import {deleteShortLink, saveArchiveStatus, saveSuspensionStatus, type LinksPage, type LinksPageParams} from "@/lib/links-api";
 import {queryKeys} from "@/lib/query/query-keys";
 import {STALE_AFTER} from "@/lib/query/invalidation";
 import {createLinkItem} from "@/test/link-utils";
 import {createTestQueryClient} from "@/test/query-utils";
 
-vi.mock("@/lib/links-api", () => ({saveArchiveStatus: vi.fn(), deleteShortLink: vi.fn()}));
+vi.mock("@/lib/links-api", () => ({saveArchiveStatus: vi.fn(), saveSuspensionStatus: vi.fn(), deleteShortLink: vi.fn()}));
 vi.mock("@/lib/logger", () => ({logger: {error: vi.fn(), warn: vi.fn(), info: vi.fn()}}));
 
 const HIDING_ARCHIVED: LinksPageParams = {page: 0, showArchived: false, search: ""};
@@ -93,6 +93,25 @@ describe("useLinkListActions", () => {
         const actions = renderActions(HIDING_ARCHIVED);
 
         await expect(act(() => actions.current.setLinkArchived(LINK_A, true))).resolves.toBe(false);
+
+        expect(cachedPage(HIDING_ARCHIVED)).toEqual(PAGE);
+    });
+
+    it("keeps a suspended link on the page, marked suspended, even when archived links are hidden", async () => {
+        vi.mocked(saveSuspensionStatus).mockResolvedValueOnce(true);
+        const actions = renderActions(HIDING_ARCHIVED);
+
+        await act(() => actions.current.setLinkSuspended(LINK_A, true));
+
+        expect(cachedPage(HIDING_ARCHIVED)?.links.map((link) => [link.id, link.isSuspended])).toEqual([["a", true], ["b", false]]);
+        expect(saveSuspensionStatus).toHaveBeenCalledExactlyOnceWith(LINK_A.id, true);
+    });
+
+    it("restores the page and resolves false when suspending fails", async () => {
+        vi.mocked(saveSuspensionStatus).mockResolvedValueOnce(false);
+        const actions = renderActions(HIDING_ARCHIVED);
+
+        await expect(act(() => actions.current.setLinkSuspended(LINK_A, true))).resolves.toBe(false);
 
         expect(cachedPage(HIDING_ARCHIVED)).toEqual(PAGE);
     });

@@ -209,12 +209,13 @@ Every link response carries `isPasswordProtected`; only `GET /shortlinks/:id` re
 | Method | Path | Query / Body Params | Description |
 |---|---|---|---|
 | POST | `/public/abuse/report` | Form: `shortUrl`, `reason`, `reporterEmail`, optional `description`, optional `cf-turnstile-response` | Submit an abuse report (the answer has no `longUrl` for a protected link) |
-| POST | `/public/shortlinks/:key/unlock` | Form: `password`, optional `cf-turnstile-response`; query: the visitor's query string | Exchange a protected link's password for `{ longUrl }` (401 wrong password, 429 after 5 failures in 15 min, 404 not protected) |
+| POST | `/public/shortlinks/:key/unlock` | Form: `password`, optional `cf-turnstile-response`; query: the visitor's query string | Exchange a protected link's password for `{ longUrl }` (401 wrong password, 429 after 5 failures in 15 min, 404 missing, suspended or not protected) |
 
 Password-protected links in the mock differ from Spring on purpose: the mock stores the password in plain text and keeps the
 wrong-password lockout (per link and client IP) in memory, while Spring encrypts it with AES-GCM and keeps the lockout in Redis.
 The mock has no `GET /redirects/shortlinks/:key`, no CAPTCHA check and no endpoint-wide unlock rate limit; seed link `Secret1`
-(password `secret-pass`) is protected, and `/unlock/Secret1` on the UI exercises the unlock page.
+(password `secret-pass`) is protected, and `/unlock/Secret1` on the UI exercises the unlock page. Seed link `Suspended1` is
+suspended (no preview or unlock; owners see a mark on the card and can resume it). Archived links keep working.
 
 **Tags**
 
