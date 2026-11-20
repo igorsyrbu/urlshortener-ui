@@ -68,6 +68,17 @@ describe("LoginOtpForm", () => {
         expect(screen.getByRole("button", {name: "Continue"})).toBeDisabled();
     });
 
+    it("shows and submits a lowercase code in uppercase", async () => {
+        const user = userEvent.setup();
+        const {onSubmit} = renderForm();
+
+        await user.type(getCodeInput(), FULL_CODE.toLowerCase());
+        await user.click(screen.getByRole("button", {name: "Continue"}));
+
+        expect(getCodeInput()).toHaveValue(FULL_CODE);
+        expect(onSubmit).toHaveBeenCalledExactlyOnceWith(FULL_CODE);
+    });
+
     it("submits the entered code when Continue is pressed", async () => {
         const user = userEvent.setup();
         const {onSubmit} = renderForm();
@@ -93,6 +104,16 @@ describe("LoginOtpForm", () => {
 
         await user.click(getCodeInput());
         await user.paste(FULL_CODE);
+
+        expect(onSubmit).toHaveBeenCalledExactlyOnceWith(FULL_CODE);
+    });
+
+    it("submits a pasted lowercase code in uppercase", async () => {
+        const user = userEvent.setup();
+        const {onSubmit} = renderForm();
+
+        await user.click(getCodeInput());
+        await user.paste(FULL_CODE.toLowerCase());
 
         expect(onSubmit).toHaveBeenCalledExactlyOnceWith(FULL_CODE);
     });

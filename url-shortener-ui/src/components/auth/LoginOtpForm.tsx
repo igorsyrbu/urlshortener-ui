@@ -37,11 +37,12 @@ export function LoginOtpForm({
         const lengthIncrease = newCode.length - prevCodeLengthRef.current;
         prevCodeLengthRef.current = newCode.length;
         isPasteRef.current = lengthIncrease > 1;
-        onCodeChange(newCode);
+        onCodeChange(newCode.toUpperCase());
     };
 
-    const handleComplete = (completedCode: string) => {
+    const handleComplete = (rawCode: string) => {
         if (loading) return;
+        const completedCode = rawCode.toUpperCase();
         onCodeChange(completedCode);
         if (!isPasteRef.current) {
             isPasteRef.current = false;
@@ -93,7 +94,7 @@ export function LoginOtpForm({
                     inputMode="text"
                     spellCheck="false"
                     autoCorrect="off"
-                    autoCapitalize="off"
+                    autoCapitalize="characters"
                     aria-label="Verification code"
                     containerClassName="justify-center py-1"
                 >
