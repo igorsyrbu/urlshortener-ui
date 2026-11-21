@@ -94,8 +94,7 @@ function LinksPageContent() {
     const {setLinkArchived, setLinkSuspended, applyBulkAction, deleteLink, applySavedLink} = useLinkListActions(pageParams);
     const links = linksPage?.links ?? NO_LINKS;
     const selection = useLinkSelection(links, `${urlPage}|${showArchived}|${searchQuery}`);
-    const {selectedLinks} = selection;
-    const isSelecting = selectedLinks.length > 0;
+    const {selectedLinks, isSelecting} = selection;
     const [bulkRequest, setBulkRequest] = useState<BulkRequest | null>(null);
     const totalElements = linksPage?.totalElements ?? 0;
     const [dismissedErrorAt, setDismissedErrorAt] = useState(0);
@@ -381,6 +380,7 @@ function LinksPageContent() {
                             onArchiveRequest={(link) => setArchiveModalLink(link)}
                             onSuspendRequest={(link) => setSuspendModalLink(link)}
                             isSelected={selection.isSelected(link.id)}
+                            isSelectMode={selection.isSelectMode}
                             onSelectToggle={selection.toggle}
                             areShortcutsEnabled={!isSelecting}
                         />
@@ -398,6 +398,7 @@ function LinksPageContent() {
                                 isLoading={isPlaceholderData}
                                 onPrevious={handlePreviousPage}
                                 onNext={handleNextPage}
+                                onStartSelecting={selection.startSelecting}
                             />
                         )}
                         <div aria-hidden="true" className="-mt-4 h-[calc(env(safe-area-inset-bottom,0px)+5rem)] sm:h-14 md:h-10 lg:h-8"/>

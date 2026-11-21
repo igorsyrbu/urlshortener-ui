@@ -2,6 +2,7 @@ import {render, screen} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {describe, expect, it, vi} from "vitest";
 import {LinksPagination} from "@/components/links/LinksPagination";
+import {LINK_SELECTION_COPY} from "@/lib/constants";
 
 const PAGE_SIZE = 20;
 
@@ -26,6 +27,18 @@ const previousButton = (): HTMLElement => screen.getByRole("button", {name: "Go 
 const nextButton = (): HTMLElement => screen.getByRole("button", {name: "Go to next page"});
 
 describe("LinksPagination", () => {
+    it("starts selecting from the round button beside the bar", async () => {
+        const user = userEvent.setup();
+        const onStartSelecting = vi.fn();
+        render(<LinksPagination page={0} pageSize={PAGE_SIZE} totalElements={45} isLoading={false} onPrevious={vi.fn()}
+                                onNext={vi.fn()} onStartSelecting={onStartSelecting}/>);
+
+        await user.click(screen.getByRole("button", {name: LINK_SELECTION_COPY.START}));
+
+        expect(onStartSelecting).toHaveBeenCalledOnce();
+    });
+
+
     it.each([
         [0, 45, "1-20 of 45 links"],
         [1, 45, "21-40 of 45 links"],

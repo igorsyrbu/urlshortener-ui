@@ -1,8 +1,10 @@
 "use client";
 
-import {ChevronLeft, ChevronRight} from "lucide-react";
+import {ChevronLeft, ChevronRight, CircleCheck} from "lucide-react";
 import {Button} from "@/components/ui/button";
-import {FloatingBottomBar} from "@/components/layout/FloatingBottomBar";
+import {FLOATING_BAR_SURFACE_CLASS, FloatingBottomBar} from "@/components/layout/FloatingBottomBar";
+import {LINK_SELECTION_COPY} from "@/lib/constants";
+import {cn} from "@/lib/utils";
 import {formatLinksRangeLabel, getPaginationRange} from "@/lib/pagination";
 
 interface LinksPaginationProps {
@@ -12,6 +14,9 @@ interface LinksPaginationProps {
     isLoading: boolean;
     onPrevious: () => void;
     onNext: () => void;
+    /** Starts select mode; phones get a round button for it beside the bar, since they have no hover. Phones show the
+     * page arrows without their words, so the range label keeps its room. */
+    onStartSelecting?: () => void;
 }
 
 export function LinksPagination({
@@ -21,6 +26,7 @@ export function LinksPagination({
                                     isLoading,
                                     onPrevious,
                                     onNext,
+                                    onStartSelecting,
                                 }: LinksPaginationProps) {
     const {start, end} = getPaginationRange(page, pageSize, totalElements);
     const label = formatLinksRangeLabel(start, end, totalElements);
@@ -28,7 +34,21 @@ export function LinksPagination({
     const hasNext = end < totalElements;
 
     return (
-        <FloatingBottomBar ariaLabel="Links pagination">
+        <FloatingBottomBar
+            ariaLabel="Links pagination"
+            aside={onStartSelecting && (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onStartSelecting}
+                    aria-label={LINK_SELECTION_COPY.START}
+                    className={cn("pointer-events-auto size-10.5 shrink-0 self-center rounded-full sm:hidden",
+                        FLOATING_BAR_SURFACE_CLASS)}
+                >
+                    <CircleCheck className="size-5"/>
+                </Button>
+            )}
+        >
             <Button
                 variant="ghost"
                 size="sm"
@@ -38,7 +58,7 @@ export function LinksPagination({
                 className="shrink-0 whitespace-nowrap"
             >
                 <ChevronLeft className="size-4"/>
-                <span>Previous</span>
+                <span className="max-sm:sr-only">Previous</span>
             </Button>
             <span aria-hidden="true" className="h-4 w-px shrink-0 bg-border"/>
             <span
@@ -57,7 +77,7 @@ export function LinksPagination({
                 aria-label="Go to next page"
                 className="shrink-0 whitespace-nowrap"
             >
-                <span>Next</span>
+                <span className="max-sm:sr-only">Next</span>
                 <ChevronRight className="size-4"/>
             </Button>
         </FloatingBottomBar>

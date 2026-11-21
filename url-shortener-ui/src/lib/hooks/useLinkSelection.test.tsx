@@ -45,6 +45,27 @@ describe("useLinkSelection", () => {
         expect(result.current.isSelected("a")).toBe(false);
     });
 
+    it("starts select mode with nothing picked, and clearing leaves it", () => {
+        const {result} = renderSelection([LINK_A, LINK_B]);
+
+        act(() => result.current.startSelecting());
+        const startedMode = {isSelectMode: result.current.isSelectMode, isSelecting: result.current.isSelecting};
+        act(() => result.current.clear());
+
+        expect(startedMode).toEqual({isSelectMode: true, isSelecting: true});
+        expect(result.current.isSelectMode).toBe(false);
+        expect(result.current.isSelecting).toBe(false);
+    });
+
+    it("leaves select mode when the page changes", () => {
+        const {result, rerender} = renderSelection([LINK_A, LINK_B]);
+        act(() => result.current.startSelecting());
+
+        rerender({links: [LINK_A, LINK_B], pageKey: "1"});
+
+        expect(result.current.isSelectMode).toBe(false);
+    });
+
     it("clears the selection", () => {
         const {result} = renderSelection([LINK_A, LINK_B]);
         act(() => result.current.toggle(LINK_A));

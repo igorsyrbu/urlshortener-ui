@@ -56,6 +56,7 @@ interface LinkCardProps {
     onArchiveRequest?: (link: LinkItem) => void;
     onSuspendRequest?: (link: LinkItem) => void;
     isSelected?: boolean;
+    isSelectMode?: boolean;
     onSelectToggle?: (link: LinkItem) => void;
     /** Off while links are selected: then the selection bar owns the action keys. */
     areShortcutsEnabled?: boolean;
@@ -132,6 +133,7 @@ export function LinkCard({
                              onArchiveRequest,
                              onSuspendRequest,
                              isSelected = false,
+                             isSelectMode = false,
                              onSelectToggle,
                              areShortcutsEnabled = true,
                          }: LinkCardProps) {
@@ -183,7 +185,7 @@ export function LinkCard({
                 "group flex items-center p-4 md:p-5 rounded-xl bg-card border-[0.5px] border-border dark:hover:bg-muted/50 dark:has-data-[state=open]:bg-muted/50 hover:drop-shadow-md has-data-[state=open]:drop-shadow-md transition-all duration-200 gap-4 outline-none",
                 FOCUS_RING_CLASS,
             )}>
-            <LinkCardAvatar link={link} isSelected={isSelected} onSelectToggle={onSelectToggle}/>
+            <LinkCardAvatar link={link} isSelected={isSelected} isSelectMode={isSelectMode} onSelectToggle={onSelectToggle}/>
 
             <div className="flex-1 min-w-0 flex flex-col gap-1">
                 <h3 className="text-sm font-bold text-card-foreground leading-tight pt-0.5 truncate" title={link.title}>{link.title}</h3>

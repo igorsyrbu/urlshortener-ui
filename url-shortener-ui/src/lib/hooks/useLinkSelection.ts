@@ -9,16 +9,28 @@ const NO_SELECTION: ReadonlySet<string> = new Set();
 interface LinkSelection {
     /** The selected links of the page on screen, in list order; a link that left the page drops out. */
     selectedLinks: LinkItem[];
+    /** True while links are selected or select mode is on, even with nothing picked yet. */
+    isSelecting: boolean;
+    /** Select mode shows every card's selection circle, for screens without hover. */
+    isSelectMode: boolean;
     isSelected: (linkId: string) => boolean;
     toggle: (link: LinkItem) => void;
+    startSelecting: () => void;
+    /** Clears the selection and leaves select mode. */
     clear: () => void;
 }
 
-/** Selection of links on one page; it starts over whenever `pageKey` (page, filter, search) changes. */
+/** Selection of links on one page; it and select mode start over whenever `pageKey` (page, filter, search) changes. */
 export function useLinkSelection(links: readonly LinkItem[], pageKey: string): LinkSelection {
     const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(NO_SELECTION);
+    const [isSelectMode, setIsSelectMode] = useState(false);
 
-    useOnValueChange(pageKey, () => setSelectedIds(NO_SELECTION));
+    const clear = (): void => {
+        setSelectedIds(NO_SELECTION);
+        setIsSelectMode(false);
+    };
+
+    useOnValueChange(pageKey, clear);
 
     const toggle = (link: LinkItem): void => {
         setSelectedIds((previous) => {
@@ -28,10 +40,15 @@ export function useLinkSelection(links: readonly LinkItem[], pageKey: string): L
         });
     };
 
+    const selectedLinks = links.filter((link) => selectedIds.has(link.id));
+
     return {
-        selectedLinks: links.filter((link) => selectedIds.has(link.id)),
+        selectedLinks,
+        isSelecting: isSelectMode || selectedLinks.length > 0,
+        isSelectMode,
         isSelected: (linkId) => selectedIds.has(linkId),
         toggle,
-        clear: () => setSelectedIds(NO_SELECTION),
+        startSelecting: () => setIsSelectMode(true),
+        clear,
     };
 }

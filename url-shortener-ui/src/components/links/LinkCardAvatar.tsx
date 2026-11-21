@@ -9,6 +9,8 @@ import {cn} from "@/lib/utils";
 interface LinkCardAvatarProps {
     link: LinkItem;
     isSelected: boolean;
+    /** Shows the empty selection circle without hover, as select mode does. */
+    isSelectMode?: boolean;
     /** Without it the avatar is only an icon and the link cannot be selected. */
     onSelectToggle?: (link: LinkItem) => void;
 }
@@ -25,7 +27,7 @@ function LinkAvatarIcon({link}: {link: LinkItem}) {
  * pointer or the circle has keyboard focus. Only a click on the circle selects the link. The favicon stays mounted
  * while the link is selected, so deselecting shows it again without reloading the image.
  */
-export function LinkCardAvatar({link, isSelected, onSelectToggle}: LinkCardAvatarProps) {
+export function LinkCardAvatar({link, isSelected, isSelectMode = false, onSelectToggle}: LinkCardAvatarProps) {
     if (!onSelectToggle) {
         return (
             <div className={AVATAR_CLASS}>
@@ -45,7 +47,7 @@ export function LinkCardAvatar({link, isSelected, onSelectToggle}: LinkCardAvata
                 isSelected && "border-transparent bg-transparent")}
         >
             <span className={cn("flex size-full items-center justify-center group-hover:hidden group-focus-visible/select:hidden",
-                isSelected && "hidden")}>
+                (isSelected || isSelectMode) && "hidden")}>
                 <LinkAvatarIcon link={link}/>
             </span>
             {isSelected ? (
@@ -54,7 +56,8 @@ export function LinkCardAvatar({link, isSelected, onSelectToggle}: LinkCardAvata
                 </span>
             ) : (
                 <span aria-hidden="true"
-                      className="hidden size-full rounded-full border-3 border-muted-foreground group-hover:block group-focus-visible/select:block"/>
+                      className={cn("hidden size-full rounded-full border-3 border-muted-foreground group-hover:block group-focus-visible/select:block",
+                          isSelectMode && "block")}/>
             )}
         </button>
     );

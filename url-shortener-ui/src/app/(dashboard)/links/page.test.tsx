@@ -564,6 +564,22 @@ describe("links page", () => {
             expect(screen.getByRole("checkbox", {name: LINK_SELECTION_COPY.SELECT("https://sho.rt/key0")})).toBeChecked();
         });
 
+        it("starts select mode from the round button and shows the actions once a link is picked", async () => {
+            const user = userEvent.setup();
+            mockApi({links: createLinks(2)});
+            renderWithQuery(<LinksPage/>);
+
+            await user.click(await screen.findByRole("button", {name: LINK_SELECTION_COPY.START}));
+            const emptyBarText = getSelectionBar().textContent;
+            const hadArchiveBeforePick = screen.queryByRole("button", {name: /Archive/}) !== null;
+            await selectLinks(user, 1);
+
+            expect(emptyBarText).toContain(LINK_SELECTION_COPY.SELECTED(0));
+            expect(hadArchiveBeforePick).toBe(false);
+            expect(getSelectionBar()).toHaveTextContent(LINK_SELECTION_COPY.SELECTED(1));
+            expect(within(getSelectionBar()).getByRole("button", {name: /Archive/})).toBeInTheDocument();
+        });
+
         it("clears the selection from the bar and with Escape", async () => {
             const user = userEvent.setup();
             mockApi({links: createLinks(2)});

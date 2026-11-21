@@ -163,6 +163,7 @@ export const BULK_LINK_ACTION_COPY = {
 export const LINK_SELECTION_COPY = {
     BAR_LABEL: "Selected links",
     CLEAR: "Clear selection",
+    START: "Select links",
     SELECTED: (count: number) => `${count} selected`,
     SELECT: (shortUrl: string) => `Select ${shortUrl}`,
     LINK_LIST: "Links in this action",
