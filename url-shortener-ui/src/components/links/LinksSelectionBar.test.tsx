@@ -33,13 +33,6 @@ describe("LinksSelectionBar", () => {
         expect(screen.getByRole("button", {name: /Resume/})).toHaveAttribute("aria-keyshortcuts", "S");
     });
 
-    it("shows only the count and clear while no link is picked yet", () => {
-        renderBar([]);
-
-        expect(screen.getByText(LINK_SELECTION_COPY.SELECTED(0))).toBeInTheDocument();
-        expect(screen.getAllByRole("button")).toEqual([screen.getByRole("button", {name: LINK_SELECTION_COPY.CLEAR})]);
-    });
-
     it("clears the selection", async () => {
         const user = userEvent.setup();
         const {onClear} = renderBar([createLinkItem()]);

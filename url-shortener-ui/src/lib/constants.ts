@@ -164,6 +164,7 @@ export const LINK_SELECTION_COPY = {
     BAR_LABEL: "Selected links",
     CLEAR: "Clear selection",
     START: "Select links",
+    CANCEL: "Cancel selecting",
     SELECTED: (count: number) => `${count} selected`,
     SELECT: (shortUrl: string) => `Select ${shortUrl}`,
     LINK_LIST: "Links in this action",

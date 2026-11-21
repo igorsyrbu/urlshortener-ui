@@ -5,8 +5,10 @@ import {useShallow} from "zustand/react/shallow";
 import {useRouter, useSearchParams} from "next/navigation";
 import {LinkCard} from "@/components/links/LinkCard";
 import {LinkCardSkeletonList} from "@/components/links/LinkCardSkeleton";
-import {LinksPagination} from "@/components/links/LinksPagination";
+import {LinksBottomBar} from "@/components/links/LinksBottomBar";
+import {LINKS_PAGINATION_LABEL, LinksPagination} from "@/components/links/LinksPagination";
 import {LinksSelectionBar} from "@/components/links/LinksSelectionBar";
+import {LinksSelectModeButton} from "@/components/links/LinksSelectModeButton";
 import {EmptyLinksState} from "@/components/links/EmptyLinksState";
 import {NoLinksFoundState} from "@/components/links/NoLinksFoundState";
 import {TooltipProvider} from "@/components/ui/tooltip";
@@ -95,6 +97,7 @@ function LinksPageContent() {
     const links = linksPage?.links ?? NO_LINKS;
     const selection = useLinkSelection(links, `${urlPage}|${showArchived}|${searchQuery}`);
     const {selectedLinks, isSelecting} = selection;
+    const hasSelection = selectedLinks.length > 0;
     const [bulkRequest, setBulkRequest] = useState<BulkRequest | null>(null);
     const totalElements = linksPage?.totalElements ?? 0;
     const [dismissedErrorAt, setDismissedErrorAt] = useState(0);
@@ -388,19 +391,30 @@ function LinksPageContent() {
                 </div>
                 {totalElements > 0 && (
                     <>
-                        {isSelecting ? (
-                            <LinksSelectionBar selectedLinks={selectedLinks} onClear={selection.clear} onAction={requestBulkAction}/>
-                        ) : (
-                            <LinksPagination
-                                page={urlPage}
-                                pageSize={DEFAULT_PAGE_SIZE}
-                                totalElements={totalElements}
-                                isLoading={isPlaceholderData}
-                                onPrevious={handlePreviousPage}
-                                onNext={handleNextPage}
-                                onStartSelecting={selection.startSelecting}
-                            />
-                        )}
+                        <LinksBottomBar
+                            ariaLabel={hasSelection ? LINK_SELECTION_COPY.BAR_LABEL : LINKS_PAGINATION_LABEL}
+                            contentKey={hasSelection ? "selection" : "pagination"}
+                            aside={!hasSelection && (
+                                <LinksSelectModeButton
+                                    isSelectMode={selection.isSelectMode}
+                                    onStart={selection.startSelecting}
+                                    onCancel={selection.clear}
+                                />
+                            )}
+                        >
+                            {hasSelection ? (
+                                <LinksSelectionBar selectedLinks={selectedLinks} onClear={selection.clear} onAction={requestBulkAction}/>
+                            ) : (
+                                <LinksPagination
+                                    page={urlPage}
+                                    pageSize={DEFAULT_PAGE_SIZE}
+                                    totalElements={totalElements}
+                                    isLoading={isPlaceholderData}
+                                    onPrevious={handlePreviousPage}
+                                    onNext={handleNextPage}
+                                />
+                            )}
+                        </LinksBottomBar>
                         <div aria-hidden="true" className="-mt-4 h-[calc(env(safe-area-inset-bottom,0px)+5rem)] sm:h-14 md:h-10 lg:h-8"/>
                     </>
                 )}
