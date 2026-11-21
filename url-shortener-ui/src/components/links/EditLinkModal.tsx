@@ -23,15 +23,16 @@ interface EditLinkModalProps {
 export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkModalProps) {
     const {link: editableLink, isLoading, hasFailed, retry} = useEditableLink(link?.id ?? null, open);
 
-    const handleSubmit: LinkFormSubmit = async (longUrl, title, key, tagIds, password) => {
+    const handleSubmit: LinkFormSubmit = async (longUrl, title, key, tagIds, password, description) => {
         if (!editableLink) throw new Error("No link to edit");
 
-        await updateShortLink(editableLink, {longUrl, title, key, tagIds, password});
+        await updateShortLink(editableLink, {longUrl, title, description, key, tagIds, password});
         onSuccess({
             id: editableLink.id,
             isActive: editableLink.isActive,
             longUrl,
             title,
+            description,
             key,
             shortUrl: withShortKey(editableLink.shortUrl, key),
             isPasswordProtected: password !== null,
@@ -49,6 +50,7 @@ export function EditLinkModal({open, onOpenChange, link, onSuccess}: EditLinkMod
             submittingLabel="Saving..."
             initialLongUrl={link?.longUrl}
             initialTitle={link?.title}
+            initialDescription={link?.description ?? undefined}
             initialKey={link?.key}
             initialTagIds={link?.tagIds ? [...link.tagIds] : undefined}
             initialPassword={editableLink?.password ?? null}

@@ -6,6 +6,8 @@ import type {PagedModel} from "./page";
 export interface ShortLink {
   id: string;
   title: string;
+  /** Trimmed; absent or null when the link has none, and then left out of responses like the backend's nulls. */
+  description?: string | null;
   key: string;
   shortUrl: string;
   longUrl: string;
@@ -17,7 +19,8 @@ export interface ShortLink {
 }
 
 /** A link as the API answers it: `password` only from `GET /shortlinks/:id`, and only for a protected link. */
-export interface ShortLinkDto extends Omit<ShortLink, "password"> {
+export interface ShortLinkDto extends Omit<ShortLink, "password" | "description"> {
+  description?: string;
   isPasswordProtected: boolean;
   password?: string;
   tagIds: string[];
@@ -26,6 +29,7 @@ export interface ShortLinkDto extends Omit<ShortLink, "password"> {
 export interface CreateShortLinkDto {
   longUrl: string;
   title?: string;
+  description?: string | null;
   key: string;
   isActive?: boolean;
   isSuspended?: boolean;
@@ -36,6 +40,8 @@ export interface CreateShortLinkDto {
 export interface UpdateShortLinkDto {
   longUrl: string;
   title?: string;
+  /** A full update: a missing or null description removes it. */
+  description?: string | null;
   key: string;
   isActive?: boolean;
   isSuspended?: boolean;
@@ -88,6 +94,9 @@ const CONFLICT_MESSAGE = "This short link is already taken.";
 const PASSWORD_MIN_LENGTH = 5;
 const PASSWORD_MAX_LENGTH = 50;
 const PASSWORD_LENGTH_MESSAGE = `password must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters`;
+/** Like `urlshortener.shortlinks.max-description-length`; checked before trimming, as the backend's `@MaxSize` is. */
+export const DESCRIPTION_MAX_LENGTH = 1000;
+const DESCRIPTION_LENGTH_MESSAGE = `description must be at most ${DESCRIPTION_MAX_LENGTH} characters`;
 
 export class ShortLinksService {
   private static readonly CONSTANTS = {
@@ -136,9 +145,10 @@ export class ShortLinksService {
   };
 
   private toDto(uuid: string, link: ShortLink): ShortLinkDto {
-    const { password, ...publicFields } = link;
+    const { password, description, ...publicFields } = link;
     return {
       ...publicFields,
+      ...(description ? { description } : {}),
       isPasswordProtected: Boolean(password),
       tagIds: tagsService.getTagIdsForLink(uuid, link.id),
     };
@@ -273,6 +283,8 @@ export class ShortLinksService {
     if (!longUrl.ok) return { ok: false, status: 400, error: longUrl.error };
     const password = validatePassword(dto.password);
     if (!password.ok) return { ok: false, status: 400, error: password.error };
+    const description = validateDescription(dto.description);
+    if (!description.ok) return { ok: false, status: 400, error: description.error };
     if (this.isReservedKey(key)) {
       return { ok: false, status: 409, error: `Key '${key}' is already taken.` };
     }
@@ -283,6 +295,7 @@ export class ShortLinksService {
     const newLink: ShortLink = {
       id: randomUUID(),
       title: readTrimmedString(dto.title) || ShortLinksService.CONSTANTS.DEFAULT_TITLE,
+      description: description.value,
       key,
       shortUrl: `${ShortLinksService.CONSTANTS.BASE_DOMAIN}/${key}`,
       longUrl: longUrl.value,
@@ -325,6 +338,8 @@ export class ShortLinksService {
     if (!longUrl.ok) return { ok: false, status: 400, error: longUrl.error };
     const password = validatePassword(dto.password);
     if (!password.ok) return { ok: false, status: 400, error: password.error };
+    const description = validateDescription(dto.description);
+    if (!description.ok) return { ok: false, status: 400, error: description.error };
     if (this.isReservedKey(key)) {
       return { ok: false, status: 409, error: `Key '${key}' is already taken.` };
     }
@@ -349,6 +364,7 @@ export class ShortLinksService {
       shortUrl: `${ShortLinksService.CONSTANTS.BASE_DOMAIN}/${key}`,
       longUrl: longUrl.value,
       title: typeof dto.title === "string" ? dto.title : existingLink.title,
+      description: description.value,
       isActive: typeof dto.isActive === "boolean" ? dto.isActive : existingLink.isActive,
       isSuspended: typeof dto.isSuspended === "boolean" ? dto.isSuspended : existingLink.isSuspended,
       password: password.value,
@@ -713,16 +729,24 @@ function validateLongUrl(value: unknown): LongUrlValidation {
   return { ok: true, value: longUrl };
 }
 
-type PasswordValidation = { ok: true; value: string | null } | { ok: false; error: string };
+type OptionalStringValidation = { ok: true; value: string | null } | { ok: false; error: string };
 
 /** Absent or null means "no protection". The value is case-sensitive and never trimmed, as on the backend. */
-function validatePassword(value: unknown): PasswordValidation {
+function validatePassword(value: unknown): OptionalStringValidation {
   if (value === undefined || value === null) return { ok: true, value: null };
   if (typeof value !== "string") return { ok: false, error: PASSWORD_LENGTH_MESSAGE };
   if (value.length < PASSWORD_MIN_LENGTH || value.length > PASSWORD_MAX_LENGTH) {
     return { ok: false, error: PASSWORD_LENGTH_MESSAGE };
   }
   return { ok: true, value };
+}
+
+function validateDescription(value: unknown): OptionalStringValidation {
+  if (value === undefined || value === null) return { ok: true, value: null };
+  if (typeof value !== "string" || value.length > DESCRIPTION_MAX_LENGTH) {
+    return { ok: false, error: DESCRIPTION_LENGTH_MESSAGE };
+  }
+  return { ok: true, value: value.trim() || null };
 }
 
 /** Request bodies are untyped JSON: a field declared as a string can arrive as a number, an array or null. */

@@ -11,6 +11,7 @@ import {
     SHORT_KEY_TAKEN_MESSAGE,
     TRACKER_MODE,
     URL_CLEANER_SUCCESS_DURATION_MS,
+    LINK_DESCRIPTION_MAX_LENGTH,
 } from "@/lib/constants";
 import {consumePrefetchedRandomKey, peekPrefetchedRandomKey, takeRandomKey} from "@/lib/random-key";
 import {useIsDesktop} from "@/lib/hooks/useMediaQuery";
@@ -22,7 +23,7 @@ import {usePreferencesStore} from "@/lib/store/preferences";
 import {useCreateTagFromSearch} from "@/lib/hooks/useCreateTagFromSearch";
 import type {GlowState, LinkFormSubmit} from "@/components/links/create-link-types";
 import {getLinkPasswordError} from "@/lib/link-password";
-import {fetchLongUrlTitle, isShortKeyTaken, ShortKeyConflictError} from "@/lib/links-api";
+import {fetchLongUrlSuggestion, isShortKeyTaken, ShortKeyConflictError, type LongUrlSuggestion} from "@/lib/links-api";
 import {FormScreenContent} from "@/components/links/LinkFormMainScreen";
 import {TagsScreenContent} from "@/components/links/LinkFormTagsScreen";
 import {TrackerReviewScreen} from "@/components/links/TrackerReviewScreen";
@@ -36,6 +37,7 @@ interface LinkFormFieldsProps {
     title: string;
     initialLongUrl?: string;
     initialTitle?: string;
+    initialDescription?: string;
     initialTagIds?: string[];
     initialKey?: string;
     /** The link's current password; `null` or absent for an unprotected link. */
@@ -60,12 +62,14 @@ function resolveLinkTitle(value: string): string {
     return trimmed ? trimmed : DEFAULT_LINK_TITLE;
 }
 
-/** The page title of `longUrl` reported by the backend, or `null` when there is none. */
-async function requestLongUrlTitle(longUrl: string): Promise<string | null> {
+const NO_SUGGESTION: LongUrlSuggestion = {title: null, description: null};
+
+/** The page title and description of `longUrl` reported by the backend; a failure gives neither. */
+async function requestLongUrlSuggestion(longUrl: string): Promise<LongUrlSuggestion> {
     try {
-        return await fetchLongUrlTitle(longUrl);
+        return await fetchLongUrlSuggestion(longUrl);
     } catch {
-        return null;
+        return NO_SUGGESTION;
     }
 }
 
@@ -98,6 +102,7 @@ export function LinkFormFields({
                                    title,
                                    initialLongUrl = "",
                                    initialTitle = "",
+                                   initialDescription = "",
                                    initialTagIds = EMPTY_TAG_IDS,
                                    initialKey = "",
                                    initialPassword = null,
@@ -118,6 +123,7 @@ export function LinkFormFields({
     const [longUrl, setLongUrl] = useState(initialLongUrl);
     const [urlError, setUrlError] = useState<string | null>(null);
     const [titleText, setTitleText] = useState(initialTitle);
+    const [descriptionText, setDescriptionText] = useState(initialDescription);
     const [prefetchedKey] = useState(() => (autoGenerateKey && initialKey === "" ? peekPrefetchedRandomKey() : null));
     const [key, setKey] = useState(initialKey || (prefetchedKey ?? ""));
     const [keyError, setKeyError] = useState<string | null>(null);
@@ -395,12 +401,16 @@ export function LinkFormFields({
         if (!longUrl) return;
         setGlowState("loading");
         await withPending(setIsLoadingTitle, async () => {
-            const pageTitle = await requestLongUrlTitle(longUrl);
-            if (pageTitle === null) {
+            const suggestion = await requestLongUrlSuggestion(longUrl);
+            if (suggestion.description !== null) {
+                const pageDescription = suggestion.description.slice(0, LINK_DESCRIPTION_MAX_LENGTH);
+                setDescriptionText((current) => (current.trim() ? current : pageDescription));
+            }
+            if (suggestion.title === null) {
                 setTitleFromHostname(longUrl);
                 return;
             }
-            setTitleText(pageTitle);
+            setTitleText(suggestion.title);
             applyGlowFeedback();
         });
     };
@@ -452,10 +462,11 @@ export function LinkFormFields({
         }
 
         const submittedPassword = isPasswordEnabled ? password : null;
+        const submittedDescription = descriptionText.trim() || null;
         setIsSubmitting(true);
         try {
             const resolvedTitle = resolveLinkTitle(titleText);
-            await onSubmit(normalized, resolvedTitle, resolvedKey, selectedTagIds, submittedPassword);
+            await onSubmit(normalized, resolvedTitle, resolvedKey, selectedTagIds, submittedPassword, submittedDescription);
         } catch (err) {
             if (err instanceof ShortKeyConflictError) {
                 setKeyError(err.message);
@@ -553,6 +564,8 @@ export function LinkFormFields({
                             onCleanUrl={handleCleanUrl}
                             onReviewUrl={handleReviewUrl}
                             onTitleChange={setTitleText}
+                            descriptionText={descriptionText}
+                            onDescriptionChange={setDescriptionText}
                             onSuggestTitle={fetchTitle}
                             onKeyChange={handleKeyChange}
                             onKeyRandomize={handleRandomizeKey}

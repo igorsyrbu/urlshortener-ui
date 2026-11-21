@@ -9,6 +9,7 @@ import {EnterKbd} from "@/components/ui/enter-kbd";
 import {Input} from "@/components/ui/input";
 import {CreateLinkUrlField} from "@/components/links/CreateLinkUrlField";
 import {CreateLinkTitleField} from "@/components/links/CreateLinkTitleField";
+import {LinkDescriptionField} from "@/components/links/LinkDescriptionField";
 import {ShortLinkKeyField} from "@/components/links/ShortLinkKeyField";
 import {LinkPasswordField} from "@/components/links/LinkPasswordField";
 import {TagSelect} from "@/components/links/TagSelect";
@@ -22,6 +23,7 @@ import {LINK_FORM_FIELD_IDS} from "@/components/links/link-form-constants";
 const {
     LONG_URL: LONG_URL_FIELD_ID,
     TITLE: TITLE_FIELD_ID,
+    DESCRIPTION: DESCRIPTION_FIELD_ID,
     SHORT_LINK_KEY: SHORT_LINK_KEY_FIELD_ID,
     PASSWORD: PASSWORD_FIELD_ID,
 } = LINK_FORM_FIELD_IDS;
@@ -34,6 +36,7 @@ interface FormScreenContentProps {
     cleanerResult: UrlCleanerResponse | null;
     cleanedTrackerCount: number | null;
     titleText: string;
+    descriptionText: string;
     glowState: GlowState;
     isLoadingTitle: boolean;
     canSuggestTitle: boolean;
@@ -60,6 +63,7 @@ interface FormScreenContentProps {
     onCleanUrl: () => void;
     onReviewUrl: () => void;
     onTitleChange: (value: string) => void;
+    onDescriptionChange: (value: string) => void;
     onSuggestTitle: () => void;
     onKeyChange: (value: string) => void;
     onKeyRandomize: () => void;
@@ -77,6 +81,7 @@ export function FormScreenContent({
                                       cleanerResult,
                                       cleanedTrackerCount,
                                       titleText,
+                                      descriptionText,
                                       glowState,
                                       isLoadingTitle,
                                       canSuggestTitle,
@@ -103,6 +108,7 @@ export function FormScreenContent({
                                       onCleanUrl,
                                       onReviewUrl,
                                       onTitleChange,
+                                      onDescriptionChange,
                                       onSuggestTitle,
                                       onKeyChange,
                                       onKeyRandomize,
@@ -159,6 +165,11 @@ export function FormScreenContent({
                         />
                     </div>
                 )}
+                <LinkDescriptionField
+                    inputId={DESCRIPTION_FIELD_ID}
+                    value={descriptionText}
+                    onChange={onDescriptionChange}
+                />
                 <div className="grid gap-2">
                     <label className="text-sm font-medium">Tags</label>
                     {isDesktop ? (

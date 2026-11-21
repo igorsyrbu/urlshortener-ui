@@ -8,7 +8,7 @@ import {
     createShortLink as requestShortLinkCreation,
     deleteShortLink,
     fetchLinksPage,
-    fetchLongUrlTitle,
+    fetchLongUrlSuggestion,
     fetchRandomKey,
     getLinkById,
     isShortKeyTaken,
@@ -164,6 +164,8 @@ describe("saveSuspensionStatus", () => {
     });
 });
 
+const LINK_DESCRIPTION = "Docs for the launch";
+
 describe("saveArchiveStatus", () => {
     it("loads the stored link and sends it back whole with inverted activity", async () => {
         const link = createShortLink({id: "a", tagIds: ["t1"]});
@@ -176,7 +178,8 @@ describe("saveArchiveStatus", () => {
         expect(vi.mocked(fetchWithAuth).mock.calls[1][0]).toBe(API_ENDPOINTS.SHORTLINKS);
         expect(vi.mocked(fetchWithAuth).mock.calls[1][1]?.method).toBe("PUT");
         expect(sentBody(1)).toEqual({
-            id: "a", title: link.title, longUrl: link.longUrl, key: link.key, isActive: false, isSuspended: false, password: null, tagIds: ["t1"],
+            id: "a", title: link.title, description: null, longUrl: link.longUrl, key: link.key, isActive: false, isSuspended: false, password: null,
+            tagIds: ["t1"],
         });
     });
 
@@ -187,6 +190,15 @@ describe("saveArchiveStatus", () => {
         await saveArchiveStatus("link-1", true);
 
         expect(sentBody(1).password).toBe("secret-pass");
+    });
+
+    it("keeps the description of the link", async () => {
+        mockStoredLink(createShortLink({description: LINK_DESCRIPTION}));
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(new Response(null));
+
+        await saveArchiveStatus("link-1", true);
+
+        expect(sentBody(1).description).toBe(LINK_DESCRIPTION);
     });
 
     it("reactivates a link when unarchiving", async () => {
@@ -250,7 +262,7 @@ describe("deleteShortLink", () => {
 });
 
 const LINK_PASSWORD = "secret-pass";
-const LINK_FIELDS = {longUrl: "https://example.com", title: "Example", key: "ex", tagIds: ["tag-1"], password: null};
+const LINK_FIELDS = {longUrl: "https://example.com", title: "Example", description: null, key: "ex", tagIds: ["tag-1"], password: null};
 
 describe("createShortLink", () => {
     it("posts an active link and returns the created one", async () => {
@@ -270,6 +282,16 @@ describe("createShortLink", () => {
         await requestShortLinkCreation({...LINK_FIELDS, password: LINK_PASSWORD});
 
         expect(sentBody().password).toBe(LINK_PASSWORD);
+    });
+
+    it("sends the description, and leaves it out when there is none", async () => {
+        vi.mocked(fetchWithAuth).mockImplementation(async () => Response.json({}));
+
+        await requestShortLinkCreation({...LINK_FIELDS, description: LINK_DESCRIPTION});
+        await requestShortLinkCreation(LINK_FIELDS);
+
+        expect(sentBody(0).description).toBe(LINK_DESCRIPTION);
+        expect(sentBody(1)).not.toHaveProperty("description");
     });
 
     it("leaves tag ids out when the link has none", async () => {
@@ -309,6 +331,16 @@ describe("updateShortLink", () => {
 
         expect(vi.mocked(fetchWithAuth).mock.calls[0][1]?.method).toBe("PUT");
         expect(sentBody()).toEqual({id: "link-1", ...LINK_FIELDS, isActive: false, isSuspended: true});
+    });
+
+    it("always sends the description, since a missing one removes it", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValue(Response.json({}));
+
+        await updateShortLink(createLinkItem(), {...LINK_FIELDS, description: LINK_DESCRIPTION});
+        await updateShortLink(createLinkItem(), LINK_FIELDS);
+
+        expect(sentBody(0).description).toBe(LINK_DESCRIPTION);
+        expect(sentBody(1)).toHaveProperty("description", null);
     });
 
     it("always sends the password, since a missing one removes the protection", async () => {
@@ -352,20 +384,20 @@ describe("getLinkById", () => {
     });
 });
 
-describe("fetchLongUrlTitle", () => {
-    it("asks for the page title of the encoded URL and trims it", async () => {
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({title: "  Example Domain  "}));
+describe("fetchLongUrlSuggestion", () => {
+    it("asks for the page title and description of the encoded URL and trims them", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({title: "  Example Domain  ", description: " For examples. "}));
 
-        const title = await fetchLongUrlTitle("https://example.com/?q=a b");
+        const suggestion = await fetchLongUrlSuggestion("https://example.com/?q=a b");
 
-        expect(title).toBe("Example Domain");
+        expect(suggestion).toEqual({title: "Example Domain", description: "For examples."});
         expect(vi.mocked(fetchWithAuth).mock.calls[0][0]).toBe(`${API_ENDPOINTS.LONG_URL_TITLE}?url=${encodeURIComponent("https://example.com/?q=a b")}`);
     });
 
-    it("returns null when the page has no title", async () => {
-        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({title: "   "}));
+    it("gives null for a blank or missing title and description", async () => {
+        vi.mocked(fetchWithAuth).mockResolvedValueOnce(Response.json({title: "   ", description: null}));
 
-        expect(await fetchLongUrlTitle("https://example.com")).toBeNull();
+        expect(await fetchLongUrlSuggestion("https://example.com")).toEqual({title: null, description: null});
     });
 });
 

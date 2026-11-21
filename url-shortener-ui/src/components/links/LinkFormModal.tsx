@@ -16,6 +16,7 @@ interface LinkFormModalProps {
     submittingLabel: string;
     initialLongUrl?: string;
     initialTitle?: string;
+    initialDescription?: string;
     initialTagIds?: string[];
     initialKey?: string;
     initialPassword?: string | null;
@@ -48,6 +49,7 @@ export function LinkFormModal({
                                   submittingLabel,
                                   initialLongUrl,
                                   initialTitle,
+                                  initialDescription,
                                   initialTagIds,
                                   initialKey,
                                   initialPassword = null,
@@ -62,9 +64,9 @@ export function LinkFormModal({
     const isDesktop = useIsDesktop();
     // New initial values remount the form, which resets every field, error and screen at once. The password is left
     // out: it arrives later than the rest and the form takes it in place, so nothing typed meanwhile is lost.
-    const formKey = JSON.stringify([initialLongUrl, initialTitle, initialKey, initialTagIds]);
-    const handleSubmit: LinkFormSubmit = async (longUrl, title, key, tagIds, password) => {
-        await onSubmit(longUrl, title, key, tagIds, password);
+    const formKey = JSON.stringify([initialLongUrl, initialTitle, initialDescription, initialKey, initialTagIds]);
+    const handleSubmit: LinkFormSubmit = async (longUrl, title, key, tagIds, password, description) => {
+        await onSubmit(longUrl, title, key, tagIds, password, description);
         onOpenChange(false);
     };
     const formBody = hasLoadFailed ? (
@@ -75,6 +77,7 @@ export function LinkFormModal({
             title={title}
             initialLongUrl={initialLongUrl}
             initialTitle={initialTitle}
+            initialDescription={initialDescription}
             initialTagIds={initialTagIds}
             initialKey={initialKey}
             initialPassword={initialPassword}

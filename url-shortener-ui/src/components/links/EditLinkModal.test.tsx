@@ -229,11 +229,12 @@ describe("EditLinkModal", () => {
 
         await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
         expect(onSuccess).toHaveBeenCalledExactlyOnceWith({
-            id: "link-42", isActive: false, isPasswordProtected: false, isSuspended: true, title: "New title", key: stored.key,
+            id: "link-42", isActive: false, isPasswordProtected: false, isSuspended: true, title: "New title", description: null, key: stored.key,
             shortUrl: stored.shortUrl, longUrl: stored.longUrl, tagIds: ["tag-1"],
         });
         expect(sentUpdate()).toEqual({
-            id: "link-42", longUrl: stored.longUrl, title: "New title", key: stored.key, isActive: false, isSuspended: true, password: null, tagIds: ["tag-1"],
+            id: "link-42", longUrl: stored.longUrl, title: "New title", description: null, key: stored.key, isActive: false, isSuspended: true, password: null,
+            tagIds: ["tag-1"],
         });
     });
 

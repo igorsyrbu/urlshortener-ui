@@ -77,6 +77,20 @@ describe("POST /shortlinks", () => {
     const response = await request("POST", "/shortlinks", { key: "a", longUrl: LONG_URL });
     assert.equal(response.status, HTTP_BAD_REQUEST);
   });
+
+  it("saves a trimmed description and leaves a blank one out of the answer", async () => {
+    const described = await createLink("described", { description: "  Launch docs  " });
+    const blank = await createLink("blank", { description: "   " });
+    assert.equal(described.description, "Launch docs");
+    assert.equal("description" in blank, false);
+  });
+
+  it("accepts a description of 1000 characters and answers 400 for a longer one", async () => {
+    const atLimit = await request("POST", "/shortlinks", { key: "at-limit", longUrl: LONG_URL, description: "d".repeat(1000) });
+    const tooLong = await request("POST", "/shortlinks", { key: "too-long", longUrl: LONG_URL, description: "d".repeat(1001) });
+    assert.equal(atLimit.status, HTTP_CREATED);
+    assert.equal(tooLong.status, HTTP_BAD_REQUEST);
+  });
 });
 
 const INVALID_LONG_URLS: Array<[string, unknown]> = [
@@ -139,6 +153,13 @@ describe("PUT /shortlinks", () => {
     assert.equal((suspended.body as ShortLink).isSuspended, true);
     assert.equal((kept.body as ShortLink).isSuspended, true);
     assert.equal((resumed.body as ShortLink).isSuspended, false);
+  });
+
+  it("removes the description when the update leaves it out", async () => {
+    const link = await createLink("described-update", { description: "Launch docs" });
+    const response = await request("PUT", "/shortlinks", { id: link.id, key: "described-update", longUrl: LONG_URL });
+    assert.equal(response.status, HTTP_OK);
+    assert.equal("description" in (response.body as ShortLink), false);
   });
 
   it("answers 400 without an id", async () => {

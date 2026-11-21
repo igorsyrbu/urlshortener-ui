@@ -24,6 +24,7 @@ export function mapResponseToLinkItem(item: ShortLinkDTO): LinkItem {
     return {
         id: item.id,
         title: item.title || DEFAULT_LINK_TITLE,
+        description: item.description ?? null,
         key: item.key,
         shortUrl: item.shortUrl,
         longUrl: item.longUrl,
@@ -72,6 +73,7 @@ async function saveStoredLinkWith(linkId: string, change: Pick<Partial<LinkItem>
         body: JSON.stringify({
             id: link.id,
             title: link.title,
+            description: link.description ?? null,
             longUrl: link.longUrl,
             key: link.key,
             isActive: link.isActive,
@@ -131,6 +133,7 @@ export async function deleteShortLink(linkId: string): Promise<boolean> {
 export interface ShortLinkData {
     id: string;
     title: string;
+    description?: string | null;
     longUrl: string;
     shortUrl: string;
     isActive?: boolean;
@@ -141,6 +144,8 @@ export interface ShortLinkData {
 export interface ShortLinkFields {
     longUrl: string;
     title: string;
+    /** Trimmed; `null` saves the link without one (on an update it removes an existing one). */
+    description: string | null;
     key: string;
     tagIds: string[];
     /** `null` saves the link without protection (on an update it removes an existing password). */
@@ -161,25 +166,30 @@ function throwKeyConflictOrRethrow(error: unknown): never {
 }
 
 /** Rejects with `ShortKeyConflictError` for a taken key, otherwise with an `ApiError` or a network error. */
-export function createShortLink({longUrl, title, key, tagIds, password}: ShortLinkFields): Promise<ShortLinkData> {
+export function createShortLink({longUrl, title, description, key, tagIds, password}: ShortLinkFields): Promise<ShortLinkData> {
     return requestJson<ShortLinkData>(API_ENDPOINTS.SHORTLINKS, {
         method: "POST",
-        body: JSON.stringify({longUrl, title, key, isActive: true, password: password ?? undefined, tagIds: tagIds.length > 0 ? [...tagIds] : undefined}),
+        body: JSON.stringify({longUrl, title, description: description ?? undefined, key, isActive: true, password: password ?? undefined, tagIds: tagIds.length > 0 ? [...tagIds] : undefined}),
     }).catch(throwKeyConflictOrRethrow);
 }
 
 /** Saves an edited link; rejects like `createShortLink`. `password` is always sent: the update replaces the whole link. */
-export function updateShortLink(link: LinkItem, {longUrl, title, key, tagIds, password}: ShortLinkFields): Promise<void> {
+export function updateShortLink(link: LinkItem, {longUrl, title, description, key, tagIds, password}: ShortLinkFields): Promise<void> {
     return requestNoContent(API_ENDPOINTS.SHORTLINKS, {
         method: "PUT",
-        body: JSON.stringify({id: link.id, longUrl, title, key, isActive: link.isActive, isSuspended: link.isSuspended, password, tagIds: [...tagIds]}),
+        body: JSON.stringify({id: link.id, longUrl, title, description, key, isActive: link.isActive, isSuspended: link.isSuspended, password, tagIds: [...tagIds]}),
     }).catch(throwKeyConflictOrRethrow);
 }
 
-/** The page title the backend found at `longUrl`, or `null` when it found none. */
-export async function fetchLongUrlTitle(longUrl: string): Promise<string | null> {
+export interface LongUrlSuggestion {
+    title: string | null;
+    description: string | null;
+}
+
+/** The page title and description the backend found at `longUrl`; each is `null` when it found none. */
+export async function fetchLongUrlSuggestion(longUrl: string): Promise<LongUrlSuggestion> {
     const data = await requestJson<LongUrlTitleResponse>(`${API_ENDPOINTS.LONG_URL_TITLE}?url=${encodeURIComponent(longUrl)}`);
-    return data.title?.trim() || null;
+    return {title: data.title?.trim() || null, description: data.description?.trim() || null};
 }
 
 /** `true` when another link uses the key, `false` when it is free, `null` when the answer says neither. */

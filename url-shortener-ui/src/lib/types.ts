@@ -10,6 +10,8 @@ export interface TagItem {
 export interface LinkItem {
     id: string;
     title: string;
+    /** `null` (or absent in older test data) when the link has none. */
+    description?: string | null;
     key?: string;
     shortUrl: string;
     longUrl: string;

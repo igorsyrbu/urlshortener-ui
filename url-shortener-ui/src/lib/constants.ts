@@ -93,6 +93,15 @@ export const LINK_PASSWORD_MIN_LENGTH = 5;
 export const GENERATED_LINK_PASSWORD_LENGTH = 24;
 export const LINK_PASSWORD_MAX_LENGTH = 50;
 
+/** The backend's limit for a link description (`urlshortener.shortlinks.max-description-length`). */
+export const LINK_DESCRIPTION_MAX_LENGTH = 1000;
+
+export const LINK_DESCRIPTION_COPY = {
+    LABEL: "Description",
+    PLACEHOLDER: "What's this link for?",
+    LIMIT_REACHED: `${LINK_DESCRIPTION_MAX_LENGTH} characters max`,
+} as const;
+
 export const LINK_PASSWORD_COPY = {
     FIELD_LABEL: "Password",
     /** The switch's accessible name; it starts with the visible `FIELD_LABEL` (WCAG 2.5.3). */

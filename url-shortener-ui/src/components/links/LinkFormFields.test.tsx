@@ -10,6 +10,8 @@ import {
     DEFAULT_LINK_TITLE,
     KEY_AVAILABILITY_CHECK_DEBOUNCE_MS,
     LINK_PASSWORD_COPY,
+    LINK_DESCRIPTION_COPY,
+    LINK_DESCRIPTION_MAX_LENGTH,
     LINK_PASSWORD_MAX_LENGTH,
     LINK_PASSWORD_MIN_LENGTH,
     SHORT_KEY_TAKEN_MESSAGE,
@@ -52,6 +54,7 @@ interface RenderOptions {
     enableUrlCleaner?: boolean;
     initialLongUrl?: string;
     initialTitle?: string;
+    initialDescription?: string;
     initialKey?: string;
     initialTagIds?: string[];
     initialPassword?: string | null;
@@ -75,6 +78,7 @@ function renderForm(options: RenderOptions = {}): {onSubmit: ReturnType<typeof v
             enableUrlCleaner={options.enableUrlCleaner}
             initialLongUrl={options.initialLongUrl}
             initialTitle={options.initialTitle}
+            initialDescription={options.initialDescription}
             initialKey={options.initialKey}
             initialTagIds={options.initialTagIds}
             initialPassword={options.initialPassword}
@@ -284,7 +288,7 @@ describe("LinkFormFields", () => {
             await fillUrlAndKey(user, "example.com", "my-key");
             await user.click(getSubmitButton());
 
-            expect(onSubmit).toHaveBeenCalledExactlyOnceWith("https://example.com", DEFAULT_LINK_TITLE, "my-key", ["tag-1"], null);
+            expect(onSubmit).toHaveBeenCalledExactlyOnceWith("https://example.com", DEFAULT_LINK_TITLE, "my-key", ["tag-1"], null, null);
         });
 
         it("submits a trimmed custom title", async () => {
@@ -294,7 +298,31 @@ describe("LinkFormFields", () => {
             await user.type(screen.getByLabelText("Title"), "  My title  ");
             await user.click(getSubmitButton());
 
-            expect(onSubmit).toHaveBeenCalledWith("https://example.com", "My title", "k", [], null);
+            expect(onSubmit).toHaveBeenCalledWith("https://example.com", "My title", "k", [], null, null);
+        });
+
+        it("submits a trimmed description", async () => {
+            const user = userEvent.setup();
+            const {onSubmit} = renderForm({initialLongUrl: "https://example.com", initialKey: "k"});
+
+            await user.type(screen.getByLabelText(LINK_DESCRIPTION_COPY.LABEL), "  Launch docs  ");
+            await user.click(getSubmitButton());
+
+            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [], null, "Launch docs");
+        });
+
+        it("caps the description and mentions the limit only once it is reached", async () => {
+            const user = userEvent.setup();
+            renderForm({initialDescription: "d".repeat(LINK_DESCRIPTION_MAX_LENGTH - 1)});
+            const description = screen.getByLabelText(LINK_DESCRIPTION_COPY.LABEL);
+            const hadLimitNoteBelowLimit = screen.queryByText(LINK_DESCRIPTION_COPY.LIMIT_REACHED) !== null;
+
+            await user.type(description, "dd");
+
+            expect(hadLimitNoteBelowLimit).toBe(false);
+            expect(description).toHaveAttribute("maxLength", String(LINK_DESCRIPTION_MAX_LENGTH));
+            expect(description).toHaveValue("d".repeat(LINK_DESCRIPTION_MAX_LENGTH));
+            expect(screen.getByText(LINK_DESCRIPTION_COPY.LIMIT_REACHED)).toBeInTheDocument();
         });
 
         it("does not submit and reports an invalid URL", async () => {
@@ -352,7 +380,7 @@ describe("LinkFormFields", () => {
             await user.click(getSubmitButton());
             resolveKey(Response.json({key: GENERATED_KEY}));
 
-            await waitFor(() => expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, GENERATED_KEY, [], null));
+            await waitFor(() => expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, GENERATED_KEY, [], null, null));
         });
 
         it("shows the submitting label and disables both buttons while the request is pending", async () => {
@@ -421,6 +449,27 @@ describe("LinkFormFields", () => {
             expect(getRequestsTo(`${API_ENDPOINTS.LONG_URL_TITLE}?url=${encodeURIComponent("https://example.com/post")}`)).toHaveLength(1);
         });
 
+        it("fills an empty description with the page's description", async () => {
+            const user = userEvent.setup();
+            routeFetchWithAuth({[API_ENDPOINTS.LONG_URL_TITLE]: () => Response.json({title: "Server title", description: " Page summary "})});
+            renderForm({enableTitleSuggestion: true, initialLongUrl: "https://example.com/post"});
+
+            await user.click(getSuggestTitleButton());
+
+            await waitFor(() => expect(screen.getByLabelText(LINK_DESCRIPTION_COPY.LABEL)).toHaveValue("Page summary"));
+        });
+
+        it("keeps a description the user already wrote", async () => {
+            const user = userEvent.setup();
+            routeFetchWithAuth({[API_ENDPOINTS.LONG_URL_TITLE]: () => Response.json({title: "Server title", description: "Page summary"})});
+            renderForm({enableTitleSuggestion: true, initialLongUrl: "https://example.com/post", initialDescription: "Mine"});
+
+            await user.click(getSuggestTitleButton());
+
+            await waitFor(() => expect(screen.getByLabelText("Title")).toHaveValue("Server title"));
+            expect(screen.getByLabelText(LINK_DESCRIPTION_COPY.LABEL)).toHaveValue("Mine");
+        });
+
         it("derives the title from the hostname when the server has no title", async () => {
             const user = userEvent.setup();
             routeFetchWithAuth({[API_ENDPOINTS.LONG_URL_TITLE]: () => Response.json({title: "   "})});
@@ -469,7 +518,7 @@ describe("LinkFormFields", () => {
             await user.type(screen.getByLabelText(LINK_PASSWORD_COPY.INPUT_LABEL), PASSWORD);
             await user.click(getSubmitButton());
 
-            expect(onSubmit).toHaveBeenCalledExactlyOnceWith("https://example.com", DEFAULT_LINK_TITLE, "k", [], PASSWORD);
+            expect(onSubmit).toHaveBeenCalledExactlyOnceWith("https://example.com", DEFAULT_LINK_TITLE, "k", [], PASSWORD, null);
         });
 
         it("keeps surrounding spaces, as the password is not trimmed", async () => {
@@ -540,7 +589,7 @@ describe("LinkFormFields", () => {
             expect(screen.getByText(tag.name)).toBeInTheDocument();
             await user.click(getSubmitButton());
 
-            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [tag.id], null);
+            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [tag.id], null, null);
         });
 
         it("selects tags on a dedicated screen and returns to the form on mobile", async () => {
@@ -554,7 +603,7 @@ describe("LinkFormFields", () => {
             await user.click(screen.getByRole("button", {name: "Back to form"}));
             await user.click(await screen.findByRole("button", {name: SUBMIT_LABEL}));
 
-            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [tag.id], null);
+            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [tag.id], null, null);
         });
 
         it("creates a tag from the search text and selects it on mobile", async () => {
@@ -569,7 +618,7 @@ describe("LinkFormFields", () => {
             await user.click(screen.getByRole("button", {name: /Create tag/}));
             await user.click(await screen.findByRole("button", {name: "Create"}));
 
-            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [createdTag.id], null);
+            expect(onSubmit).toHaveBeenCalledWith("https://example.com", DEFAULT_LINK_TITLE, "k", [createdTag.id], null, null);
         });
 
         it("reports a failed tag creation on mobile", async () => {

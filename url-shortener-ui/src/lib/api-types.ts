@@ -16,6 +16,7 @@ export interface PageDTO<T> extends Partial<PageMetadataDTO> {
 export interface ShortLinkDTO {
   id: string;
   title: string;
+  description?: string | null;
   key: string;
   shortUrl: string;
   longUrl: string;
